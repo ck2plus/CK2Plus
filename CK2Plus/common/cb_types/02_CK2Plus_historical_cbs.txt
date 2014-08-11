@@ -1,265 +1,4 @@
-italian_reconquest = {
-	name = CB_NAME_ITALIAN_RECONQUEST
-	war_name = WAR_ITALIAN_RECONQUEST
-	sprite = 9
-	truce_days = 3650
-	is_permanent = yes
-	hostile_against_others = yes
-	check_de_jure_tier = DUKE # this scans all dejure duchies for the counties which are held by or vassals(or below) of selected character. Only valid if is_permanent = yes
-
-	can_use = {
-		ROOT = {
-			has_character_modifier = italian_reconquest
-			religion_group = christian
-		}
-		has_global_flag = italian_reconquest_started
-		NOT = { 
-			has_global_flag = italian_rec_success
-			has_global_flag = italian_rec_failure
-		}
-	}
-	
-	can_use_title = {
-		ROOT = { NOT = { has_character_modifier = holding_epic_tournament }	}
-		ROOT = { NOT = { has_character_modifier = holy_truce_timer } }
-		FROM = { NOT = { has_character_modifier = holy_truce_timer } }
-		
-		FROM = {
-			NOT = { religion_group = christian }
-			independent = yes # Don't attack revolters - chances are high the war will invalidate
-		}	
-		OR = {
-			title = d_benevento
-			title = d_capua
-			title = d_apulia
-			title = d_salerno
-			title = d_calabria
-			title = d_sicily
-		}
-	}
-	
-	on_add = {
-		ROOT = {
-			character_event = { id = Plus.507 }
-		}
-	}
-
-	is_valid = {
-		ROOT = {
-			has_character_modifier = italian_reconquest
-		}
-		NOT = { 
-			has_global_flag = italian_rec_success
-			has_global_flag = italian_rec_failure
-		}
-	}
-
-	on_success = {
-		#faction mood changes, faction system TODO
-		# ROOT = { custom_tooltip = { text = RELIGIOUSFACTIONMOODPLUS hidden_tooltip = { change_variable = { which = "faction_mood_religious" value = 1 } } hidden_tooltip = { random_courtier = { limit = { ai = yes } character_event = { id = 1000183004 days = 1 } } } } }
-		# FROM = { custom_tooltip = { text = RELIGIOUSFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_religious" value = -1 } } hidden_tooltip = { random_courtier = { limit = { ai = yes } character_event = { id = 1000183004 days = 1 } } } } }
-		ROOT = { add_character_modifier = { name = victory_timer duration = 3 hidden = yes } }
-		any_attacker = {
-			limit = { character = ROOT }
-			participation_scaled_piety = 50
-			participation_scaled_prestige = 100
-		}
-		any_attacker = {
-			limit = { NOT = { character = ROOT } }
-			hidden_tooltip = { participation_scaled_piety = 50 participation_scaled_prestige = 100 }
-		}
-		if = {
-			limit = {
-				NOT = { has_global_flag = first_war_success }
-			}
-			set_global_flag = first_war_success
-			ROOT = { 
-				add_character_modifier = { name = "holy_truce_timer" duration = 3650 } 
-				k_sicily = { add_pressed_claim = ROOT } 
-			}
-		}
-		if = {
-			limit = {
-				ROOT = {
-					religion_group = muslim
-					NOT = { 
-						any_liege = {
-							dynasty = ROOT
-						}
-					}
-				}
-			}
-		}
-		if = {
-			limit = {
-				ROOT = { is_heretic = no }
-			}
-			ROOT = {
-				religion_authority = {
-					modifier = won_holy_war
-					years = 20
-				}
-			}
-		}
-		if = {
-			limit = {
-				FROM = { is_heretic = no }
-			}
-			FROM = { 
-				religion_authority = {
-					modifier = lost_holy_war
-					years = 20
-				}
-			}
-		}
-		ROOT = {
-			hidden_tooltip = {
-				if = {
-					limit = { has_character_flag = duchy_adventurer }
-					clr_character_flag = duchy_adventurer
-				}
-			}
-		}
-	}
-
-	on_success_title = {
-		hidden_tooltip = {
-			if = {
-				limit = { 
-					has_holder = yes
-					holder_scope = { 
-						OR = {
-							character = FROM
-							is_liege_or_above = FROM
-						}
-					}
-				}
-				set_global_flag = usurp_duchy
-			}
-		}
-		ROOT = {
-			gain_settlements_under_title = {
-				title = PREV
-				enemy = FROM
-			}
-		}
-		hidden_tooltip = {
-			if = {
-				limit = { 
-					has_global_flag = usurp_duchy
-				}
-				destroy_landed_title = yes
-				usurp_title = ROOT
-				clr_global_flag = usurp_duchy
-			}
-			if = {
-				limit = {
-					b_tivoli = {
-						owner = {
-							character = ROOT
-						}
-					}
-				}
-				ROOT = {
-					religion_head = {
-						b_tivoli = {
-							gain_title = PREV
-						}
-					}
-				}
-			}			
-		}
-	}
-
-	on_fail = {	
-		FROM = {
-			prestige = 100
-			hidden_tooltip = {
-				opinion = {
-					modifier = opinion_rebel_traitor
-					who = ROOT
-					months = 1200
-				}
-			}
-		}
-		if = {
-			limit = {
-				b_tivoli = {
-					holder_scope = {
-						character = ROOT
-					}
-				}
-			}
-			ROOT = {
-				religion_head = {
-					b_tivoli = {
-						gain_title = PREV
-					}
-				}
-			}
-		}		
-		ROOT = {
-			wealth = -500
-			prestige = -100 
-		}
-		if = {
-			limit = {
-				NOT = { has_global_flag = first_war_success }
-			}
-			set_global_flag = italian_rec_failure
-			any_playable_ruler = { narrative_event = { id = Plus.517 } }
-		}		
-	}
-
-	on_reverse_demand = {
-		FROM = { add_character_modifier = { name = victory_timer duration = 3 hidden = yes } }
-		ROOT = {
-			wealth = -100
-		}
-
-		if = {
-			limit = {
-				b_tivoli = {
-					holder_scope = {
-						character = ROOT
-					}
-				}
-			}
-			ROOT = {
-				religion_head = {
-					b_tivoli = {
-						gain_title = PREV
-					}
-				}
-			}
-		}		
-
-		FROM = {
-			prestige = 200
-			wealth = 100
-		}
-
-		ROOT = {
-			prestige = -200
-		}
-	}
-
-	attacker_ai_victory_worth = {
-		factor = -1 # always accept
-	}
-
-	attacker_ai_defeat_worth = {
-		factor = 100
-	}
-
-	defender_ai_victory_worth = {
-		factor = -1 # always accept
-	}
-
-	defender_ai_defeat_worth = {
-		factor = 100
-	}
-}
+### Historical CB's used for bookmarks
 
 aghlabid_867 = {
 	name = CB_NAME_RELIGIOUS
@@ -288,9 +27,9 @@ aghlabid_867 = {
 	}
 
 	on_success = {
-		#faction mood adjustments - faction system TODO
-		# ROOT = { custom_tooltip = { text = RELIGIOUSFACTIONMOODPLUS hidden_tooltip = { change_variable = { which = "faction_mood_religious" value = 1 } } hidden_tooltip = { random_courtier = { limit = { ai = yes } character_event = { id = 1000183004 days = 1 } } } } }
-		# FROM = { custom_tooltip = { text = RELIGIOUSFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_religious" value = -1 } } hidden_tooltip = { random_courtier = { limit = { ai = yes } character_event = { id = 1000183004 days = 1 } } } } }
+		#faction mood adjustments
+		ROOT = { custom_tooltip = { text = RELIGIOUSFACTIONMOODPLUS hidden_tooltip = { change_variable = { which = "faction_mood_religious" value = 1 } } hidden_tooltip = { random_courtier = { limit = { ai = yes } character_event = { id = PlusFaction.306 days = 1 } } } } }
+		FROM = { custom_tooltip = { text = RELIGIOUSFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_religious" value = -1 } } hidden_tooltip = { random_courtier = { limit = { ai = yes } character_event = { id = PlusFaction.306 days = 1 } } } } }
 		ROOT = { 
 			add_character_modifier = { name = victory_timer duration = 3 hidden = yes } 
 			add_character_modifier = { name = "holy_war_timer" duration = 3650 }
@@ -324,14 +63,14 @@ aghlabid_867 = {
 			}
 		}
 		d_calabria = {
-				holder_scope = { 
-					set_defacto_liege = THIS
-				}
+			holder_scope = { 
+				set_defacto_liege = THIS
+			}
 		}
 		c_lecce = {
-				holder_scope = { 
-					set_defacto_liege = THIS
-				}
+			holder_scope = { 
+				set_defacto_liege = THIS
+			}
 		}				
 		if = {
 			limit = {
@@ -403,9 +142,9 @@ aghlabid_867 = {
 	}
 
 	on_reverse_demand = {
-		#faction mood changes: faction system TODO
-		# ROOT = { custom_tooltip = { text = RELIGIOUSFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_religious" value = -1 } } hidden_tooltip = { random_courtier = { limit = { ai = yes } character_event = { id = 1000183004 days = 1 } } } } }
-		# FROM = { custom_tooltip = { text = RELIGIOUSFACTIONMOODPLUS hidden_tooltip = { change_variable = { which = "faction_mood_religious" value = 1 } } hidden_tooltip = { random_courtier = { limit = { ai = yes } character_event = { id = 1000183004 days = 1 } } } } }
+		#faction mood changes
+		ROOT = { custom_tooltip = { text = RELIGIOUSFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_religious" value = -1 } } hidden_tooltip = { random_courtier = { limit = { ai = yes } character_event = { id = PlusFaction.306 days = 1 } } } } }
+		FROM = { custom_tooltip = { text = RELIGIOUSFACTIONMOODPLUS hidden_tooltip = { change_variable = { which = "faction_mood_religious" value = 1 } } hidden_tooltip = { random_courtier = { limit = { ai = yes } character_event = { id = PlusFaction.306 days = 1 } } } } }
 		FROM = { add_character_modifier = { name = victory_timer duration = 3 hidden = yes } }
 		ROOT = {
 			piety = -200
@@ -422,7 +161,10 @@ aghlabid_867 = {
 		}
 		any_defender = {
 			limit = { NOT = { character = FROM } }
-			hidden_tooltip = { participation_scaled_prestige = 200 participation_scaled_piety = 100 }
+			hidden_tooltip = {
+				participation_scaled_prestige = 200
+				participation_scaled_piety = 100
+			}
 		}
 		if = {
 			limit = {
