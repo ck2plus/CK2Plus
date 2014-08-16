@@ -746,7 +746,7 @@ decisions = {
 			has_regent = no
 			custom_tooltip = {
 				text = HAS_THREE_NORSE_VASSALS_AVAILABLE
-				hidden_toolitp = {
+				hidden_tooltip = {
 					any_vassal = {
 						OR = {
 							religion = norse_pagan
@@ -977,35 +977,25 @@ decisions = {
 	}
 	
 	celebrate_passover = {
-		is_high_prio = yes
 		potential = {
 			has_dlc = "Sons of Abraham"
 			is_ruler = yes
-			age = 16
-			prisoner = no
 			religion_group = jewish_group
-			NOT = { has_character_modifier = held_passover_timer }
-			NOT = {	has_character_flag = holding_passover }
-			NOT = {	has_character_flag = do_not_disturb }
+			NOT = {
+				any_demesne_title = { is_occupied = yes }
+				has_character_modifier = held_passover_timer
+				has_character_flag = holding_passover
+				has_character_flag = planning_passover
+			}
 		}
 		allow = {
 			war = no
-			any_demesne_title = {
-				is_occupied = no
-			}
-			AND = {
-				NOT = { month = 6 }
-				month = 3
-			}
 			wealth = 50
-			prisoner = no
+			has_regent = no
 		}
 		effect = {
 			wealth = -50
-			set_character_flag = holding_passover
-			set_character_flag = recent_minor_decision
-			set_character_flag = do_not_disturb
-			hidden_tooltip = { character_event = { id = SoA.599 days = 150 } } # Safety catch flag clearing
+			set_character_flag = planning_passover
 			custom_tooltip = {
 				text = passover_celebrations
 				hidden_tooltip = { 
@@ -1018,7 +1008,13 @@ decisions = {
 		}
 		ai_will_do = {
 			factor = 1
-			
+			modifier = {
+				factor = 0
+				OR = {
+					NOT = { month = 3 }
+					month = 6
+				}
+			}
 			modifier = {
 				factor = 0
 				NOT = {
@@ -1032,45 +1028,60 @@ decisions = {
 			modifier = {
 				factor = 0
 				NOT = { diplomacy = 10 }
-			}	
-			modifier = {
-				factor = 0
-				has_character_flag = recent_minor_decision
-				NOT = {
-					had_character_flag = {
-						flag = recent_minor_decision
-						days = 730
-					}
-				}
 			}
 		}
 	}	
 	
 	borrow_money_jews = {
 		potential = {
+			has_dlc = "Sons of Abraham"
+			ai = no
+			is_playable = yes
+			independent = yes
 			OR = {
 				religion_group = christian
 				religion_group = muslim
 				religion_group = zoroastrian_group
-			}	
-			NOT = { 
-				religion_group = jewish_group
+				AND = {
+					religion_group = pagan_group
+					is_reformed_religion = yes
+				}
+			}
+			OR = {
+				any_demesne_title = {
+					has_building = ct_jewish_community_1
+				}
+				any_realm_lord = {
+					is_republic = yes
+					any_demesne_title = {
+						has_building = ct_jewish_community_1
+					}
+				}
+			}
+			NOT = {
+				has_character_flag = offended_moneylenders
+				has_character_modifier = borrowed_from_jews
 				has_character_modifier = expelled_jewish
+				has_character_flag = pogrom
 				top_liege = { has_character_modifier = expelled_jewish }
 			}
-			NOT = { has_character_modifier = borrowed_from_jews }
-			has_dlc = "Sons of Abraham"
-			is_playable = yes
-			prisoner = no
 		}
 		
 		allow = {
+			has_regent = no
 		}
 		
 		effect = {
+			set_character_flag = loan_taken
 			add_character_modifier = {
 				name = borrowed_from_jews
 				duration = -1
+				inherit = yes
+				hidden = yes
+			}
+			add_character_modifier = {
+				name = loan_timer_jews
+				duration = 730
 				inherit = yes
 			}
 			wealth = 300
@@ -1081,29 +1092,16 @@ decisions = {
 		}
 		
 		ai_will_do = {
-			factor = 1
-			modifier = {
-				factor = 0
-				wealth = 0
-				war = no
-			}
-			modifier = {
-				factor = 0
-				wealth = 200
-				war = yes
-			}			
-			modifier = {
-				factor = 0.01 # Slow it down
-			}
+			factor = 0
 		}
 	}
+	
 	repay_money_jews = {
-		potential = {	
-			NOT = { 
-				has_character_modifier = expelled_jewish
-			}
-			has_character_modifier = borrowed_from_jews
+		potential = {
 			has_dlc = "Sons of Abraham"
+			NOT = { has_character_flag = loan_in_progress_jewish }
+			has_character_modifier = borrowed_from_jews
+			has_character_modifier = loan_timer_jews
 		}
 		
 		allow = {
@@ -1112,6 +1110,19 @@ decisions = {
 		
 		effect = {
 			remove_character_modifier = borrowed_from_jews
+			remove_character_modifier = loan_timer_jews
+			if = {
+				limit = {
+					has_character_modifier = loan_50_hidden
+					has_character_modifier = loan_100_hidden
+					has_character_modifier = loan_200_hidden
+					has_character_modifier = loan_400_hidden
+					has_character_modifier = loan_600_hidden
+					has_character_modifier = loan_800_hidden
+					has_character_modifier = loan_1000_hidden
+				}
+				clr_character_flag = loan_taken
+			}
 			wealth = -350
 		}
 		
@@ -1120,14 +1131,7 @@ decisions = {
 		}
 		
 		ai_will_do = {
-			factor = 1
-			modifier = {
-				factor = 0
-				NOT = { wealth = 450 }
-			}
-			modifier = {
-				factor = 0.1 # Slow it down
-			}
+			factor = 0
 		}
 	}
 
@@ -1198,6 +1202,7 @@ decisions = {
 			factor = 1
 			modifier = {
 				factor = 0.1
+				always = yes
 			}
 		}
 	}
@@ -1207,59 +1212,45 @@ decisions = {
 			has_dlc = "Rajas of India"
 			is_ruler = yes
 			is_feudal = yes
-			prisoner = no
-			religion = hindu
-			NOT = { trait = incapable }
-			NOT = { has_character_modifier = patron_kali }
-			NOT = {
-				has_character_modifier = holding_diwali_feast
-			}
-			NOT = {
-				has_character_modifier = holding_kali_puja_feast
-			}
-			NOT = {
-				has_character_modifier = large_feast_timer
-			}
-			NOT = {
-				has_character_modifier = fabulous_feast
-			}
-			NOT = {
-				has_character_flag = guest_diwali_feast_started
-			}
-			NOT = {
-				liege = {
-					has_character_modifier = holding_diwali_feast
-					has_character_modifier = holding_kali_puja_feast
-				}
-			}
 			num_of_vassals = 1
-			NOT = { has_character_flag = do_not_disturb }
+			religion = hindu
+			NOT = {
+				any_demesne_title = { is_occupied = yes }
+				has_character_modifier = patron_kali
+				has_character_modifier = holding_diwali_feast
+				has_character_modifier = holding_kali_puja_feast
+				has_character_modifier = large_feast_timer
+				has_character_flag = planning_diwali_feast
+				has_character_flag = planning_kali_puja_feast
+				liege = { has_character_modifier = holding_diwali_feast }
+				liege = { has_character_modifier = holding_kali_puja_feast }
+			}
 		}
 		allow = {
 			war = no
-			any_demesne_title = {
-				is_occupied = no
-			}
-			prisoner = no
+			has_regent = no
 			scaled_wealth = 0.2
-			month = 9
 			prestige = 100
 		}
 		effect = {
 			scaled_wealth = -0.2
-			add_character_modifier = {
-				name = holding_diwali_feast
-				duration = 365
-			}
-			set_character_flag = recent_minor_decision
-			set_character_flag = do_not_disturb
+			set_character_flag = planning_diwali_feast
+			custom_tooltip = { text = PREPARE_DIWALI }
 			hidden_tooltip = { character_event = { id = RoI.1000 } }
 		}
 		revoke_allowed = {
 			always = no
 		}
 		ai_will_do = {
-			factor = 0.1
+			factor = 1
+			modifier = {
+				factor = 0
+				NOT = { month = 9 }
+			}
+			modifier = {
+				factor = 0.1
+				always = yes
+			}
 			modifier = {
 				factor = 0
 				NOT = {
@@ -1273,16 +1264,6 @@ decisions = {
 			modifier = {
 				factor = 0.5
 				NOT = { diplomacy = 10 }
-			}	
-			modifier = {
-				factor = 0
-				has_character_flag = recent_minor_decision
-				NOT = {
-					had_character_flag = {
-						flag = recent_minor_decision
-						days = 730
-					}
-				}
 			}	
 			modifier = {
 				factor = 0
@@ -1296,60 +1277,45 @@ decisions = {
 			has_dlc = "Rajas of India"
 			is_ruler = yes
 			is_feudal = yes
-			prisoner = no
-			religion = buddhist
-			NOT = { trait = incapable }
-			NOT = {
-				has_character_modifier = holding_diwali_feast
-			}
-			NOT = {
-				has_character_modifier = holding_kali_puja_feast
-			}
-			NOT = {
-				has_character_modifier = large_feast_timer
-			}
-			NOT = {
-				has_character_modifier = fabulous_feast
-			}
-			NOT = {
-				has_character_flag = guest_diwali_feast_started
-			}
-			NOT = {
-				liege = {
-					has_character_modifier = holding_diwali_feast
-					has_character_modifier = holding_kali_puja_feast
-				}
-			}		
 			num_of_vassals = 1
-			NOT = { has_character_flag = do_not_disturb }
+			religion = buddhist
+			NOT = {
+				any_demesne_title = { is_occupied = yes }
+				has_character_modifier = patron_kali
+				has_character_modifier = holding_diwali_feast
+				has_character_modifier = holding_kali_puja_feast
+				has_character_modifier = large_feast_timer
+				has_character_flag = planning_diwali_feast
+				has_character_flag = planning_kali_puja_feast
+				liege = { has_character_modifier = holding_diwali_feast }
+				liege = { has_character_modifier = holding_kali_puja_feast }
+			}
 		}
 		allow = {
 			war = no
-			any_demesne_title = {
-				is_occupied = no
-			}
-			prisoner = no
+			has_regent = no
 			scaled_wealth = 0.2
-			month = 9
 			prestige = 100
 		}
 		effect = {
 			scaled_wealth = -0.2
-			add_character_modifier = {
-				name = holding_diwali_feast
-				duration = 365
-			}
-			set_character_flag = recent_minor_decision
-			set_character_flag = do_not_disturb
-			
+			set_character_flag = planning_diwali_feast
+			custom_tooltip = { text = PREPARE_DIWALI }
 			hidden_tooltip = { character_event = { id = RoI.1000 } }
 		}
 		revoke_allowed = {
 			always = no
 		}
 		ai_will_do = {
-			factor = 0.1
-			
+			factor = 1
+			modifier = {
+				factor = 0
+				NOT = { month = 9 }
+			}
+			modifier = {
+				factor = 0.1
+				always = yes
+			}
 			modifier = {
 				factor = 0
 				NOT = {
@@ -1366,18 +1332,8 @@ decisions = {
 			}	
 			modifier = {
 				factor = 0
-				has_character_flag = recent_minor_decision
-				NOT = {
-					had_character_flag = {
-						flag = recent_minor_decision
-						days = 730
-					}
-				}
-			}
-			modifier = {
-				factor = 0
 				NOT = { age = 30 }
-			}
+			}			
 		}
 	}
 
@@ -1386,60 +1342,45 @@ decisions = {
 			has_dlc = "Rajas of India"
 			is_ruler = yes
 			is_feudal = yes
-			prisoner = no
-			religion = jain
-			NOT = { trait = incapable }
-			NOT = {
-				has_character_modifier = holding_diwali_feast
-			}
-			NOT = {
-				has_character_modifier = holding_kali_puja_feast
-			}
-			NOT = {
-				has_character_modifier = large_feast_timer
-			}
-			NOT = {
-				has_character_modifier = fabulous_feast
-			}
-			NOT = {
-				has_character_flag = guest_diwali_feast_started
-			}
-			NOT = {
-				liege = {
-					has_character_modifier = holding_diwali_feast
-					has_character_modifier = holding_kali_puja_feast
-				}
-			}			
 			num_of_vassals = 1
-			NOT = { has_character_flag = do_not_disturb }
+			religion = jain
+			NOT = {
+				any_demesne_title = { is_occupied = yes }
+				has_character_modifier = patron_kali
+				has_character_modifier = holding_diwali_feast
+				has_character_modifier = holding_kali_puja_feast
+				has_character_modifier = large_feast_timer
+				has_character_flag = planning_diwali_feast
+				has_character_flag = planning_kali_puja_feast
+				liege = { has_character_modifier = holding_diwali_feast }
+				liege = { has_character_modifier = holding_kali_puja_feast }
+			}
 		}
 		allow = {
 			war = no
-			any_demesne_title = {
-				is_occupied = no
-			}
-			prisoner = no
+			has_regent = no
 			scaled_wealth = 0.2
-			month = 9
 			prestige = 100
 		}
 		effect = {
 			scaled_wealth = -0.2
-			add_character_modifier = {
-				name = holding_diwali_feast
-				duration = 365
-			}
-			set_character_flag = recent_minor_decision
-			set_character_flag = do_not_disturb
-			
+			set_character_flag = planning_diwali_feast
+			custom_tooltip = { text = PREPARE_DIWALI }
 			hidden_tooltip = { character_event = { id = RoI.1000 } }
 		}
 		revoke_allowed = {
 			always = no
 		}
 		ai_will_do = {
-			factor = 0.1
-			
+			factor = 1
+			modifier = {
+				factor = 0
+				NOT = { month = 9 }
+			}
+			modifier = {
+				factor = 0.1
+				always = yes
+			}
 			modifier = {
 				factor = 0
 				NOT = {
@@ -1456,18 +1397,8 @@ decisions = {
 			}	
 			modifier = {
 				factor = 0
-				has_character_flag = recent_minor_decision
-				NOT = {
-					had_character_flag = {
-						flag = recent_minor_decision
-						days = 730
-					}
-				}
-			}
-			modifier = {
-				factor = 0
 				NOT = { age = 30 }
-			}
+			}			
 		}
 	}
 
@@ -1476,9 +1407,8 @@ decisions = {
 			has_dlc = "Rajas of India"
 			is_ruler = yes
 			is_feudal = yes
-			prisoner = no
+			num_of_vassals = 1
 			religion = hindu
-			NOT = { trait = incapable }
 			OR = {
 				has_character_modifier = patron_kali
 				capital_scope = { kingdom = { title = k_bengal } }
@@ -1487,55 +1417,42 @@ decisions = {
 				capital_scope = { kingdom = { title = k_bihar } }
 			}
 			NOT = {
+				any_demesne_title = { is_occupied = yes }
+				has_character_modifier = patron_kali
 				has_character_modifier = holding_diwali_feast
-			}
-			NOT = {
 				has_character_modifier = holding_kali_puja_feast
-			}
-			NOT = {
 				has_character_modifier = large_feast_timer
+				has_character_flag = planning_diwali_feast
+				has_character_flag = planning_kali_puja_feast
+				liege = { has_character_modifier = holding_diwali_feast }
+				liege = { has_character_modifier = holding_kali_puja_feast }
 			}
-			NOT = {
-				has_character_modifier = fabulous_feast
-			}
-			NOT = {
-				has_character_flag = guest_diwali_feast_started
-			}
-			NOT = {
-				liege = {
-					has_character_modifier = holding_diwali_feast
-					has_character_modifier = holding_kali_puja_feast
-				}
-			}			
-			num_of_vassals = 1
-			NOT = { has_character_flag = do_not_disturb }
 		}
 		allow = {
 			war = no
-			any_demesne_title = {
-				is_occupied = no
-			}
-			prisoner = no
+			has_regent = no
 			scaled_wealth = 0.2
-			month = 9
 			prestige = 100
 		}
 		effect = {
 			scaled_wealth = -0.2
-			add_character_modifier = {
-				name = holding_kali_puja_feast
-				duration = 365
-			}
-			set_character_flag = recent_minor_decision
-			set_character_flag = do_not_disturb
+			set_character_flag = planning_kali_puja_feast
+			custom_tooltip = { text = PREPARE_KALI_PUJA }
 			hidden_tooltip = { character_event = { id = RoI.1000 } }
 		}
 		revoke_allowed = {
 			always = no
 		}
 		ai_will_do = {
-			factor = 0.1
-			
+			factor = 1
+			modifier = {
+				factor = 0
+				NOT = { month = 9 }
+			}
+			modifier = {
+				factor = 0.1
+				always = yes
+			}
 			modifier = {
 				factor = 0
 				NOT = {
@@ -1552,38 +1469,25 @@ decisions = {
 			}	
 			modifier = {
 				factor = 0
-				has_character_flag = recent_minor_decision
-				NOT = {
-					had_character_flag = {
-						flag = recent_minor_decision
-						days = 730
-					}
-				}
-			}
-			modifier = {
-				factor = 0
 				NOT = { age = 30 }
-			}		
+			}			
 		}
 	}
 
 	find_guru = {
 		potential = {
-			age = 16
 			is_ruler = yes
 			is_feudal = yes
-			prisoner = no
 			religion_group = indian_group
-			NOT = { has_character_flag = looking_for_guru }
-			NOT = { has_character_flag = found_guru }
 			NOT = {
-				any_courtier = {
-					has_minor_title = title_guru
-				}
+				has_character_flag = looking_for_guru
+				has_character_flag = found_guru
+				has_character_modifier = do_not_disturb
+				any_courtier = { has_minor_title = title_guru }
 			}
 		}
 		allow = {
-			prisoner = no
+			has_regent = no
 			wealth = 50
 			prestige = 300
 		}
@@ -1596,8 +1500,7 @@ decisions = {
 			always = no
 		}
 		ai_will_do = {
-			factor = 1
-			
+			factor = 1		
 			modifier = {
 				factor = 0
 				trait = cynical
@@ -1621,25 +1524,18 @@ decisions = {
 				culture = german
 				culture = dutch
 			}
-			e_hre = {
-				has_holder = no
-			}
-			e_france = {
-				has_holder = no
-			}
+			e_hre = { has_holder = no }
+			e_france = { has_holder = no }
+			e_roman_empire = { has_holder = no }
 		}
 		allow = {
-			is_adult = yes
-			prisoner = no
-			NOT = { trait = incapable }
+			has_regent = no
 			prestige = 1000
 			realm_size = 220
 			has_landed_title = k_germany
 			any_demesne_title = {
 				tier = KING
-				NOT = {
-					title = k_germany
-				}
+				NOT = { title = k_germany }
 			}
 		}
 		effect = {
@@ -1654,9 +1550,7 @@ decisions = {
 			any_demesne_title = {
 				limit = {
 					tier = KING
-					NOT = {
-						title = k_germany
-					}
+					NOT = { title = k_germany }
 				}
 				destroy_landed_title = THIS
 			}
