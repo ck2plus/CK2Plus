@@ -1338,7 +1338,7 @@ character_event = {
 
 ### SIEGE SUCCESS EVENTS -- IMPRISONMENT
 
-# Unit leader at the siege gets the main imprisonment event
+# Unit leader at the siege gets the main imprisonment event (if not unreformed pagan)
 character_event = {
 	id = Plus.1020
 	
@@ -1351,6 +1351,11 @@ character_event = {
 			has_landed_title = e_rebels
 			has_landed_title = e_mexikha
 			any_liege = { has_landed_title = e_mexikha }
+		}
+		OR = {
+			NOT = { religion_group = pagan_group }
+			is_reformed_religion = yes
+			FROM = { holder_scope = { religion = ROOT } }
 		}
 		FROM = {
 			holder_scope = {
@@ -1484,7 +1489,8 @@ character_event = {
 			}
 		}
 	}
-}
+
+	}
 
 # The enemy ruler is present and not hiding
 character_event = {
@@ -3979,15 +3985,17 @@ character_event = {
 
 	trigger = {
 		new_character = {
-			is_looting = no
-			NOT = { has_landed_title = e_rebels }
 			rebel = no
-			NOT = { # Handled by SSI.61
-				OR = {
+			OR = {
+				NOT = { religion_group = pagan_group }
+				is_reformed_religion = yes
+				FROM = { holder_scope = { religion = ROOT } }
+			}
+			NOT = {
+				has_landed_title = e_rebels
+				has_landed_title = e_mexikha
+				any_liege = {
 					has_landed_title = e_mexikha
-					any_liege = {
-						has_landed_title = e_mexikha
-					}
 				}
 			}
 		}
@@ -4015,7 +4023,7 @@ character_event = {
 					}
 				}
 			}
-		}		
+		}
 		OR = {
 			is_ruler = yes
 			father = { is_ruler = yes }
@@ -4217,6 +4225,841 @@ character_event = {
 		tooltip = {
 			FROM = {
 				imprison = yes
+			}
+		}
+	}
+}
+
+# Unit leader at the siege gets the main imprisonment event (if unreformed pagan)
+character_event = {
+	id = Plus.1030
+	
+	is_triggered_only = yes
+	hide_window = yes
+	
+	trigger = {
+		rebel = no
+		NOT = {
+			has_landed_title = e_rebels
+			has_landed_title = e_mexikha
+			any_liege = { has_landed_title = e_mexikha }
+		}
+		religion_group = pagan_group
+		is_reformed_religion = no
+		FROM = {
+			holder_scope = {
+				NOT = { religion = ROOT }
+				war_with = ROOT
+				NOT = { character = ROOT }
+				capital_scope = {
+					ROOT = {
+						location = {
+							province_id = PREVPREV
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	immediate = {
+		if = {
+			limit = {
+				is_ruler = no
+				liege = {
+					FROM = {
+						holder_scope = { war_with = PREVPREV }
+					}
+				}
+			}
+			liege = {
+				character_event = { id = Plus.1031 } # Base post-looting event
+			}
+			FROM = {
+				holder_scope = {
+					if = {
+						limit = {
+							any_courtier = {
+								prisoner = yes
+								at_location = ROOT
+							}
+						}
+						ROOT = {
+							liege = {
+								character_event = { id = Plus.1024 } # prisoners present
+							}
+						}
+					}
+				}
+			}
+		}
+		if = {
+			limit = {
+				is_ruler = yes
+			}
+			character_event = { id = Plus.1031 } # Base post-looting event
+			FROM = {
+				holder_scope = {
+					if = {
+						limit = {
+							any_courtier = {
+								prisoner = yes
+								at_location = ROOT
+							}
+						}
+						ROOT = {
+							character_event = { id = Plus.1024 } # prisoners present
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+# Post-looting event for unreformed pagans
+character_event = {
+	id = Plus.1031
+	desc = EVTDESC_Plus_1031
+	picture = GFX_evt_siege
+	border = GFX_event_normal_frame_war
+
+	is_triggered_only = yes
+	hide_from = yes
+	
+	option = {
+		name = EVTOPTA_Plus_1031 #I want prisoners
+		trigger = {
+			FROMFROM = {
+				holder_scope = {
+					OR = {
+						at_location = FROMFROM
+						any_realm_character = {
+							at_location = FROMFROM
+							war_with = ROOT
+							NOT = { character = PREV }
+							OR = {
+								is_ruler = yes
+								father = { is_ruler = yes }
+								mother = { is_ruler = yes }
+								is_close_relative = PREV
+								AND = {
+									is_female = yes
+									is_adult = yes
+									NOT = {
+										age = 30
+										dynasty = 0
+										trait = ugly
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		ai_chance = {
+			factor = 40
+			modifier = {
+				factor = 2
+				trait = greedy
+			}
+			modifier = {
+				factor = 1.5
+				trait = envious
+			}
+		}
+		prestige = -20
+		custom_tooltip = {
+			text = MEN_ARE_ANGERED
+			hidden_tooltip = {
+				any_realm_character = {
+					limit = {
+						at_location = ROOT
+						is_liege_or_above = ROOT
+					}
+					opinion = {
+						who = ROOT
+						modifier = not_allowed_to_loot
+						months = 24
+					}
+				}
+			}
+		}
+		FROMFROM = {
+			holder_scope = {
+				if = {
+					limit = { at_location = FROMFROM }
+					if = {
+						limit = {
+							has_character_modifier = modifier_hidden
+							NOT = { intrigue = 6 }
+						}
+						random_list = {
+							70 = { custom_tooltip = { text = "siege_escaped" } }
+							20 = { character_event = { id = Plus.1032 tooltip = "siege_injured" } }
+							10 = { character_event = { id = Plus.1027 tooltip = "siege_captured" } }
+						}
+					}
+					if = {
+						limit = {
+							has_character_modifier = modifier_hidden
+							intrigue = 6
+							NOT = { intrigue = 12 }
+						}
+						random_list = {
+							85 = { custom_tooltip = { text = "siege_escaped" } }
+							10 = { character_event = { id = Plus.1032 tooltip = "siege_injured" } }
+							5 = { character_event = { id = Plus.1027 tooltip = "siege_captured" } }
+						}
+					}
+					if = {
+						limit = {
+							NOT = { has_character_modifier = modifier_hidden }
+							NOT = { intrigue = 6 }
+						}
+						random_list = {
+							30 = { custom_tooltip = { text = "siege_escaped" } }
+							30 = { character_event = { id = Plus.1032 tooltip = "siege_injured" } }
+							40 = { character_event = { id = Plus.1027 tooltip = "siege_captured" } }
+						}
+					}
+					if = {
+						limit = {
+							NOT = { has_character_modifier = modifier_hidden }
+							intrigue = 6
+							NOT = { intrigue = 12 }
+						}
+						random_list = {
+							40 = { custom_tooltip = { text = "siege_escaped" } }
+							40 = { character_event = { id = Plus.1032 tooltip = "siege_injured" } }
+							20 = { character_event = { id = Plus.1027 tooltip = "siege_captured" } }
+						}
+					}
+					if = {
+						limit = {
+							NOT = { has_character_modifier = modifier_hidden }
+							intrigue = 12
+							NOT = { intrigue = 18 }
+						}
+						random_list = {
+							70 = { custom_tooltip = { text = "siege_escaped" } }
+							20 = { character_event = { id = Plus.1032 tooltip = "siege_injured" } }
+							10 = { character_event = { id = Plus.1027 tooltip = "siege_captured" } }
+						}
+					}
+				}
+				any_realm_character = {
+					limit = {
+						at_location = FROMFROM
+						war_with = ROOT
+						NOT = { character = PREV }
+						OR = {
+							is_ruler = yes
+							father = { is_ruler = yes }
+							mother = { is_ruler = yes }
+							is_close_relative = PREV
+							AND = {
+								is_female = yes
+								is_adult = yes
+								NOT = {
+									age = 30
+									dynasty = 0
+									trait = ugly
+								}
+							}
+						}
+					}
+					if = {
+						limit = {
+							has_character_modifier = modifier_hidden
+							NOT = { intrigue = 6 }
+						}
+						random_list = {
+							70 = { custom_tooltip = { text = "siege_escaped" } }
+							20 = { character_event = { id = Plus.1032 tooltip = "siege_injured" } }
+							10 = { character_event = { id = Plus.1027 tooltip = "siege_captured" } }
+						}
+					}
+					if = {
+						limit = {
+							has_character_modifier = modifier_hidden
+							intrigue = 6
+							NOT = { intrigue = 12 }
+						}
+						random_list = {
+							85 = { custom_tooltip = { text = "siege_escaped" } }
+							10 = { character_event = { id = Plus.1032 tooltip = "siege_injured" } }
+							5 = { character_event = { id = Plus.1027 tooltip = "siege_captured" } }
+						}
+					}
+					if = {
+						limit = {
+							NOT = { has_character_modifier = modifier_hidden }
+							NOT = { intrigue = 6 }
+						}
+						random_list = {
+							20 = { custom_tooltip = { text = "siege_escaped" } }
+							40 = { character_event = { id = Plus.1032 tooltip = "siege_injured" } }
+							40 = { character_event = { id = Plus.1027 tooltip = "siege_captured" } }
+						}
+					}
+					if = {
+						limit = {
+							NOT = { has_character_modifier = modifier_hidden }
+							intrigue = 6
+							NOT = { intrigue = 12 }
+						}
+						random_list = {
+							40 = { custom_tooltip = { text = "siege_escaped" } }
+							40 = { character_event = { id = Plus.1032 tooltip = "siege_injured" } }
+							20 = { character_event = { id = Plus.1027 tooltip = "siege_captured" } }
+						}
+					}
+					if = {
+						limit = {
+							NOT = { has_character_modifier = modifier_hidden }
+							intrigue = 12
+							NOT = { intrigue = 18 }
+						}
+						random_list = {
+							70 = { custom_tooltip = { text = "siege_escaped" } }
+							20 = { character_event = { id = Plus.1032 tooltip = "siege_injured" } }
+							10 = { character_event = { id = Plus.1027 tooltip = "siege_captured" } }
+						}
+					}
+				}
+			}
+		}
+	}
+	option = {
+		name = EVTOPTB_Plus_1031 #Let them celebrate
+		ai_chance = {
+			factor = 40
+			modifier = {
+				factor = 1.5
+				trait = lustful
+			}
+			modifier = {
+				factor = 2
+				trait = diligent
+			}
+			modifier = {
+				factor = 1.5
+				trait = kind
+			}
+		}
+		FROMFROM = {
+			holder_scope = {
+				if = {
+					limit = { at_location = FROMFROM }
+					if = {
+						limit = {
+							has_character_modifier = modifier_hidden
+							NOT = { intrigue = 6 }
+						}
+						random_list = {
+							80 = { custom_tooltip = { text = "siege_escaped" } }
+							10 = { character_event = { id = Plus.1032 tooltip = "siege_injured" } }
+							5 = { character_event = { id = Plus.1027 tooltip = "siege_captured" } }
+							5 = { character_event = { id = Plus.1026 tooltip = "siege_killed" } }
+						}
+					}
+					if = {
+						limit = {
+							has_character_modifier = modifier_hidden
+							intrigue = 6
+							NOT = { intrigue = 12 }
+						}
+						random_list = {
+							85 = { custom_tooltip = { text = "siege_escaped" } }
+							10 = { character_event = { id = Plus.1032 tooltip = "siege_injured" } }
+							3 = { character_event = { id = Plus.1027 tooltip = "siege_captured" } }
+							2 = { character_event = { id = Plus.1026 tooltip = "siege_killed" } }
+						}
+					}
+					if = {
+						limit = {
+							NOT = { has_character_modifier = modifier_hidden }
+							NOT = { intrigue = 6 }
+						}
+						random_list = {
+							40 = { custom_tooltip = { text = "siege_escaped" } }
+							20 = { character_event = { id = Plus.1032 tooltip = "siege_injured" } }
+							20 = { character_event = { id = Plus.1027 tooltip = "siege_captured" } }
+							20 = { character_event = { id = Plus.1026 tooltip = "siege_killed" } }
+						}
+					}
+					if = {
+						limit = {
+							NOT = { has_character_modifier = modifier_hidden }
+							intrigue = 6
+							NOT = { intrigue = 12 }
+						}
+						random_list = {
+							60 = { custom_tooltip = { text = "siege_escaped" } }
+							20 = { character_event = { id = Plus.1032 tooltip = "siege_injured" } }
+							10 = { character_event = { id = Plus.1027 tooltip = "siege_captured" } }
+							10 = { character_event = { id = Plus.1026 tooltip = "siege_killed" } }
+						}
+					}
+					if = {
+						limit = {
+							NOT = { has_character_modifier = modifier_hidden }
+							intrigue = 12
+							NOT = { intrigue = 18 }
+						}
+						random_list = {
+							80 = { custom_tooltip = { text = "siege_escaped" } }
+							10 = { character_event = { id = Plus.1032 tooltip = "siege_injured" } }
+							5 = { character_event = { id = Plus.1027 tooltip = "siege_captured" } }
+							5 = { character_event = { id = Plus.1026 tooltip = "siege_killed" } }
+						}
+					}
+				}
+				any_realm_character = {
+					limit = {
+						at_location = FROMFROM
+						war_with = ROOT
+						NOT = { character = PREV }
+						OR = {
+							is_ruler = yes
+							father = { is_ruler = yes }
+							mother = { is_ruler = yes }
+							is_close_relative = PREV
+							AND = {
+								is_female = yes
+								is_adult = yes
+								NOT = {
+									age = 30
+									dynasty = 0
+									trait = ugly
+								}
+							}
+						}
+					}
+					if = {
+						limit = {
+							has_character_modifier = modifier_hidden
+							NOT = { intrigue = 6 }
+						}
+						random_list = {
+							80 = { custom_tooltip = { text = "siege_escaped" } }
+							10 = { character_event = { id = Plus.1032 tooltip = "siege_injured" } }
+							5 = { character_event = { id = Plus.1027 tooltip = "siege_captured" } }
+							5 = { character_event = { id = Plus.1026 tooltip = "siege_killed" } }
+						}
+					}
+					if = {
+						limit = {
+							has_character_modifier = modifier_hidden
+							intrigue = 6
+							NOT = { intrigue = 12 }
+						}
+						random_list = {
+							90 = { custom_tooltip = { text = "siege_escaped" } }
+							5 = { character_event = { id = Plus.1032 tooltip = "siege_injured" } }
+							3 = { character_event = { id = Plus.1027 tooltip = "siege_captured" } }
+							2 = { character_event = { id = Plus.1026 tooltip = "siege_killed" } }
+						}
+					}
+					if = {
+						limit = {
+							NOT = { has_character_modifier = modifier_hidden }
+							NOT = { intrigue = 6 }
+						}
+						random_list = {
+							40 = { custom_tooltip = { text = "siege_escaped" } }
+							20 = { character_event = { id = Plus.1032 tooltip = "siege_injured" } }
+							20 = { character_event = { id = Plus.1027 tooltip = "siege_captured" } }
+							20 = { character_event = { id = Plus.1026 tooltip = "siege_killed" } }
+						}
+					}
+					if = {
+						limit = {
+							NOT = { has_character_modifier = modifier_hidden }
+							intrigue = 6
+							NOT = { intrigue = 12 }
+						}
+						random_list = {
+							60 = { custom_tooltip = { text = "siege_escaped" } }
+							20 = { character_event = { id = Plus.1032 tooltip = "siege_injured" } }
+							10 = { character_event = { id = Plus.1027 tooltip = "siege_captured" } }
+							10 = { character_event = { id = Plus.1026 tooltip = "siege_killed" } }
+						}
+					}
+					if = {
+						limit = {
+							NOT = { has_character_modifier = modifier_hidden }
+							intrigue = 12
+							NOT = { intrigue = 18 }
+						}
+						random_list = {
+							80 = { custom_tooltip = { text = "siege_escaped" } }
+							10 = { character_event = { id = Plus.1032 tooltip = "siege_injured" } }
+							5 = { character_event = { id = Plus.1027 tooltip = "siege_captured" } }
+							5 = { character_event = { id = Plus.1026 tooltip = "siege_killed" } }
+						}
+					}
+				}
+			}
+		}
+	}
+	option = {
+		name = EVTOPTC_Plus_1031 #Tonight we offer sacrifices!
+		trigger = {
+			FROMFROM = {
+				holder_scope = {
+					OR = {
+						at_location = FROMFROM
+						any_realm_character = {
+							at_location = FROMFROM
+							war_with = ROOT
+							NOT = { character = PREV }
+							OR = {
+								is_ruler = yes
+								father = { is_ruler = yes }
+								mother = { is_ruler = yes }
+								is_close_relative = PREV
+								AND = {
+									is_female = yes
+									is_adult = yes
+									NOT = {
+										age = 30
+										dynasty = 0
+										trait = ugly
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		ai_chance = {
+			factor = 20
+			modifier = {
+				factor = 4
+				trait = zealous
+			}
+			modifier = {
+				factor = 0.5
+				trait = cynical
+			}
+		}
+		piety = 20
+		custom_tooltip = {
+			text = MEN_ARE_PLEASED
+			hidden_tooltip = {
+				any_realm_character = {
+					limit = {
+						at_location = ROOT
+						is_liege_or_above = ROOT
+					}
+					opinion = {
+						who = ROOT
+						modifier = loot_sacrifice
+						months = 24
+					}
+				}
+			}
+		}
+		custom_tooltip = {
+			text = ENEMY_REALM_HORRIFIED
+			hidden_tooltip = {
+				FROMFROM = {
+					holder_scope = {
+						top_liege = {
+							opinion = {
+								who = ROOT
+								modifier = opinion_barbarian
+								months = 60
+							}
+							any_realm_character = {
+								limit = {
+									NOT = { religion_group = ROOT }
+									NOT = { character = PREV }
+								}
+								opinion = {
+									who = ROOT
+									modifier = opinion_barbarian
+									months = 60
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		FROMFROM = {
+			holder_scope = {
+				if = {
+					limit = { at_location = FROMFROM }
+					if = {
+						limit = {
+							has_character_modifier = modifier_hidden
+							NOT = { intrigue = 6 }
+						}
+						random_list = {
+							70 = { custom_tooltip = { text = "siege_escaped" } }
+							20 = { character_event = { id = Plus.1032 tooltip = "siege_injured" } }
+							10 = { character_event = { id = Plus.1033 tooltip = "siege_sacrificed" } }
+						}
+					}
+					if = {
+						limit = {
+							has_character_modifier = modifier_hidden
+							intrigue = 6
+							NOT = { intrigue = 12 }
+						}
+						random_list = {
+							85 = { custom_tooltip = { text = "siege_escaped" } }
+							10 = { character_event = { id = Plus.1032 tooltip = "siege_injured" } }
+							5 = { character_event = { id = Plus.1033 tooltip = "siege_sacrificed" } }
+						}
+					}
+					if = {
+						limit = {
+							NOT = { has_character_modifier = modifier_hidden }
+							NOT = { intrigue = 6 }
+						}
+						random_list = {
+							30 = { custom_tooltip = { text = "siege_escaped" } }
+							30 = { character_event = { id = Plus.1032 tooltip = "siege_injured" } }
+							40 = { character_event = { id = Plus.1033 tooltip = "siege_sacrificed" } }
+						}
+					}
+					if = {
+						limit = {
+							NOT = { has_character_modifier = modifier_hidden }
+							intrigue = 6
+							NOT = { intrigue = 12 }
+						}
+						random_list = {
+							40 = { custom_tooltip = { text = "siege_escaped" } }
+							40 = { character_event = { id = Plus.1032 tooltip = "siege_injured" } }
+							20 = { character_event = { id = Plus.1033 tooltip = "siege_sacrificed" } }
+						}
+					}
+					if = {
+						limit = {
+							NOT = { has_character_modifier = modifier_hidden }
+							intrigue = 12
+							NOT = { intrigue = 18 }
+						}
+						random_list = {
+							70 = { custom_tooltip = { text = "siege_escaped" } }
+							20 = { character_event = { id = Plus.1032 tooltip = "siege_injured" } }
+							10 = { character_event = { id = Plus.1033 tooltip = "siege_sacrificed" } }
+						}
+					}
+				}
+				any_realm_character = {
+					limit = {
+						at_location = FROMFROM
+						war_with = ROOT
+						NOT = { character = PREV }
+						OR = {
+							is_ruler = yes
+							father = { is_ruler = yes }
+							mother = { is_ruler = yes }
+							is_close_relative = PREV
+							AND = {
+								is_female = yes
+								is_adult = yes
+								NOT = {
+									age = 30
+									dynasty = 0
+									trait = ugly
+								}
+							}
+						}
+					}
+					if = {
+						limit = {
+							has_character_modifier = modifier_hidden
+							NOT = { intrigue = 6 }
+						}
+						random_list = {
+							70 = { custom_tooltip = { text = "siege_escaped" } }
+							20 = { character_event = { id = Plus.1032 tooltip = "siege_injured" } }
+							10 = { character_event = { id = Plus.1033 tooltip = "siege_sacrificed" } }
+						}
+					}
+					if = {
+						limit = {
+							has_character_modifier = modifier_hidden
+							intrigue = 6
+							NOT = { intrigue = 12 }
+						}
+						random_list = {
+							85 = { custom_tooltip = { text = "siege_escaped" } }
+							10 = { character_event = { id = Plus.1032 tooltip = "siege_injured" } }
+							5 = { character_event = { id = Plus.1033 tooltip = "siege_sacrificed" } }
+						}
+					}
+					if = {
+						limit = {
+							NOT = { has_character_modifier = modifier_hidden }
+							NOT = { intrigue = 6 }
+						}
+						random_list = {
+							30 = { custom_tooltip = { text = "siege_escaped" } }
+							30 = { character_event = { id = Plus.1032 tooltip = "siege_injured" } }
+							40 = { character_event = { id = Plus.1033 tooltip = "siege_sacrificed" } }
+						}
+					}
+					if = {
+						limit = {
+							NOT = { has_character_modifier = modifier_hidden }
+							intrigue = 6
+							NOT = { intrigue = 12 }
+						}
+						random_list = {
+							40 = { custom_tooltip = { text = "siege_escaped" } }
+							40 = { character_event = { id = Plus.1032 tooltip = "siege_injured" } }
+							20 = { character_event = { id = Plus.1033 tooltip = "siege_sacrificed" } }
+						}
+					}
+					if = {
+						limit = {
+							NOT = { has_character_modifier = modifier_hidden }
+							intrigue = 12
+							NOT = { intrigue = 18 }
+						}
+						random_list = {
+							70 = { custom_tooltip = { text = "siege_escaped" } }
+							20 = { character_event = { id = Plus.1032 tooltip = "siege_injured" } }
+							10 = { character_event = { id = Plus.1033 tooltip = "siege_sacrificed" } }
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+# Character notified they were injured after a siege by unreformed pagans
+character_event = {
+	id = Plus.1032
+	desc = "EVTDESC_Plus_1032"
+	picture = "GFX_evt_bloody_man"
+	border = "GFX_event_normal_frame_war"
+
+	is_triggered_only = yes
+	
+	option = {
+		name = "EVTOPTA_Plus_1032"
+		random_list = {
+			50 = {
+				add_trait = wounded
+			}
+			30 = {
+				health = -0.5
+				if = {
+					limit = { is_female = yes }
+					random = {
+						chance = 50
+						add_trait = scarred_female
+					}
+				}
+				if = {
+					limit = { is_female = no }
+					random = {
+						chance = 50
+						add_trait = scarred
+					}
+				}
+				if = {
+					limit = {
+						is_female = yes
+						is_adult = yes
+						NOT = { age = 60 }
+						NOT = { trait = syphilitic }
+					}
+					random = {
+						chance = 30
+						add_trait = syphilitic
+					}
+				}
+				if = {
+					limit = {
+						is_female = yes
+						is_adult = yes
+						NOT = { age = 45 }
+						fertility = 0.33
+					}
+					impregnate = 0
+				}
+			}
+			20 = {
+				add_trait = maimed
+			}
+		}
+	}
+}
+
+# Character notified that they were killed by siege
+character_event = {
+	id = Plus.1033
+	desc = "EVTDESC_Plus_1033"
+	picture = "GFX_evt_viking_battle_oldgods"
+	border = "GFX_event_normal_frame_war"
+	
+	is_triggered_only = yes
+	
+	option = {
+		name = "EVTOPTA_Plus_1026"
+		death = {
+			death_reason = death_sacrificed
+			killer = FROM
+		}
+		hidden_tooltip = {
+			ROOT = {
+				if = {
+					limit = {
+						NOT = { mother = { character = FROM } }
+					}
+					mother = {
+						opinion = {
+							who = FROM
+							modifier = executed_kin
+							months = 120
+						}
+					}
+				}
+				if = {
+					limit = {
+						NOT = { father = { character = FROM } }
+					}
+					father = {
+						opinion = {
+							who = FROM
+							modifier = executed_kin
+							months = 120
+						}
+					}
+				}
+				any_sibling = {
+					limit = {
+						NOT = { character = FROM }
+					}
+					opinion = {
+						who = FROM
+						modifier = executed_kin
+						months = 120
+					}
+				}
+				any_child = {
+					limit = {
+						NOT = { character = FROM }
+					}
+					opinion = {
+						who = FROM
+						modifier = executed_kin
+						months = 120
+					}
+				}
 			}
 		}
 	}
