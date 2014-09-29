@@ -620,16 +620,28 @@ character_event = { # Fix Laws if CA differs from max law level for the CA
 	}
 }
 
-character_event = { # Remove Crowned by Pope if not the Kaiser
+character_event = { # Remove Crowned by Pope or Crowned if not a ruler
 	id = Plus.305
 	is_triggered_only = yes
 	hide_window = yes
 
 	trigger = {
-		trait = crowned_by_pope
-		NOT = {
-			has_landed_title = e_hre
-			has_landed_title = e_karling
+		war = no
+		OR = {
+			AND = {
+				trait = crowned
+				OR = {
+					is_ruler = no
+					lower_real_tier_than = KING
+				}
+			}
+			AND = {
+				trait = crowned_by_pope
+				NOT = {
+					has_landed_title = e_hre
+					has_landed_title = e_karling
+				}
+			}
 		}
 	}
 
@@ -638,7 +650,31 @@ character_event = { # Remove Crowned by Pope if not the Kaiser
 	}
 
 	immediate = {
-		remove_trait = crowned_by_pope
+		if = {
+			limit = {
+				trait = crowned_by_pope
+				higher_real_tier_than = DUKE
+			}
+			remove_trait = crowned_by_pope
+			add_trait = crowned
+		}
+		if = {
+			limit = {
+				trait = crowned_by_pope
+				NOT = { higher_real_tier_than = DUKE }
+			}
+			remove_trait = crowned_by_pope
+		}
+		if = {
+			limit = {
+				trait = crowned
+				OR = {
+					is_ruler = no
+					lower_real_tier_than = KING
+				}
+			}
+			remove_trait = crowned
+		}
 	}
 }
 
@@ -2348,6 +2384,44 @@ character_event = { # Startup event
 		if = {
 			limit = { NOT = { has_character_flag = genetics_check } }
 			character_event = { id = Plus.324 } # pass on traits they would have had at birth
+		}
+		# give crowned trait to all existing kings and emperors
+		any_independent_ruler = {
+			limit = {
+				higher_real_tier_than = DUKE
+				is_adult = yes
+				is_feudal = yes
+				has_horde_culture = no
+				primary_title = {
+					is_tribal_type_title = no
+					is_titular = no
+				}
+				NOT = {
+					trait = crowned
+					trait = uncrowned
+					has_landed_title = e_hre
+					has_landed_title = e_karling
+				}
+			}
+			add_trait = crowned
+		}
+		# give uncrowned trait to everyone else
+		any_independent_ruler = {
+			limit = {
+				is_feudal = yes
+				is_landed = yes
+				higher_real_tier_than = DUKE
+				primary_title = {
+					is_tribal_type_title = no
+					is_titular = no
+				}
+				NOT = {
+					trait = crowned
+					trait = uncrowned
+					trait = crowned_by_pope
+				}
+			}
+			add_trait = uncrowned
 		}
 		any_independent_ruler = {
 			set_character_flag = start_of_game_character
@@ -4170,7 +4244,7 @@ character_event = { # Ultimatum to overthrown rulers who re-inherit the throne
 
 character_event = { #modifier remover for characters who convert away from hellenic paganism or hinduism
 	id = Plus.343
-	hide_from = yes
+
 	hide_window = yes
 	
 	trigger = {
@@ -4205,6 +4279,10 @@ character_event = { #modifier remover for characters who convert away from helle
 				}
 			}
 		}
+	}
+	
+	mean_time_to_happen = {
+		days = 1
 	}
 	
 	immediate = {
@@ -4300,3 +4378,39 @@ character_event = { #modifier remover for characters who convert away from helle
 		}
 	}
 }
+
+character_event = { # Adds Uncrowned trait to all new independent kings and emperors
+	id = Plus.344
+	
+	hide_window = yes
+	
+	only_playable = yes
+	only_independent = yes
+	
+	trigger = {
+		war = no
+		is_feudal = yes
+		is_landed = yes
+		independent = yes
+		higher_real_tier_than = DUKE
+		primary_title = {
+			is_tribal_type_title = no
+			is_titular = no
+		}
+		NOT = {
+			trait = crowned
+			trait = uncrowned
+			trait = crowned_by_pope
+		}
+		has_global_flag = startup
+	}
+	
+	mean_time_to_happen = {
+		days = 1
+	}
+	
+	immediate = {
+		add_trait = uncrowned
+	}
+}
+
