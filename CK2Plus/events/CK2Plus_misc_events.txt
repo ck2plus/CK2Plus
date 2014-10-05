@@ -1943,3 +1943,866 @@ character_event = {
 	}
 }
 		
+### VASSAL ASKS FOR KING TITLE
+
+# liege holds too many king titles in an uncentralized realm
+character_event = {
+	id = Plus.130
+	desc = EVTDESC_Plus_130
+	picture = GFX_evt_council
+	
+	only_playable = yes
+	min_age = 16
+	capable_only = yes
+	prisoner = no
+	
+	trigger = {
+		war = no
+		independent = no
+		is_feudal = yes
+		OR = {
+			real_tier = DUKE
+			AND = {
+				real_tier = COUNT
+				num_of_count_titles = 3
+			}
+		}
+		# liege is an uncrowned/incapable king with at least three king titles
+		# or an uncrowned/incapable emperor with at least two king titles
+		liege = {
+			OR = {
+				trait = uncrowned
+				trait = incapable
+				AND = {
+					prisoner = yes
+					host = { character = ROOT }
+				}
+			}
+			higher_real_tier_than = DUKE
+			num_of_king_titles = 3
+			num_of_count_titles = 2
+			war = no
+			religion = ROOT
+			is_feudal = yes
+			NOT = {
+				ROOT = { is_primary_heir = PREV }
+			}
+		}
+		OR = {
+			trait = ambitious
+			trait = envious
+			NOT = { opinion = { who = liege value = -50 } }
+		}
+		NOT = {
+			trait = content
+			trait = craven
+			trait = humble
+			trait = slow
+			trait = imbecile
+		}
+		# the liege has a spare king title which does not have his capital
+		# but has the duke's capital, and has low crown authority
+		liege = {
+			any_demesne_title = {
+				tier = KING
+				is_titular = no
+				can_be_given_away = yes
+				OR = {
+					has_law = centralization_0
+					has_law = centralization_1
+				}
+				PREV = {
+					capital_scope = {
+						kingdom = { NOT = { title = PREVPREVPREV } }
+					}
+				}
+				ROOT = {
+					capital_scope = {
+						kingdom = { title = PREVPREVPREV }
+					}
+					NOT = {
+						any_heir_title = { title = PREVPREV }
+					}
+				}
+			}
+			NOT = {
+				AND = {
+					reverse_opinion = { who = ROOT value = 0 }
+					real_tier = KING
+				}
+				AND = {
+					reverse_opinion = { who = ROOT value = 25 }
+					real_tier = EMPEROR
+				}
+				reverse_has_opinion_modifier = { who = ROOT modifier = opinion_defeated_major_revolt }
+				has_character_flag = king_title_demanded
+			}
+		}
+		NOT = { has_character_flag = demanded_king_title }
+	}
+	
+	mean_time_to_happen = {
+		months = 6
+		modifier = {
+			factor = 0.5
+			trait = ambitious
+		}
+		modifier = {
+			factor = 0.75
+			trait = envious
+		}
+		modifier = {
+			factor = 1.5
+			trait = kind
+		}
+		modifier = {
+			factor = 1.5
+			trait = charitable
+		}
+		modifier = {
+			factor = 3
+			NOT = { prestige = 100 }
+		}
+		modifier = {
+			factor = 0.75
+			prestige = 1000
+		}
+		modifier = {
+			factor = 1.5
+			liege = { NOT = { culture = ROOT } }
+		}
+		modifier = {
+			factor = 0.5
+			OR = {
+				leads_faction = yes
+				in_faction = faction_feudal_emperor
+				in_faction = faction_feudal_king
+			}
+		}
+		modifier = {
+			factor = 5
+			NOT = { relative_power_to_liege = 0.1 }
+		}
+		modifier = {
+			factor = 0.5
+			relative_power_to_liege = 0.5
+		}
+		modifier = {
+			factor = 0.5
+			relative_power_to_liege = 1.0
+		}
+		modifier = {
+			factor = 0.5
+			liege = { num_of_king_titles = 4 }
+		}
+	}
+
+	immediate = {
+		set_character_flag = demanded_king_title
+	}
+	
+	option = {
+		name = EVTOPTA_Plus_130 # Make the demand
+		liege = {
+			set_character_flag = king_title_demanded
+			character_event = { id = Plus.131 tooltip = demand_kingdom_title }
+		}
+	}
+	option = {
+		name = EVTOPTB_Plus_130 # No, leave it be
+		trigger = { ai = no }
+		if = {
+			limit = { NOT = { trait = content } }
+			random = {
+				chance = 30
+				add_trait = content
+			}
+		}
+	}
+}
+
+# liege receives the demand for a king title
+character_event = {
+	id = Plus.131
+	desc = EVTDESC_Plus_131
+	picture = GFX_evt_emissary
+	
+	is_triggered_only = yes
+	
+	option = {
+		name = EVTOPTA_Plus_131 # Give it to him
+		ai_chance = {
+			factor = 50
+			modifier = {
+				factor = 0.75
+				NOT = { opinion = { who = FROM value = -25 } }
+			}
+			modifier = {
+				factor = 0.75
+				NOT = { opinion = { who = FROM value = -50 } }
+			}
+			modifier = {
+				factor = 0.75
+				NOT = { opinion = { who = FROM value = -75 } }
+			}
+			modifier = {
+				factor = 1.5
+				opinion = { who = FROM value = 25 }
+			}
+			modifier = {
+				factor = 1.5
+				opinion = { who = FROM value = 50 }
+			}
+			modifier = {
+				factor = 1.5
+				dynasty = FROM
+			}
+			modifier = {
+				factor = 0.75
+				NOT = { culture = FROM }
+			}
+			modifier = {
+				factor = 0.5
+				NOT = { culture_group = FROM }
+			}
+			modifier = {
+				factor = 2
+				NOT = { relative_power = { who = FROM power = 1.0 } }
+			}
+			modifier = {
+				factor = 1.5
+				NOT = { relative_power = { who = FROM power = 0.5 } }
+			}
+		}
+		reverse_opinion = { who = FROM modifier = opinion_granted_kingdom years = 200 }
+		prestige = -200
+		random_demesne_title = {
+			limit = {
+				tier = KING
+				is_titular = no
+				can_be_given_away = yes
+				OR = {
+					has_law = centralization_0
+					has_law = centralization_1
+				}
+				ROOT = {
+					capital_scope = {
+						kingdom = { NOT = { title = PREVPREVPREV } }
+					}
+				}
+				FROM = {
+					capital_scope = {
+						kingdom = { title = PREVPREVPREV }
+					}
+					NOT = {
+						any_heir_title = { title = PREVPREV }
+					}
+				}
+			}
+			usurp_title_plus_barony_if_unlanded = FROM
+			hidden_tooltip = {
+				ROOT = {
+					remove_claim = PREV
+					add_weak_pressed_claim = PREV
+				}
+			}
+		}
+		custom_tooltip = {
+			text = FEUDALFACTIONMOODPLUS
+			hidden_tooltip = { change_variable = { which = "faction_mood_feudal" value = 4 } }
+		}
+		custom_tooltip = {
+			text = COURTFACTIONMOODPLUS
+			hidden_tooltip = { change_variable = { which = "faction_mood_feudal" value = 2 } }
+		}
+		hidden_tooltip = { random_courtier = { limit = { ai = yes } character_event = { id = PlusFaction.306 days = 1 } } }
+	}
+	option = {
+		name = EVTOPTB_Plus_131 # Give it to one of my children instead
+		trigger = {
+			NOT = {
+				AND = {
+					prisoner = yes
+					host = { character = FROM }
+				}
+			}
+			any_realm_character = {
+				is_child_of = ROOT
+				is_adult = yes
+				NOT = { real_tier = KING }
+				NOT = { character = FROM }
+				NOT = { is_primary_heir = ROOT }
+				OR = {
+					AND = {
+						is_female = no
+						ROOT = { NOT = { has_law = enatic_cognatic_succession } }
+						ROOT = { NOT = { has_law = enatic_succession } }
+					}
+					AND = {
+						is_female = yes
+						ROOT = { NOT = { has_law = cognatic_succession } }
+						ROOT = { NOT = { has_law = agnatic_succession } }
+					}
+				}
+			}
+		}
+		ai_chance = {
+			factor = 200
+		}
+		prestige = -100
+		hidden_tooltip = {
+			FROM = { letter_event = { id = Plus.133 days = 3 } }
+		}
+		random_realm_character = {
+			limit = {
+				is_child_of = ROOT
+				is_adult = yes
+				NOT = { real_tier = KING }
+				NOT = { character = FROM }
+				NOT = { is_primary_heir = ROOT }
+				OR = {
+					AND = {
+						is_female = no
+						ROOT = { NOT = { has_law = enatic_cognatic_succession } }
+						ROOT = { NOT = { has_law = enatic_succession } }
+					}
+					AND = {
+						is_female = yes
+						ROOT = { NOT = { has_law = cognatic_succession } }
+						ROOT = { NOT = { has_law = agnatic_succession } }
+					}
+				}
+			}
+			hidden_tooltip = {
+				reverse_opinion = { who = FROM modifier = jealous years = 20 }
+			}
+			opinion = { who = ROOT modifier = opinion_granted_kingdom years = 200 }
+			ROOT = {
+				random_demesne_title = {
+					limit = {
+						tier = KING
+						is_titular = no
+						can_be_given_away = yes
+						OR = {
+							has_law = centralization_0
+							has_law = centralization_1
+						}
+						ROOT = {
+							capital_scope = {
+								kingdom = { NOT = { title = PREVPREVPREV } }
+							}
+						}
+						FROM = {
+							capital_scope = {
+								kingdom = { title = PREVPREVPREV }
+							}
+							NOT = {
+								any_heir_title = { title = PREVPREV }
+							}
+						}
+					}
+					hidden_tooltip = {
+						if = {
+							limit = {
+								FROM = { NOT = { has_claim = PREV } }
+							}
+							add_claim = FROM
+						}
+					}
+					usurp_title_plus_barony_if_unlanded = PREVPREV
+					hidden_tooltip = {
+						ROOT = {
+							remove_claim = PREV
+							add_weak_pressed_claim = PREV
+						}
+					}
+				}
+			}
+		}
+		custom_tooltip = {
+			text = FEUDALFACTIONMOODPLUS
+			hidden_tooltip = { change_variable = { which = "faction_mood_feudal" value = 2 } }
+		}
+		custom_tooltip = {
+			text = COURTFACTIONMOODPLUS
+			hidden_tooltip = { change_variable = { which = "faction_mood_feudal" value = 1 } }
+		}
+		hidden_tooltip = { random_courtier = { limit = { ai = yes } character_event = { id = PlusFaction.306 days = 1 } } }
+	}
+	option = {
+		name = EVTOPTC_Plus_131 # Give it to someone in line for the title
+		trigger = {
+			NOT = {
+				AND = {
+					prisoner = yes
+					host = { character = FROM }
+				}
+			}
+			any_demesne_title = {
+				tier = KING
+				is_titular = no
+				can_be_given_away = yes
+				OR = {
+					has_law = centralization_0
+					has_law = centralization_1
+				}
+				ROOT = {
+					capital_scope = {
+						kingdom = { NOT = { title = PREVPREVPREV } }
+					}
+				}
+				FROM = {
+					capital_scope = {
+						kingdom = { title = PREVPREVPREV }
+					}
+					NOT = {
+						any_heir_title = { title = PREVPREV }
+					}
+				}
+				NOT = {
+					any_claimant = {
+						is_adult = yes
+						same_realm = ROOT
+						has_strong_claim = PREV
+						NOT = {
+							real_tier = KING
+							is_child_of = ROOT
+							character = FROM
+							is_primary_heir = ROOT
+						}
+					}
+				}
+				ROOT = {
+					any_realm_character = {
+						is_adult = yes
+						NOT = {
+							real_tier = KING
+							is_child_of = ROOT
+							character = FROM
+							is_primary_heir = ROOT
+						}
+						any_pretender_title = { title = PREVPREVPREV }
+					}
+				}
+			}
+		}
+		ai_chance = {
+			factor = 50
+		}
+		prestige = -200
+		hidden_tooltip = {
+			FROM = { letter_event = { id = Plus.133 days = 3 } }
+		}
+		random_realm_character = {
+			limit = {
+				is_adult = yes
+				NOT = {
+					real_tier = KING
+					is_child_of = ROOT
+					character = FROM
+					is_primary_heir = ROOT
+				}
+				any_pretender_title = {
+					holder = ROOT
+					tier = KING
+					is_titular = no
+					can_be_given_away = yes
+					OR = {
+						has_law = centralization_0
+						has_law = centralization_1
+					}
+					ROOT = {
+						capital_scope = {
+							kingdom = { NOT = { title = PREVPREVPREV } }
+						}
+					}
+					FROM = {
+						capital_scope = {
+							kingdom = { title = PREVPREVPREV }
+						}
+						NOT = {
+							any_heir_title = { title = PREVPREV }
+						}
+					}
+					NOT = {
+						any_claimant = {
+							is_adult = yes
+							same_realm = ROOT
+							has_strong_claim = PREV
+							NOT = {
+								real_tier = KING
+								is_child_of = ROOT
+								character = FROM
+								is_primary_heir = ROOT
+							}
+						}
+					}
+				}
+			}
+			hidden_tooltip = {
+				reverse_opinion = { who = FROM modifier = jealous years = 20 }
+			}
+			opinion = { who = ROOT modifier = opinion_granted_kingdom years = 200 }
+			ROOT = {
+				random_demesne_title = {
+					limit = {
+						tier = KING
+						is_titular = no
+						can_be_given_away = yes
+						OR = {
+							has_law = centralization_0
+							has_law = centralization_1
+						}
+						ROOT = {
+							capital_scope = {
+								kingdom = { NOT = { title = PREVPREVPREV } }
+							}
+						}
+						FROM = {
+							capital_scope = {
+								kingdom = { title = PREVPREVPREV }
+							}
+							NOT = {
+								any_heir_title = { title = PREVPREV }
+							}
+						}
+					}
+					hidden_tooltip = {
+						if = {
+							limit = {
+								FROM = { NOT = { has_claim = PREV } }
+							}
+							add_claim = FROM
+						}
+					}
+					usurp_title_plus_barony_if_unlanded = PREVPREV
+					hidden_tooltip = {
+						ROOT = {
+							remove_claim = PREV
+							add_weak_pressed_claim = PREV
+						}
+					}
+				}
+			}
+		}
+		custom_tooltip = {
+			text = FEUDALFACTIONMOODPLUS
+			hidden_tooltip = { change_variable = { which = "faction_mood_feudal" value = 2 } }
+		}
+		custom_tooltip = {
+			text = COURTFACTIONMOODPLUS
+			hidden_tooltip = { change_variable = { which = "faction_mood_feudal" value = 1 } }
+		}
+		hidden_tooltip = { random_courtier = { limit = { ai = yes } character_event = { id = PlusFaction.306 days = 1 } } }
+	}
+	option = {
+		name = EVTOPTD_Plus_131 # Give it to a claimant
+		trigger = {
+			NOT = {
+				AND = {
+					prisoner = yes
+					host = { character = FROM }
+				}
+			}
+			any_demesne_title = {
+				tier = KING
+				is_titular = no
+				can_be_given_away = yes
+				OR = {
+					has_law = centralization_0
+					has_law = centralization_1
+				}
+				ROOT = {
+					capital_scope = {
+						kingdom = { NOT = { title = PREVPREVPREV } }
+					}
+				}
+				FROM = {
+					capital_scope = {
+						kingdom = { title = PREVPREVPREV }
+					}
+					NOT = {
+						any_heir_title = { title = PREVPREV }
+					}
+				}
+				any_claimant = {
+					is_adult = yes
+					same_realm = ROOT
+					has_strong_claim = PREV
+					NOT = {
+						real_tier = KING
+						is_child_of = ROOT
+						character = FROM
+						is_primary_heir = ROOT
+					}
+				}
+			}
+		}
+		ai_chance = {
+			factor = 100
+		}
+		prestige = -200
+		hidden_tooltip = {
+			FROM = { letter_event = { id = Plus.133 days = 3 } }
+		}
+		random_realm_character = {
+			limit = {
+				is_adult = yes
+				NOT = {
+					real_tier = KING
+					is_child_of = ROOT
+					character = FROM
+					is_primary_heir = ROOT
+				}
+				any_claim = {
+					holder = ROOT
+					tier = KING
+					is_titular = no
+					can_be_given_away = yes
+					any_claimant = {
+						character = PREVPREV
+						has_strong_claim = PREV
+					}
+					OR = {
+						has_law = centralization_0
+						has_law = centralization_1
+					}
+					ROOT = {
+						capital_scope = {
+							kingdom = { NOT = { title = PREVPREVPREV } }
+						}
+					}
+					FROM = {
+						capital_scope = {
+							kingdom = { title = PREVPREVPREV }
+						}
+						NOT = {
+							any_heir_title = { title = PREVPREV }
+						}
+					}
+				}
+			}
+			hidden_tooltip = {
+				reverse_opinion = { who = FROM modifier = jealous years = 20 }
+			}
+			opinion = { who = ROOT modifier = opinion_granted_kingdom years = 200 }
+			ROOT = {
+				random_demesne_title = {
+					limit = {
+						tier = KING
+						is_titular = no
+						can_be_given_away = yes
+						OR = {
+							has_law = centralization_0
+							has_law = centralization_1
+						}
+						ROOT = {
+							capital_scope = {
+								kingdom = { NOT = { title = PREVPREVPREV } }
+							}
+						}
+						FROM = {
+							capital_scope = {
+								kingdom = { title = PREVPREVPREV }
+							}
+							NOT = {
+								any_heir_title = { title = PREVPREV }
+							}
+						}
+					}
+					hidden_tooltip = {
+						if = {
+							limit = {
+								FROM = { NOT = { has_claim = PREV } }
+							}
+							add_claim = FROM
+						}
+					}
+					usurp_title_plus_barony_if_unlanded = PREVPREV
+					hidden_tooltip = {
+						ROOT = {
+							remove_claim = PREV
+							add_weak_pressed_claim = PREV
+						}
+					}
+				}
+			}
+		}
+		custom_tooltip = {
+			text = FEUDALFACTIONMOODPLUS
+			hidden_tooltip = { change_variable = { which = "faction_mood_feudal" value = 2 } }
+		}
+		custom_tooltip = {
+			text = COURTFACTIONMOODPLUS
+			hidden_tooltip = { change_variable = { which = "faction_mood_feudal" value = 1 } }
+		}
+		hidden_tooltip = { random_courtier = { limit = { ai = yes } character_event = { id = PlusFaction.306 days = 1 } } }
+	}
+	option = {
+		name = EVTOPTE_Plus_131 # Never! The title is mine!
+		trigger = {
+			NOT = {
+				trait = incapable
+				AND = {
+					prisoner = yes
+					host = { character = FROM }
+				}
+			}
+		}
+		ai_chance = {
+			factor = 50
+			modifier = {
+				factor = 4
+				real_tier = KING
+			}
+			modifier = {
+				factor = 0.5
+				real_tier = EMPEROR
+			}
+			modifier = {
+				factor = 4
+				trait = ambitious
+			}
+			modifier = {
+				factor = 2
+				trait = greedy
+			}
+			modifier = {
+				factor = 2
+				trait = proud
+			}
+			modifier = {
+				factor = 0.5
+				trait = content
+			}
+			modifier = {
+				factor = 0.5
+				trait = humble
+			}
+			modifier = {
+				factor = 0.5
+				trait = charitable
+			}
+			modifier = {
+				factor = 0.5
+				trait = craven
+			}
+			modifier = {
+				factor = 0
+				has_regent = yes
+			}
+			modifier = {
+				factor = 4
+				NOT = { check_variable = { which = "rebel_power" value = 0.99 } }
+			}
+			modifier = {
+				factor = 0.75
+				check_variable = { which = "rebel_power" value = 0.99 }
+			}
+			modifier = {
+				factor = 0.75
+				check_variable = { which = "rebel_power" value = 1.99 }
+			}
+			modifier = {
+				factor = 0.5
+				check_variable = { which = "rebel_power" value = 2.99 }
+			}
+			modifier = {
+				factor = 0.5
+				check_variable = { which = "rebel_power" value = 3.99 }
+			}
+		}
+		FROM = { letter_event = { id = Plus.132 days = 3 tooltip = refuse_kingdom_title } }
+		custom_tooltip = {
+			text = FEUDALFACTIONMOODMINUS
+			hidden_tooltip = { change_variable = { which = "faction_mood_feudal" value = -4 } }
+		}
+		custom_tooltip = {
+			text = COURTFACTIONMOODMINUS
+			hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } }
+		}
+		hidden_tooltip = { random_courtier = { limit = { ai = yes } character_event = { id = PlusFaction.306 days = 1 } } }
+	}
+}
+
+# liege has refused to give up the title at all
+letter_event = {
+	id = Plus.132
+	desc = EVTDESC_Plus_132
+	
+	is_triggered_only = yes
+	
+	option = {
+		name = EVTOPTA_Plus_132
+		opinion = {
+			who = FROM
+			modifier = opinion_denied_title
+			years = 20
+		}
+		FROM = {
+			random_demesne_title = {
+				limit = {
+					tier = KING
+					is_titular = no
+					can_be_given_away = yes
+					OR = {
+						has_law = centralization_0
+						has_law = centralization_1
+					}
+					FROM = {
+						capital_scope = {
+							kingdom = { NOT = { title = PREVPREVPREV } }
+						}
+					}
+					ROOT = {
+						capital_scope = {
+							kingdom = { title = PREVPREVPREV }
+						}
+						NOT = {
+							any_heir_title = { title = PREVPREV }
+						}
+					}
+				}
+				add_pressed_claim = ROOT
+			}
+			any_vassal = {
+				limit = {
+					likes_better_than = { who = ROOT than = FROM }
+					NOT = {
+						character = ROOT
+						is_primary_heir = FROM
+						has_regent = yes
+					}
+				}
+				opinion = {
+					who = FROM
+					modifier = refused_to_give_up_title
+					months = 60
+				}
+				opinion = {
+					who = ROOT
+					modifier = sympathetic_to_cause
+					months = 60
+				}
+			}
+		}
+	}
+}
+
+# liege gave the title to someone else
+letter_event = {
+	id = Plus.133
+	desc = EVTDESC_Plus_133
+	
+	is_triggered_only = yes
+	
+	option = {
+		name = EVTOPTA_Plus_133
+		opinion = {
+			who = FROM
+			modifier = opinion_denied_title
+			months = 60
+		}
+	}
+}
+
