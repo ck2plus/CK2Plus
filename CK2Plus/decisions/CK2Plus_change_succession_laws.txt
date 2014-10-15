@@ -10,6 +10,10 @@ succession_laws = {
 		potential = {
 			holder_scope = {
 				OR = {
+					is_tribal = no
+					NOT = { religion_group = pagan_group }
+				}
+				OR = {
 					independent = yes
 					NOT = {
 						any_liege = {
@@ -28,13 +32,18 @@ succession_laws = {
 			}
 			rebel = no
 			is_primary_holder_title = yes			
-			is_primary_type_title = no		
+			is_primary_type_title = no
+			is_vice_royalty = no
 			OR = {
 				AND = {
 					tier = baron
-					is_feudal = yes
+					OR = {
+						is_feudal = yes
+						is_tribal = yes
+					}
 				}
 				holder_scope = { is_feudal = yes }
+				holder_scope = { is_tribal = yes }
 			}
 			OR = {
 				NOT = { has_law = succ_feudal_elective }
@@ -254,6 +263,239 @@ succession_laws = {
 			factor = 0
 		}
 	}
+	
+	succ_institute_elective_gavelkind = {
+		child_opinion = 25
+		dynasty_opinion = 10
+
+		potential = {
+			holder_scope = {
+				is_tribal = yes
+				OR = {
+					independent = yes
+					NOT = {
+						any_liege = {
+							holy_order = yes
+						}
+					}
+				}
+				NOT = { religion = celtic_pagan }
+				NOT = { religion_group = muslim }
+				is_merchant_republic = no
+				is_patrician = no
+			}		
+			OR = {
+				is_landless_type_title = no
+				is_tribal_type_title = yes
+				temporary = yes
+			}
+			rebel = no
+			is_primary_holder_title = yes			
+			is_primary_type_title = no
+			is_vice_royalty = no
+			OR = {
+				AND = {
+					tier = baron
+					OR = {
+						is_feudal = yes
+						is_tribal = yes
+					}
+				}
+				holder_scope = { is_feudal = yes }
+				holder_scope = { is_tribal = yes }
+			}
+			OR = {
+				NOT = { has_law = succ_feudal_elective }
+				is_titular = yes
+			}
+			OR = {
+				NOT = { has_law = succ_tanistry }
+				is_titular = yes
+			}
+			NOT = { has_law = succ_elective_gavelkind }
+			has_global_flag = startup
+			
+			# ai restrictions
+			holder_scope = { ai = no }		
+		}
+		allow = {
+			OR = {
+				AND = {
+					tier = BARON
+					holder_scope = { prestige = 125 }
+				}
+				AND = {
+					tier = COUNT
+					holder_scope = { prestige = 250 }
+				}
+				AND = {
+					tier = DUKE
+					holder_scope = { prestige = 500 }
+				}
+				AND = {
+					tier = KING
+					holder_scope = { prestige = 750 }
+				}
+				AND = {
+					tier = EMPEROR
+					holder_scope = { prestige = 1000 }
+				}
+			}
+		}
+		effect = {
+			if = {
+				limit = {
+					tier = BARON
+				}
+				holder_scope = { prestige = -125 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
+			}
+			if = {
+				limit = {
+					tier = COUNT
+				}
+				holder_scope = { prestige = -250 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
+			}
+			if = {
+				limit = {
+					tier = DUKE
+				}
+				holder_scope = { prestige = -500 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
+			}
+			if = {
+				limit = {
+					tier = KING
+				}
+				holder_scope = { prestige = -750 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
+			}
+			if = {
+				limit = {
+					tier = EMPEROR
+				}
+				holder_scope = { prestige = -1000 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
+			}
+			holder_scope = { hidden_tooltip = { random_courtier = { limit = { ai = yes } character_event = { id = PlusFaction.306 days = 1 } } } }
+			tooltip = { succession = elective_gavelkind }
+			hidden_tooltip = {
+				holder_scope = {
+					current_heir = { set_character_flag = former_heir }
+					any_realm_character = {
+						limit = {
+							any_pretender_title = {
+								is_primary_holder_title = yes
+								holder = PREVPREV
+							}
+						}
+						set_character_flag = former_pretender
+					}
+					any_independent_ruler = {
+						any_realm_character = {
+							limit = {
+								any_pretender_title = {
+									is_primary_holder_title = yes
+									holder = PREVPREVPREV
+								}
+							}
+							set_character_flag = former_pretender
+						}
+					}
+					#sets opinion changes for heirs and pretenders
+					character_event = { id = Plus.604 days = 1 }
+				}
+			}
+			hidden_tooltip = {
+				add_law = succ_elective_gavelkind
+				holder_scope = {
+					any_demesne_title = {
+						limit = {
+							is_primary_holder_title = no
+							OR = {
+								is_primary_holder_title_tier = yes
+								higher_tier_than = duke
+							}
+						}
+						add_law = succ_elective_gavelkind
+					}
+				}
+			}
+			hidden_tooltip = {
+				holder_scope = {
+					#current heir is unhappy (they have to share) if they were the previous heir
+					current_heir = {
+						if = { 
+							limit = { has_character_flag = former_heir }
+							opinion = {
+								who = PREV
+								modifier = opinion_succ_law_change
+								months = 240
+							}
+						}
+					}
+					#legitimate children are happy
+					any_child = {
+						limit = {
+							NOT = {
+								trait = bastard
+								trait = monk
+								trait = nun
+								trait = disinherited
+								has_character_flag = former_heir
+								has_character_flag = former_pretender
+								is_primary_heir = PREV
+								any_pretender_title = { is_primary_holder_title = yes holder = PREVPREV }
+								has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
+								has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
+								has_opinion_modifier = { who = PREV modifier = opinion_bad_succ_law_change 	}
+							}
+						}
+						opinion = {
+							who = PREV
+							modifier = opinion_good_succ_law_change
+							months = 240
+						}
+					}
+					#dynasty members are pleased
+					any_dynsty_member = {
+						limit = {
+							NOT = {
+								has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
+								has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
+								has_opinion_modifier = { who = PREV modifier = opinion_bad_succ_law_change 	}
+							}
+						}
+						opinion = {
+							who = PREV
+							modifier = opinion_good_succ_law_change
+							months = 240
+						}
+					}					
+					#vassals are slightly upset
+					any_vassal = {
+						limit = {
+							NOT = {
+								has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
+								has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
+								has_opinion_modifier = { who = PREV modifier = opinion_bad_succ_law_change 	}
+							}
+						}
+						opinion = {
+							who = PREV
+							modifier = opinion_succ_law_change
+							months = 240
+						}
+					}
+				}
+			}
+		}
+		revoke_allowed = {
+			always = no
+		}
+		ai_will_do = {
+			factor = 1
+		}
+		ai_will_revoke = {
+			factor = 0
+		}
+	}
 
 	succ_institute_seniority = {
 		oldest_child_opinion = -30
@@ -272,7 +514,6 @@ succession_laws = {
 				}
 				NOT = { religion_group = muslim }
 				NOT = { religion_group = indian_group }
-				is_merchant_republic = no
 				OR = {
 					is_republic = no
 					is_patrician = yes
@@ -281,6 +522,7 @@ succession_laws = {
 					NOT = { religion_group = pagan_group }
 					is_reformed_religion = yes
 					religion = hellenic_pagan
+					is_patrician = yes
 				}
 			}		
 			OR = {
@@ -292,15 +534,12 @@ succession_laws = {
 					tier = baron
 					is_feudal = yes
 				}
-				holder_scope = {
-					OR = {
-						is_feudal = yes
-						is_patrician = yes
-					}
-				}
+				holder_scope = { is_feudal = yes }
+				holder_scope = { is_patrician = yes }
 			}		
 			is_primary_holder_title = yes
-			is_primary_type_title = no		
+			is_primary_type_title = no
+			is_vice_royalty = no
 			OR = {
 				NOT = { tier = baron }
 				holder_scope = { is_patrician = yes }
@@ -542,6 +781,7 @@ succession_laws = {
 			}	
 			is_primary_holder_title = yes
 			is_primary_type_title = no
+			is_vice_royalty = no
 			NOT = { has_law = succ_primogeniture }
 			OR = {
 				NOT = { has_law = succ_feudal_elective }
@@ -861,6 +1101,7 @@ succession_laws = {
 			}		
 			is_primary_holder_title = yes
 			is_primary_type_title = no
+			is_vice_royalty = no
 			NOT = { tier = baron }
 			NOT = { has_law = succ_feudal_elective }
 			has_global_flag = startup
@@ -1132,6 +1373,7 @@ succession_laws = {
 			}		
 			is_primary_holder_title = yes
 			is_primary_type_title = no
+			is_vice_royalty = no
 			NOT = { has_law = succ_tanistry }
 			OR = {
 				NOT = { has_law = succ_feudal_elective }
@@ -1212,7 +1454,7 @@ succession_laws = {
 				holder_scope = { prestige = -1000 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			holder_scope = { hidden_tooltip = { random_courtier = { limit = { ai = yes } character_event = { id = PlusFaction.306 days = 1 } } } }
-			tooltip = { succession = feudal_elective }
+			tooltip = { succession = tanistry }
 			hidden_tooltip = {
 				holder_scope = {
 					current_heir = { set_character_flag = former_heir }
@@ -1241,7 +1483,7 @@ succession_laws = {
 				}
 			}
 			hidden_tooltip = {
-				add_law = succ_feudal_elective
+				add_law = succ_tanistry
 				holder_scope = {
 					any_demesne_title = {
 						limit = {
@@ -1251,7 +1493,7 @@ succession_laws = {
 								higher_tier_than = duke
 							}
 						}
-						add_law = succ_feudal_elective
+						add_law = succ_tanistry
 					}
 				}
 			}
@@ -1396,6 +1638,7 @@ succession_laws = {
 			}
 			is_primary_holder_title = yes
 			is_primary_type_title = no
+			is_vice_royalty = no
 			OR = {
 				NOT = { has_law = succ_feudal_elective }
 				is_titular = yes
@@ -1598,6 +1841,10 @@ succession_laws = {
 		potential = {
 			holder_scope = {
 				OR = {
+					is_tribal = no
+					NOT = { religion_group = pagan_group }
+				}
+				OR = {
 					independent = yes
 					NOT = {
 						any_liege = {
@@ -1617,13 +1864,18 @@ succession_laws = {
 			}
 			rebel = no
 			is_primary_holder_title = yes			
-			is_primary_type_title = no		
+			is_primary_type_title = no
+			is_vice_royalty = no
 			OR = {
 				AND = {
 					tier = baron
-					is_feudal = yes
+					OR = {
+						is_feudal = yes
+						is_tribal = yes
+					}
 				}
 				holder_scope = { is_feudal = yes }
+				holder_scope = { is_tribal = yes }
 			}
 			OR = {
 				has_law = succ_feudal_elective
@@ -1770,7 +2022,6 @@ succession_laws = {
 				}
 				NOT = { religion_group = muslim }
 				NOT = { religion_group = indian_group }
-				is_merchant_republic = no
 				OR = {
 					is_republic = no
 					is_patrician = yes
@@ -1791,15 +2042,12 @@ succession_laws = {
 					tier = baron
 					is_feudal = yes
 				}
-				holder_scope = {
-					OR = {
-						is_feudal = yes
-						is_patrician = yes
-					}
-				}
+				holder_scope = { is_feudal = yes }
+				holder_scope = { is_patrician = yes }
 			}
 			is_primary_holder_title = yes
-			is_primary_type_title = no		
+			is_primary_type_title = no
+			is_vice_royalty = no
 			OR = {
 				NOT = { tier = baron }
 				holder_scope = { is_patrician = yes }
@@ -1951,6 +2199,7 @@ succession_laws = {
 			}
 			is_primary_holder_title = yes
 			is_primary_type_title = no
+			is_vice_royalty = no
 			OR = {
 				has_law = succ_feudal_elective
 				has_law = succ_tanistry
@@ -2167,6 +2416,7 @@ gender_laws = {
 				is_patrician = no
 			}
 			is_landless_type_title = no
+			is_vice_royalty = no
 			OR = {
 				AND = {
 					tier = baron
@@ -2567,6 +2817,7 @@ gender_laws = {
 
 		potential = {
 			is_primary_holder_title = yes
+			is_vice_royalty = no
 			has_law = cognatic_succession
 			has_global_flag = startup
 			
@@ -2812,6 +3063,7 @@ gender_laws = {
 				is_patrician = no
 			}
 			is_landless_type_title = no
+			is_vice_royalty = no
 			OR = {
 				AND = {
 					tier = baron
@@ -3270,6 +3522,7 @@ gender_laws = {
 			}
 
 			is_primary_type_title = no
+			is_vice_royalty = no
 			has_law = enatic_cognatic_succession
 			NOT = { has_law = enatic_succession }
 			has_global_flag = startup
@@ -3510,6 +3763,7 @@ gender_laws = {
 			}
 
 			is_primary_type_title = no
+			is_vice_royalty = no
 			OR = {
 				has_law = true_cognatic_succession
 				has_law = enatic_succession
