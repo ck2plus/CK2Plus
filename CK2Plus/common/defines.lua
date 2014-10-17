@@ -10,7 +10,7 @@ NDiplomacy = {
 	ATTACKING_SOMEONE_DEFENDING_AGAINST_OTHER_RELIGIOUS_GROUP_PIETY_COST = 100,		-- Piety hit for attacking someone who is defending against other religious group
 	ATTACKER_CALL_DECLINE_COST = 25, 			-- Prestige cost for refusing to join an offensive war
 	DEFENDER_CALL_DECLINE_COST = 100, 			-- Prestige cost for refusing to join a defensive war
-	TRIBAL_VASSAL_CALL_DECLINE_COST_FACTOR = 5.0, -- Prestige cost multiplier for tribal vassals
+	TRIBAL_VASSAL_CALL_DECLINE_COST_FACTOR = 3.0, -- Prestige cost multiplier for tribal vassals
 	PAPAL_INVEST_PIETY_COST_MULT = 0.75,		-- The effect of Papal investiture on the piety cost of the special Papal actions
 	SHORT_REIGN_YEARS_END = 10,
 	LONG_REIGN_YEARS_START = 20,
@@ -39,7 +39,6 @@ NDiplomacy = {
 	VASSAL_LIMIT_KING_MULT = 20.0, 				-- Extra Vassal Limit from the ruler's rank
 	VASSAL_LIMIT_EMPEROR_MULT = 30.0, 			-- Extra Vassal Limit from the ruler's rank
 	VASSAL_LIMIT_GREAT_DUKE_BONUS = 5.0, 		-- Extra Vassal Limit for Dukes with more than one Duchy
-	VASSAL_LIMIT_FAMILY_PRESTIGE_BONUS = 0.002,	-- Extra Vassal Limit from family prestige
 	VASSAL_LIMIT_DIPLOMACY_MULT = 0.3,			-- Extra Vasal Limit from ruler and spouse diplomacy
 	VASSAL_LIMIT_TRIBAL_BONUS = -10,			-- All rulers with tribal holdings as their capital have smaller demesnes
 	VASSAL_LIMIT_LEVY_MULTIPLIER = 1,			-- Used for levy penalty calculation for being over vassal limit.
@@ -495,6 +494,11 @@ NCharacter = {
 	NOMINATE_CROWN_BISHOP_REL_AUTHORITY_CHANGE = -0.01, -- OBSOLETE
 	WRONG_GOV_FORM_TAX_MOD = -0.5,
 	WRONG_GOV_FORM_LEVY_MOD = -0.5,
+	TRIBAL_WRONG_RELIGION_REFORM_MOD = -0.10,
+	TRIBAL_WRONG_RELIGION_MOD = -0.15,
+	TRIBAL_WRONG_RELIGION_GROUP_MOD = -0.25,
+	TRIBAL_WRONG_CULTURE_MOD = -0.15,
+	TRIBAL_WRONG_CULTURE_GROUP_MOD = -0.25,
 	CHANGE_SUCC_LAW_YEARS = 10,						-- Rulers must have reigned this long before they can change succession laws
 	CHANGE_AMBITION_YEARS = 3,						-- Delay between being able to pick a new ambition of plot after cancelling
 	PRESTIGE_FROM_DYNASTY_ON_BIRTH_DIV = 5, 		-- Newly born characters get the dynasty prestige of their mother and father divided by this as their starting prestige
@@ -1001,6 +1005,7 @@ NMilitary = {
 },
 
 NTechnology = {
+	DONT_EXECUTE_TECH_BEFORE = 769,				-- Set this to your earliest starting year
 	POINTS_PER_ATTRIBUTE = 0.04,
 
 	BASE_NEIGHBOUR_SPREAD_BONUS = 0.03, 		-- bonus for each neighbour with the tech
@@ -1017,42 +1022,6 @@ NTechnology = {
 	IDEAL_YEAR_AHEAD_PENALTY_INVEST = 0.4,		-- Percent increase in cost pre level ahead of ideal date
 	
 	PAGAN_HOME_ATTRITION_REMOVAL_LEVEL = 4.0,
-	
-	-- Used to determine tech levels when starting a new game
-	
-	START_MIL_CATHOLIC  = 0.5,
-	START_ECO_CATHOLIC  = 0.5,
-	START_CUL_CATHOLIC  = 0.5,
-	END_MIL_CATHOLIC    = 4.5,
-	END_ECO_CATHOLIC    = 4.5,
-	END_CUL_CATHOLIC    = 4.5,
-	END_REN_CLOSE       = 6.5, -- Tech level at the center of the renaissance
-	END_REN_FAR         = 5.5, -- Tech level on the fringe of the renaissance
-	REN_PROVINCE        = 328, -- Province where the Renaissance is centered
-	START_MIL_MUSLIM    = 1.0,
-	START_ECO_MUSLIM    = 1.0,
-	START_CUL_MUSLIM    = 1.0,
-	END_MIL_MUSLIM      = 4.0,
-	END_ECO_MUSLIM      = 4.0,
-	END_CUL_MUSLIM      = 4.0,
-	START_MIL_INDIAN    = 0.5,
-	START_ECO_INDIAN    = 0.5,
-	START_CUL_INDIAN    = 0.5,
-	END_MIL_INDIAN   	= 4.0,
-	END_ECO_INDIAN    	= 4.0,
-	END_CUL_INDIAN    	= 4.0,
-	START_MIL_OTHER     = 1.0,
-	START_ECO_OTHER     = 0.0,
-	START_CUL_OTHER     = 0.0,
-	END_MIL_OTHER       = 4.0,
-	END_ECO_OTHER       = 4.0,
-	END_CUL_OTHER       = 4.0,
-	START_MIL_BYZANTIUM = 0.0,
-	START_ECO_BYZANTIUM = 1.0,
-	START_CUL_BYZANTIUM = 1.0,
-	END_MIL_BYZANTIUM   = 4.0,
-	END_ECO_BYZANTIUM   = 4.0,
-	END_CUL_BYZANTIUM   = 4.0
 },  
 
 NDisease = {
@@ -1122,6 +1091,7 @@ NAI =
 	TRIBAL_REPUBLIC_THRIFTY_CLERK_MODIFIER = 10,			-- How much the thrifty clerk trait counts toward the threshold above
 	TRIBAL_REPUBLIC_FORTUNE_BUILDER_MODIFIER = 15,			-- How much the fortune builder trait counts toward the threshold above
 	TRIBAL_REPUBLIC_MIDAS_TOUCHED_MODIFIER = 20,			-- How much the midas touched trait counts toward the threshold above
+	TRIBAL_PRESTIGE_CALL_TRESHOLD = -100, 					-- The treshold needed for the AI to start considering answering call to not take the prestige hit
 },
 
 NFrontend = 
