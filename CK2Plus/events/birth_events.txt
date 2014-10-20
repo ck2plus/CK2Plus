@@ -1766,128 +1766,29 @@ character_event = {
 		NOT = { real_father = { always = yes } } # There is no 'real_father' set, i.e. this is not a hidden, cuckoo bastard
 	}
 
-	#Female rulers in independent, true-cog or enatic realms who outrank their lovers
-	#automatically "legitimise" their bastards as child-of-concubine.
-	#TODO: recode as event similar to 301 to allow them to denounce the kid instead?
-	#TODO: limit this by religion? Maybe Christians shouldn't be so cavalier about it?
+	#Mothers who are married matrilineally automatically legitimize their bastards
 	option = {
 		name = OK
 		trigger = {
 			mother = {
-				is_ruler = yes
-				OR = {
-					independent = yes
-					top_liege = { 
-						primary_title = { 
-							NOT = { 
-								has_law = cognatic_succession 
-								has_law = agnatic_succession 
-							}
-						}
-					}
-				}
-				any_child = {
-					character = ROOT
-					father = { lower_tier_than = PREVPREV }
-				}
+				is_married_matrilineally = yes
 			}
 		}
-		
-		ROOT = {
-			mother = {
-				ROOT = {
-					culture = PREV
-					religion = PREV
-					dynasty = PREV		
-				}
-			}
-			if = {
-				limit = {
-					mother = {
-						trait = divine_blood
-					}
-				}
-				add_trait = divine_blood
-			}
-			if = {
-				limit = {
-					mother = {
-						NOT = { trait = divine_blood }
-					}
-				}
-				remove_trait = divine_blood
-			}
-			remove_trait = bastard
-			remove_trait = legit_bastard
-			add_trait = child_of_consort
-			mother = {				
-				spouse = {
-					character_event = { id = 304 tooltip = EVTTOOLTIP304 } # The mother's husband is pissed off
-				}				
-			}
-			father = {
-				spouse = {
-					character_event = { id = 305 tooltip = EVTTOOLTIP305 } # The father's wife is enraged
-				}
-			}
+		mother = {
+			character_event = { id = Plus.425 days = 1 }
 		}
 	}
-
+	#Mothers who are not married matrilineally
 	option = {
 		name = OK
 		trigger = {
-			trait = bastard
-			NOT = {
-				mother = {
-					is_ruler = yes
-					OR = {
-						independent = yes
-						top_liege = { 
-							primary_title = { 
-								NOT = { 
-									has_law = cognatic_succession 
-									has_law = agnatic_succession 
-								}
-							}
-						}
-					}
-					any_child = {
-						character = ROOT
-						father = { lower_tier_than = PREVPREV }
-					}
-				}
+			mother = {
+				is_married_matrilineally = no
 			}
 		}
 		#father reacts
-		if = {
-			limit = {
-				father = {
-					religion_group = christian
-				} 
-			}
-			father = {
-				character_event = { id = 301 days = 1 } # The father's reaction
-			}
-		}
-		
-		if = {
-			limit = {
-				father = {
-					NOT = { religion_group = christian }
-				} 
-			}
-			if = {
-				limit = { trait = born_in_the_purple }
-				remove_trait = born_in_the_purple
-			}
-			if = {
-				limit = { trait = saoshyant_descendant }
-				remove_trait = saoshyant_descendant
-			}
-			if = {
-				limit = { trait = sayyid }
-				remove_trait = sayyid
-			}
+		father = {
+			character_event = { id = 301 days = 1 }
 		}
 	}
 }
@@ -1902,6 +1803,9 @@ character_event = {
 
 	option = {
 		name = EVTOPTA301 # Legitimize the child
+		trigger = {
+			religion_group = christian
+		}
 		ai_chance = {
 			factor = 25
 			modifier = {
@@ -2003,6 +1907,10 @@ character_event = {
 
 	option = {
 		name = EVTOPTB301 # Acknowledge the child
+		trigger = {
+			religion_group = christian
+			FROM = { is_female = no }
+		}
 		ai_chance = {
 			factor = 25
 			modifier = {
@@ -2029,11 +1937,6 @@ character_event = {
 				trait = deceitful
 			}
 		}
-		trigger = {
-			FROM = {
-				is_female = no
-			}
-		}
 		piety = -5
 		FROM = {
 			character_event = { id = 306 tooltip = EVTTOOLTIP306 } # The child gets the father's dynasty, but is not legitimized.
@@ -2051,6 +1954,9 @@ character_event = {
 
 	option = {
 		name = EVTOPTC301 # Denounce the child
+		trigger = {
+			religion_group = christian
+		}
 		ai_chance = {
 			factor = 50
 			modifier = {
@@ -2166,6 +2072,38 @@ character_event = {
 			}
 		}
 	}
+
+	option = {
+		name = EVTOPTD301
+		trigger = {
+			NOT = { religion_group = christian }
+		}
+		FROM = {
+			hidden_tooltip = {
+				character_event = { id = 309 }
+			}
+			if = {
+				limit = { trait = born_in_the_purple }
+				remove_trait = born_in_the_purple
+			}
+			if = {
+				limit = { trait = saoshyant_descendant }
+				remove_trait = saoshyant_descendant
+			}
+			if = {
+				limit = { trait = sayyid }
+				remove_trait = sayyid
+			}
+			mother = {
+				spouse = {
+					character_event = { id = 304 tooltip = EVTTOOLTIP304 } # The child's mother's husband is pissed off
+				}
+				consort = {
+					character_event = { id = 304 tooltip = EVTTOOLTIP304 } # The child's mother's lord is pissed off
+				}
+			}
+		}
+	}
 }
 
 # The child gets the father's dynasty
@@ -2181,10 +2119,15 @@ character_event = {
 		culture = FROM
 		religion = FROM
 		dynasty = FROM
-		opinion = {
-			who = FROM
-			modifier = legitimized_me
-			years = 10
+		if = {
+			limit = {
+				FROM = { is_female = no }
+			}
+			opinion = {
+				who = FROM
+				modifier = legitimized_me
+				years = 10
+			}
 		}
 		hidden_tooltip = {
 			if = {
@@ -2376,14 +2319,18 @@ character_event = {
 	option = {
 		name = OK
 		dynasty = mother_bastard
-
 		father = {
 			spouse = {
 				character_event = { id = 311 } # The father's wife is displeased
 			}
 		}
-		set_father = 0
-		set_real_father = FROM
+		if = {
+			limit = {
+				FROM = { religion_group = christian }
+			}
+			set_father = 0
+			set_real_father = FROM
+		}
 	}
 }
 
@@ -2968,3 +2915,39 @@ character_event = {
 		piety = -1
 	}
 }
+
+# Bastard child is born to mother who is married matrilineally
+character_event = {
+	id = Plus.425
+	desc = EVTDESC_Plus_425
+	picture = GFX_evt_birth
+	
+	is_triggered_only = yes
+	
+	option = {
+		name = EVTOPTA_Plus_425
+		FROM = {
+			character_event = { id = 302 tooltip = EVTTOOLTIP302 } # The child gets the mother's dynasty
+		}
+		spouse = {
+			character_event = { id = 304 tooltip = EVTTOOLTIP304 } # The mother's husband is pissed off
+		}
+		consort = {
+			character_event = { id = 304 tooltip = EVTTOOLTIP304 } # The mother's lord is pissed off
+		}
+		any_child = {
+			limit = {
+				NOT = { character = FROM }
+				dynasty = ROOT
+				NOT = { trait = bastard }
+				NOT = { trait = legit_bastard }
+			}
+			opinion = {
+				who = ROOT
+				modifier = legitimized_bastard
+				months = 12
+			}
+		}
+	}
+}
+
