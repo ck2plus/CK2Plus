@@ -20,6 +20,7 @@ NDiplomacy = {
 	SEND_GIFT_INCOME_SCALEFACTOR = 24, 
 	RELEASE_PRISONER_PIETY = 0,
 	USURP_TITLE_PRESTIGE_MULT = 0.25, 			-- Multiplier on Creation Prestige
+	
 	DEMESNE_BASE_MAX_SIZE = 1.0,				-- Base Max Demesne Size
 	DEMESNE_MAX_SIZE_BARON_MULT = 1.0, 			-- Extra Max Demesne Size from the ruler's rank
 	DEMESNE_MAX_SIZE_COUNT_MULT = 2.0, 			-- Extra Max Demesne Size from the ruler's rank
@@ -303,7 +304,7 @@ NDiplomacy = {
 	GRANT_LANDED_TITLE_INTERACTION_THRESHOLD_FOR_YES = 0,
 	GRANT_LANDED_TITLE_INTERACTION_MUST_HAVE_COST = 1,				-- Is having prestige/piety >= cost required for this action?
 	GRANT_LANDED_TITLE_INTERACTION_ENABLED = 1,						-- Should this action be used at all?
-
+	
 	GRANT_VICE_ROYALTY_INTERACTION_MONEY = 0,
 	GRANT_VICE_ROYALTY_INTERACTION_PIETY = 0,
 	GRANT_VICE_ROYALTY_INTERACTION_PRESTIGE = 0,
@@ -660,7 +661,7 @@ NTitle = {
 	DEJURE_COUNTY_LIMIT_TO_CREATE = 0.51,			-- Fraction of de jure counties that you must control to create a non-imperial title
 	DEJURE_COUNTY_LIMIT_TO_USURP = 0.51,			-- Fraction of de jure counties that you must control to usurp a non-imperial title
 	EMPIRE_DEJURE_COUNTY_LIMIT_TO_CREATE = 0.8,		-- Fraction of de jure counties that you must control to create an imperial title
-	EMPIRE_DEJURE_COUNTY_LIMIT_TO_USURP = 0.8		-- Fraction of de jure counties that you must control to usurp an imperial title	
+	EMPIRE_DEJURE_COUNTY_LIMIT_TO_USURP = 0.8,		-- Fraction of de jure counties that you must control to usurp an imperial title	
 	
 	CUSTOM_TITLE_COLOR_OFFSET = 0.35					-- The offset from the base title color when creating a new title
 },
@@ -1218,6 +1219,7 @@ NRulerDesigner =
 	COST_SAME_TRAIT_OPINION = 0,
 	COST_SAME_RELIGION_OPINION = 0.5,
 	COST_AMBITION_OPINION = 0,
+	COST_TRIBAL_OPINION = 0.0,
 	COST_GENERAL_OPINION = 0.75,
 	COST_MUSLIM_OPINION = 0.25,
 	COST_JEWISH_OPINION = 0.25,
