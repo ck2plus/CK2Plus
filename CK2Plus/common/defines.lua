@@ -889,6 +889,7 @@ NMilitary = {
 	LIEGE_LEVY_COST_MULTIPLIER = 0.25,				-- The vassal will pay regular maintenance * this for the liege levy
 	LIEGE_LEVY_SUBUNIT_SIZE_CUTOFF = 3000,			-- The max size of each liege levy subunit.
 	LIEGE_LEVY_SUBUNIT_SIZE_MIN = 500,				-- The min size before liege levy subunits start splitting.
+	LIEGE_LEVY_VICE_ROYALTY_MULTIPLIER = 0.8,		-- Liege levy multiplier for viceroy vassals
 	
 	LIGHT_INFANTRY_MORALE = 3,
 	LIGHT_INFANTRY_MAINTENANCE = 1.5,
@@ -1246,7 +1247,6 @@ NLearningScenario =
 	COMBAT_EVENT = 107202,
 	AFTER_REVOLT_EVENT = 107250,
 	FABRICATE_CLAIM_EVENT = 913,
-	FABRICATE_CLAIM_CHARACTER = 20842,
 	HAS_CLAIM_EVENT = 107300,
 	WAR_EVENT = 107301,
 	SIEGE_EVENT = 107306,
