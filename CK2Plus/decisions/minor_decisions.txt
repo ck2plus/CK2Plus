@@ -1699,16 +1699,6 @@ decisions = {
 			modifier = {
 				factor = 0.5
 				NOT = { diplomacy = 10 }
-			}	
-			modifier = {
-				factor = 0
-				has_character_flag = recent_minor_decision
-				NOT = {
-					had_character_flag = {
-						flag = recent_minor_decision
-						days = 730
-					}
-				}
 			}
 			modifier = {
 				factor = 0
@@ -1760,10 +1750,10 @@ decisions = {
 			}
 		}
 		effect = {
-			set_character_flag = do_not_disturb
 			custom_tooltip = { text = go_into_hiding_info_tooltip }
-			add_trait = in_hiding
-			hidden_tooltip = {                    # Notify player and close family and plotters
+			hidden_tooltip = {
+				add_trait = in_hiding
+				set_character_flag = in_hiding_murder
 				ROOT = {
 					any_plotter = {
 						target = ROOT
@@ -1890,9 +1880,11 @@ decisions = {
 	}
 	
 	come_out_of_hiding = {
+		is_high_prio = yes
 		potential = {
 			is_ruler = yes
 			trait = in_hiding
+			has_character_flag = in_hiding_murder
 		}
 		allow = {
 			trait = in_hiding
@@ -1909,15 +1901,15 @@ decisions = {
 			}
 		}
 		effect = {
-			add_character_modifier = {
-				name = went_out_of_hiding_timer
-				duration = 180
-				hidden = yes
-			}
-			clr_character_flag = do_not_disturb
 			custom_tooltip = { text = come_out_of_hiding_info_tooltip }
-			remove_trait = in_hiding
-			hidden_tooltip = {                    # Notify player and close family and plotters
+			hidden_tooltip = {
+				remove_trait = in_hiding
+				clr_character_flag = in_hiding_murder
+				add_character_modifier = {
+					name = went_out_of_hiding_timer
+					duration = 180
+					hidden = yes
+				}
 				ROOT = {
 					any_plotter = {
 						target = ROOT
@@ -2014,16 +2006,18 @@ decisions = {
 			is_ruler = yes
 			spouse = {
 				NOT = { trait = in_hiding }
-				NOT = { is_ruler = yes }
+				is_ruler = no
 				liege = { character = ROOT }
-				NOT = { has_character_flag = do_not_disturb }
+				NOT = { has_character_modifier = do_not_disturb }
 			}
 			NOT = {
-				spouse = { is_plot_target_of = ROOT }
-				OR = {
-					has_plot = plot_kill_character
-					has_plot = plot_kill_spouse
-					has_plot = plot_take_revenge
+				AND = {
+					spouse = { is_plot_target_of = ROOT }
+					OR = {
+						has_plot = plot_kill_character
+						has_plot = plot_kill_spouse
+						has_plot = plot_take_revenge
+					}
 				}
 			}
 			OR = {
@@ -2040,8 +2034,8 @@ decisions = {
 			spouse = {
 				in_command = no
 				prisoner = no
+				is_ruler = no
 				has_job_title = no
-				NOT = { is_ruler = yes }
 				custom_tooltip = {
 					text = is_target_of_murder_plot_tooltip
 					hidden_tooltip = {
@@ -2070,83 +2064,77 @@ decisions = {
 		}
 		effect = {
 			spouse = {
-				set_character_flag = do_not_disturb
 				custom_tooltip = { text = go_into_hiding_info_tooltip }
-				add_trait = in_hiding
-				hidden_tooltip = {                    # Notify player and close family and plotters
-					ROOT = {
-						any_plotter = {
-							target = ROOT
-							limit = {
-								NOT = { has_character_flag = murder_in_motion }
-								OR = {
-									has_plot = plot_kill_character
-									has_plot = plot_kill_spouse
-									has_plot = plot_take_revenge
-								}
+				hidden_tooltip = {
+					add_trait = in_hiding
+					set_character_flag = in_hiding_murder
+					any_plotter = {
+						target = PREV
+						limit = {
+							NOT = { has_character_flag = murder_in_motion }
+							OR = {
+								has_plot = plot_kill_character
+								has_plot = plot_kill_spouse
+								has_plot = plot_take_revenge
 							}
+						}
+						character_event = { id = CM.6002 }
+					}
+					any_plotter = {
+						target = PREV
+						limit = {
+							has_character_flag = murder_in_motion
+							OR = {
+								has_plot = plot_kill_character
+								has_plot = plot_kill_spouse
+								has_plot = plot_take_revenge
+							}
+						}
+						character_event = { id = CM.6180 }
+					}
+					any_plotter = {
+						target = PREV
+						limit = {
+							OR = {
+								has_plot = plot_kill_character
+								has_plot = plot_kill_spouse
+								has_plot = plot_take_revenge
+							}
+						}
+						any_plot_backer = {
 							character_event = { id = CM.6002 }
-						}
-					}
-					ROOT = {
-						any_plotter = {
-							target = ROOT
-							limit = {
-								has_character_flag = murder_in_motion
-								OR = {
-									has_plot = plot_kill_character
-									has_plot = plot_kill_spouse
-									has_plot = plot_take_revenge
-								}
-							}
-							character_event = { id = CM.6180 }
-						}
-					}
-					ROOT = {
-						any_plotter = {
-							target = ROOT
-							limit = {
-								OR = {
-									has_plot = plot_kill_character
-									has_plot = plot_kill_spouse
-									has_plot = plot_take_revenge
-								}
-							}
-							any_plot_backer = {
-								character_event = { id = CM.6002 }
-							}
 						}
 					}
 					any_child = {
 						limit = {
-							NOT = { plot_target_char = { character = ROOT } }
-							NOT = { any_backed_character = { plot_target_char = { character = ROOT } } }
-							NOT = { is_rival = ROOT }
+							NOT = { plot_target_char = { character = PREVPREV } }
+							NOT = { any_backed_character = { plot_target_char = { character = PREVPREVPREV } } }
+							NOT = { is_rival = PREV }
 						}
 						character_event = { id = CM.6002 }
 					}
 					any_lover = {
 						limit = {
-							NOT = { plot_target_char = { character = ROOT } }
-							NOT = { any_backed_character = { plot_target_char = { character = ROOT } } }
-							NOT = { is_rival = ROOT }
-							NOT = { spouse = { character = ROOT } }
+							NOT = { plot_target_char = { character = PREVPREV } }
+							NOT = { any_backed_character = { plot_target_char = { character = PREVPREVPREV } } }
+							NOT = { is_rival = PREV }
+							NOT = { spouse = { character = PREVPREV } }
 						}
 						character_event = { id = CM.6002 }
 					}
 					any_sibling = {
 						limit = {
-							NOT = { plot_target_char = { character = ROOT } }
-							NOT = { any_backed_character = { plot_target_char = { character = ROOT } } }
-							NOT = { is_rival = ROOT }
+							NOT = { plot_target_char = { character = PREVPREV } }
+							NOT = { any_backed_character = { plot_target_char = { character = PREVPREVPREV } } }
+							NOT = { is_rival = PREV }
 						}
 						character_event = { id = CM.6002 }
 					}
 					any_rival = {
 						limit = {
-							NOT = { spouse = { character = PREV } }
-							NOT = { plot_target_char = { character = ROOT } }
-							NOT = { any_backed_character = { plot_target_char = { character = ROOT } } }
+							NOT = { spouse = { character = PREVPREV } }
+							NOT = { plot_target_char = { character = PREVPREV } }
+							NOT = { any_backed_character = { plot_target_char = { character = PREVPREVPREV } } }
 						}
 						character_event = { id = CM.6002 }
 					}
@@ -2216,80 +2204,76 @@ decisions = {
 	}
 
 	take_spouse_out_of_hiding = {
+		is_high_prio = yes
 		potential = {
 			is_ruler = yes
 			spouse = {
 				trait = in_hiding
 				liege = { character = ROOT }
-				NOT = { is_ruler = yes }
+				is_ruler = no
+				has_character_flag = in_hiding_murder
 			}
 		}
 		allow = {
 			spouse = {
 				trait = in_hiding
 				liege = { character = ROOT }
-				NOT = { is_ruler = yes }
+				is_ruler = no
 			}
 		}
 		effect = {
 			spouse = {
-				add_character_modifier = {
-					name = went_out_of_hiding_timer
-					duration = 180
-					hidden = yes
-				}
-			}
-			spouse = { clr_character_flag = do_not_disturb }
-			spouse = {
-				custom_tooltip = { text = come_out_of_hiding_info_tooltip }
-			}
-			spouse = { remove_trait = in_hiding }
-			spouse = {
-				hidden_tooltip = {                    # Notify player and close family and plotters
-					ROOT = {
-						any_plotter = {
-							target = ROOT
-							limit = {
-								spouse = { NOT = { character = PREV } }
-								OR = {
-									has_plot = plot_kill_character
-									has_plot = plot_kill_spouse
-									has_plot = plot_take_revenge
-								}
+				custom_tooltip = { text = come_out_of_hiding_other_tooltip }
+				hidden_tooltip = {
+					remove_trait = in_hiding
+					clr_character_flag = in_hiding_murder
+					add_character_modifier = {
+						name = went_out_of_hiding_timer
+						duration = 180
+						hidden = yes
+					}
+					any_plotter = {
+						target = PREV
+						limit = {
+							spouse = { NOT = { character = PREVPREV } }
+							OR = {
+								has_plot = plot_kill_character
+								has_plot = plot_kill_spouse
+								has_plot = plot_take_revenge
 							}
-							character_event = { id = CM.6003 }
 						}
+						character_event = { id = CM.6003 }
 					}
 					any_child = {
 						limit = {
-							ROOT = {
-								NOT = { is_plot_target_of = THIS }
+							NOT = {
+								plot_target_char = { character = PREVPREV }
 							}
 						}
 						character_event = { id = CM.6003 }
 					}
 					any_lover = {
 						limit = {
-							PREV = {
-								NOT = { is_plot_target_of = THIS }
+							NOT = {
+								plot_target_char = { character = PREVPREV }
+								spouse = { character = PREVPREV }
 							}
-							NOT = { spouse = { character = PREV } }
 						}
 						character_event = { id = CM.6003 }
 					}
 					any_sibling = {
 						limit = {
-							ROOT = {
-								NOT = { is_plot_target_of = THIS }
+							NOT = {
+								plot_target_char = { character = PREVPREV }
 							}
 						}
 						character_event = { id = CM.6003 }
 					}
 					any_rival = {
 						limit = {
-							spouse = { NOT = { character = PREV } }
-							ROOT = {
-								NOT = { is_plot_target_of = THIS }
+							NOT = {
+								plot_target_char = { character = PREVPREV }
+								spouse = { character = PREVPREV }
 							}
 						}
 						character_event = { id = CM.6003 }
@@ -2326,4 +2310,73 @@ decisions = {
 			}			
 		}
 	}
+
+	come_out_of_hiding_siege = {
+		is_high_prio = yes
+		potential = {
+			is_ruler = yes
+			war = no
+			OR = {
+				AND = {
+					trait = in_hiding
+					has_character_flag = in_hiding_siege
+				}
+				any_courtier = {
+					is_close_relative = ROOT
+					trait = in_hiding
+					has_character_flag = in_hiding_siege
+				}
+			}
+		}
+		allow = {
+			war = no
+		}
+		effect = {
+			if = {
+				limit = {
+					trait = in_hiding
+					has_character_flag = in_hiding_siege
+				}
+				custom_tooltip = { text = come_out_of_hiding_info_tooltip }
+				hidden_tooltip = {
+					remove_trait = in_hiding
+					clr_character_flag = in_hiding_siege
+				}
+			}
+			any_courtier = {
+				limit = {
+					trait = in_hiding
+					has_character_flag = in_hiding_siege
+				}
+				custom_tooltip = { text = come_out_of_hiding_other_tooltip }
+				hidden_tooltip = {
+					remove_trait = in_hiding
+					clr_character_flag = in_hiding_siege
+				}
+			}
+			hidden_tooltip = {
+				clr_character_flag = defending_the_castle
+				remove_character_modifier = stalwart_defender
+				remove_character_modifier = left_at_siege
+				remove_character_modifier = escaped_siege
+				any_courtier = {
+					clr_character_flag = defending_the_castle
+					remove_character_modifier = stalwart_defender
+					remove_character_modifier = left_at_siege
+					remove_character_modifier = escaped_siege
+				}
+			}
+		}
+		ai_will_do = {
+			factor = 1
+			modifier = {
+				factor = 0
+				OR = {
+					in_siege = yes
+					any_courtier = { in_siege = yes }
+				}
+			}
+		}
+	}
 }
+
