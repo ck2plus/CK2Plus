@@ -3251,25 +3251,22 @@ faction_pretender = {
 		modifier = {
 			factor = 0
 			FROM = {
+				has_character_flag = opposes_the_antipope
 				OR = {
 					religion = catholic
 					religion = fraticelli
 				}
-				top_liege = {
-					FROM = {
-						liege = {
-							character = PREVPREV
-						}
-					}
+				liege = {
 					religion = FROM
 					rightful_religious_head_scope = {
+						vassal_of = PREV
 						OR = {
 							has_claim = k_papal_state
 							has_claim = d_fraticelli
 						}
 					}
-					any_realm_lord = {
-						in_faction = faction_antiking
+					any_vassal = {
+						leads_faction = faction_antiking
 					}
 				}
 			}
@@ -3984,6 +3981,28 @@ faction_pretender = {
 			factor = 4.0
 			trait = ambitious
 		}
+		# If there is an antiking faction, prioritize that
+		modifier = {
+			factor = 0
+			has_character_flag = opposes_the_antipope
+			OR = {
+				religion = catholic
+				religion = fraticelli
+			}
+			liege = {
+				religion = ROOT
+				rightful_religious_head_scope = {
+					vassal_of = PREV
+					OR = {
+						has_claim = k_papal_state
+						has_claim = d_fraticelli
+					}
+				}
+				any_vassal = {
+					leads_faction = faction_antiking
+				}
+			}
+		}
 	}
 	
 	success = {
@@ -4010,6 +4029,7 @@ faction_antiking = {
 	
 	# Plotter scope
 	potential = {
+		piety = 100
 		is_ruler = yes
 		independent = no
 		is_landed = yes
@@ -4020,17 +4040,18 @@ faction_antiking = {
 			religion = catholic
 			religion = fraticelli
 		}
-		primary_title = { higher_tier_than = COUNT }
+		higher_real_tier_than = COUNT
 		liege = {
 			religion = ROOT
 			rightful_religious_head_scope = {
+				vassal_of = PREV
 				OR = {
 					has_claim = k_papal_state
 					has_claim = d_fraticelli
 				}
 			}
 		}
-		
+		has_character_flag = took_sides_antipope
 		NOT = { has_character_modifier = faction_antiking_ultimatum_timer }
 	}
 	
@@ -4052,19 +4073,36 @@ faction_antiking = {
 					modifier = opinion_coerced_into_leaving_faction
 				}
 			}
-		}	
-		OR = {
-			culture = FROM
-			holder_scope = {
-				culture = FROM
-			}
 		}
 	}
 	
 	# If false, shows the faction entry for players, but disabled
 	player_allow = {
 		FROM = {
-			piety = 500
+			piety = 100
+			is_ruler = yes
+			independent = no
+			is_landed = yes
+			prisoner = no
+			is_adult = yes
+			NOT = { trait = incapable }
+			OR = {
+				religion = catholic
+				religion = fraticelli
+			}
+			higher_real_tier_than = COUNT
+			liege = {
+				religion = ROOT
+				rightful_religious_head_scope = {
+					vassal_of = PREV
+					OR = {
+						has_claim = k_papal_state
+						has_claim = d_fraticelli
+					}
+				}
+			}
+			has_character_flag = took_sides_antipope
+			NOT = { has_character_modifier = faction_antiking_ultimatum_timer }
 		}
 	}
 	
@@ -4074,57 +4112,66 @@ faction_antiking = {
 			is_ruler = yes
 			independent = no
 			is_landed = yes
-			is_adult = yes
-			NOT = { trait = incapable }
-			prisoner = no
+			has_regent = no
 			NOT = { trait = in_hiding }
+			has_character_flag = took_sides_antipope
 		}
 	}
 	
-	# AI creation weight
+	# AI creation weight - target scope
 	chance = {
 		factor = 1
-		
 		modifier = {
 			factor = 0
-			FROM = { prisoner = yes }
+			FROM = { has_character_flag = supports_the_antipope }
 		}
-		
+		modifier = {
+			factor = 5
+			FROM = { has_character_flag = opposes_the_antipope }
+		}
+		modifier = {
+			factor = 0.5
+			NOT = { has_character_flag = supports_the_antipope }
+			NOT = { has_character_flag = opposes_the_antipope }
+		}
+		modifier = {
+			factor = 2
+			FROM = {
+				has_character_flag = opposes_the_antipope
+				OR = {
+					is_priest = yes
+					is_theocracy = yes
+				}
+			}
+		}
+		modifier = {
+			factor = 0
+			FROM = { has_regent = yes }
+		}
 		modifier = {
 			factor = 0
 			holder_scope = {
 				any_spouse = { character = FROM }
 			}
 		}
-		
 		modifier = {
 			factor = 0
-			current_heir = {
-				character = FROM
+			holder_scope = {
+				current_heir = { character = FROM }
 			}
 		}
-		
+		modifier = {
+			factor = 5
+			FROM = { is_rival = liege }
+		}
 		modifier = {
 			factor = 0
-			FROM = {
-				OR = {
-					AND = {
-						NOT = { leads_faction = faction_antiking }
-						opinion = { who = LIEGE value = 25 } 
-					}
-					AND = {
-						leads_faction = faction_antiking
-						opinion = { who = LIEGE value = 50 } 
-					}
-				}
-			}
+			FROM = { opinion = { who = LIEGE value = 50 } }
 		}
-		
 		modifier = {
 			factor = 0.2
 			FROM = { opinion = { who = LIEGE value = 5 } }
 		}
-		
 		modifier = {
 			factor = 1.5
 			NOT = { FROM = { opinion = { who = LIEGE value = -10 } } }
@@ -4137,12 +4184,14 @@ faction_antiking = {
 			factor = 4.0
 			NOT = { FROM = { opinion = { who = LIEGE value = -75 } } }
 		}
-		
 		modifier = {
-			factor = 0.25
+			factor = 0.5
 			NOT = { claimed_by = FROM }
 		}
-		
+		modifier = {
+			factor = 0.5
+			FROM = { NOT = { trait = zealous } }
+		}
 		modifier = {
 			factor = 0.01
 			FROM = { trait = content }
@@ -4160,12 +4209,12 @@ faction_antiking = {
 			FROM = { trait = craven }
 		}
 		modifier = {
-			factor = 0.2
-			FROM = { trait = slow }
+			factor = 0.1
+			FROM = { trait = cynical }
 		}
 		modifier = {
-			factor = 0.5
-			FROM = { trait = kind }
+			factor = 0.2
+			FROM = { trait = slow }
 		}
 		modifier = {
 			factor = 0.5
@@ -4176,8 +4225,12 @@ faction_antiking = {
 			FROM = { trait = honest }
 		}
 		modifier = {
-			factor = 0.75
+			factor = 0.5
 			FROM = { trait = humble }
+		}
+		modifier = {
+			factor = 0.75
+			FROM = { trait = kind }
 		}
 		modifier = {
 			factor = 0.75
@@ -4197,6 +4250,10 @@ faction_antiking = {
 		}
 		modifier = {
 			factor = 2.0
+			FROM = { trait = zealous }
+		}
+		modifier = {
+			factor = 2.0
 			FROM = { trait = envious }
 		}
 		modifier = {
@@ -4208,10 +4265,6 @@ faction_antiking = {
 			FROM = { trait = impaler }
 		}
 		modifier = {
-			factor = 2.0
-			FROM = { trait = deceitful }
-		}
-		modifier = {
 			factor = 4.0
 			FROM = { trait = ambitious }
 		}
@@ -4219,48 +4272,50 @@ faction_antiking = {
 	
 	# AI membership weight: ROOT is the prospective member. FROM is the faction leader. FROMFROM is the target title or character.
 	membership = {
-		factor = 1
-		
+		factor = 1	
 		modifier = {
 			factor = 0
 			OR = {
-				prisoner = yes
-				trait = incapable
-				is_adult = no
+				has_regent = yes
 				is_landed = no
 				preparing_invasion = yes
 				NOT = { religion = FROM }
 			}
 		}
-		
+		modifier = {
+			factor = 0
+			has_character_flag = supports_the_antipope
+		}
+		modifier = {
+			factor = 5
+			has_character_flag = opposes_the_antipope
+		}
+		modifier = {
+			factor = 0.5
+			NOT = { has_character_flag = supports_the_antipope }
+			NOT = { has_character_flag = opposes_the_antipope }
+		}
+		modifier = {
+			factor = 2
+			has_character_flag = opposes_the_antipope
+			OR = {
+				is_priest = yes
+				is_theocracy = yes
+			}
+		}
 		modifier = {
 			factor = 0
 			FROMFROM = {
-				current_heir = {
-					character = ROOT
-				}
+				current_heir = { character = ROOT }
 			}
 		}
-		
 		modifier = {
 			factor = 0
 			has_character_modifier = faction_antiking_ultimatum_timer
 		}
-		
 		modifier = {
 			factor = 0
-			
-			OR = {
-				AND = {
-					NOT = { in_faction = faction_antiking }
-					opinion = { who = LIEGE value = 25 } 
-				}
-				AND = {
-					in_faction = faction_antiking
-					opinion = { who = LIEGE value = 50 } 
-				}
-			}
-			
+			opinion = { who = LIEGE value = 50 }
 			NOT = {	
 				has_opinion_modifier = {
 					who = FROM
@@ -4268,10 +4323,13 @@ faction_antiking = {
 				}
 			}
 		}
-		
+		modifier = {
+			factor = 5
+			FROM = { is_rival = FROMFROM }
+		}
 		modifier = {
 			factor = 0
-			NOT = { opinion = { who = FROM value = -40 } }
+			NOT = { opinion = { who = FROM value = -50 } }
 			NOT = {	
 				has_opinion_modifier = {
 					who = FROM
@@ -4279,7 +4337,6 @@ faction_antiking = {
 				}
 			}
 		}
-		
 		modifier = {
 			factor = 0
 			has_opinion_modifier = {
@@ -4287,12 +4344,10 @@ faction_antiking = {
 				modifier = opinion_coerced_into_leaving_faction
 			}
 		}
-		
 		modifier = {
 			factor = 0.2
 			opinion = { who = LIEGE value = 5 }
 		}
-		
 		modifier = {
 			factor = 10000
 			has_opinion_modifier = {
@@ -4300,7 +4355,6 @@ faction_antiking = {
 				modifier = opinion_coerced_into_joining_faction
 			}
 		}
-		
 		modifier = {
 			factor = 1.5
 			NOT = { opinion = { who = LIEGE value = -10 } }
@@ -4313,7 +4367,36 @@ faction_antiking = {
 			factor = 4.0
 			NOT = { opinion = { who = LIEGE value = -75 } }
 		}
-		
+		modifier = {
+			factor = 0.5
+			NOT = { opinion = { who = FROM value = 0 } }
+		}
+		modifier = {
+			factor = 1.5
+			opinion = { who = FROM value = 25 }
+		}
+		modifier = {
+			factor = 1.5
+			opinion = { who = FROM value = 50 }
+		}
+		modifier = {
+			factor = 1.5
+			opinion = { who = FROM value = 75 }
+		}
+		modifier = {
+			factor = 0.5
+			dynasty = FROMFROM
+			NOT = { dynasty = FROM }
+		}
+		modifier = {
+			factor = 2
+			NOT = { dynasty = FROMFROM }
+			dynasty = FROM
+		}
+		modifier = {
+			factor = 0.5
+			NOT = { trait = zealous }
+		}
 		modifier = {
 			factor = 0.01
 			trait = content
@@ -4331,12 +4414,12 @@ faction_antiking = {
 			trait = craven
 		}
 		modifier = {
-			factor = 0.2
-			trait = slow
+			factor = 0.1
+			trait = cynical
 		}
 		modifier = {
-			factor = 0.5
-			trait = kind
+			factor = 0.2
+			trait = slow
 		}
 		modifier = {
 			factor = 0.5
@@ -4347,8 +4430,12 @@ faction_antiking = {
 			trait = honest
 		}
 		modifier = {
-			factor = 0.75
+			factor = 0.5
 			trait = humble
+		}
+		modifier = {
+			factor = 0.75
+			trait = kind
 		}
 		modifier = {
 			factor = 0.75
@@ -4368,6 +4455,10 @@ faction_antiking = {
 		}
 		modifier = {
 			factor = 2.0
+			trait = zealous
+		}
+		modifier = {
+			factor = 2.0
 			trait = envious
 		}
 		modifier = {
@@ -4377,10 +4468,6 @@ faction_antiking = {
 		modifier = {
 			factor = 2.0
 			trait = impaler
-		}
-		modifier = {
-			factor = 2.0
-			trait = deceitful
 		}
 		modifier = {
 			factor = 4.0
