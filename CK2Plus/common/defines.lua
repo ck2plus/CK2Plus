@@ -561,6 +561,8 @@ NCharacter = {
 	TRIBAL_EMPTY_HOLDING_LEVY_MULTIPLIER = 0.5,
 	TRIBAL_EMPTY_HOLDING_GARRISON_MULTIPLIER = 0.5,
 	TRIBAL_EMPTY_HOLDING_TAX_MULTIPLIER = 0.5,
+	MALE_ATTRACTION_CUTOFF = 65,					-- After this age, the sex appeal of traits no longer have any effect
+	FEMALE_ATTRACTION_CUTOFF = 45					-- After this age, the sex appeal of traits no longer have any effect
 },
 
 NTitle = {
@@ -643,6 +645,7 @@ NTitle = {
 	
 	CLAIM_VASSAL_TITLE_COST_MOD = 0.75,
 	CLAIM_DE_JURE_TITLE_COST_MOD = 0.5,
+	MAX_CROWN_LAW_CHANGES = 5,	
 	NORMAL_LAW_CHANGE_MONTHS = 60,
 	TITLE_USURP_COOLDOWN_MONTHS = 60,
 	DE_JURE_ASSIMILATION_YEARS = 50,			-- Duchies a under the de facto control of another kingdom will change de jure liege after this many years
