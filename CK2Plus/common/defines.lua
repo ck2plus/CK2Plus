@@ -448,7 +448,7 @@ NDiplomacy = {
 	ASK_FOR_MONEY_INTERACTION_THRESHOLD_FOR_NO = 50,
 	ASK_FOR_MONEY_INTERACTION_THRESHOLD_FOR_YES = 150,
 	ASK_FOR_MONEY_INTERACTION_MUST_HAVE_COST = 1,				-- Is having prestige/piety >= cost required for this action?
-	ASK_FOR_MONEY_INTERACTION_ENABLED = 1,						-- Should this action be used at all?		
+	ASK_FOR_MONEY_INTERACTION_ENABLED = 0,						-- Should this action be used at all?		
 	
 	ASK_FOR_CLAIM_INTERACTION_MONEY = 0,
 	ASK_FOR_CLAIM_INTERACTION_PIETY = 100,
