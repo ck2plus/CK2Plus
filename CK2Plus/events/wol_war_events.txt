@@ -1,0 +1,1749 @@
+###########################################
+#                                         #
+# Way of Life war events                  #
+#                                         #
+# ID WoL.11000-WoL.11999                  #
+#                                         #
+###########################################
+
+# Written by Joel Hansson
+
+namespace = WoL
+
+### Duels
+
+# Get challenged
+character_event = {
+	id = WoL.11000
+	desc = EVTDESC_WOL_11000
+	picture = GFX_evt_melee
+	border = GFX_event_normal_frame_war
+	
+	is_triggered_only = yes
+	
+	immediate = {
+		if = {
+			limit = {
+				OR = {
+					NOT = { has_character_modifier = declined_prestige_duel_timer }
+					NOT = { 
+						AND = {
+							is_female = no
+							event_target:challenger = { is_female = yes }
+						}
+					}
+				}
+			}
+			add_character_modifier = {
+				modifier = declined_prestige_duel_timer
+				duration = 1095
+				hidden = yes
+			}
+			set_character_flag = punish_declining
+		}
+		if = {
+			limit = { NOT = { has_character_modifier = recent_duel_timer } }
+			add_character_modifier = {
+				modifier = recent_duel_timer
+				hidden = yes
+				duration = 365
+			}
+		}
+		FROMFROM = {
+			if = {
+				limit = { NOT = { has_character_modifier = recent_duel_timer } }
+				add_character_modifier = {
+					modifier = recent_duel_timer
+					hidden = yes
+					duration = 365
+				}
+			}
+		}
+	}
+	
+	option = {
+		name = EVTOPTA_WOL_11000
+		ai_chance = {
+			factor = 20
+			modifier = {
+				factor = 2
+				trait = proud
+			}
+			modifier = {
+				factor = 0.05
+				trait = craven
+			}
+			modifier = {
+				factor = 0.5
+				religion = jain
+			}
+			modifier = {
+				religion_group = christian
+				is_priest = yes
+				factor = 0
+			}
+			modifier = {
+				is_female = no
+				FROM = { is_female = yes }
+				factor = 0.025
+			}
+		}
+		if = {
+			limit = { trait = craven }
+			random = {
+				chance = 20
+				remove_trait = craven
+			}
+		}
+		if = {
+			limit = { religion = jain }
+			piety = -20
+			custom_tooltip = { text = jain_ahimsa_tooltip }
+		}
+		if = {
+			limit = { 
+				FROMFROM = { 
+					has_opinion_modifier = { who = ROOT modifier = grievously_offended }
+				}
+			}
+			FROMFROM = {
+				remove_opinion = { who = ROOT modifier = grievously_offended }
+			}
+		}
+		save_event_target_as = opponent
+		FROMFROM = {
+			save_event_target_as = challenger
+			character_event = { id = WoL.11001 days = 3 }
+		}
+		clr_character_flag = punish_declining
+	}
+	option = {
+		name = EVTOPTB_WOL_11000
+		ai_chance = {
+			factor = 1
+		}
+		if = {
+			limit = { has_character_flag = punish_declining }
+			if = {
+				limit = { 
+					NOT = { trait = craven }
+					NOT = { trait = brave }
+				}
+				random = {
+					chance = 30
+					add_trait = craven
+				}
+			}
+			if = {
+				limit = {
+					trait = brave
+				}
+				remove_trait = brave
+			}
+			prestige = -50
+			add_character_modifier = {
+				modifier = declined_prestige_duel_timer
+				hidden = yes
+				duration = 1095
+			}
+		}
+		hidden_tooltip = {
+			remove_character_modifier = recent_duel_timer
+		}
+		FROMFROM = {
+			hidden_tooltip = {
+				remove_character_modifier = recent_duel_timer
+				opinion = {
+					modifier = opinion_fled_duel
+					who = ROOT
+					years = 100
+				}
+			}
+			character_event = { id = WoL.11002 days = 3 }
+		}
+		clr_character_flag = punish_declining
+	}
+}
+
+# Start the duel
+character_event = {
+	id = WoL.11001
+	is_triggered_only = yes
+	desc = EVTDESC_WOL_11001
+	picture = GFX_evt_melee
+	border = GFX_event_normal_frame_war
+	
+	option = {
+		name = EVTOPTA_WOL_11001
+		character_event = { id = WoL.11003 }
+	}
+}
+
+# Duel rejected
+character_event = {
+	id = WoL.11002
+	is_triggered_only = yes
+	desc = EVTDESC_WOL_11002
+	picture = GFX_evt_melee
+	border = GFX_event_normal_frame_war
+	
+	option = {
+		name = EVTOPTA_WOL_11002
+	}
+}
+
+# Pop-in without dialogue to accept (event_target:opponent and event_target:challenger must be set)
+character_event = {
+	id = WoL.11003
+	is_triggered_only = yes
+	hide_window = yes
+	
+	immediate = {
+		if = {
+			limit = { NOT = { has_character_modifier = recent_duel_timer } }
+			add_character_modifier = {
+				modifier = recent_duel_timer
+				hidden = yes
+				duration = 365
+			}
+		}
+		event_target:opponent = {
+			if = {
+				limit = { NOT = { has_character_modifier = recent_duel_timer } }
+				add_character_modifier = {
+					modifier = recent_duel_timer
+					hidden = yes
+					duration = 365
+				}
+			}
+		}
+		opinion = {
+			modifier = opinion_fought_duel
+			who = event_target:opponent
+			years = 150
+		}
+		if = {
+			limit = {
+				has_character_modifier = recent_duel_victory
+			}
+			remove_character_modifier = recent_duel_victory
+		}
+		event_target:opponent = {			
+			opinion = {
+				modifier = opinion_fought_duel
+				who = ROOT
+				years = 150
+			}
+			character_event = { id = WoL.11004 }
+		}
+	}
+}
+
+# Opponent bounce for scopes (hidden)
+character_event = {
+	id = WoL.11004
+	is_triggered_only = yes
+	hide_window = yes
+	
+	immediate = {
+		if = {
+			limit = {
+				has_character_modifier = recent_duel_victory
+			}
+			remove_character_modifier = recent_duel_victory
+		}
+		FROM = {
+			character_event = { id = WoL.11005 }
+		}
+	}
+}
+
+
+# Duel (hidden)
+character_event = {
+	id = WoL.11005
+	is_triggered_only = yes
+	hide_window = yes
+	
+	immediate = {
+#		log = "WoL.11005: [Root.GetBestName] challenged [From.GetBestName] on a duel"
+		random_list = {
+			1 = { # double death
+				modifier = {
+					OR = {
+						combat_rating_diff = { who = FROM value = 4 }
+						FROM = { combat_rating_diff = { who = ROOT value = 4 } }
+					}
+					factor = 0.2
+				}
+				modifier = {
+					trait = wroth
+					FROM = {
+						trait = wroth
+					}
+					factor = 2
+				}
+				long_character_event = { id = WoL.11009 }
+				FROM = { long_character_event = { id = WoL.11009 } }
+			}
+			1 = { # decapitate opponent
+				modifier = {
+					NOT = { combat_rating_diff = { who = FROM value = 1 } }
+					factor = 0
+				}
+				add_character_modifier = {
+					modifier = recent_duel_victory
+					months = 12
+				}
+				long_character_event = { id = WoL.11011 }
+			}
+			1 = { # decapitate challenger
+				modifier = {
+					NOT = { FROM = { combat_rating_diff = { who = ROOT value = 1 } } }
+					factor = 0
+				}
+				FROM = {
+					add_character_modifier = {
+						modifier = recent_duel_victory
+						months = 12
+					}
+					long_character_event = { id = WoL.11011 } 
+				}
+			}
+			200 = { # challenger win
+				### modifiers
+				#modifier = {
+				#	factor = 0
+				#	always = yes ######### DEBUGGING
+				#}
+				modifier = {
+					FROM = {
+						combat_rating_diff = { who = ROOT value = 1 }
+					}
+					factor = 0.7
+				}
+				modifier = {
+					FROM = {
+						combat_rating_diff = { who = ROOT value = 2 }
+					}
+					factor = 0.7
+				}
+				modifier = {
+					FROM = {
+						combat_rating_diff = { who = ROOT value = 3 }
+					}
+					factor = 0.7
+				}
+				modifier = {
+					FROM = {
+						combat_rating_diff = { who = ROOT value = 4 }
+					}
+					factor = 0.7
+				}
+				modifier = {
+					FROM = {
+						combat_rating_diff = { who = ROOT value = 5 }
+					}
+					factor = 0.7
+				}
+				modifier = {
+					FROM = {
+						combat_rating_diff = { who = ROOT value = 6 }
+					}
+					factor = 0.7
+				}
+				modifier = {
+					FROM = {
+						combat_rating_diff = { who = ROOT value = 7 }
+					}
+					factor = 0.7
+				}
+				modifier = {
+					FROM = {
+						combat_rating_diff = { who = ROOT value = 8 }
+					}
+					factor = 0.7
+				}
+				modifier = {
+					FROM = {
+						combat_rating_diff = { who = ROOT value = 9 }
+					}
+					factor = 0.7
+				}
+				modifier = {
+					FROM = {
+						combat_rating_diff = { who = ROOT value = 10 }
+					}
+					factor = 0.7
+				}
+				### effects
+				random_list = {
+					70 = {						
+						add_character_modifier = {
+							modifier = recent_duel_victory
+							months = 12
+						}
+						long_character_event = { id = WoL.11006 }
+					}
+					30 = {
+						modifier = {
+							FROM = { trait = maimed }
+							factor = 0
+						}
+						add_character_modifier = {
+							modifier = recent_duel_victory
+							months = 12
+						}
+						set_character_flag = duel_maim
+						long_character_event = { id = WoL.11006 }
+					}
+				}
+			}
+			200 = { # opponent win
+				### modifiers
+				#modifier = {
+				#	factor = 0
+				#	always = yes ######### DEBUGGING
+				#}
+				modifier = {
+					combat_rating_diff = { who = FROM value = 1 }
+					factor = 0.7
+				}
+				modifier = {
+					combat_rating_diff = { who = FROM value = 2 }
+					factor = 0.7
+				}
+				modifier = {
+					combat_rating_diff = { who = FROM value = 3 }
+					factor = 0.7
+				}
+				modifier = {
+					combat_rating_diff = { who = FROM value = 4 }
+					factor = 0.7
+				}
+				modifier = {
+					combat_rating_diff = { who = FROM value = 5 }
+					factor = 0.7
+				}
+				modifier = {
+					combat_rating_diff = { who = FROM value = 6 }
+					factor = 0.7
+				}
+				modifier = {
+					combat_rating_diff = { who = FROM value = 7 }
+					factor = 0.7
+				}
+				modifier = {
+					combat_rating_diff = { who = FROM value = 8 }
+					factor = 0.7
+				}
+				modifier = {
+					combat_rating_diff = { who = FROM value = 9 }
+					factor = 0.7
+				}
+				modifier = {
+					combat_rating_diff = { who = FROM value = 10 }
+					factor = 0.7
+				}
+				### effects
+				random_list = {
+					70 = {
+						FROM = {
+							add_character_modifier = {
+								modifier = recent_duel_victory
+								months = 12
+							}
+							long_character_event = { id = WoL.11006  } 
+						}
+					}
+					30 = {
+						modifier = {
+							trait = maimed
+							factor = 0
+						}
+						FROM = {
+							add_character_modifier = {
+								modifier = recent_duel_victory
+								months = 12
+							}
+							set_character_flag = duel_maim
+							long_character_event = { id = WoL.11006  } 
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+# Winner event
+long_character_event = {
+	id = WoL.11006
+	is_triggered_only = yes
+	picture = GFX_evt_melee
+	border = GFX_event_long_frame_war
+	title = duel_title
+	
+	desc = {
+		text = EVTDESCA_WOL_11006 # Maiming opponent
+		trigger = {
+			event_target:challenger = { character = ROOT }
+			has_character_flag = duel_maim
+		}
+	}
+	desc = {
+		text = EVTDESCB_WOL_11006 # Winning over opponent
+		trigger = {
+			event_target:challenger = { character = ROOT }
+			NOT = {
+				has_character_flag = duel_maim
+			}
+		}
+	}
+	desc = {
+		text = EVTDESCC_WOL_11006 # Maiming challenger
+		trigger = {
+			NOT = { event_target:challenger = { character = ROOT } }
+			has_character_flag = duel_maim
+		}
+	}
+	desc = {
+		text = EVTDESCD_WOL_11006 # Winning over challenger
+		trigger = {
+			NOT = { event_target:challenger = { character = ROOT } }
+			NOT = {
+				has_character_flag = duel_maim
+			}
+		}
+	}
+	
+	option = {
+		name = EVTOPTA_WOL_11006
+		trigger = {
+			has_character_flag = duel_maim
+		}
+		ai_chance = {
+			factor = 60
+		}
+		prestige = 50
+		if = {
+			limit = { event_target:challenger = { character = ROOT } }
+			tooltip = {
+				event_target:opponent = {
+					add_trait = maimed
+				}
+			}
+			hidden_tooltip = {
+				event_target:opponent = {
+					long_character_event = { id = WoL.11007 }
+				}
+				if = {
+					limit = { has_focus = focus_war }
+					random = {
+						chance = 50
+						character_event = { id = WoL.11200 }
+					}
+				}
+			}
+		}		
+		if = {
+			limit = { NOT = { event_target:challenger = { character = ROOT } } }
+			tooltip = {
+				event_target:challenger = {
+					add_trait = maimed
+				}
+			}
+			hidden_tooltip = {
+				event_target:challenger = {
+					long_character_event = { id = WoL.11007 }
+				}
+				if = {
+					limit = { has_focus = focus_war }
+					random = {
+						chance = 50
+						character_event = { id = WoL.11200 }
+					}
+				}
+			}
+		}
+		hidden_tooltip = { character_event = { id = 720 } } # Bring it On achievement check event
+	}
+	
+	option = {
+		name = EVTOPTB_WOL_11006
+		trigger = {
+			NOT = {
+				has_character_flag = duel_maim
+			}
+		}
+		ai_chance = {
+			factor = 60
+		}
+		prestige = 50
+		if = {
+			limit = { event_target:challenger = { character = ROOT } }
+			if = {
+				limit = { event_target:opponent = { NOT = { trait = maimed } } }
+				tooltip = {
+					event_target:opponent = {
+						add_trait = wounded
+					}
+				}
+			}
+			hidden_tooltip = {
+				event_target:opponent = {
+					character_event = { id = WoL.11007 }
+				}
+				random = {
+					chance = 25
+					character_event = { id = WoL.11200 }
+				}
+			}
+		}
+		if = {
+			limit = { NOT = { event_target:challenger = { character = ROOT } } }
+			if = {
+				limit = { event_target:challenger = { NOT = { trait = maimed } } }
+				tooltip = {
+					event_target:challenger = {
+						add_trait = wounded
+					}
+				}
+			}
+			hidden_tooltip = {
+				event_target:challenger = {
+					long_character_event = { id = WoL.11007 }
+				}
+				random = {
+					chance = 25
+					character_event = { id = WoL.11200 }
+				}
+			}
+		}
+		hidden_tooltip = { character_event = { id = 720 } } # Bring it On achievement check event
+	}
+	
+	option = {
+		name = EVTOPTC_WOL_11006
+		ai_chance = {
+			factor = 1
+			modifier = {
+				trait = kind
+				factor = 0.1
+			}
+			modifier = {
+				trait = impaler
+				factor = 15
+			}
+			modifier = {
+				trait = cruel
+				factor = 5
+			}
+			modifier = {
+				OR = {
+					AND = {
+						event_target:opponent = { character = ROOT }
+						is_rival = event_target:challenger
+					}
+					AND = {
+						event_target:challenger = { character = ROOT }
+						is_rival = event_target:opponent
+					}
+				}
+				factor = 10
+			}
+		}
+		prestige = 50
+		custom_tooltip = {
+			text = EVTTOOLTIPWOL11006
+			hidden_tooltip = {
+				any_realm_character = {
+					opinion = {
+						modifier = opinion_ruthless
+						who = ROOT
+						months = 60
+					}
+				}
+			}
+		}
+		if = {
+			limit = {
+				has_character_modifier = merciless
+			}
+			if = {
+				limit = {
+					has_nickname = no
+				}
+				give_nickname = nick_the_ruthless
+			}
+		}
+		if = {
+			limit = {
+				NOT = { has_character_modifier = merciless }
+			}
+			add_character_modifier = {
+				modifier = merciless
+				duration = -1
+			}
+		}
+		if = {
+			limit = { event_target:challenger = { character = ROOT } }
+			tooltip = {
+				event_target:opponent = {
+					death = {
+						death_reason = death_duel
+						killer = event_target:challenger
+					}
+				}
+			}
+			hidden_tooltip = {
+				event_target:opponent = {
+					long_character_event = { id = WoL.11008 }
+				}
+				random = {
+					chance = 25
+					character_event = { id = WoL.11200 }
+				}
+			}
+		}
+		if = {
+			limit = { NOT = { event_target:challenger = { character = ROOT } } }
+			tooltip = {
+				event_target:challenger = {
+					death = {
+						death_reason = death_duel
+						killer = event_target:opponent
+					}
+				}
+			}
+			hidden_tooltip = {
+				event_target:challenger = {
+					long_character_event = { id = WoL.11008 }
+				}
+				random = {
+					chance = 25
+					character_event = { id = WoL.11200 }
+				}
+			}
+		}
+		hidden_tooltip = { character_event = { id = 720 } } # Bring it On achievement check event
+	}
+}
+
+# Loser event
+long_character_event = {
+	id = WoL.11007
+	is_triggered_only = yes
+	picture = GFX_evt_melee
+	border = GFX_event_long_frame_war
+	title = duel_title
+	
+	desc = {
+		text = EVTDESCA_WOL_11007
+		trigger = {
+			FROM = {
+				has_character_flag = duel_maim
+			}
+		}
+	}
+	desc = {
+		text = EVTDESCB_WOL_11007
+		trigger = {
+			FROM = {
+				NOT = { 
+					has_character_flag = duel_maim
+				}
+			}
+		}
+	}
+	
+	option = {
+		name = EVTOPTA_WOL_11007
+
+		prestige = -50
+		if = {
+			limit = {
+				FROM = { has_character_flag  = duel_maim }
+			}
+			add_trait = maimed
+		}
+		if = {
+			limit = {
+				NOT = { FROM = { has_character_flag = duel_maim } }
+				NOT = { trait = maimed }
+			}
+			add_trait = wounded
+		}
+		FROM = { clr_character_flag = duel_maim }
+		hidden_tooltip = {
+			random = {
+				chance = 35
+				character_event = { id = WoL.11013 days = 3 }
+			}
+		}
+	}
+}
+
+# Loser event executed
+long_character_event = {
+	id = WoL.11008
+	is_triggered_only = yes
+	desc = EVTDESC_WOL_11008
+	picture = GFX_evt_melee
+	border = GFX_event_long_frame_war
+	title = duel_title
+	
+	immediate = {
+		if = {
+			limit = { multiplayer = yes }
+			death = {
+				death_reason = death_duel
+				killer = FROM
+			}
+		}
+	}
+	
+	option = {
+		name = EVTOPTA_CM_6303
+		if = {
+			limit = { multiplayer = no }
+			death = {
+				death_reason = death_duel
+				killer = FROM
+			}
+		}
+	}
+}
+
+# Double death (challenger)
+long_character_event = {
+	id = WoL.11009
+	is_triggered_only = yes
+	picture = GFX_evt_melee
+	border = GFX_event_normal_frame_war
+	title = duel_title
+	desc = {
+		text = EVTDESCA_WOL_11009 # Challenger desc
+		trigger = {
+			event_target:challenger = { character = ROOT } 
+		}
+	}
+	desc = {
+		text = EVTDESCB_WOL_11009 # Opponent desc
+		trigger = {
+			NOT = { event_target:challenger = { character = ROOT } }
+		}
+	}
+	
+	immediate = {
+		if = {
+			limit = { multiplayer = yes }
+			if = {
+				limit = { event_target:challenger = { character = ROOT } }
+				death = {
+					death_reason = death_duel
+					killer = event_target:opponent
+				}
+			}
+			if = {
+				limit = { NOT = { event_target:challenger = { character = ROOT } } }
+				death = {
+					death_reason = death_duel
+					killer = event_target:challenger
+				}
+			}
+		}
+	}
+	
+	option = {
+		name = EVTOPTA_CM_6303
+		if = {
+			limit = { event_target:challenger = { character = ROOT } }
+			if = {
+				limit = { multiplayer = no }
+				death = {
+					death_reason = death_duel
+					killer = event_target:opponent
+				}
+			}
+			tooltip = {
+				event_target:opponent = {
+					death = {
+						death_reason = death_duel
+						killer = event_target:challenger
+					}
+				}
+			}
+		}
+		if = {
+			limit = { NOT = { event_target:challenger = { character = ROOT } } }
+			if = {
+				limit = { multiplayer = no }
+				death = {
+					death_reason = death_duel
+					killer = event_target:challenger
+				}
+			}
+			tooltip = {
+				event_target:challenger = {
+					death = {
+						death_reason = death_duel
+						killer = event_target:opponent
+					}
+				}
+			}
+		}
+	}
+}
+
+# Winner decap
+long_character_event = {
+	id = WoL.11011
+	is_triggered_only = yes
+	picture = GFX_evt_melee
+	border = GFX_event_long_frame_war
+	title = duel_title
+	desc = {
+		text = EVTDESCA_WOL_11011
+		trigger = {
+			event_target:challenger = { character = ROOT }
+		}
+	}
+	desc = {
+		text = EVTDESCB_WOL_11011
+		trigger = {
+			NOT = { event_target:challenger = { character = ROOT } }
+		}
+	}
+	
+	option = {
+		name = EVTOPTA_WOL_11011
+		prestige = 100
+		if = {
+			limit = {
+				event_target:challenger = {
+					has_nickname = no
+				}
+			}
+			event_target:challenger = {
+				give_nickname = nick_the_headless
+			}
+		}
+		if = {
+			limit = {
+				has_nickname = no
+			}
+			give_nickname = nick_the_beheader
+		}
+		if = {
+			limit = { event_target:challenger = { character = ROOT } }
+			tooltip = {
+				event_target:opponent = {
+					death = {
+						death_reason = death_duel
+						killer = ROOT
+					}
+				}
+			}
+			hidden_tooltip = {
+				event_target:opponent = { long_character_event = { id = WoL.11012 } }
+			}
+		}
+		hidden_tooltip = {
+			random = {
+				chance = 50
+				character_event = { id = WoL.11200 }
+			}
+		}
+		hidden_tooltip = { character_event = { id = 720 } } # Bring it On achievement check event
+	}
+}
+
+# Loser decap
+long_character_event = {
+	id = WoL.11012
+	is_triggered_only = yes
+	desc = EVTDESC_WOL_11012
+	picture = GFX_evt_melee
+	border = GFX_event_long_frame_war
+	title = duel_title
+	
+	immediate = {
+		if = {
+			limit = { has_nickname = no }
+			give_nickname = nick_the_headless
+		}
+		if = {
+			limit = { multiplayer = yes }
+			death = {
+				death_reason = death_duel
+				killer = FROM
+			}
+		}
+	}
+	
+	option = {
+		name = EVTOPTA_WOL_11012
+		if = {
+			limit = { has_nickname = no }
+			tooltip = {
+				give_nickname = nick_the_headless
+			}
+		}
+		if = {
+			limit = { multiplayer = no }
+			death = {
+				death_reason = death_duel
+				killer = FROM
+			}
+		}
+	}
+}
+
+# Gain rival
+character_event = {
+	id = WoL.11013
+	is_triggered_only = yes
+	desc = EVTDESC_WOL_11013
+	picture = GFX_evt_melee
+	border = GFX_event_normal_frame_war
+	
+	trigger = {
+		NOT = {
+			is_rival = FROMFROM
+		}
+	}
+	
+	option = {
+		name = EVTOPTA_WOL_11013
+		add_rival = FROMFROM
+		hidden_tooltip = {
+			FROMFROM = {
+				character_event = { id = WoL.11014 }
+			}
+		}
+	}
+	
+	option = {
+		name = EVTOPTB_WOL_11013
+		ai_chance = {
+			factor = 0
+		}
+	}
+}
+
+# Gain rival notification
+character_event = {
+	id = WoL.11014
+	is_triggered_only = yes
+	desc = EVTDESC_WOL_11014
+	picture = GFX_evt_melee
+	border = GFX_event_normal_frame_war
+	
+	option = {
+		name = EVTOPTA_WOL_11014
+		trigger = {
+			NOT = { num_of_rivals = 3 }
+		}
+		add_rival = FROM
+	}
+	
+	option = {
+		name = EVTOPTB_WOL_11014
+		trigger = {
+			num_of_rivals = 3
+		}
+		add_rival = FROM
+	}
+}
+
+# Notify get out of prison (host)
+# Notify get out of prison (winner)
+
+############### Minor events
+
+### Random event list
+character_event = {
+	id = WoL.11100
+	hide_window = yes
+	
+	only_rulers = yes
+	capable_only = yes
+	prisoner = no
+	
+	trigger = {
+		has_focus = focus_war
+		NOT = { trait = incapable }
+		NOT = { trait = infirm }
+		NOT = { has_character_flag = do_not_disturb }
+		in_command = no
+	}
+	
+	mean_time_to_happen = {
+		months = 36
+	}
+	
+	immediate = {
+		random_list = {
+			30 = {
+				modifier = {
+					has_character_modifier = run_training_timer
+					factor = 0
+				}
+				character_event = { id = WoL.11101 } # running
+			}
+			30 = {
+				modifier = {
+					OR = {
+						trait = slothful
+						NOT = {
+							any_courtier = {
+								trait = slothful
+							}
+						}
+					}
+					factor = 0
+				}
+				character_event = { id = WoL.11102 } # slothful court
+			}
+			30 = {
+				modifier = {
+					has_character_modifier = spear_throwing_timer
+					factor = 0
+				}
+				character_event = { id = WoL.11103 } # spear-throwing
+			}
+			30 = {
+				modifier = {
+					any_friend = {
+						has_character_flag = sparring_partner
+					}
+					factor = 0
+				}
+				character_event = { id = WoL.11110 } # sparring-partner
+			}
+			30 = {
+				modifier = {
+				NOT = {
+					any_friend = {
+							has_character_flag = sparring_partner
+						}
+						has_character_flag = sparring_partner
+					}
+					factor = 0	
+				}
+				random_friend = {
+					limit = { has_character_flag = sparring_partner }
+					character_event = { id = WoL.11113 } # sparring success
+				}
+			}
+			30 = {
+				modifier = {
+					NOT = {
+						any_friend = {
+							has_character_flag = sparring_partner
+						}
+						has_character_flag = sparring_partner
+					}
+					factor = 0
+				}
+				random_friend = {
+					limit = { has_character_flag = sparring_partner }
+					character_event = { id = WoL.11114 } # sparring accident
+				}
+			}
+		}
+	}
+}
+
+# Start running
+character_event = {
+	id = WoL.11101
+	is_triggered_only = yes
+	desc = EVTDESC_WOL_11101
+	picture = GFX_evt_bandits
+	border = GFX_event_normal_frame_war
+	
+	option = {
+		name = EVTOPTA_WOL_11101
+		custom_tooltip = {
+			text = EVTTOOLTIPWOLWARPROGRESS
+			hidden_tooltip = {
+				add_character_modifier = {
+					modifier = run_training_timer
+					duration = 1825
+					hidden = yes
+				}
+				character_event = { id = WoL.11200 days = 7 }
+			}
+		}
+	}
+}
+
+# ROOT upset about slothful courtier # not possible if ROOT is slothful
+character_event = {
+	id = WoL.11102
+	is_triggered_only = yes
+	desc = EVTDESC_WOL_11102
+	picture = GFX_evt_emissary
+	border = GFX_event_normal_frame_war
+	
+	option = {
+		name = EVTOPTA_WOL_11102
+		random_courtier = {
+			limit = {
+				NOT = {
+					OR = {
+						character = ROOT 
+						trait = incapable
+						trait = infirm
+					}
+				}
+				ai = yes
+				is_adult = yes
+				trait = slothful
+			}
+			random_list = {
+				50 = {
+					remove_trait = slothful
+				}
+				30 = {
+					opinion = {
+						modifier = opinion_lost_respect
+						who = ROOT
+						months = 36
+					}
+				}
+				10 = {
+					add_trait = stressed
+				}
+			}
+		}
+	}
+	
+	option = {
+		name = EVTOPTB_WOL_11102
+		random = {
+			chance = 20
+			add_trait = stressed
+		}
+	}
+}
+
+# Arrange a small spear-throwing contest
+character_event = {
+	id = WoL.11103
+	is_triggered_only = yes
+	desc = EVTDESC_WOL_11103
+	picture = GFX_evt_son_asking_father
+	border = GFX_event_normal_frame_war
+	
+	option = {
+		name = EVTOPTA_WOL_11103
+		hidden_tooltip = {
+			add_character_modifier = {
+				modifier = spear_throwing_timer
+				duration = 1825
+				hidden = yes
+			}
+		}
+		any_courtier = {
+			limit = {
+				is_female = no
+				prisoner = no
+				NOT = {
+					OR = {
+						character = ROOT
+						is_rival = ROOT
+					}
+				}
+			}
+			opinion = {
+				modifier = opinion_holding_contests
+				who = ROOT
+				months = 6
+			}
+		}
+		hidden_tooltip = {
+			random_list = {
+				50 = { character_event = { id = WoL.11104 days = 5} }
+				50 = { character_event = { id = WoL.11105 days = 5} }
+			}
+		}
+	}
+	
+	option = {
+		name = EVTOPTB_WOL_11103
+	}
+}
+
+# Courtier maimed while measuring spear throws
+character_event = {
+	id = WoL.11104
+	is_triggered_only = yes
+	desc = EVTDESC_WOL_11104
+	picture = GFX_evt_son_asking_father
+	border = GFX_event_normal_frame_war
+	
+	option = {
+		name = EVTOPTA_WOL_11104
+		random_courtier = {
+			limit = {
+				ai = yes
+				is_adult = yes
+				is_female = no
+				prisoner = no
+				NOT = {
+					OR = {
+						is_rival = ROOT
+						trait = incapable
+						trait = infirm
+						character = ROOT
+					}
+				}
+			}
+			add_trait = maimed
+		}
+		hidden_tooltip = {
+			character_event = { id = WoL.11105 days = 5}
+		}
+	}
+}
+
+# Spear-throwing conclusion
+character_event = {
+	id = WoL.11105
+	is_triggered_only = yes
+	hide_window = yes
+	
+	immediate = {
+		random_list = {
+			30 = { # win
+				modifier = {
+					trait = dwarf
+					factor = 0.5
+				}
+				character_event = { id = WoL.11107 }
+			}
+			60 = { # lose
+				random_courtier = {
+					limit = {
+						ai = yes
+						is_adult = yes
+						is_female = no
+						prisoner = no
+						NOT = {
+							OR = {
+								is_rival = ROOT
+								trait = incapable
+								trait = infirm
+								character = ROOT
+							}
+						}
+					}
+					character_event = { id = WoL.11108 }
+				}
+			}
+		}
+	}
+}
+
+# Win spear-throwing
+character_event = {
+	id = WoL.11107
+	is_triggered_only = yes
+	desc = EVTDESC_WOL_11107
+	picture = GFX_evt_son_asking_father
+	border = GFX_event_normal_frame_war
+	
+	option = {
+		name = EVTOPTA_WOL_11107
+		prestige = 50
+		hidden_tooltip = {
+			character_event = { id = WoL.11200 days = 7 }
+		}
+	}
+}
+
+# Lose spear courtier bounce
+character_event = {
+	id = WoL.11108
+	is_triggered_only = yes
+	hide_window = yes
+	
+	immediate = {
+		FROM = {
+			character_event = { id = WoL.11109 }
+		}
+	}
+}
+
+# Lose spear-throwing
+character_event = {
+	id = WoL.11109
+	is_triggered_only = yes
+	desc = EVTDESC_WOL_11109
+	picture = GFX_evt_son_asking_father
+	border = GFX_event_normal_frame_war
+	
+	option = {
+		name = EVTOPTA_WOL_11109
+		FROM = { prestige = 50 }
+		prestige = -5
+		hidden_tooltip = {
+			character_event = { id = WoL.11200 days = 7 }
+		}
+	}
+}
+
+# Sparring partner
+character_event = {
+	id = WoL.11110
+	is_triggered_only = yes
+	desc = EVTDESC_WOL_11110
+	picture = GFX_evt_melee
+	border = GFX_event_normal_frame_war
+	
+	option = {
+		name = EVTOPTA_WOL_11110
+		random_realm_character = {
+			limit = { 
+				ai = yes
+				is_female = no
+				is_adult = yes
+				NOT = {
+					OR = {
+						is_rival = ROOT
+						is_friend = ROOT
+						age = 50
+						trait = incapable
+						trait = infirm
+					}
+				}
+			}
+			hidden_tooltip = {
+				add_friend = ROOT
+				set_character_flag = sparring_partner
+			}
+			ROOT = {
+				add_friend = PREV
+			}
+		}
+		hidden_tooltip = {
+			set_character_flag = sparring_partner
+		}
+	}
+	
+	option = {
+		name = EVTOPTB_WOL_11110
+	}
+}
+
+# Sparring success
+character_event = {
+	id = WoL.11111
+	is_triggered_only = yes
+	desc = EVTDESC_WOL_11111
+	picture = GFX_evt_melee
+	border = GFX_event_normal_frame_war
+	
+	option = {
+		name = EVTOPTA_WOL_11111
+		add_character_modifier = {
+			modifier = wol_duel_training
+			duration = 365
+		}
+		hidden_tooltip = {
+			character_event = { id = WoL.11200 days = 7 }
+		}
+	}
+}
+
+# Sparring accident
+character_event = {
+	id = WoL.11112
+	is_triggered_only = yes
+	desc = EVTDESC_WOL_11112
+	picture = GFX_evt_melee
+	border = GFX_event_normal_frame_war
+	
+	immediate = {
+		random = {
+			chance = 50
+			set_character_flag = sparring_injured
+		}
+	}
+	
+	option = {
+		name = EVTOPTA_WOL_11112
+		trigger = { has_character_flag = sparring_injured }
+		add_trait = wounded
+		clr_character_flag = sparring_injured
+	}
+	
+	option = {
+		name = EVTOPTA_WOL_11112
+		trigger = { NOT = { has_character_flag = sparring_injured } }
+		random_friend = {
+			limit = { has_character_flag = sparring_partner }
+			add_trait = wounded
+		}
+		clr_character_flag = sparring_injured
+	}
+}
+
+# Sparring success bounce
+character_event = {
+	id = WoL.11113
+	is_triggered_only = yes
+	hide_window = yes
+	
+	immediate = {
+		FROM = {
+			character_event = { id = WoL.11111}
+		}
+	}
+}
+
+# Sparring accident bounce
+character_event = {
+	id = WoL.11114
+	is_triggered_only = yes
+	hide_window = yes
+	
+	immediate = {
+		FROM = {
+			character_event = { id = WoL.11112}
+		}
+	}
+}
+
+### Success in war-focus (hidden)
+character_event = {
+	id = WoL.11200
+	is_triggered_only = yes
+	hide_window = yes
+	
+	immediate = {
+		random_list = {
+			20 = {
+				modifier = {
+					OR = {
+						has_character_modifier = wol_great_warrior
+						trait = duelist
+					}
+					factor = 0
+				}
+				modifier = {
+					has_character_modifier = wol_warrior
+					factor = 0.75
+				}
+				character_event = { id = WoL.11201 } # level up
+			}
+			10 = {
+				modifier = {
+					OR = {
+						NOT = {
+							has_character_modifier = wol_great_warrior
+						}
+						has_character_flag = denied_duelist_trait
+						lifestyle_traits = 1
+					}
+					factor = 0
+				}
+				character_event = { id = WoL.11202 } # duelist
+			}
+			30 = {
+				character_event = { id = WoL.11203 } # prestige
+			}
+			30 = {
+				modifier = {
+					trait = wroth
+					factor = 0
+				}
+				character_event = { id = WoL.11204 } # wroth
+			}
+			30 = {
+				modifier = {
+					trait = brave
+					factor = 0
+				}
+				character_event = { id = WoL.11205 } # brave
+			}
+			5 = {
+				modifier = {
+					trait = strong
+					factor = 0
+				}
+				character_event = { id = WoL.11206 } # strong
+			}
+		}
+	}
+}
+
+# Level up modifier
+character_event = {
+	id = WoL.11201
+	is_triggered_only = yes
+	desc = EVTDESC_WOL_11201 ### Add more culture specific weapon descriptions
+	picture = GFX_evt_melee
+	border = GFX_event_normal_frame_war
+	
+	trigger = {
+		NOT = {
+			OR = {
+				has_character_modifier = wol_great_warrior
+				trait = duelist
+			}
+		}
+	}
+	
+	option = {
+		name = EVTOPTA_WOL_11201
+		if = {
+			limit = {
+				has_character_modifier = wol_warrior
+			}
+			hidden_tooltip = {
+				remove_character_modifier = wol_warrior
+			}
+			add_character_modifier = {
+				modifier = wol_great_warrior
+				duration = -1
+			}
+		}
+		if = {
+			limit = {
+				NOT = { has_character_modifier = wol_warrior }
+			}
+			add_character_modifier = {
+				modifier = wol_warrior
+				duration = -1
+			}
+		}
+	}
+}
+
+# Gain duelist
+character_event = {
+	id = WoL.11202
+	is_triggered_only = yes
+	desc = EVTDESC_WOL_11202
+	picture = GFX_evt_melee
+	border = GFX_event_normal_frame_war
+	
+	trigger = {
+		has_character_modifier = wol_great_warrior
+		NOT = { lifestyle_traits = 1 }
+	}
+	
+	option = {
+		name = EVTOPTA_WOL_11202
+		hidden_tooltip = {
+			remove_character_modifier = wol_great_warrior
+		}
+		add_trait = duelist
+	}
+	
+	option = {
+		name = EVTOPTB_WOL_11202
+		prestige = 10
+		set_character_flag = denied_duelist_trait
+	}
+}
+
+# Gain prestige
+character_event = {
+	id = WoL.11203
+	is_triggered_only = yes
+	desc = EVTDESC_WOL_11203
+	picture = GFX_evt_melee
+	border = GFX_event_normal_frame_war
+	
+	option = {
+		name = EVTOPTA_WOL_11203
+		prestige = 100
+	}
+}
+
+# Gain Wroth / lose patient
+character_event = {
+	id = WoL.11204
+	is_triggered_only = yes
+	desc = EVTDESC_WOL_11204
+	picture = GFX_evt_melee
+	border = GFX_event_normal_frame_war
+	
+	option = {
+		name = EVTOPTA_WOL_11204
+		if = {
+			limit = {
+				NOT = { trait = patient }
+			}
+			add_trait = wroth
+		}
+		if = {
+			limit = {
+				trait = patient
+			}
+			remove_trait = patient
+		}
+	}
+}
+
+# Gain Brave / lose coward
+character_event = {
+	id = WoL.11205
+	is_triggered_only =  yes
+	desc = EVTDESC_WOL_11205
+	picture = GFX_evt_melee
+	border = GFX_event_normal_frame_war
+	
+	option = {
+		name = EVTOPTA_WOL_11205
+		if = {
+			limit = {
+				NOT = { trait = craven }
+			}
+			add_trait = brave
+		}
+		if = {
+			limit = {
+				trait = craven
+			}
+			remove_trait = craven
+		}
+	}
+}
+
+# Gain strong
+character_event = {
+	id = WoL.11206
+	is_triggered_only = yes
+	picture = GFX_evt_melee
+	border = GFX_event_normal_frame_war
+	desc = {
+		text = EVTDESCA_WOL_11206
+		trigger = {
+			NOT = { trait = weak }
+		}
+	}
+	desc = {
+		text = EVTDESCB_WOL_11206
+		trigger = {
+			trait = weak 
+		}
+	}
+	
+	option = {
+		name = EVTOPTA_WOL_11206
+		trigger = {	NOT = { trait = weak } }
+		add_trait = strong
+	}
+	
+	option = {
+		name = EVTOPTB_WOL_11206
+		trigger = { trait = weak }
+		remove_trait = weak
+	}
+}
