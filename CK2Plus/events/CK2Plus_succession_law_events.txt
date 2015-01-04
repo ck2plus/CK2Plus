@@ -2628,3 +2628,124 @@ character_event = {
 	}
 }
 
+#Option to create cadet-branch dynasty 
+#on inheritance from distant relative 
+#or usurpation via war 
+#Currently AI-only but if we want to open it to players 
+#all we need to do is add localisations
+#and remove AI-only condition.  
+character_event = {
+	id = Plus.613
+	#picture = "GFX_evt_coronation"
+	#desc = "EVTDESC_Plus_613"
+	
+	hide_window = yes		
+	is_triggered_only = yes
+	only_playable = yes
+	
+	trigger = {		
+		ai = yes 
+		FROM = { 
+			is_primary_holder_title = yes
+			higher_tier_than = count
+			OR = {
+				is_feudal = yes
+				is_tribal = yes
+			}
+		}
+		FROMFROM = { 
+			dynasty = ROOT 
+			any_dynasty_member = { is_alive = yes count = 40 }
+		}
+		OR = {
+			FROMFROM = { has_opinion_modifier = { who = ROOT modifier = opinion_usurped_title } }
+			NOT = {
+				FROMFROM = { is_close_relative = ROOT }
+				FROM = { has_law = succ_tanistry }
+				FROM = { has_law = succ_feudal_elective }
+				dynasty_head = {					
+					primary_title = {
+						higher_tier_than = FROM
+						has_law = succ_tanistry
+					}
+				}
+			}			
+		}
+	}
+	
+	option = {
+		name = EXCELLENT
+		ai_chance = {
+			factor = 33
+			modifier = {
+				factor = 4
+				FROMFROM = { has_opinion_modifier = { who = ROOT modifier = opinion_usurped_title } }
+				NOT = {
+					FROMFROM = { is_close_relative = ROOT }
+					FROM = { has_law = succ_tanistry }
+				}
+			}
+			modifier = {
+				factor = 1.5
+				independent = yes
+			}			
+			modifier = {
+				factor = 1.5
+				FROM = { tier = KING }
+			}
+			modifier = {
+				factor = 2
+				FROM = { tier = EMPEROR }
+			}
+			modifier = {
+				factor = 0.75
+				OR = {
+					ROOT = { mother_even_if_dead = { is_close_relative = FROMFROM } }
+					ROOT = { father_even_if_dead = { is_close_relative = FROMFROM } }
+				}
+			}
+		}
+		ROOT = {
+			if = {
+				limit = { mother_even_if_dead = { dynasty = FROMFROM } }
+				dynasty = mother_bastard
+			}
+			if = {
+				limit = { father_even_if_dead = { dynasty = FROMFROM } }
+				dynasty = father_bastard
+			}			
+			#log = "Plus.613: [Root.GetTitledName] ascends the throne in the [From.GetFullBaseName] and founds House [Root.GetOnlyDynastyName], a cadet branch of House [FromFrom.GetOnlyDynastyName]."			
+			if = {
+				limit = { ai = no }
+				chronicle = {
+					entry = CHRONICLE_CADET_BRANCH
+					portrait = [Root.GetID]
+					picture = GFX_evt_coronation
+				}
+			}
+			any_child = {
+				limit = { dynasty = FROMFROM }
+				dynasty = ROOT
+				any_child = {
+					limit = { dynasty = FROMFROM }
+					dynasty = ROOT
+					any_child = {
+						limit = { dynasty = FROMFROM }
+						dynasty = ROOT
+						any_child = {
+							limit = { dynasty = FROMFROM }
+							dynasty = ROOT
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	option = {
+		name = NO
+		ai_chance = {
+			factor = 66
+		}
+	}	
+}
