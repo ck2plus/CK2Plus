@@ -30,8 +30,7 @@ succession_laws = {
 				is_landless_type_title = no
 				is_tribal_type_title = yes
 			}
-			rebel = no
-			is_primary_holder_title = yes			
+			rebel = no			
 			is_primary_type_title = no
 			is_vice_royalty = no
 			OR = {
@@ -61,43 +60,37 @@ succession_laws = {
 				holder_scope = { ai = no }
 				# is tribal
 				holder_scope = { is_tribal = yes }
+				# primary title is gavelkind
+				AND = {
+					is_primary_holder_title = no
+					holder_scope = { primary_title = { has_law = succ_gavelkind } }
+				}
 				# has multiple possible heirs and is kind or charitable
-				holder_scope = {
-					any_child = {
-						NOT = { trait = bastard }
-						OR = {
-							AND = {
-								PREV = { primary_title = { has_law = true_cognatic_succession } }
-								is_female = yes
-							}
-							is_female = no
-						}
-						reverse_opinion = { who = PREV value = 25 }
-						age = 6
-						PREV = {
-							any_child = {
-								NOT = { trait = bastard }
-								OR = {
-									AND = {
-										PREV = { primary_title = { has_law = true_cognatic_succession } }
-										is_female = yes
-									}
-									is_female = no
+				AND = {
+					is_primary_holder_title = yes
+					holder_scope = {
+						any_child = {
+							NOT = { trait = bastard }
+							OR = {
+								AND = {
+									PREVPREV = { has_law = true_cognatic_succession }
+									is_female = yes
 								}
-								reverse_opinion = { who = PREV value = 25 }
-								age = 6
-								NOT = { character = PREVPREV }
+								is_female = no
 							}
+							reverse_opinion = { who = PREV value = 25 }
+							age = 6
+							count = 2
 						}
-					}
-					OR = {
-						trait = kind
-						trait = charitable
-						trait = just
-					}
-					NOT = {
-						trait = ambitious
-						trait = proud
+						OR = {
+							trait = kind
+							trait = charitable
+							trait = just
+						}
+						NOT = {
+							trait = ambitious
+							trait = proud
+						}
 					}
 				}
 			}		
@@ -128,89 +121,65 @@ succession_laws = {
 		}
 		effect = {
 			if = {
-				limit = {
-					tier = BARON
-				}
+				limit = { tier = BARON }
 				holder_scope = { prestige = -125 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = COUNT
-				}
+				limit = { tier = COUNT }
 				holder_scope = { prestige = -250 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = DUKE
-				}
+				limit = { tier = DUKE }
 				holder_scope = { prestige = -500 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = KING
-				}
+				limit = { tier = KING }
 				holder_scope = { prestige = -750 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = EMPEROR
-				}
+				limit = { tier = EMPEROR }
 				holder_scope = { prestige = -1000 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			holder_scope = { hidden_tooltip = { random_courtier = { limit = { ai = yes } character_event = { id = PlusFaction.306 days = 1 } } } }
 			tooltip = { succession = gavelkind }
 			hidden_tooltip = {
+				set_title_flag = title_to_change
+				save_event_target_as = changed_title
+				
+				#set opinion changes for heirs and pretenders
+				current_heir = { set_character_flag = former_heir }
 				holder_scope = {
-					current_heir = { set_character_flag = former_heir }
 					any_realm_character = {
 						limit = {
-							any_pretender_title = {
-								is_primary_holder_title = yes
-								holder = PREVPREV
-							}
+							any_pretender_title = { title = event_target:changed_title }
 						}
 						set_character_flag = former_pretender
 					}
 					any_independent_ruler = {
 						any_realm_character = {
 							limit = {
-								any_pretender_title = {
-									is_primary_holder_title = yes
-									holder = PREVPREVPREV
-								}
+								any_pretender_title = { title = event_target:changed_title }
 							}
 							set_character_flag = former_pretender
 						}
 					}
-					#sets opinion changes for heirs and pretenders
 					character_event = { id = Plus.604 days = 1 }
 				}
-			}
-			hidden_tooltip = {
+				
+				#actually change the law
 				add_law = succ_gavelkind
-				holder_scope = {
-					any_demesne_title = {
-						limit = {
-							is_primary_holder_title = no
-							OR = {
-								is_primary_holder_title_tier = yes
-								higher_tier_than = duke
-							}
-						}
-						add_law = succ_gavelkind
-					}
-				}
-			}
-			hidden_tooltip = {
+
 				holder_scope = {
 					#current heir is unhappy (they have to share) if they were the previous heir
-					current_heir = {
-						if = { 
-							limit = { has_character_flag = former_heir }
-							opinion = {
-								who = PREV
-								modifier = opinion_succ_law_change
-								months = 240
+					event_target:changed_title = {
+						current_heir = {
+							if = { 
+								limit = { has_character_flag = former_heir }
+								opinion = {
+									who = PREVPREV
+									modifier = opinion_succ_law_change
+									months = 240
+								}
 							}
 						}
 					}
@@ -224,8 +193,8 @@ succession_laws = {
 								trait = disinherited
 								has_character_flag = former_heir
 								has_character_flag = former_pretender
-								is_primary_heir = PREV
-								any_pretender_title = { is_primary_holder_title = yes holder = PREVPREV }
+								any_heir_title = { title = event_target:changed_title }
+								any_pretender_title = { title = event_target:changed_title }
 								has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
 								has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
 								has_opinion_modifier = { who = PREV modifier = opinion_bad_succ_law_change 	}
@@ -240,6 +209,11 @@ succession_laws = {
 					#vassals are slightly upset
 					any_vassal = {
 						limit = {
+							OR = {
+								primary_title = { de_jure_liege_or_above = event_target:changed_title }
+								event_target:changed_title = { is_primary_holder_title = yes }
+								event_target:changed_title = { is_titular = yes }
+							}
 							NOT = {
 								has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
 								has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
@@ -291,8 +265,7 @@ succession_laws = {
 				is_tribal_type_title = yes
 				temporary = yes
 			}
-			rebel = no
-			is_primary_holder_title = yes			
+			rebel = no			
 			is_primary_type_title = no
 			is_vice_royalty = no
 			OR = {
@@ -346,92 +319,55 @@ succession_laws = {
 		}
 		effect = {
 			if = {
-				limit = {
-					tier = BARON
-				}
+				limit = { tier = BARON }
 				holder_scope = { prestige = -125 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = COUNT
-				}
+				limit = { tier = COUNT }
 				holder_scope = { prestige = -250 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = DUKE
-				}
+				limit = { tier = DUKE }
 				holder_scope = { prestige = -500 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = KING
-				}
+				limit = { tier = KING }
 				holder_scope = { prestige = -750 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = EMPEROR
-				}
+				limit = { tier = EMPEROR }
 				holder_scope = { prestige = -1000 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			holder_scope = { hidden_tooltip = { random_courtier = { limit = { ai = yes } character_event = { id = PlusFaction.306 days = 1 } } } }
 			tooltip = { succession = elective_gavelkind }
 			hidden_tooltip = {
+				set_title_flag = title_to_change
+				save_event_target_as = changed_title
+				
+				#set opinion changes for heirs and pretenders
+				current_heir = { set_character_flag = former_heir }
 				holder_scope = {
-					current_heir = { set_character_flag = former_heir }
 					any_realm_character = {
 						limit = {
-							any_pretender_title = {
-								is_primary_holder_title = yes
-								holder = PREVPREV
-							}
+							any_pretender_title = { title = event_target:changed_title }
 						}
 						set_character_flag = former_pretender
 					}
 					any_independent_ruler = {
 						any_realm_character = {
 							limit = {
-								any_pretender_title = {
-									is_primary_holder_title = yes
-									holder = PREVPREVPREV
-								}
+								any_pretender_title = { title = event_target:changed_title }
 							}
 							set_character_flag = former_pretender
 						}
 					}
-					#sets opinion changes for heirs and pretenders
 					character_event = { id = Plus.604 days = 1 }
 				}
-			}
-			hidden_tooltip = {
+
+				#actually change the law
 				add_law = succ_elective_gavelkind
+				
 				holder_scope = {
-					any_demesne_title = {
-						limit = {
-							is_primary_holder_title = no
-							OR = {
-								is_primary_holder_title_tier = yes
-								higher_tier_than = duke
-							}
-						}
-						add_law = succ_elective_gavelkind
-					}
-				}
-			}
-			hidden_tooltip = {
-				holder_scope = {
-					#current heir is unhappy (they have to share) if they were the previous heir
-					current_heir = {
-						if = { 
-							limit = { has_character_flag = former_heir }
-							opinion = {
-								who = PREV
-								modifier = opinion_succ_law_change
-								months = 240
-							}
-						}
-					}
 					#legitimate children are happy
 					any_child = {
 						limit = {
@@ -442,8 +378,8 @@ succession_laws = {
 								trait = disinherited
 								has_character_flag = former_heir
 								has_character_flag = former_pretender
-								is_primary_heir = PREV
-								any_pretender_title = { is_primary_holder_title = yes holder = PREVPREV }
+								any_heir_title = { title = event_target:changed_title }
+								any_pretender_title = { title = event_target:changed_title }
 								has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
 								has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
 								has_opinion_modifier = { who = PREV modifier = opinion_bad_succ_law_change 	}
@@ -473,6 +409,11 @@ succession_laws = {
 					#vassals are slightly upset
 					any_vassal = {
 						limit = {
+							OR = {
+								primary_title = { de_jure_liege_or_above = event_target:changed_title }
+								event_target:changed_title = { is_primary_holder_title = yes }
+								event_target:changed_title = { is_titular = yes }
+							}
 							NOT = {
 								has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
 								has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
@@ -551,7 +492,6 @@ succession_laws = {
 				NOT = { tier = baron }
 				holder_scope = { is_patrician = yes }
 			}
-			is_primary_holder_title = yes
 			is_primary_type_title = no
 			is_vice_royalty = no		
 			OR = {
@@ -568,20 +508,28 @@ succession_laws = {
 			# ai restrictions
 			OR = {
 				holder_scope = { ai = no }
+				# primary title is seniority
+				AND = {
+					is_primary_holder_title = no
+					holder_scope = { primary_title = { has_law = succ_seniority } }
+				}
 				# is slavic and under gavelkind
-				holder_scope = {
-					OR = {
-						culture_group = east_slavic
-						culture_group = west_slavic
-						culture_group = south_slavic
-						culture = hungarian
-					}
-					primary_title = { has_law = succ_gavelkind }
-					NOT = {
-						trait = content
-						trait = charitable
-						trait = kind
-						trait = slothful
+				AND = {
+					is_primary_holder_title = yes
+					has_law = succ_gavelkind
+					holder_scope = {
+						OR = {
+							culture_group = east_slavic
+							culture_group = west_slavic
+							culture_group = south_slavic
+							culture = hungarian
+						}
+						NOT = {
+							trait = content
+							trait = charitable
+							trait = kind
+							trait = slothful
+						}
 					}
 				}
 			}
@@ -612,80 +560,54 @@ succession_laws = {
 		}
 		effect = {
 			if = {
-				limit = {
-					tier = BARON
-				}
+				limit = { tier = BARON }
 				holder_scope = { prestige = -125 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = COUNT
-				}
+				limit = { tier = COUNT }
 				holder_scope = { prestige = -250 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = DUKE
-				}
+				limit = { tier = DUKE }
 				holder_scope = { prestige = -500 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = KING
-				}
+				limit = { tier = KING }
 				holder_scope = { prestige = -750 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = EMPEROR
-				}
+				limit = { tier = EMPEROR }
 				holder_scope = { prestige = -1000 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			holder_scope = { hidden_tooltip = { random_courtier = { limit = { ai = yes } character_event = { id = PlusFaction.306 days = 1 } } } }
 			tooltip = { succession = seniority }
 			hidden_tooltip = {
+				set_title_flag = title_to_change
+				save_event_target_as = changed_title
+				
+				#set opinion changes for heirs and pretenders
+				current_heir = { set_character_flag = former_heir }
 				holder_scope = {
-					current_heir = { set_character_flag = former_heir }
 					any_realm_character = {
 						limit = {
-							any_pretender_title = {
-								is_primary_holder_title = yes
-								holder = PREVPREV
-							}
+							any_pretender_title = { title = event_target:changed_title }
 						}
 						set_character_flag = former_pretender
 					}
 					any_independent_ruler = {
 						any_realm_character = {
 							limit = {
-								any_pretender_title = {
-									is_primary_holder_title = yes
-									holder = PREVPREVPREV
-								}
+								any_pretender_title = { title = event_target:changed_title }
 							}
 							set_character_flag = former_pretender
 						}
 					}
-					#sets opinion changes for heirs and pretenders
 					character_event = { id = Plus.604 days = 1 }
 				}
-			}
-			hidden_tooltip = {
+
+				#actually change the law
 				add_law = succ_seniority
-				holder_scope = {
-					any_demesne_title = {
-						limit = {
-							is_primary_holder_title = no
-							OR = {
-								is_primary_holder_title_tier = yes
-								higher_tier_than = duke
-							}
-						}
-						add_law = succ_seniority
-					}
-				}
-			}
-			hidden_tooltip = {
+
 				holder_scope = {
 					#legitimate children are angry
 					any_child = {
@@ -695,8 +617,8 @@ succession_laws = {
 								trait = monk
 								trait = nun
 								trait = disinherited
-								is_primary_heir = PREV
-								any_pretender_title = { is_primary_holder_title = yes holder = PREVPREV }
+								any_heir_title = { title = event_target:changed_title }
+								any_pretender_title = { title = event_target:changed_title }
 								has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
 								has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
 								has_opinion_modifier = { who = PREV modifier = opinion_bad_succ_law_change 	}
@@ -726,11 +648,15 @@ succession_laws = {
 					#vassals are slightly upset
 					any_vassal = {
 						limit = {
+							OR = {
+								primary_title = { de_jure_liege_or_above = event_target:changed_title }
+								event_target:changed_title = { is_primary_holder_title = yes }
+								event_target:changed_title = { is_titular = yes }
+							}
 							NOT = {
 								has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
 								has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
 								has_opinion_modifier = { who = PREV modifier = opinion_bad_succ_law_change 	}
-								is_primary_heir = PREV
 							}
 						}
 						opinion = {
@@ -788,8 +714,7 @@ succession_laws = {
 					is_feudal = yes
 				}
 				holder_scope = { is_feudal = yes }
-			}	
-			is_primary_holder_title = yes
+			}
 			is_primary_type_title = no
 			is_vice_royalty = no
 			NOT = { has_law = succ_primogeniture }
@@ -806,110 +731,126 @@ succession_laws = {
 			# ai restrictions
 			OR = {
 				holder_scope = { ai = no }
+				# primary title has primogeniture
+				AND = {
+					is_primary_holder_title = no
+					holder_scope = { primary_title = { has_law = succ_primogeniture } }
+				}
 				# has an eligible heir over 6 years old and is proud or ambitious
-				holder_scope = {
-					OR = {
-						AND = {
-							NOT = { primary_title = { has_law = enatic_succession } }
-							any_child = {
-								NOT = { trait = bastard }
-								is_female = no
-								age = 6
+				AND = {
+					is_primary_holder_title = yes
+					holder_scope = {
+						OR = {
+							AND = {
+								NOT = { PREV = { has_law = enatic_succession } }
+								any_child = {
+									NOT = { trait = bastard }
+									is_female = no
+									age = 6
+								}
+							}
+							AND = {
+								NOT = { PREV = { has_law = agnatic_succession } }
+								any_child = {
+									NOT = { trait = bastard }
+									is_female = yes
+									age = 6
+								}
 							}
 						}
-						AND = {
-							NOT = { primary_title = { has_law = agnatic_succession } }
-							any_child = {
-								NOT = { trait = bastard }
-								is_female = yes
-								age = 6
-							}
+						OR = {
+							trait = proud
+							trait = ambitious
 						}
-					}
-					OR = {
-						trait = proud
-						trait = ambitious
 					}
 				}
 				# has an exceptional heir and is not content or humble
-				holder_scope = {
-					OR = {
-						AND = {
-							NOT = { primary_title = { has_law = enatic_succession } }
-							any_child = {
-								NOT = { trait = bastard }
-								is_female = no
-								OR = {
-									diplomacy = 15
-									martial = 15
+				AND = {
+					is_primary_holder_title = yes
+					holder_scope = {
+						OR = {
+							AND = {
+								NOT = { PREV = { has_law = enatic_succession } }
+								any_child = {
+									NOT = { trait = bastard }
+									is_female = no
+									OR = {
+										diplomacy = 15
+										martial = 15
+									}
+									diplomacy = 8
+									martial = 8
+									stewardship = 8
+									NOT = {
+										any_sibling = {
+											is_female = no
+											NOT = { trait = bastard }
+											is_older_than = PREV
+										}
+									}
 								}
-								diplomacy = 8
-								martial = 8
-								stewardship = 8
-								NOT = {
-									any_sibling = {
-										is_female = no
-										NOT = { trait = bastard }
-										is_older_than = PREV
+							}
+							AND = {
+								NOT = { PREV = { has_law = agnatic_succession } }
+								any_child = {
+									NOT = { trait = bastard }
+									is_female = yes
+									OR = {
+										diplomacy = 15
+										intrigue = 15
+									}
+									diplomacy = 8
+									stewardship = 8
+									intrigue = 8
+									NOT = {
+										any_sibling = {
+											NOT = { trait = bastard }
+											is_older_than = PREV
+										}
 									}
 								}
 							}
 						}
-						AND = {
-							NOT = { primary_title = { has_law = agnatic_succession } }
-							any_child = {
-								NOT = { trait = bastard }
-								is_female = yes
-								OR = {
-									diplomacy = 15
-									intrigue = 15
-								}
-								diplomacy = 8
-								stewardship = 8
-								intrigue = 8
-								NOT = {
-									any_sibling = {
-										NOT = { trait = bastard }
-										is_older_than = PREV
-									}
-								}
-							}
+						NOT = {
+							trait = content
+							trait = humble
 						}
-					}
-					NOT = {
-						trait = content
-						trait = humble
 					}
 				}
 				# has an eligible heir and doesn't like current heir
-				holder_scope = {
-					OR = {
-						AND = {
-							NOT = { primary_title = { has_law = enatic_succession } }
-							any_child = {
-								NOT = { trait = bastard }
-								is_female = no
-							}
-						}
-						AND = {
-							NOT = { primary_title = { has_law = agnatic_succession } }
-							any_child = {
-								NOT = { trait = bastard }
-								is_female = yes
-							}
-						}
-					}
-					current_heir = {
+				AND = {
+					is_primary_holder_title = yes
+					holder_scope = {
 						OR = {
-							NOT = { dynasty = PREV }
-							NOT = { is_close_relative = PREV }
+							AND = {
+								NOT = { PREV = { has_law = enatic_succession } }
+								any_child = {
+									NOT = { trait = bastard }
+									is_female = no
+								}
+							}
+							AND = {
+								NOT = { PREV = { has_law = agnatic_succession } }
+								any_child = {
+									NOT = { trait = bastard }
+									is_female = yes
+								}
+							}
 						}
-						NOT = { reverse_opinion = { who = PREV value = 0 } }
-					}
-					NOT = {
-						trait = content
-						trait = humble
-						trait = craven
+						PREV = {
+							current_heir = {
+								OR = {
+									NOT = { dynasty = PREVPREV }
+									NOT = { is_close_relative = PREVPREV }
+								}
+								NOT = { reverse_opinion = { who = PREVPREV value = 0 } }
+							}
+						}
+						NOT = {
+							trait = content
+							trait = humble
+							trait = craven
+						}
 					}
 				}
 			}
@@ -940,87 +881,63 @@ succession_laws = {
 		}
 		effect = {
 			if = {
-				limit = {
-					tier = BARON
-				}
+				limit = { tier = BARON }
 				holder_scope = { prestige = -125 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = COUNT
-				}
+				limit = { tier = COUNT }
 				holder_scope = { prestige = -250 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = DUKE
-				}
+				limit = { tier = DUKE }
 				holder_scope = { prestige = -500 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = KING
-				}
+				limit = { tier = KING }
 				holder_scope = { prestige = -750 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = EMPEROR
-				}
+				limit = { tier = EMPEROR }
 				holder_scope = { prestige = -1000 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			holder_scope = { hidden_tooltip = { random_courtier = { limit = { ai = yes } character_event = { id = PlusFaction.306 days = 1 } } } }
 			tooltip = { succession = primogeniture }
 			hidden_tooltip = {
+				set_title_flag = title_to_change
+				save_event_target_as = changed_title
+				
+				#set opinion changes for heirs and pretenders
+				current_heir = { set_character_flag = former_heir }
 				holder_scope = {
-					current_heir = { set_character_flag = former_heir }
 					any_realm_character = {
 						limit = {
-							any_pretender_title = {
-								is_primary_holder_title = yes
-								holder = PREVPREV
-							}
+							any_pretender_title = { title = event_target:changed_title }
 						}
 						set_character_flag = former_pretender
 					}
 					any_independent_ruler = {
 						any_realm_character = {
 							limit = {
-								any_pretender_title = {
-									is_primary_holder_title = yes
-									holder = PREVPREVPREV
-								}
+								any_pretender_title = { title = event_target:changed_title }
 							}
 							set_character_flag = former_pretender
 						}
 					}
-					#sets opinion changes for heirs and pretenders
 					character_event = { id = Plus.604 days = 1 }
 				}
-			}
-			hidden_tooltip = {
+				
+				#actually change the law
 				add_law = succ_primogeniture
-				holder_scope = {
-					any_demesne_title = {
-						limit = {
-							is_primary_holder_title = no
-							OR = {
-								is_primary_holder_title_tier = yes
-								higher_tier_than = duke
-							}
-						}
-						add_law = succ_primogeniture
-					}
-				}
-			}
-			hidden_tooltip = {
+
 				holder_scope = {
 					#current heir is pleased
-					current_heir = {
-						opinion = {
-							who = PREV
-							modifier = opinion_good_succ_law_change
-							months = 240
+					event_target:changed_title = {
+						current_heir = {
+							opinion = {
+								who = PREVPREV
+								modifier = opinion_good_succ_law_change
+								months = 240
+							}
 						}
 					}
 					#legitimate children are upset
@@ -1033,8 +950,8 @@ succession_laws = {
 								trait = disinherited
 								has_character_flag = former_heir
 								has_character_flag = former_pretender
-								is_primary_heir = PREV
-								any_pretender_title = { is_primary_holder_title = yes holder = PREVPREV }
+								any_heir_title = { title = event_target:changed_title }
+								any_pretender_title = { title = event_target:changed_title }
 								has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
 								has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
 								has_opinion_modifier = { who = PREV modifier = opinion_bad_succ_law_change 	}
@@ -1049,11 +966,15 @@ succession_laws = {
 					#vassals are slightly upset
 					any_vassal = {
 						limit = {
+							OR = {
+								primary_title = { de_jure_liege_or_above = event_target:changed_title }
+								event_target:changed_title = { is_primary_holder_title = yes }
+								event_target:changed_title = { is_titular = yes }
+							}
 							NOT = {
 								has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
 								has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
 								has_opinion_modifier = { who = PREV modifier = opinion_bad_succ_law_change 	}
-								is_primary_heir = PREV
 							}
 						}
 						opinion = {
@@ -1109,8 +1030,7 @@ succession_laws = {
 			OR = {
 				is_landless_type_title = no
 				is_tribal_type_title = yes
-			}		
-			is_primary_holder_title = yes
+			}
 			is_primary_type_title = no
 			is_vice_royalty = no
 			NOT = { tier = baron }
@@ -1120,26 +1040,29 @@ succession_laws = {
 			# ai restrictions
 			OR = {
 				holder_scope = { ai = no }
-				# has no child or sibling heirs and has at least three vassals he likes
-				holder_scope = {
-					NOT = { current_heir = { father = { character = PREVPREV } } }
-					NOT = { current_heir = { mother = { character = PREVPREV } } }
-					NOT = { current_heir = { any_sibling = { character = PREVPREV } } }
-					age = 30
-					OR = {
-						trait = charitable
-						trait = just
-						trait = gregarious
-					}
-					NOT = {
-						trait = ambitious
-						trait = proud
-					}
-					any_vassal = {
-						is_feudal = yes
-						NOT = { is_primary_heir = PREV }
-						reverse_opinion = { who = PREV value = 50 }
-						count = 3
+				# has no close relative heirs and has at least three vassals he likes
+				AND = {
+					is_primary_holder_title = yes
+					holder_scope = {
+						PREV = { current_heir = { NOT = { is_close_relative = PREVPREV } } }
+						age = 30
+						OR = {
+							trait = charitable
+							trait = just
+							trait = gregarious
+						}
+						NOT = {
+							trait = ambitious
+							trait = proud
+						}
+						any_vassal = {
+							is_feudal = yes
+							is_adult = yes
+							primary_title = { de_jure_liege_or_above = PREVPREVPREV }
+							NOT = { any_heir_title = { title = PREVPREVPREV } }
+							reverse_opinion = { who = PREV value = 25 }
+							count = 3
+						}
 					}
 				}
 			}
@@ -1170,80 +1093,54 @@ succession_laws = {
 		}
 		effect = {
 			if = {
-				limit = {
-					tier = BARON
-				}
+				limit = { tier = BARON }
 				holder_scope = { prestige = -125 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = COUNT
-				}
+				limit = { tier = COUNT }
 				holder_scope = { prestige = -250 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = DUKE
-				}
+				limit = { tier = DUKE }
 				holder_scope = { prestige = -500 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = KING
-				}
+				limit = { tier = KING }
 				holder_scope = { prestige = -750 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = EMPEROR
-				}
+				limit = { tier = EMPEROR }
 				holder_scope = { prestige = -1000 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			holder_scope = { hidden_tooltip = { random_courtier = { limit = { ai = yes } character_event = { id = PlusFaction.306 days = 1 } } } }
 			tooltip = { succession = feudal_elective }
 			hidden_tooltip = {
+				set_title_flag = title_to_change
+				save_event_target_as = changed_title
+				
+				#set opinion changes for heirs and pretenders
+				current_heir = { set_character_flag = former_heir }
 				holder_scope = {
-					current_heir = { set_character_flag = former_heir }
 					any_realm_character = {
 						limit = {
-							any_pretender_title = {
-								is_primary_holder_title = yes
-								holder = PREVPREV
-							}
+							any_pretender_title = { title = event_target:changed_title }
 						}
 						set_character_flag = former_pretender
 					}
 					any_independent_ruler = {
 						any_realm_character = {
 							limit = {
-								any_pretender_title = {
-									is_primary_holder_title = yes
-									holder = PREVPREVPREV
-								}
+								any_pretender_title = { title = event_target:changed_title }
 							}
 							set_character_flag = former_pretender
 						}
 					}
-					#sets opinion changes for heirs and pretenders
-					character_event = { id = Plus.604 days = 15 }
+					character_event = { id = Plus.604 days = 5 }
 				}
-			}
-			hidden_tooltip = {
+
+				#actually change the law
 				add_law = succ_feudal_elective
-				holder_scope = {
-					any_demesne_title = {
-						limit = {
-							is_primary_holder_title = no
-							OR = {
-								is_primary_holder_title_tier = yes
-								higher_tier_than = duke
-							}
-						}
-						add_law = succ_feudal_elective
-					}
-				}
-			}
-			hidden_tooltip = {
+
 				any_de_jure_vassal = {
 					limit = {
 						OR = {
@@ -1314,6 +1211,11 @@ succession_laws = {
 					#other vassals are slightly upset
 					any_vassal = {
 						limit = {
+							OR = {
+								primary_title = { de_jure_liege_or_above = event_target:changed_title }
+								event_target:changed_title = { is_primary_holder_title = yes }
+								event_target:changed_title = { is_titular = yes }
+							}
 							NOT = {
 								has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
 								has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
@@ -1382,8 +1284,7 @@ succession_laws = {
 			OR = {
 				NOT = { tier = baron }
 				holder_scope = { religion = celtic_pagan }
-			}		
-			is_primary_holder_title = yes
+			}
 			is_primary_type_title = no
 			is_vice_royalty = no
 			NOT = { has_law = succ_tanistry }
@@ -1397,15 +1298,26 @@ succession_laws = {
 			OR = {
 				holder_scope = { ai = no }
 				holder_scope = { religion = celtic_pagan }
+				# primary title has tanistry
+				AND = {
+					is_primary_holder_title = no
+					holder_scope = { primary_title = { has_law = succ_tanistry } }
+				}
 				# has no child or brother as heir and is charitable or just
-				holder_scope = {
-					NOT = { current_heir = { father = { character = PREVPREV } } }
-					NOT = { current_heir = { mother = { character = PREVPREV } } }
-					NOT = { current_heir = { any_sibling = { character = PREVPREV } } }
-					age = 30
-					OR = {
-						trait = charitable
-						trait = just
+				AND = {
+					is_primary_holder_title = yes
+					holder_scope = {
+						PREV = {
+							current_heir = {
+								NOT = { is_child_of = PREVPREV }
+								NOT = { sibling = PREVPREV }
+							}
+						}
+						age = 30
+						OR = {
+							trait = charitable
+							trait = just
+						}
 					}
 				}
 			}
@@ -1436,80 +1348,54 @@ succession_laws = {
 		}
 		effect = {
 			if = {
-				limit = {
-					tier = BARON
-				}
+				limit = { tier = BARON }
 				holder_scope = { prestige = -125 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = COUNT
-				}
+				limit = { tier = COUNT }
 				holder_scope = { prestige = -250 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = DUKE
-				}
+				limit = { tier = DUKE }
 				holder_scope = { prestige = -500 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = KING
-				}
+				limit = { tier = KING }
 				holder_scope = { prestige = -750 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = EMPEROR
-				}
+				limit = { tier = EMPEROR }
 				holder_scope = { prestige = -1000 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			holder_scope = { hidden_tooltip = { random_courtier = { limit = { ai = yes } character_event = { id = PlusFaction.306 days = 1 } } } }
 			tooltip = { succession = tanistry }
 			hidden_tooltip = {
+				set_title_flag = title_to_change
+				save_event_target_as = changed_title
+				
+				#set opinion changes for heirs and pretenders
+				current_heir = { set_character_flag = former_heir }
 				holder_scope = {
-					current_heir = { set_character_flag = former_heir }
 					any_realm_character = {
 						limit = {
-							any_pretender_title = {
-								is_primary_holder_title = yes
-								holder = PREVPREV
-							}
+							any_pretender_title = { title = event_target:changed_title }
 						}
 						set_character_flag = former_pretender
 					}
 					any_independent_ruler = {
 						any_realm_character = {
 							limit = {
-								any_pretender_title = {
-									is_primary_holder_title = yes
-									holder = PREVPREVPREV
-								}
+								any_pretender_title = { title = event_target:changed_title }
 							}
 							set_character_flag = former_pretender
 						}
 					}
-					#sets opinion changes for heirs and pretenders
-					character_event = { id = Plus.604 days = 15 }
+					character_event = { id = Plus.604 days = 5 }
 				}
-			}
-			hidden_tooltip = {
+
+				#actually change the law
 				add_law = succ_tanistry
-				holder_scope = {
-					any_demesne_title = {
-						limit = {
-							is_primary_holder_title = no
-							OR = {
-								is_primary_holder_title_tier = yes
-								higher_tier_than = duke
-							}
-						}
-						add_law = succ_tanistry
-					}
-				}
-			}
-			hidden_tooltip = {
+
 				any_de_jure_vassal = {
 					limit = {
 						OR = {
@@ -1580,6 +1466,11 @@ succession_laws = {
 					#other vassals are slightly upset
 					any_vassal = {
 						limit = {
+							OR = {
+								primary_title = { de_jure_liege_or_above = event_target:changed_title }
+								event_target:changed_title = { is_primary_holder_title = yes }
+								event_target:changed_title = { is_titular = yes }
+							}
 							NOT = {
 								has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
 								has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
@@ -1649,7 +1540,6 @@ succession_laws = {
 				}
 				holder_scope = { is_feudal = yes }
 			}
-			is_primary_holder_title = yes
 			is_primary_type_title = no
 			is_vice_royalty = no
 			OR = {
@@ -1695,87 +1585,63 @@ succession_laws = {
 		}
 		effect = {
 			if = {
-				limit = {
-					tier = BARON
-				}
+				limit = { tier = BARON }
 				holder_scope = { prestige = -125 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = COUNT
-				}
+				limit = { tier = COUNT }
 				holder_scope = { prestige = -250 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = DUKE
-				}
+				limit = { tier = DUKE }
 				holder_scope = { prestige = -500 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = KING
-				}
+				limit = { tier = KING }
 				holder_scope = { prestige = -750 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = EMPEROR
-				}
+				limit = { tier = EMPEROR }
 				holder_scope = { prestige = -1000 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			holder_scope = { hidden_tooltip = { random_courtier = { limit = { ai = yes } character_event = { id = PlusFaction.306 days = 1 } } } }
 			tooltip = { succession = ultimogeniture }
 			hidden_tooltip = {
+				set_title_flag = title_to_change
+				save_event_target_as = changed_title
+				
+				#set opinion changes for heirs and pretenders
+				current_heir = { set_character_flag = former_heir }
 				holder_scope = {
-					current_heir = { set_character_flag = former_heir }
 					any_realm_character = {
 						limit = {
-							any_pretender_title = {
-								is_primary_holder_title = yes
-								holder = PREVPREV
-							}
+							any_pretender_title = { title = event_target:changed_title }
 						}
 						set_character_flag = former_pretender
 					}
 					any_independent_ruler = {
 						any_realm_character = {
 							limit = {
-								any_pretender_title = {
-									is_primary_holder_title = yes
-									holder = PREVPREVPREV
-								}
+								any_pretender_title = { title = event_target:changed_title }
 							}
 							set_character_flag = former_pretender
 						}
 					}
-					#sets opinion changes for heirs and pretenders
 					character_event = { id = Plus.604 days = 1 }
 				}
-			}
-			hidden_tooltip = {
+
+				#actually change the law
 				add_law = succ_ultimogeniture
-				holder_scope = {
-					any_demesne_title = {
-						limit = {
-							is_primary_holder_title = no
-							OR = {
-								is_primary_holder_title_tier = yes
-								higher_tier_than = duke
-							}
-						}
-						add_law = succ_ultimogeniture
-					}
-				}
-			}
-			hidden_tooltip = {
+
 				holder_scope = {
 					#current heir is pleased
-					current_heir = {
-						opinion = {
-							who = PREV
-							modifier = opinion_good_succ_law_change
-							months = 240
+					event_target:changed_title = {
+						current_heir = {
+							opinion = {
+								who = PREVPREV
+								modifier = opinion_good_succ_law_change
+								months = 240
+							}
 						}
 					}
 					#other legitimate children are upset
@@ -1788,8 +1654,8 @@ succession_laws = {
 								trait = disinherited
 								has_character_flag = former_heir
 								has_character_flag = former_pretender
-								is_primary_heir = PREV
-								any_pretender_title = { is_primary_holder_title = yes holder = PREVPREV }
+								any_heir_title = { title = event_target:changed_title }
+								any_pretender_title = { title = event_target:changed_title }
 								has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
 								has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
 								has_opinion_modifier = { who = PREV modifier = opinion_bad_succ_law_change 	}
@@ -1819,6 +1685,11 @@ succession_laws = {
 					#vassals are slightly upset
 					any_vassal = {
 						limit = {
+							OR = {
+								primary_title = { de_jure_liege_or_above = event_target:changed_title }
+								event_target:changed_title = { is_primary_holder_title = yes }
+								event_target:changed_title = { is_titular = yes }
+							}
 							NOT = {
 								has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
 								has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
@@ -1875,8 +1746,7 @@ succession_laws = {
 				is_landless_type_title = no
 				is_tribal_type_title = yes
 			}
-			rebel = no
-			is_primary_holder_title = yes			
+			rebel = no		
 			is_primary_type_title = no
 			is_vice_royalty = no
 			OR = {
@@ -1900,43 +1770,37 @@ succession_laws = {
 			# ai restrictions
 			OR = {
 				holder_scope = { ai = no }
+				# primary title is gavelkind
+				AND = {
+					is_primary_holder_title = no
+					holder_scope = { primary_title = { has_law = succ_gavelkind } }
+				}
 				# has multiple possible heirs and is kind or charitable
-				holder_scope = {
-					any_child = {
-						NOT = { trait = bastard }
-						OR = {
-							AND = {
-								PREV = { primary_title = { has_law = true_cognatic_succession } }
-								is_female = yes
-							}
-							is_female = no
-						}
-						reverse_opinion = { who = PREV value = 25 }
-						age = 6
-						PREV = {
-							any_child = {
-								NOT = { trait = bastard }
-								OR = {
-									AND = {
-										PREV = { primary_title = { has_law = true_cognatic_succession } }
-										is_female = yes
-									}
-									is_female = no
+				AND = {
+					is_primary_holder_title = yes
+					holder_scope = {
+						any_child = {
+							NOT = { trait = bastard }
+							OR = {
+								AND = {
+									PREVPREV = { has_law = true_cognatic_succession }
+									is_female = yes
 								}
-								reverse_opinion = { who = PREV value = 25 }
-								age = 6
-								NOT = { character = PREVPREV }
+								is_female = no
 							}
+							reverse_opinion = { who = PREV value = 25 }
+							age = 6
+							count = 2
 						}
-					}
-					OR = {
-						trait = kind
-						trait = charitable
-						trait = just
-					}
-					NOT = {
-						trait = ambitious
-						trait = proud
+						OR = {
+							trait = kind
+							trait = charitable
+							trait = just
+						}
+						NOT = {
+							trait = ambitious
+							trait = proud
+						}
 					}
 				}
 			}
@@ -1967,38 +1831,29 @@ succession_laws = {
 		}
 		effect = {
 			if = {
-				limit = {
-					tier = BARON
-				}
+				limit = { tier = BARON }
 				holder_scope = { prestige = -125 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = COUNT
-				}
+				limit = { tier = COUNT }
 				holder_scope = { prestige = -250 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = DUKE
-				}
+				limit = { tier = DUKE }
 				holder_scope = { prestige = -500 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = KING
-				}
+				limit = { tier = KING }
 				holder_scope = { prestige = -750 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = EMPEROR
-				}
+				limit = { tier = EMPEROR }
 				holder_scope = { prestige = -1000 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			holder_scope = { hidden_tooltip = { random_courtier = { limit = { ai = yes } character_event = { id = PlusFaction.306 days = 1 } } } }
 			custom_tooltip = { text = CUSTOMTOOLTIP7 }
 			hidden_tooltip = {
+				set_title_flag = title_to_change
 				holder_scope = {
 					set_character_flag = voting_on_succession_law
 					set_character_flag = vote_is_for_gavelkind
@@ -2059,7 +1914,6 @@ succession_laws = {
 				holder_scope = { is_feudal = yes }
 				holder_scope = { is_patrician = yes }
 			}
-			is_primary_holder_title = yes
 			is_primary_type_title = no
 			is_vice_royalty = no
 			OR = {
@@ -2077,23 +1931,31 @@ succession_laws = {
 			# ai restrictions
 			OR = {
 				holder_scope = { ai = no }
+				# primary title is seniority
+				AND = {
+					is_primary_holder_title = no
+					holder_scope = { primary_title = { has_law = succ_seniority } }
+				}
 				# slavic ruler who is ambitious or proud
-				holder_scope = {
-					OR = {
-						culture_group = east_slavic
-						culture_group = west_slavic
-						culture_group = south_slavic
-						culture = hungarian
-					}
-					OR = {
-						trait = ambitious
-						trait = proud
-					}
-					NOT = {
-						trait = content
-						trait = charitable
-						trait = kind
-						trait = slothful
+				AND = {
+					is_primary_holder_title = yes
+					holder_scope = {
+						OR = {
+							culture_group = east_slavic
+							culture_group = west_slavic
+							culture_group = south_slavic
+							culture = hungarian
+						}
+						OR = {
+							trait = ambitious
+							trait = proud
+						}
+						NOT = {
+							trait = content
+							trait = charitable
+							trait = kind
+							trait = slothful
+						}
 					}
 				}
 			}
@@ -2124,38 +1986,29 @@ succession_laws = {
 		}
 		effect = {
 			if = {
-				limit = {
-					tier = BARON
-				}
+				limit = { tier = BARON }
 				holder_scope = { prestige = -125 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = COUNT
-				}
+				limit = { tier = COUNT }
 				holder_scope = { prestige = -250 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = DUKE
-				}
+				limit = { tier = DUKE }
 				holder_scope = { prestige = -500 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = KING
-				}
+				limit = { tier = KING }
 				holder_scope = { prestige = -750 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = EMPEROR
-				}
+				limit = { tier = EMPEROR }
 				holder_scope = { prestige = -1000 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			holder_scope = { hidden_tooltip = { random_courtier = { limit = { ai = yes } character_event = { id = PlusFaction.306 days = 1 } } } }
 			custom_tooltip = { text = CUSTOMTOOLTIP7 }
 			hidden_tooltip = {
+				set_title_flag = title_to_change
 				holder_scope = {
 					set_character_flag = voting_on_succession_law
 					set_character_flag = vote_is_for_seniority
@@ -2212,7 +2065,6 @@ succession_laws = {
 				}
 				holder_scope = { is_feudal = yes }
 			}
-			is_primary_holder_title = yes
 			is_primary_type_title = no
 			is_vice_royalty = no
 			OR = {
@@ -2225,110 +2077,126 @@ succession_laws = {
 			# ai restrictions
 			OR = {
 				holder_scope = { ai = no }
+				# primary title has primogeniture
+				AND = {
+					is_primary_holder_title = no
+					holder_scope = { primary_title = { has_law = succ_primogeniture } }
+				}
 				# has an eligible heir over 6 years old and is proud or ambitious
-				holder_scope = {
-					OR = {
-						AND = {
-							NOT = { primary_title = { has_law = enatic_succession } }
-							any_child = {
-								NOT = { trait = bastard }
-								is_female = no
-								age = 6
+				AND = {
+					is_primary_holder_title = yes
+					holder_scope = {
+						OR = {
+							AND = {
+								NOT = { ROOT = { has_law = enatic_succession } }
+								any_child = {
+									NOT = { trait = bastard }
+									is_female = no
+									age = 6
+								}
+							}
+							AND = {
+								NOT = { ROOT = { has_law = agnatic_succession } }
+								any_child = {
+									NOT = { trait = bastard }
+									is_female = yes
+									age = 6
+								}
 							}
 						}
-						AND = {
-							NOT = { primary_title = { has_law = agnatic_succession } }
-							any_child = {
-								NOT = { trait = bastard }
-								is_female = yes
-								age = 6
-							}
+						OR = {
+							trait = proud
+							trait = ambitious
 						}
-					}
-					OR = {
-						trait = proud
-						trait = ambitious
 					}
 				}
 				# has an exceptional heir and is not content or humble
-				holder_scope = {
-					OR = {
-						AND = {
-							NOT = { primary_title = { has_law = enatic_succession } }
-							any_child = {
-								NOT = { trait = bastard }
-								is_female = no
-								OR = {
-									diplomacy = 15
-									martial = 15
+				AND = {
+					is_primary_holder_title = yes
+					holder_scope = {
+						OR = {
+							AND = {
+								NOT = { ROOT = { has_law = enatic_succession } }
+								any_child = {
+									NOT = { trait = bastard }
+									is_female = no
+									OR = {
+										diplomacy = 15
+										martial = 15
+									}
+									diplomacy = 8
+									martial = 8
+									stewardship = 8
+									NOT = {
+										any_sibling = {
+											is_female = no
+											NOT = { trait = bastard }
+											is_older_than = PREV
+										}
+									}
 								}
-								diplomacy = 8
-								martial = 8
-								stewardship = 8
-								NOT = {
-									any_sibling = {
-										is_female = no
-										NOT = { trait = bastard }
-										is_older_than = PREV
+							}
+							AND = {
+								NOT = { ROOT = { has_law = agnatic_succession } }
+								any_child = {
+									NOT = { trait = bastard }
+									is_female = yes
+									OR = {
+										diplomacy = 15
+										intrigue = 15
+									}
+									diplomacy = 8
+									stewardship = 8
+									intrigue = 8
+									NOT = {
+										any_sibling = {
+											NOT = { trait = bastard }
+											is_older_than = PREV
+										}
 									}
 								}
 							}
 						}
-						AND = {
-							NOT = { primary_title = { has_law = agnatic_succession } }
-							any_child = {
-								NOT = { trait = bastard }
-								is_female = yes
-								OR = {
-									diplomacy = 15
-									intrigue = 15
-								}
-								diplomacy = 8
-								stewardship = 8
-								intrigue = 8
-								NOT = {
-									any_sibling = {
-										NOT = { trait = bastard }
-										is_older_than = PREV
-									}
-								}
-							}
+						NOT = {
+							trait = content
+							trait = humble
 						}
-					}
-					NOT = {
-						trait = content
-						trait = humble
 					}
 				}
 				# has an eligible heir and doesn't like current heir
-				holder_scope = {
-					OR = {
-						AND = {
-							NOT = { primary_title = { has_law = enatic_succession } }
-							any_child = {
-								NOT = { trait = bastard }
-								is_female = no
-							}
-						}
-						AND = {
-							NOT = { primary_title = { has_law = agnatic_succession } }
-							any_child = {
-								NOT = { trait = bastard }
-								is_female = yes
-							}
-						}
-					}
-					current_heir = {
+				AND = {
+					is_primary_holder_title = yes
+					holder_scope = {
 						OR = {
-							NOT = { dynasty = PREV }
-							NOT = { is_close_relative = PREV }
+							AND = {
+								NOT = { ROOT = { has_law = enatic_succession } }
+								any_child = {
+									NOT = { trait = bastard }
+									is_female = no
+								}
+							}
+							AND = {
+								NOT = { ROOT = { has_law = agnatic_succession } }
+								any_child = {
+									NOT = { trait = bastard }
+									is_female = yes
+								}
+							}
 						}
-						NOT = { reverse_opinion = { who = PREV value = 0 } }
-					}
-					NOT = {
-						trait = content
-						trait = humble
-						trait = craven
+						ROOT = {
+							current_heir = {
+								OR = {
+									NOT = { dynasty = PREVPREV }
+									NOT = { is_close_relative = PREVPREV }
+								}
+								NOT = { reverse_opinion = { who = PREVPREV value = 0 } }
+							}
+						}
+						NOT = {
+							trait = content
+							trait = humble
+							trait = craven
+						}
 					}
 				}
 			}
@@ -2359,38 +2227,29 @@ succession_laws = {
 		}
 		effect = {
 			if = {
-				limit = {
-					tier = BARON
-				}
+				limit = { tier = BARON }
 				holder_scope = { prestige = -125 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = COUNT
-				}
+				limit = { tier = COUNT }
 				holder_scope = { prestige = -250 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = DUKE
-				}
+				limit = { tier = DUKE }
 				holder_scope = { prestige = -500 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = KING
-				}
+				limit = { tier = KING }
 				holder_scope = { prestige = -750 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = EMPEROR
-				}
+				limit = { tier = EMPEROR }
 				holder_scope = { prestige = -1000 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			holder_scope = { hidden_tooltip = { random_courtier = { limit = { ai = yes } character_event = { id = PlusFaction.306 days = 1 } } } }
 			custom_tooltip = { text = CUSTOMTOOLTIP7 }
 			hidden_tooltip = {
+				set_title_flag = title_to_change
 				holder_scope = {
 					set_character_flag = voting_on_succession_law
 					set_character_flag = vote_is_for_primogeniture
@@ -2414,7 +2273,6 @@ succession_laws = {
 gender_laws = {
 	institute_cognatic_succession = {
 		potential = {
-			is_primary_holder_title = yes
 			holder_scope = {
 				OR = {
 					independent = yes
@@ -2449,96 +2307,119 @@ gender_laws = {
 			# AI restrictions on usage
 			OR = {
 				holder_scope = { ai = no }
+				# primary title is cognatic
+				AND = {
+					is_primary_holder_title = no
+					holder_scope = { primary_title = { has_law = cognatic_succession } }
+				}
 				# a female ruler under agnatic
-				holder_scope = {
-					primary_title = { has_law = agnatic_succession }
-					is_female = yes
-					NOT = {
-						trait = humble
-						trait = content
-						trait = zealous
+				AND = {
+					is_primary_holder_title = yes
+					has_law = agnatic_succession
+					holder_scope = {
+						is_female = yes
+						NOT = {
+							trait = humble
+							trait = content
+							trait = zealous
+						}
 					}
 				}
 				# a very religious older male ruler under true cognatic with a son
-				holder_scope = {
-					primary_title = { has_law = true_cognatic_succession }
-					is_female = no
-					age = 50
-					trait = zealous
-					religion_group = christian
-					is_heretic = no
-					any_child = {
-						NOT = { trait = bastard }
+				AND = {
+					is_primary_holder_title = yes
+					has_law = true_cognatic_succession
+					holder_scope = {
 						is_female = no
-						age = 6
+						age = 50
+						trait = zealous
+						NOT = {
+							religion = messalian
+							religion = cathar
+							culture = basque
+						}
+						is_heretic = no
+						any_child = {
+							NOT = { trait = bastard }
+							is_female = no
+							age = 6
+						}
 					}
 				}
 				# a male ruler under true cognatic with a son and a female heir
-				holder_scope = {
-					primary_title = { has_law = true_cognatic_succession }
-					is_female = no
-					NOT = {
-						religion = cathar
-						religion = messalian
-						trait = just
-						trait = content
-					}
+				AND = {
+					is_primary_holder_title = yes
+					has_law = true_cognatic_succession
 					current_heir = { is_female = yes }
-					any_child = {
-						NOT = { trait = bastard }
+					holder_scope = {
 						is_female = no
-						age = 6
+						NOT = {
+							religion = cathar
+							religion = messalian
+							trait = just
+							trait = content
+						}
+						any_child = {
+							NOT = { trait = bastard }
+							is_female = no
+							age = 6
+						}
 					}
 				}
 				# a ruler under agnatic with an adult daughter who could inherit and no child who is heir
-				holder_scope = {
-					primary_title = { has_law = agnatic_succession }
-					any_child = {
-						is_female = yes
-						is_adult = yes
-						NOT = { trait = bastard }
-					}
-					NOT = {
-						any_child = { is_primary_heir = PREV }
+				AND = {
+					is_primary_holder_title = yes
+					has_law = agnatic_succession
+					holder_scope = {
+						any_child = {
+							is_female = yes
+							is_adult = yes
+							NOT = { trait = bastard }
+						}
+						NOT = {
+							any_child = { any_heir_title = { title = PREVPREVPREV } }
+						}
 					}
 				}
 				# a ruler under agnatic with an adult diplomatic daughter who he loves
-				holder_scope = {
-					primary_title = { has_law = agnatic_succession }
-					any_child = {
-						is_female = yes
-						is_adult = yes
-						NOT = { trait = bastard }
-						reverse_opinion = { who = PREV value = 50 }
-						diplomacy = 10
-					}
-					OR = {
-						trait = charitable
-						trait = kind
-						trait = just
-					}
-					NOT = {
-						trait = humble
-						trait = craven
-						trait = slothful
+				AND = {
+					is_primary_holder_title = yes
+					has_law = agnatic_succession
+					holder_scope = {
+						any_child = {
+							is_female = yes
+							is_adult = yes
+							NOT = { trait = bastard }
+							reverse_opinion = { who = PREV value = 50 }
+							diplomacy = 10
+						}
+						OR = {
+							trait = charitable
+							trait = kind
+							trait = just
+						}
+						NOT = {
+							trait = humble
+							trait = craven
+							trait = slothful
+						}
 					}
 				}
 				# ruler under agnatic who is cathar or messalian or basque
-				holder_scope = {
-					primary_title = { has_law = agnatic_succession }
-					OR = {
-						religion = messalian
-						religion = cathar
-						culture = basque
+				AND = {
+					has_law = agnatic_succession
+					is_primary_holder_title = yes
+					holder_scope = {
+						OR = {
+							religion = messalian
+							religion = cathar
+							culture = basque
+						}
 					}
 				}
 			}
 		}
 		allow = {
-			OR = {
-				has_law = agnatic_succession
-				has_law = true_cognatic_succession
-			}
 			OR = {
 				AND = {
 					tier = BARON
@@ -2564,33 +2445,23 @@ gender_laws = {
 		}
 		effect = {
 			if = {
-				limit = {
-					tier = BARON
-				}
+				limit = { tier = BARON }
 				holder_scope = { prestige = -125 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = COUNT
-				}
+				limit = { tier = COUNT }
 				holder_scope = { prestige = -250 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = DUKE
-				}
+				limit = { tier = DUKE }
 				holder_scope = { prestige = -500 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = KING
-				}
+				limit = { tier = KING }
 				holder_scope = { prestige = -750 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = EMPEROR
-				}
+				limit = { tier = EMPEROR }
 				holder_scope = { prestige = -1000 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			holder_scope = { hidden_tooltip = { random_courtier = { limit = { ai = yes } character_event = { id = PlusFaction.306 days = 1 } } } }
@@ -2604,48 +2475,33 @@ gender_laws = {
 					limit = { has_law = agnatic_succession }
 					holder_scope = { set_character_flag = coming_from_agnatic }
 				}
+				
+				set_title_flag = title_to_change
+				save_event_target_as = changed_title
+				
+				#set opinion changes for heirs and pretenders
+				current_heir = { set_character_flag = former_heir }
 				holder_scope = {
-					current_heir = { set_character_flag = former_heir }
 					any_realm_character = {
 						limit = {
-							any_pretender_title = {
-								is_primary_holder_title = yes
-								holder = PREVPREV
-							}
+							any_pretender_title = { title = event_target:changed_title }
 						}
 						set_character_flag = former_pretender
 					}
 					any_independent_ruler = {
 						any_realm_character = {
 							limit = {
-								any_pretender_title = {
-									is_primary_holder_title = yes
-									holder = PREVPREVPREV
-								}
+								any_pretender_title = { title = event_target:changed_title }
 							}
 							set_character_flag = former_pretender
 						}
 					}
-					#sets opinion changes for heirs and pretenders
 					character_event = { id = Plus.604 days = 1 }
 				}
-			}
-			hidden_tooltip = {
+
+				#actually change the law
 				add_law = cognatic_succession
-				holder_scope = {
-					any_demesne_title = {
-						limit = {
-							is_primary_holder_title = no
-							OR = {
-								is_primary_holder_title_tier = yes
-								higher_tier_than = duke
-							}
-						}
-						add_law = cognatic_succession
-					}
-				}
-			}
-			hidden_tooltip = {
+
 				holder_scope = {
 					#legitimate male children are upset if changing from agnatic
 					if = {
@@ -2660,8 +2516,8 @@ gender_laws = {
 									trait = disinherited
 									has_character_flag = former_heir
 									has_character_flag = former_pretender
-									is_primary_heir = PREV
-									any_pretender_title = { is_primary_holder_title = yes holder = PREVPREV }
+									any_heir_title = { title = event_target:changed_title }
+									any_pretender_title = { title = event_target:changed_title }
 									has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
 									has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
 									has_opinion_modifier = { who = PREV modifier = opinion_bad_succ_law_change 	}
@@ -2687,8 +2543,8 @@ gender_laws = {
 									trait = disinherited
 									has_character_flag = former_heir
 									has_character_flag = former_pretender
-									is_primary_heir = PREV
-									any_pretender_title = { is_primary_holder_title = yes holder = PREVPREV }
+									any_heir_title = { title = event_target:changed_title }
+									any_pretender_title = { title = event_target:changed_title }
 									has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
 									has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
 									has_opinion_modifier = { who = PREV modifier = opinion_bad_succ_law_change 	}
@@ -2714,8 +2570,8 @@ gender_laws = {
 									trait = disinherited
 									has_character_flag = former_heir
 									has_character_flag = former_pretender
-									is_primary_heir = PREV
-									any_pretender_title = { is_primary_holder_title = yes holder = PREVPREV }
+									any_heir_title = { title = event_target:changed_title }
+									any_pretender_title = { title = event_target:changed_title }
 									has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
 									has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
 									has_opinion_modifier = { who = PREV modifier = opinion_bad_succ_law_change 	}
@@ -2741,8 +2597,8 @@ gender_laws = {
 									trait = disinherited
 									has_character_flag = former_heir
 									has_character_flag = former_pretender
-									is_primary_heir = PREV
-									any_pretender_title = { is_primary_holder_title = yes holder = PREVPREV }
+									any_heir_title = { title = event_target:changed_title }
+									any_pretender_title = { title = event_target:changed_title }
 									has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
 									has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
 									has_opinion_modifier = { who = PREV modifier = opinion_bad_succ_law_change 	}
@@ -2761,6 +2617,11 @@ gender_laws = {
 						any_vassal = {
 							limit = {
 								is_female = no
+								OR = {
+									primary_title = { de_jure_liege_or_above = event_target:changed_title }
+									event_target:changed_title = { is_primary_holder_title = yes }
+									event_target:changed_title = { is_titular = yes }
+								}
 								NOT = {
 									has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
 									has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
@@ -2781,6 +2642,11 @@ gender_laws = {
 						any_vassal = {
 							limit = {
 								is_female = yes
+								OR = {
+									primary_title = { de_jure_liege_or_above = event_target:changed_title }
+									event_target:changed_title = { is_primary_holder_title = yes }
+									event_target:changed_title = { is_titular = yes }
+								}
 								NOT = {
 									has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
 									has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
@@ -2798,6 +2664,11 @@ gender_laws = {
 					#other vassals are slightly upset
 					any_vassal = {
 						limit = {
+							OR = {
+								primary_title = { de_jure_liege_or_above = event_target:changed_title }
+								event_target:changed_title = { is_primary_holder_title = yes }
+								event_target:changed_title = { is_titular = yes }
+							}
 							NOT = {
 								has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
 								has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
@@ -2831,7 +2702,6 @@ gender_laws = {
 		male_dynasty_opinion = 10
 
 		potential = {
-			is_primary_holder_title = yes
 			is_vice_royalty = no
 			has_law = cognatic_succession
 			has_global_flag = startup
@@ -2839,22 +2709,35 @@ gender_laws = {
 			# AI restrictions on usage
 			OR = {
 				holder_scope = { ai = no }
+				# holder is muslim
+				holder_scope = { religion_group = muslim }
+				# primary title is agnatic
+				AND = {
+					is_primary_holder_title = no
+					holder_scope = { primary_title = { has_law = agnatic_succession } }
+				}
 				# a very religious older male ruler under agnatic-cognatic with a son
-				holder_scope = {
-					is_female = no
-					age = 50
-					trait = zealous
-					is_heretic = no
-					any_child = {
-						NOT = { trait = bastard }
+				AND = {
+					is_primary_holder_title = yes
+					holder_scope = {
 						is_female = no
-						age = 6
+						age = 50
+						trait = zealous
+						NOT = {
+							religion = messalian
+							religion = cathar
+							culture = basque
+						}
+						any_child = {
+							NOT = { trait = bastard }
+							is_female = no
+							age = 6
+						}
 					}
 				}
 			}
 		}
 		allow = {
-			has_law = cognatic_succession
 			OR = {
 				AND = {
 					tier = BARON
@@ -2880,80 +2763,54 @@ gender_laws = {
 		}
 		effect = {
 			if = {
-				limit = {
-					tier = BARON
-				}
+				limit = { tier = BARON }
 				holder_scope = { prestige = -125 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = COUNT
-				}
+				limit = { tier = COUNT }
 				holder_scope = { prestige = -250 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = DUKE
-				}
+				limit = { tier = DUKE }
 				holder_scope = { prestige = -500 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = KING
-				}
+				limit = { tier = KING }
 				holder_scope = { prestige = -750 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = EMPEROR
-				}
+				limit = { tier = EMPEROR }
 				holder_scope = { prestige = -1000 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			holder_scope = { hidden_tooltip = { random_courtier = { limit = { ai = yes } character_event = { id = PlusFaction.306 days = 1 } } } }
 			custom_tooltip = { text = CUSTOMTOOLTIP11 }
 			hidden_tooltip = {
+				set_title_flag = title_to_change
+				save_event_target_as = changed_title
+				
+				#set opinion changes for heirs and pretenders
+				current_heir = { set_character_flag = former_heir }
 				holder_scope = {
-					current_heir = { set_character_flag = former_heir }
 					any_realm_character = {
 						limit = {
-							any_pretender_title = {
-								is_primary_holder_title = yes
-								holder = PREVPREV
-							}
+							any_pretender_title = { title = event_target:changed_title }
 						}
 						set_character_flag = former_pretender
 					}
 					any_independent_ruler = {
 						any_realm_character = {
 							limit = {
-								any_pretender_title = {
-									is_primary_holder_title = yes
-									holder = PREVPREVPREV
-								}
+								any_pretender_title = { title = event_target:changed_title }
 							}
 							set_character_flag = former_pretender
 						}
 					}
-					#sets opinion changes for heirs and pretenders
 					character_event = { id = Plus.604 days = 1 }
 				}
-			}
-			hidden_tooltip = {
+
+				#actually change the law
 				add_law = agnatic_succession
-				holder_scope = {
-					any_demesne_title = {
-						limit = {
-							is_primary_holder_title = no
-							OR = {
-								is_primary_holder_title_tier = yes
-								higher_tier_than = duke
-							}
-						}
-						add_law = agnatic_succession
-					}
-				}
-			}
-			hidden_tooltip = {
+
 				holder_scope = {
 					#legitimate male children are pleased
 					any_child = {
@@ -2966,8 +2823,8 @@ gender_laws = {
 								trait = disinherited
 								has_character_flag = former_heir
 								has_character_flag = former_pretender
-								is_primary_heir = PREV
-								any_pretender_title = { is_primary_holder_title = yes holder = PREVPREV }
+								any_heir_title = { title = event_target:changed_title }
+								any_pretender_title = { title = event_target:changed_title }
 								has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
 								has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
 								has_opinion_modifier = { who = PREV modifier = opinion_bad_succ_law_change 	}
@@ -2990,8 +2847,8 @@ gender_laws = {
 								trait = disinherited
 								has_character_flag = former_heir
 								has_character_flag = former_pretender
-								is_primary_heir = PREV
-								any_pretender_title = { title = ROOT }
+								any_heir_title = { title = event_target:changed_title }
+								any_pretender_title = { title = event_target:changed_title }
 								has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
 								has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
 								has_opinion_modifier = { who = PREV modifier = opinion_bad_succ_law_change }
@@ -3037,6 +2894,11 @@ gender_laws = {
 					#vassals are slightly upset
 					any_vassal = {
 						limit = {
+							OR = {
+								primary_title = { de_jure_liege_or_above = event_target:changed_title }
+								event_target:changed_title = { is_primary_holder_title = yes }
+								event_target:changed_title = { is_titular = yes }
+							}
 							NOT = {
 								has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
 								has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
@@ -3068,7 +2930,6 @@ gender_laws = {
 		female_dynasty_opinion = 10
 
 		potential = {
-			is_primary_holder_title = yes
 			holder_scope = {
 				NOT = { religion_group = muslim }
 				NOT = { religion = tengri_pagan_reformed }
@@ -3096,133 +2957,154 @@ gender_laws = {
 			# AI restrictions on usage
 			OR = {
 				holder_scope = { ai = no }
-				# female ruler under cognatic without a son
-				holder_scope = {
-					primary_title = { has_law = enatic_cognatic_succession }
-					is_female = yes
-					NOT = {
-						trait = humble
-						trait = content
-						trait = craven
-					}
-					NOT = {
-						any_child = {
-							is_female = no
-							NOT = { trait = bastard }
+				# primary title is true cognatic
+				AND = {
+					is_primary_holder_title = no
+					holder_scope = { primary_title = { has_law = true_cognatic_succession } }
+				}
+				# female ruler under enatic-cognatic without a son
+				AND = {
+					is_primary_holder_title = yes
+					has_law = enatic_cognatic_succession
+					holder_scope = {
+						is_female = yes
+						NOT = {
+							trait = humble
+							trait = content
+							trait = craven
+						}
+						NOT = {
+							any_child = {
+								is_female = no
+								NOT = { trait = bastard }
+							}
 						}
 					}
 				}
 				# a female ruler under cognatic who is just
-				holder_scope = {
-					primary_title = { has_law = cognatic_succession }
-					is_female = yes
-					OR = {
-						trait = just
-						trait = proud
-						trait = charitable
-						diplomacy = 15
-					}
-					NOT = {
-						trait = humble
-						trait = content
-						trait = arbitrary
+				AND = {
+					is_primary_holder_title = yes
+					has_law = cognatic_succession
+					holder_scope = {
+						is_female = yes
+						OR = {
+							trait = just
+							trait = proud
+							trait = charitable
+							diplomacy = 15
+						}
+						NOT = {
+							trait = humble
+							trait = content
+							trait = arbitrary
+						}
 					}
 				}
 				# has an awesome older daughter who could be heir instead
-				holder_scope = {
-					primary_title = {
-						has_law = cognatic_succession
-						OR = {
-							has_law = succ_gavelkind
-							has_law = succ_primogeniture
-						}
+				AND = {
+					is_primary_holder_title = yes
+					has_law = cognatic_succession
+					OR = {
+						has_law = succ_gavelkind
+						has_law = succ_primogeniture
 					}
-					any_child = {
-						is_female = yes
-						NOT = { trait = bastard }
-						OR = {
-							diplomacy = 15
-							intrigue = 15
-							trait = genius
-						}
-						diplomacy = 8
-						stewardship = 8
-						any_sibling = {
-							is_female = no
-							NOT = { is_older_than = PREV }
-							is_primary_heir = PREVPREV
-							NOT = { 
+					holder_scope = {
+						any_child = {
+							is_female = yes
+							NOT = { trait = bastard }
+							OR = {
 								diplomacy = 15
-								martial = 15
+								intrigue = 15
 								trait = genius
-								trait = quick
+							}
+							diplomacy = 8
+							stewardship = 8
+							any_sibling = {
+								is_female = no
+								NOT = { is_older_than = PREV }
+								any_heir_title = { title = PREVPREVPREVPREV }
+								NOT = { 
+									diplomacy = 15
+									martial = 15
+									trait = genius
+									trait = quick
+								}
 							}
 						}
 					}
 				}
 				# a male ruler under enatic-cognatic with a son
-				holder_scope = {
-					primary_title = { has_law = enatic_cognatic_succession }
-					is_female = no
-					NOT = {
-						religion = cathar
-						religion = messalian
-					}
-					any_child = {
+				AND = {
+					is_primary_holder_title = yes
+					has_law = enatic_cognatic_succession
+					holder_scope = {
 						is_female = no
-						age = 6
-						NOT = { trait = bastard }
+						NOT = {
+							religion = cathar
+							religion = messalian
+							culture = basque
+						}
+						any_child = {
+							is_female = no
+							age = 6
+							NOT = { trait = bastard }
+						}
 					}
 				}
 				# a basque ruler under cognatic with an adult daughter
-				holder_scope = {
-					primary_title = { has_law = cognatic_succession }
-					culture = basque
-					OR = {
-						is_female = yes
-						any_child = {
-							NOT = {
-								trait = bastard
-								trait = inbred
-								trait = imbecile
-								trait = slow
-								trait = lunatic
-								trait = possessed
-							}
+				AND = {
+					is_primary_holder_title = yes
+					has_law = cognatic_succession
+					holder_scope = {
+						culture = basque
+						OR = {
 							is_female = yes
-							is_adult = yes
+							any_child = {
+								NOT = {
+									trait = bastard
+									trait = inbred
+									trait = imbecile
+									trait = slow
+									trait = lunatic
+									trait = possessed
+								}
+								is_female = yes
+								is_adult = yes
+							}
 						}
 					}
 				}
 				# ruler under cognatic who is cathar or messalian
-				holder_scope = {
-					primary_title = { has_law = cognatic_succession }
-					OR = {
-						religion = messalian
-						religion = cathar
+				AND = {
+					is_primary_holder_title = yes
+					has_law = cognatic_succession
+					holder_scope = {
+						OR = {
+							religion = messalian
+							religion = cathar
+						}
 					}
-				}
+				}				
 				# ruler is learned and believes in equality
-				holder_scope = {
-					trait = just
-					OR = {
-						trait = scholar
-						learning = 12
-					}
-					NOT = {
-						trait = zealous
-						trait = content
-						trait = humble
-						trait = slothful
+				AND = {
+					is_primary_holder_title = yes
+					holder_scope = {
+						trait = just
+						OR = {
+							trait = scholar
+							learning = 12
+						}
+						NOT = {
+							trait = zealous
+							trait = content
+							trait = humble
+							trait = slothful
+						}
 					}
 				}
 			}
 		}
 		allow = {
-			OR = {
-				has_law = cognatic_succession
-				has_law = enatic_cognatic_succession
-			}
 			OR = {
 				AND = {
 					tier = BARON
@@ -3248,33 +3130,23 @@ gender_laws = {
 		}
 		effect = {
 			if = {
-				limit = {
-					tier = BARON
-				}
+				limit = { tier = BARON }
 				holder_scope = { prestige = -125 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = COUNT
-				}
+				limit = { tier = COUNT }
 				holder_scope = { prestige = -250 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = DUKE
-				}
+				limit = { tier = DUKE }
 				holder_scope = { prestige = -500 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = KING
-				}
+				limit = { tier = KING }
 				holder_scope = { prestige = -750 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = EMPEROR
-				}
+				limit = { tier = EMPEROR }
 				holder_scope = { prestige = -1000 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			holder_scope = { hidden_tooltip = { random_courtier = { limit = { ai = yes } character_event = { id = PlusFaction.306 days = 1 } } } }
@@ -3288,48 +3160,33 @@ gender_laws = {
 					limit = { has_law = enatic_cognatic_succession }
 					holder_scope = { set_character_flag = coming_from_enatic_cognatic }
 				}
+				
+				set_title_flag = title_to_change
+				save_event_target_as = changed_title
+				
+				#set opinion changes for heirs and pretenders
+				current_heir = { set_character_flag = former_heir }
 				holder_scope = {
-					current_heir = { set_character_flag = former_heir }
 					any_realm_character = {
 						limit = {
-							any_pretender_title = {
-								is_primary_holder_title = yes
-								holder = PREVPREV
-							}
+							any_pretender_title = { title = event_target:changed_title }
 						}
 						set_character_flag = former_pretender
 					}
 					any_independent_ruler = {
 						any_realm_character = {
 							limit = {
-								any_pretender_title = {
-									is_primary_holder_title = yes
-									holder = PREVPREVPREV
-								}
+								any_pretender_title = { title = event_target:changed_title }
 							}
 							set_character_flag = former_pretender
 						}
 					}
-					#sets opinion changes for heirs and pretenders
 					character_event = { id = Plus.604 days = 1 }
 				}
-			}
-			hidden_tooltip = {
+
+				#actually change the law
 				add_law = true_cognatic_succession
-				holder_scope = {
-					any_demesne_title = {
-						limit = {
-							is_primary_holder_title = no
-							OR = {
-								is_primary_holder_title_tier = yes
-								higher_tier_than = duke
-							}
-						}
-						add_law = true_cognatic_succession
-					}
-				}
-			}
-			hidden_tooltip = {
+
 				holder_scope = {
 					#legitimate male children are upset if changing from cognatic
 					if = {
@@ -3344,8 +3201,8 @@ gender_laws = {
 									trait = disinherited
 									has_character_flag = former_heir
 									has_character_flag = former_pretender
-									is_primary_heir = PREV
-									any_pretender_title = { is_primary_holder_title = yes holder = PREVPREV }
+									any_heir_title = { title = event_target:changed_title }
+									any_pretender_title = { title = event_target:changed_title }
 									has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
 									has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
 									has_opinion_modifier = { who = PREV modifier = opinion_bad_succ_law_change 	}
@@ -3371,8 +3228,8 @@ gender_laws = {
 									trait = disinherited
 									has_character_flag = former_heir
 									has_character_flag = former_pretender
-									is_primary_heir = PREV
-									any_pretender_title = { is_primary_holder_title = yes holder = PREVPREV }
+									any_heir_title = { title = event_target:changed_title }
+									any_pretender_title = { title = event_target:changed_title }
 									has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
 									has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
 									has_opinion_modifier = { who = PREV modifier = opinion_bad_succ_law_change 	}
@@ -3398,8 +3255,8 @@ gender_laws = {
 									trait = disinherited
 									has_character_flag = former_heir
 									has_character_flag = former_pretender
-									is_primary_heir = PREV
-									any_pretender_title = { is_primary_holder_title = yes holder = PREVPREV }
+									any_heir_title = { title = event_target:changed_title }
+									any_pretender_title = { title = event_target:changed_title }
 									has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
 									has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
 									has_opinion_modifier = { who = PREV modifier = opinion_bad_succ_law_change 	}
@@ -3425,8 +3282,8 @@ gender_laws = {
 									trait = disinherited
 									has_character_flag = former_heir
 									has_character_flag = former_pretender
-									is_primary_heir = PREV
-									any_pretender_title = { is_primary_holder_title = yes holder = PREVPREV }
+									any_heir_title = { title = event_target:changed_title }
+									any_pretender_title = { title = event_target:changed_title }
 									has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
 									has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
 									has_opinion_modifier = { who = PREV modifier = opinion_bad_succ_law_change 	}
@@ -3445,6 +3302,11 @@ gender_laws = {
 						any_vassal = {
 							limit = {
 								is_female = no
+								OR = {
+									primary_title = { de_jure_liege_or_above = event_target:changed_title }
+									event_target:changed_title = { is_primary_holder_title = yes }
+									event_target:changed_title = { is_titular = yes }
+								}
 								NOT = {
 									has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
 									has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
@@ -3465,6 +3327,11 @@ gender_laws = {
 						any_vassal = {
 							limit = {
 								is_female = yes
+								OR = {
+									primary_title = { de_jure_liege_or_above = event_target:changed_title }
+									event_target:changed_title = { is_primary_holder_title = yes }
+									event_target:changed_title = { is_titular = yes }
+								}
 								NOT = {
 									has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
 									has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
@@ -3482,6 +3349,11 @@ gender_laws = {
 					#other vassals are slightly upset
 					any_vassal = {
 						limit = {
+							OR = {
+								primary_title = { de_jure_liege_or_above = event_target:changed_title }
+								event_target:changed_title = { is_primary_holder_title = yes }
+								event_target:changed_title = { is_titular = yes }
+							}
 							NOT = {
 								has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
 								has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
@@ -3515,7 +3387,6 @@ gender_laws = {
 		female_dynasty_opinion = 20
 
 		potential = {
-			is_primary_holder_title = yes
 			holder_scope = {
 				ai = no
 				NOT = { religion_group = muslim }
@@ -3543,7 +3414,6 @@ gender_laws = {
 			has_global_flag = startup
 		}
 		allow = {
-			has_law = enatic_cognatic_succession
 			OR = {
 				AND = {
 					tier = BARON
@@ -3569,80 +3439,54 @@ gender_laws = {
 		}
 		effect = {
 			if = {
-				limit = {
-					tier = BARON
-				}
+				limit = { tier = BARON }
 				holder_scope = { prestige = -125 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = COUNT
-				}
+				limit = { tier = COUNT }
 				holder_scope = { prestige = -250 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = DUKE
-				}
+				limit = { tier = DUKE }
 				holder_scope = { prestige = -500 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = KING
-				}
+				limit = { tier = KING }
 				holder_scope = { prestige = -750 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = EMPEROR
-				}
+				limit = { tier = EMPEROR }
 				holder_scope = { prestige = -1000 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			holder_scope = { hidden_tooltip = { random_courtier = { limit = { ai = yes } character_event = { id = PlusFaction.306 days = 1 } } } }
 			custom_tooltip = { text = CUSTOMTOOLTIP15 }
 			hidden_tooltip = {
+				set_title_flag = title_to_change
+				save_event_target_as = changed_title
+				
+				#set opinion changes for heirs and pretenders
+				current_heir = { set_character_flag = former_heir }
 				holder_scope = {
-					current_heir = { set_character_flag = former_heir }
 					any_realm_character = {
 						limit = {
-							any_pretender_title = {
-								is_primary_holder_title = yes
-								holder = PREVPREV
-							}
+							any_pretender_title = { title = event_target:changed_title }
 						}
 						set_character_flag = former_pretender
 					}
 					any_independent_ruler = {
 						any_realm_character = {
 							limit = {
-								any_pretender_title = {
-									is_primary_holder_title = yes
-									holder = PREVPREVPREV
-								}
+								any_pretender_title = { title = event_target:changed_title }
 							}
 							set_character_flag = former_pretender
 						}
 					}
-					#sets opinion changes for heirs and pretenders
 					character_event = { id = Plus.604 days = 1 }
 				}
-			}
-			hidden_tooltip = {
+				
+				#actually change the law
 				add_law = enatic_succession
-				holder_scope = {
-					any_demesne_title = {
-						limit = {
-							is_primary_holder_title = no
-							OR = {
-								is_primary_holder_title_tier = yes
-								higher_tier_than = duke
-							}
-						}
-						add_law = enatic_succession
-					}
-				}
-			}
-			hidden_tooltip = {
+				
 				holder_scope = {
 					#legitimate female children are pleased
 					any_child = {
@@ -3655,8 +3499,8 @@ gender_laws = {
 								trait = disinherited
 								has_character_flag = former_heir
 								has_character_flag = former_pretender
-								is_primary_heir = PREV
-								any_pretender_title = { is_primary_holder_title = yes holder = PREVPREV }
+								any_heir_title = { title = event_target:changed_title }
+								any_pretender_title = { title = event_target:changed_title }
 								has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
 								has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
 								has_opinion_modifier = { who = PREV modifier = opinion_bad_succ_law_change 	}
@@ -3679,8 +3523,8 @@ gender_laws = {
 								trait = disinherited
 								has_character_flag = former_heir
 								has_character_flag = former_pretender
-								is_primary_heir = PREV
-								any_pretender_title = { title = ROOT }
+								any_heir_title = { title = event_target:changed_title }
+								any_pretender_title = { title = event_target:changed_title }
 								has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
 								has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
 								has_opinion_modifier = { who = PREV modifier = opinion_bad_succ_law_change }
@@ -3726,6 +3570,11 @@ gender_laws = {
 					#vassals are slightly upset
 					any_vassal = {
 						limit = {
+							OR = {
+								primary_title = { de_jure_liege_or_above = event_target:changed_title }
+								event_target:changed_title = { is_primary_holder_title = yes }
+								event_target:changed_title = { is_titular = yes }
+							}
 							NOT = {
 								has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
 								has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
@@ -3757,7 +3606,6 @@ gender_laws = {
 		female_dynasty_opinion = 10
 
 		potential = {
-			is_primary_holder_title = yes
 			holder_scope = {
 				NOT = { religion_group = muslim }
 				NOT = { religion = tengri_pagan_reformed }
@@ -3789,34 +3637,40 @@ gender_laws = {
 			# AI restrictions on usage
 			OR = {
 				holder_scope = { ai = no }
+				# primary title is enatic cognatic
+				AND = {
+					is_primary_holder_title = no
+					holder_scope = { primary_title = { has_law = enatic_cognatic_succession } }
+				}
 				# a female ruler with an awesome older daughter who could be heir instead
-				holder_scope = {
-					primary_title = {
-						has_law = true_cognatic_succession
-						OR = {
-							has_law = succ_gavelkind
-							has_law = succ_primogeniture
-						}
+				AND = {
+					is_primary_holder_title = yes
+					has_law = true_cognatic_succession
+					OR = {
+						has_law = succ_gavelkind
+						has_law = succ_primogeniture
 					}
-					any_child = {
-						is_female = yes
-						NOT = { trait = bastard }
-						OR = {
-							diplomacy = 15
-							intrigue = 15
-							trait = genius
-						}
-						diplomacy = 8
-						stewardship = 8
-						any_sibling = {
-							is_female = no
-							is_older_than = PREV
-							is_primary_heir = PREVPREV
-							NOT = { 
-								diplomacy = 10
-								martial = 10
+					holder_scope = {
+						any_child = {
+							is_female = yes
+							NOT = { trait = bastard }
+							OR = {
+								diplomacy = 15
+								intrigue = 15
 								trait = genius
-								trait = quick
+							}
+							diplomacy = 8
+							stewardship = 8
+							any_sibling = {
+								is_female = no
+								is_older_than = PREV
+								any_heir_title = { title = PREVPREVPREVPREV }
+								NOT = { 
+									diplomacy = 10
+									martial = 10
+									trait = genius
+									trait = quick
+								}
 							}
 						}
 					}
@@ -3824,10 +3678,6 @@ gender_laws = {
 			}
 		}
 		allow = {
-			OR = {
-				has_law = true_cognatic_succession
-				has_law = enatic_succession
-			}
 			OR = {
 				AND = {
 					tier = BARON
@@ -3853,33 +3703,23 @@ gender_laws = {
 		}
 		effect = {
 			if = {
-				limit = {
-					tier = BARON
-				}
+				limit = { tier = BARON }
 				holder_scope = { prestige = -125 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = COUNT
-				}
+				limit = { tier = COUNT }
 				holder_scope = { prestige = -250 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = DUKE
-				}
+				limit = { tier = DUKE }
 				holder_scope = { prestige = -500 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = KING
-				}
+				limit = { tier = KING }
 				holder_scope = { prestige = -750 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			if = {
-				limit = {
-					tier = EMPEROR
-				}
+				limit = { tier = EMPEROR }
 				holder_scope = { prestige = -1000 custom_tooltip = { text = COURTFACTIONMOODMINUS hidden_tooltip = { change_variable = { which = "faction_mood_court" value = -2 } } } }
 			}
 			holder_scope = { hidden_tooltip = { random_courtier = { limit = { ai = yes } character_event = { id = PlusFaction.306 days = 1 } } } }
@@ -3893,48 +3733,33 @@ gender_laws = {
 					limit = { has_law = enatic_succession }
 					holder_scope = { set_character_flag = coming_from_enatic }
 				}
+				
+				set_title_flag = title_to_change
+				save_event_target_as = changed_title
+				
+				#set opinion changes for heirs and pretenders
+				current_heir = { set_character_flag = former_heir }
 				holder_scope = {
-					current_heir = { set_character_flag = former_heir }
 					any_realm_character = {
 						limit = {
-							any_pretender_title = {
-								is_primary_holder_title = yes
-								holder = PREVPREV
-							}
+							any_pretender_title = { title = event_target:changed_title }
 						}
 						set_character_flag = former_pretender
 					}
 					any_independent_ruler = {
 						any_realm_character = {
 							limit = {
-								any_pretender_title = {
-									is_primary_holder_title = yes
-									holder = PREVPREVPREV
-								}
+								any_pretender_title = { title = event_target:changed_title }
 							}
 							set_character_flag = former_pretender
 						}
 					}
-					#sets opinion changes for heirs and pretenders
 					character_event = { id = Plus.604 days = 1 }
 				}
-			}
-			hidden_tooltip = {
+
+				#actually change the law
 				add_law = enatic_cognatic_succession
-				holder_scope = {
-					any_demesne_title = {
-						limit = {
-							is_primary_holder_title = no
-							OR = {
-								is_primary_holder_title_tier = yes
-								higher_tier_than = duke
-							}
-						}
-						add_law = enatic_cognatic_succession
-					}
-				}
-			}
-			hidden_tooltip = {
+
 				holder_scope = {
 					#legitimate female children are upset if changing from enatic
 					if = {
@@ -3949,8 +3774,8 @@ gender_laws = {
 									trait = disinherited
 									has_character_flag = former_heir
 									has_character_flag = former_pretender
-									is_primary_heir = PREV
-									any_pretender_title = { is_primary_holder_title = yes holder = PREVPREV }
+									any_heir_title = { title = event_target:changed_title }
+									any_pretender_title = { title = event_target:changed_title }
 									has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
 									has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
 									has_opinion_modifier = { who = PREV modifier = opinion_bad_succ_law_change 	}
@@ -3976,8 +3801,8 @@ gender_laws = {
 									trait = disinherited
 									has_character_flag = former_heir
 									has_character_flag = former_pretender
-									is_primary_heir = PREV
-									any_pretender_title = { is_primary_holder_title = yes holder = PREVPREV }
+									any_heir_title = { title = event_target:changed_title }
+									any_pretender_title = { title = event_target:changed_title }
 									has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
 									has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
 									has_opinion_modifier = { who = PREV modifier = opinion_bad_succ_law_change 	}
@@ -4003,8 +3828,8 @@ gender_laws = {
 									trait = disinherited
 									has_character_flag = former_heir
 									has_character_flag = former_pretender
-									is_primary_heir = PREV
-									any_pretender_title = { is_primary_holder_title = yes holder = PREVPREV }
+									any_heir_title = { title = event_target:changed_title }
+									any_pretender_title = { title = event_target:changed_title }
 									has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
 									has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
 									has_opinion_modifier = { who = PREV modifier = opinion_bad_succ_law_change 	}
@@ -4030,8 +3855,8 @@ gender_laws = {
 									trait = disinherited
 									has_character_flag = former_heir
 									has_character_flag = former_pretender
-									is_primary_heir = PREV
-									any_pretender_title = { is_primary_holder_title = yes holder = PREVPREV }
+									any_heir_title = { title = event_target:changed_title }
+									any_pretender_title = { title = event_target:changed_title }
 									has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
 									has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
 									has_opinion_modifier = { who = PREV modifier = opinion_bad_succ_law_change 	}
@@ -4050,6 +3875,11 @@ gender_laws = {
 						any_vassal = {
 							limit = {
 								is_female = yes
+								OR = {
+									primary_title = { de_jure_liege_or_above = event_target:changed_title }
+									event_target:changed_title = { is_primary_holder_title = yes }
+									event_target:changed_title = { is_titular = yes }
+								}
 								NOT = {
 									has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
 									has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
@@ -4070,6 +3900,11 @@ gender_laws = {
 						any_vassal = {
 							limit = {
 								is_female = no
+								OR = {
+									primary_title = { de_jure_liege_or_above = event_target:changed_title }
+									event_target:changed_title = { is_primary_holder_title = yes }
+									event_target:changed_title = { is_titular = yes }
+								}
 								NOT = {
 									has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
 									has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
@@ -4087,6 +3922,11 @@ gender_laws = {
 					#other vassals are slightly upset
 					any_vassal = {
 						limit = {
+							OR = {
+								primary_title = { de_jure_liege_or_above = event_target:changed_title }
+								event_target:changed_title = { is_primary_holder_title = yes }
+								event_target:changed_title = { is_titular = yes }
+							}
 							NOT = {
 								has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
 								has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
