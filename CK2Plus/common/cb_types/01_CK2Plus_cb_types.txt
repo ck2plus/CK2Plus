@@ -2590,20 +2590,20 @@ cb_faction_overthrow_ruler = {
 					}
 					if = {
 						limit = {
-							any_realm_lord = {
+							any_playable_ruler = {
 								has_character_flag = rebel_attacker
 								any_demesne_title = {
 									any_direct_de_jure_vassal_title = { title = PREVPREVPREV }
 								}
 							}
 							NOT = {
-								any_realm_lord = {
+								any_playable_ruler = {
 									has_character_flag = rebel_attacker
 									has_claim = PREV
 								}
 							}
 						}
-						random_realm_lord = {
+						random_playable_ruler = {
 							limit = {
 								has_character_flag = rebel_attacker
 								any_demesne_title = {
@@ -2615,18 +2615,18 @@ cb_faction_overthrow_ruler = {
 					}
 					if = {
 						limit = {
-							any_realm_lord = {
+							any_playable_ruler = {
 								has_character_flag = rebel_attacker
 								has_weak_claim = PREV
 							}
 							NOT = {
-								any_realm_lord = {
+								any_playable_ruler = {
 									has_character_flag = rebel_attacker
 									has_strong_claim = PREV
 								}
 							}
 						}
-						random_realm_lord = {
+						random_playable_ruler = {
 							limit = {
 								has_character_flag = rebel_attacker
 								has_weak_claim = PREV
@@ -2636,12 +2636,12 @@ cb_faction_overthrow_ruler = {
 					}
 					if = {
 						limit = {
-							any_realm_lord = {
+							any_playable_ruler = {
 								has_character_flag = rebel_attacker
 								has_strong_claim = PREV
 							}
 						}
-						random_realm_lord = {
+						random_playable_ruler = {
 							limit = {
 								has_character_flag = rebel_attacker
 								has_strong_claim = PREV
@@ -2677,119 +2677,117 @@ cb_faction_overthrow_ruler = {
 					}
 				}
 			}
+
+			# when heir is either not an adult or not of the ruler's dynasty, find usurper for titles
+			if = {
+				limit = {
+				    NOT = { current_heir = { is_adult = yes dynasty = PREV } }
+				}
+				custom_tooltip = { text = OVERTHROW_USURP_TITLES }
+				hidden_tooltip = {
+					# non-primary same-tier titles are given to rebels with claims
+					any_demesne_title = {
+						limit = {
+							is_primary_holder_title_tier = yes
+							is_primary_holder_title = no
+							can_be_given_away = yes
+						}
+						if = {
+							limit = {
+								any_playable_ruler = {
+									has_character_flag = rebel_attacker
+									has_weak_claim = PREV
+								}
+								NOT = {
+									any_playable_ruler = {
+										has_character_flag = rebel_attacker
+										has_strong_claim = PREV
+									}
+								}
+							}
+							random_playable_ruler = {
+								limit = {
+									has_character_flag = rebel_attacker
+									has_weak_claim = PREV
+								}
+								usurp_title_plus_barony_if_unlanded = PREV
+							}
+						}
+						if = {
+							limit = {
+								any_playable_ruler = {
+									has_character_flag = rebel_attacker
+									has_strong_claim = PREV
+								}
+							}
+							random_playable_ruler = {
+								limit = {
+									has_character_flag = rebel_attacker
+									has_strong_claim = PREV
+								}
+								usurp_title_plus_barony_if_unlanded = PREV
+							}
+						}
+					}
+					# abdicate to pretender most liked by the rebels if there is no rebel with a strong claim
+					if = {
+						limit = {
+							primary_title = {
+								NOT = {
+									any_claimant = {
+										has_character_flag = rebel_attacker
+										has_strong_claim = PREV
+									}
+								}
+							}
+						}
+						abdicate_to_most_liked_by = ROOT
+					}
+					# rebel with strong claim on the primary title usurps it instead
+					if = {
+						limit = {
+							primary_title = {
+								any_claimant = {
+									has_character_flag = rebel_attacker
+									has_strong_claim = PREV
+								}
+							}
+						}
+						random_playable_ruler = {
+							limit = {
+								has_character_flag = rebel_attacker
+								any_claim = {
+									holder = PREVPREV
+									is_primary_holder_title = yes
+									any_claimant = {
+										character = PREVPREV
+										has_strong_claim = PREV
+									}
+								}
+							}
+							random_claim = {
+								limit = {
+									holder = PREVPREV
+									is_primary_holder_title = yes
+								}
+								usurp_title_plus_barony_if_unlanded = { target = PREV type = claim }
+							}
+						}
+					}
+				}
+			}
 			
 			# pass on half of tyrant and dishonorable traits to the heir
 			if = {
-				limit = {
-					current_heir = { dynasty = PREV is_adult = yes }
-				}
+				limit = { current_heir = { dynasty = PREV is_adult = yes } }
 				hidden_tooltip = { character_event = { id = Plus.306 } }
 			}
 			
 			# abdicate if heir is adult, of dynasty
 			if = {
-				limit = {					
-					current_heir = { dynasty = PREV is_adult = yes }					
-				}
+				limit = { current_heir = { dynasty = PREV is_adult = yes } }
 				current_heir = { prestige = -500 }
 				abdicate = yes
-			}
-			# otherwise find a usurper
-			if = {
-				limit = {
-				    NOT = {
-						current_heir = { is_adult = yes dynasty = PREV }
-					}
-				}
-				any_demesne_title = {
-					limit = {
-						is_primary_holder_title_tier = yes
-						is_primary_holder_title = no
-					}                    
-					#for each secondary title, find a single usurper                        
-					set_global_flag = seeking_usurper
-					#either a rebel with a claim gets the title		
-					random_playable_ruler = {
-						limit = {
-							has_character_flag = rebel_attacker
-							has_claim = PREV
-							has_global_flag = seeking_usurper									
-							OR = {
-								AND = {
-									is_feudal = no
-									is_tribal = no
-									FROM = {
-										is_feudal = no
-										is_tribal = no
-									}
-								}
-								AND = {
-									OR = {
-										is_feudal = yes
-										is_tribal = yes
-									}
-									FROM = {
-										OR = {
-											is_feudal = yes
-											is_tribal = yes
-										}
-									}
-								}
-							}
-						}
-						PREV = {								
-							usurp_title_plus_barony_if_unlanded = { target = PREV type = claim }
-						}
-						clr_global_flag = seeking_usurper #clear the flag so it will loop to next secondary title
-					}						
-					# or a rebel with a de-jure claim gets the title
-					random_playable_ruler = {
-						limit = {
-							has_character_flag = rebel_attacker
-							de_jure_liege_or_above = PREV
-							has_global_flag = seeking_usurper									
-							OR = {
-								AND = {
-									is_feudal = no
-									is_tribal = no
-									FROM = {
-										is_feudal = no
-										is_tribal = no
-									}
-								}
-								AND = {
-									OR = {
-										is_feudal = yes
-										is_tribal = yes
-									}
-									FROM = {
-										OR = {
-											is_feudal = yes
-											is_tribal = yes
-										}
-									}
-								}
-							}
-						}
-						PREV = {						
-							usurp_title_plus_barony_if_unlanded = { target = PREV type = claim }
-						}
-						clr_global_flag = seeking_usurper #clear the flag so it will loop to secondary title
-					}
-					clr_global_flag = seeking_usurper #clear the flag
-				}											
-				#otherwise abdicate to heir most liked by rebel leader
-				any_demesne_title = {
-					limit = {
-						is_primary_holder_title_tier = yes
-						is_primary_holder_title = no
-					}
-					holder_scope = { abdicate_to_most_liked_by = ROOT }
-				}
-				primary_title = {
-					holder_scope = { abdicate_to_most_liked_by = ROOT }
-					hidden_tooltip = { make_primary_title = yes }
-				}				
 			}
 		}
 		any_attacker = {
@@ -3195,7 +3193,7 @@ religious_overthrow_ruler = {
 							save_event_target_as = religious_usurper
 							set_global_flag = found_usurper
 						}
-						random_independent_ruler 
+						random_independent_ruler = {
 							limit = {
 								NOT = { has_global_flag = found_usurper }
 								any_realm_character = {
@@ -3259,6 +3257,7 @@ religious_overthrow_ruler = {
 							NOT = { has_global_flag = found_usurper }
 							any_realm_character = {
 								religion = ROOT
+								reverse_opinion = { who = ROOT value = 0 }
 								any_claim = {
 									holder = PREVPREV
 									is_primary_holder_title = yes
@@ -3272,6 +3271,7 @@ religious_overthrow_ruler = {
 						random_realm_character = {
 							limit = {
 								religion = ROOT
+								reverse_opinion = { who = ROOT value = 0 }
 								any_claim = {
 									holder = PREVPREV
 									is_primary_holder_title = yes
@@ -3288,6 +3288,7 @@ religious_overthrow_ruler = {
 							limit = {
 								NOT = { has_global_flag = found_usurper }
 								religion = ROOT
+								reverse_opinion = { who = ROOT value = 0 }
 								any_claim = {
 									holder = PREVPREV
 									is_primary_holder_title = yes
@@ -3300,11 +3301,12 @@ religious_overthrow_ruler = {
 							save_event_target_as = religious_usurper
 							set_global_flag = found_usurper
 						}
-						random_independent_ruler 
+						random_independent_ruler = {
 							limit = {
 								NOT = { has_global_flag = found_usurper }
 								any_realm_character = {
 									religion = ROOT
+									reverse_opinion = { who = ROOT value = 0 }
 									any_claim = {
 										holder = PREVPREVPREV
 										is_primary_holder_title = yes
@@ -3318,6 +3320,7 @@ religious_overthrow_ruler = {
 							random_realm_character = {
 								limit = {
 									religion = ROOT
+									reverse_opinion = { who = ROOT value = 0 }
 									any_claim = {
 										holder = PREVPREVPREV
 										is_primary_holder_title = yes
@@ -3366,6 +3369,7 @@ religious_overthrow_ruler = {
 							NOT = { has_global_flag = found_usurper }
 							any_realm_character = {
 								religion = ROOT
+								reverse_opinion = { who = ROOT value = 0 }
 								any_claim = {
 									holder = PREVPREV
 									is_primary_holder_title = yes
@@ -3376,6 +3380,7 @@ religious_overthrow_ruler = {
 						random_realm_character = {
 							limit = {
 								religion = ROOT
+								reverse_opinion = { who = ROOT value = 0 }
 								any_claim = {
 									holder = PREVPREV
 									is_primary_holder_title = yes
