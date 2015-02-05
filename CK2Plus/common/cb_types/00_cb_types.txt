@@ -8051,7 +8051,7 @@ viking_invasion = {
 		ROOT = {
 			has_opinion_modifier = { who = FROM modifier = preparing_to_invade }
 			NOT = { is_liege_or_above = FROM }
-		}
+		}		
 	}
 
 	can_use_title = {
@@ -8343,6 +8343,38 @@ pagan_subjugation = {
 		OR = {
 			holder = ROOT
 			ROOT = { lower_tier_than = KING }
+		}
+		#the ai will only attack neighbors (or those very close)
+		OR = {
+			ROOT = { ai = no }
+			FROM = {
+				OR = {
+					any_realm_province = {
+						kingdom = { title = PREVPREVPREV }
+						any_neighbor_province = {
+							owner = {
+								OR = {
+									same_realm = ROOT
+									character = ROOT
+								}
+							}
+						}
+					}
+					any_realm_province = {
+						kingdom = { title = PREVPREVPREV }
+						ROOT = { 
+							any_realm_province = {
+								NOT = {
+									distance = { 
+										where = PREVPREV
+										value = 100
+									}
+								}
+							}
+						}
+					}
+				}
+			}
 		}
 	}
 	
@@ -9855,6 +9887,7 @@ dejure_county_claim = { #ducal
 		}
 		ROOT = { NOT = { has_character_modifier = holy_truce_timer } }
 		FROM = { NOT = { has_character_modifier = holy_truce_timer } }
+		#check to ensure the target is not valid for a holy war
 		OR = {
 			FROM = {
 				religion_group = ROOT 
@@ -9863,9 +9896,7 @@ dejure_county_claim = { #ducal
 					is_parent_religion = ROOT
 				}
 			}
-			FROM = {
-				same_realm = ROOT
-			}
+			FROM = { same_realm = ROOT }
 		}	
 		ROOT = {
 			OR = {
@@ -9882,8 +9913,9 @@ dejure_county_claim = { #ducal
 				}
 			}
 		}
-		
+
 		tier = count
+		#target owns the county or it belongs to their vassal
 		OR = {
 			FROM = {
 				has_landed_title = PREV
@@ -9892,29 +9924,19 @@ dejure_county_claim = { #ducal
 				is_liege_or_above = FROM
 			}
 		}
-		
+		#attacker holds either the de jure kingdom, empire or liege title
 		OR = {
 			kingdom = {
-				OR = {
-					has_law = crown_authority_2
-					has_law = crown_authority_3
-					has_law = crown_authority_4
-				}
 				holder = ROOT
 			}
 			empire = {
-				OR = {
-					has_law = crown_authority_2
-					has_law = crown_authority_3
-					has_law = crown_authority_4
-				}
 				holder = ROOT
 			}
 			dejure_liege_title = {
 				holder = ROOT
 			}
 		}
-
+		#attacker does not have the county title and the title holder is not their liege
 		NOT = {
 			OR = {
 				ROOT = {
@@ -9925,11 +9947,18 @@ dejure_county_claim = { #ducal
 				}
 			}
 		}
-
+		#AI will only attack a holy order if they are a player, of a different religion or are a king/emperor
 		OR = {
-			FROM = { NOT = { religion = ROOT } }
-			FROM = { higher_tier_than = duke }
-			FROM = { holy_order = no }
+			ROOT = { ai = no }
+			FROM = {
+				OR = {
+					ai = no
+					holy_order = no
+					higher_tier_than = duke
+					NOT = { religion = ROOT }
+					NOT = { has_dlc = "Sons of Abraham" }
+				}
+			}
 		}
 	}
 
@@ -10075,34 +10104,38 @@ dejure_barony_claim = {
 		ROOT = { NOT = { has_character_modifier = holy_truce_timer } }
 		FROM = { NOT = { has_character_modifier = holy_truce_timer } }
 		OR = {
-			FROM = { NOT = { religion = PREV } }
-			ai = no
-			FROM = { ai = no }
-			FROM = { higher_tier_than = duke }
-			FROM = { holy_order = no }
+			ROOT = { ai = no }
+			FROM = {
+				OR = {
+					ai = no
+					holy_order = no
+					higher_tier_than = duke
+					NOT = { religion = ROOT }
+					NOT = { has_dlc = "Sons of Abraham" }
+				}
+			}
 		}
 	}
 
 	can_use_title = {
 		tier = baron
+		#attacker has the barony's de jure liege title
 		dejure_liege_title = {
 			has_holder = yes
 			ROOT = {
 				has_landed_title = PREV
 			}
 		}
-
+		#barony is now owned by the attacker or by attacker's liege
 		NOT = {
-			OR = {
-				ROOT = {
-					has_landed_title = PREV
-				}
-				holder_scope = {
-					is_liege_or_above = ROOT
-				}
+			ROOT = {
+				has_landed_title = PREV
+			}
+			holder_scope = {
+				is_liege_or_above = ROOT
 			}
 		}
-
+		#target either has the barony or a vassal does
 		OR = {
 			FROM = {
 				has_landed_title = PREV
@@ -10242,13 +10275,17 @@ other_dejure_barony_claim = {
 				character = PREV
 			}
 		}
-
 		OR = {
-			FROM = { NOT = { religion = PREV } }
-			ai = no
-			FROM = { ai = no }
-			FROM = { higher_tier_than = duke }
-			FROM = { holy_order = no }
+			ROOT = { ai = no }
+			FROM = {
+				OR = {
+					ai = no
+					holy_order = no
+					higher_tier_than = duke
+					NOT = { religion = ROOT }
+					NOT = { has_dlc = "Sons of Abraham" }
+				}
+			}
 		}
 	}
 
@@ -10263,13 +10300,11 @@ other_dejure_barony_claim = {
 		}
 
 		NOT = {
-			OR = {
-				ROOT = {
-					has_landed_title = PREV
-				}
-				holder_scope = {
-					is_liege_or_above = ROOT
-				}
+			ROOT = {
+				has_landed_title = PREV
+			}
+			holder_scope = {
+				is_liege_or_above = ROOT
 			}
 		}
 
@@ -10307,15 +10342,13 @@ other_dejure_barony_claim = {
 	}
 
 	on_success = {
+		add_character_modifier = { name = victory_timer duration = 3 hidden = yes }
+		if = {
+			limit = { any_vassal = { leads_faction = faction_glory } }
+			custom_tooltip = { text = GLORYFACTIONMOODPLUS }
+			hidden_tooltip = { character_event = { id = PlusFaction.460 days = 1 } }
+		}
 		ROOT = {
-			PREV = {
-				add_character_modifier = { name = victory_timer duration = 3 hidden = yes }
-				if = {
-					limit = { any_vassal = { leads_faction = faction_glory } }
-					custom_tooltip = { text = GLORYFACTIONMOODPLUS }
-					hidden_tooltip = { character_event = { id = PlusFaction.460 days = 1 } }
-				}
-			}
 			opinion = {
 				modifier = pressed_my_claim
 				who = PREV
@@ -10419,10 +10452,23 @@ other_dejure_county_claim = {
 				character = PREV
 			}
 		}
+		#AI will only attack a holy order if they are a player, of a different religion or are a king/emperor
+		OR = {
+			ROOT = { ai = no }
+			FROM = {
+				OR = {
+					ai = no
+					holy_order = no
+					higher_tier_than = duke
+					NOT = { religion = ROOT }
+					NOT = { has_dlc = "Sons of Abraham" }
+				}
+			}
+		}
 	}
 
 	can_use_title = {
-	
+		#check to ensure that target isn't valid for a holy war
 		OR = {
 			FROM = {
 				religion_group = ROOT 
@@ -10431,9 +10477,7 @@ other_dejure_county_claim = {
 					is_parent_religion = ROOT
 				}
 			}
-			FROM = {
-				same_realm = ROOT
-			}
+			FROM = { same_realm = ROOT }
 		}	
 		ROOT = {
 			OR = {
@@ -10452,45 +10496,29 @@ other_dejure_county_claim = {
 		}
 	
 		tier = count
-		OR = {
-			kingdom = {
-				OR = {
-					has_law = crown_authority_2
-					has_law = crown_authority_3
-					has_law = crown_authority_4
-				}
-				holder = ROOT
-			}
-			empire = {
-				OR = {
-					has_law = crown_authority_2
-					has_law = crown_authority_3
-					has_law = crown_authority_4
-				}
-				holder = ROOT
-			}
-			dejure_liege_title = {
-				holder = ROOT
+		#supporter ruler owns the de jure liege title of the county
+		dejure_liege_title = {
+			has_holder = yes
+			ROOT = {
+				has_landed_title = PREV
 			}
 		}
-
+		#supported ruler is a vassal
 		ROOT = {
 			any_liege = {
 				character = FROMFROM
 			}
 		}
-
+		#supporter ruler does not own the county, and it is not owned by their liege
 		NOT = {
-			OR = {
-				ROOT = {
-					has_landed_title = PREV
-				}
-				holder_scope = {
-					is_liege_or_above = ROOT
-				}
+			ROOT = {
+				has_landed_title = PREV
+			}
+			holder_scope = {
+				is_liege_or_above = ROOT
 			}
 		}
-
+		#target owns the county or it is owned by their vassal
 		OR = {
 			FROM = {
 				has_landed_title = PREV
@@ -10498,12 +10526,6 @@ other_dejure_county_claim = {
 			holder_scope = {
 				is_liege_or_above = FROM
 			}
-		}
-
-		OR = {
-			FROM = { NOT = { religion = FROMFROM } }
-			FROM = { higher_tier_than = duke }
-			FROM = { holy_order = no }
 		}
 	}
 
@@ -10531,15 +10553,13 @@ other_dejure_county_claim = {
 	}
 
 	on_success = {
+		add_character_modifier = { name = victory_timer duration = 3 hidden = yes }
+		if = {
+			limit = { any_vassal = { leads_faction = faction_glory } }
+			custom_tooltip = { text = GLORYFACTIONMOODPLUS }
+			hidden_tooltip = { character_event = { id = PlusFaction.460 days = 1 } }
+		}
 		ROOT = {
-			PREV = {
-				add_character_modifier = { name = victory_timer duration = 3 hidden = yes }
-				if = {
-					limit = { any_vassal = { leads_faction = faction_glory } }
-					custom_tooltip = { text = GLORYFACTIONMOODPLUS }
-					hidden_tooltip = { character_event = { id = PlusFaction.460 days = 1 } }
-				}
-			}
 			opinion = {
 				modifier = pressed_my_claim
 				who = PREV
