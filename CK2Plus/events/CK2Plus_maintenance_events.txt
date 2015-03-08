@@ -4420,7 +4420,7 @@ character_event = { # Secondary Startup event
 				}
 			}
 		}
-	
+		
 		# give crowned trait to all existing kings and emperors
 		if = {
 			limit = {
@@ -4836,8 +4836,357 @@ character_event = { # Annual maintenance fixes
 			limit = { war = no }
 			change_variable = { which = "years_of_peace" value = 1 }
 		}
+
+		#fix patrician succession laws
+		any_demesne_title = {
+			limit = {
+				holder_scope = { is_patrician = yes }
+				OR = {
+					NOT = { has_law = succ_seniority }
+					NOT = { has_law = agnatic_succession }
+				}
+				OR = {
+					is_primary_holder_title = no
+					holder_scope = { is_merchant_republic = no }
+				}
+			}
+			if = {
+				limit = { NOT = { has_law = succ_seniority } }
+				add_law = succ_seniority
+			}
+			if = {
+				limit = { NOT = { has_law = agnatic_succession } }
+				add_law = agnatic_succession
+			}
+		}
+		any_demesne_title = {
+			limit = {
+				holder_scope = {
+					is_patrician = yes
+					is_merchant_republic = yes
+				}
+				OR = {
+					NOT = { has_law = succ_patrician_elective }
+					NOT = { has_law = agnatic_succession }
+				}
+				is_primary_holder_title = yes
+			}
+			if = {
+				limit = { NOT = { has_law = succ_patrician_elective } }
+				add_law = succ_patrician_elective
+			}
+			if = {
+				limit = { NOT = { has_law = agnatic_succession } }
+				add_law = agnatic_succession
+			}
+		}
+		
+		#fix non-patrician succesion laws
+		any_demesne_title = {
+			limit = {
+				holder_scope = { is_patrician = no }
+				OR = {
+					is_primary_holder_title = yes
+					higher_tier_than = duke
+				}
+			}
+			#holy orders, mercenaries, cites, and non-catholic temples
+			if = {
+				limit = {
+					OR = {
+						AND = {
+							is_landless_type_title = yes
+							is_tribal_type_title = no
+						}
+						holder_scope = {
+							is_feudal = no
+							is_tribal = no
+							OR = {
+								is_theocracy = no
+								NOT = { religion = catholic }
+							}
+						}
+					}
+					NOT = { has_law = succ_open_elective }
+				}
+				add_law = succ_open_elective
+			}
+			#catholic temples
+			if = {
+				limit = {
+					OR = {
+						is_landless_type_title = no
+						is_tribal_type_title = yes
+					}
+					holder_scope = {
+						is_theocracy = yes
+						religion = catholic
+					}
+					NOT = { has_law = succ_catholic_bishopric }
+				}
+				add_law = succ_catholic_bishopric
+			}
+			#feudal muslims
+			if = {
+				limit = {
+					OR = {
+						is_landless_type_title = no
+						is_tribal_type_title = yes
+					}
+					holder_scope = {
+						OR = {
+							is_feudal = yes
+							is_tribal = yes
+						}
+						religion_group = muslim
+					}
+					NOT = { has_law = succ_turkish_succession }
+				}
+				add_law = succ_turkish_succession
+			}
+			#feudal/tribal non-reformed pagans
+			if = {
+				limit = {
+					OR = {
+						is_landless_type_title = no
+						is_tribal_type_title = yes
+					}
+					holder_scope = {
+						OR = {
+							is_tribal = yes
+							is_feudal = yes
+						}
+						religion_group = pagan_group
+						is_reformed_religion = no
+						NOT = { has_global_flag = ancient_religions }
+					}
+					NOT = { has_law = succ_gavelkind }
+					NOT = { has_law = succ_elective_gavelkind }
+				}
+				add_law = succ_gavelkind
+			}
+			#feudal non-muslim, non-unreformed pagans
+			if = {
+				limit = {
+					OR = {
+						is_landless_type_title = no
+						is_tribal_type_title = yes
+					}
+					holder_scope = {
+						OR = {
+							is_feudal = yes
+							is_tribal = yes
+						}
+						NOT = { religion_group = muslim }
+						OR = {
+							NOT = { religion_group = pagan_group }
+							is_reformed_religion = yes
+						}
+					}
+					NOT = {
+						has_law = succ_primogeniture
+						has_law = succ_gavelkind
+						has_law = succ_feudal_elective
+						has_law = succ_seniority
+						has_law = succ_tanistry
+						has_law = succ_ultimogeniture
+						has_law = succ_elective_gavelkind
+					}
+				}
+				add_law = succ_primogeniture
+			}
+			#catholic investiture
+			if = {
+				limit = {
+					higher_tier_than = DUKE
+					holder_scope = { religion = catholic }
+					NOT = {
+						has_law = investiture_law_0
+						has_law = investiture_law_1
+					}
+				}
+				add_law = investiture_law_0
+			}
+			#non-catholic no investiture
+			if = {
+				limit = {
+					higher_tier_than = DUKE
+					holder_scope = { NOT = { religion = catholic } }
+					OR = {
+						has_law = investiture_law_0
+						has_law = investiture_law_1
+					}
+				}
+				if = {
+					limit = { has_law = investiture_law_0 }
+					revoke_law = investiture_law_0
+				}
+				if = {
+					limit = { has_law = investiture_law_1 }
+					revoke_law = investiture_law_1
+				}
+			}
+		}
+		
+		#set laws for secondary titles
+		any_demesne_title = {
+			limit = {
+				higher_tier_than = baron
+				is_primary_holder_title = no
+				OR = {
+					is_primary_holder_title_tier = yes
+					higher_tier_than = duke
+				}
+			}
+			#copy primary title's laws to the secondary titles
+			if = {
+				limit = {
+					holder_scope = {
+						primary_title = { has_law = feudal_tax_0 }
+					}
+					NOT = { has_law = feudal_tax_0 }
+				}
+				add_law = feudal_tax_0
+			}
+			if = {
+				limit = {
+					holder_scope = {
+						primary_title = { has_law = feudal_tax_1 }
+					}
+					NOT = { has_law = feudal_tax_1 }
+				}
+				add_law = feudal_tax_1
+			}
+			if = {
+				limit = {
+					holder_scope = {
+						primary_title = { has_law = feudal_tax_2 }
+					}
+					NOT = { has_law = feudal_tax_2 }
+				}
+				add_law = feudal_tax_2
+			}
+			if = {
+				limit = {
+					holder_scope = {
+						primary_title = { has_law = city_tax_0 }
+					}
+					NOT = { has_law = city_tax_0 }
+				}
+				add_law = city_tax_0
+			}
+			if = {
+				limit = {
+					holder_scope = {
+						primary_title = { has_law = city_tax_1 }
+					}
+					NOT = { has_law = city_tax_1 }
+				}
+				add_law = city_tax_1
+			}
+			if = {
+				limit = {
+					holder_scope = {
+						primary_title = { has_law = city_tax_2 }
+					}
+					NOT = { has_law = city_tax_2 }
+				}
+				add_law = city_tax_2
+			}
+			if = {
+				limit = {
+					holder_scope = {
+						primary_title = { has_law = temple_tax_0 }
+					}
+					NOT = { has_law = temple_tax_0 }
+				}
+				add_law = temple_tax_0
+			}
+			if = {
+				limit = {
+					holder_scope = {
+						primary_title = { has_law = temple_tax_1 }
+					}
+					NOT = { has_law = temple_tax_1 }
+				}
+				add_law = temple_tax_1
+			}
+			if = {
+				limit = {
+					holder_scope = {
+						primary_title = { has_law = temple_tax_2 }
+					}
+					NOT = { has_law = temple_tax_2 }
+				}
+				add_law = temple_tax_2
+			}
+			if = {
+				limit = {
+					holder_scope = {
+						primary_title = { has_law = tax_privileges_0 }
+					}
+					NOT = { has_law = tax_privileges_0 }
+				}
+				add_law = tax_privileges_0
+			}
+			if = {
+				limit = {
+					holder_scope = {
+						primary_title = { has_law = tax_privileges_1 }
+					}
+					NOT = { has_law = tax_privileges_1 }
+				}
+				add_law = tax_privileges_1
+			}
+			if = {
+				limit = {
+					holder_scope = {
+						primary_title = { has_law = tax_privileges_2 }
+					}
+					NOT = { has_law = tax_privileges_2 }
+				}
+				add_law = tax_privileges_2
+			}
+			if = {
+				limit = {
+					holder_scope = {
+						primary_title = { has_law = levy_privileges_0 }
+					}
+					NOT = { has_law = levy_privileges_0 }
+				}
+				add_law = levy_privileges_0
+			}
+			if = {
+				limit = {
+					holder_scope = {
+						primary_title = { has_law = levy_privileges_1 }
+					}
+					NOT = { has_law = levy_privileges_1 }
+				}
+				add_law = levy_privileges_1
+			}
+			if = {
+				limit = {
+					holder_scope = {
+						primary_title = { has_law = council_privileges_0 }
+					}
+					NOT = { has_law = council_privileges_0 }
+				}
+				add_law = council_privileges_0
+			}
+			if = {
+				limit = {
+					holder_scope = {
+						primary_title = { has_law = council_privileges_1 }
+					}
+					NOT = { has_law = council_privileges_1 }
+				}
+				add_law = council_privileges_1
+			}
+		}
+		
 		#check title flags
-		primary_title = {
+		any_demesne_title = {
 			if = {
 				limit = {
 					has_title_flag = former_gavelkind
@@ -4909,6 +5258,7 @@ character_event = { # Annual maintenance fixes
 				clr_title_flag = former_true_cognatic_succession
 			}
 		}
+
 		#adjust flags and modifiers based on laws
 		if = {
 			limit = {
@@ -4994,6 +5344,7 @@ character_event = { # Annual maintenance fixes
 				add_character_modifier = { name = "tax_privileges_2_vassal" duration = -1 }
 			}
 		}
+
 		#the dishonorable reduction timer exists, and the character is not dishonorable, reset it
 		if = {
 			limit = {
