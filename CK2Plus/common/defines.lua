@@ -450,11 +450,11 @@ NDiplomacy = {
 	ASK_FOR_MONEY_INTERACTION_MUST_HAVE_COST = 1,				-- Is having prestige/piety >= cost required for this action?
 	ASK_FOR_MONEY_INTERACTION_ENABLED = 0,						-- Should this action be used at all?		
 	
-	ASK_FOR_CLAIM_INTERACTION_MONEY = 0,
-	ASK_FOR_CLAIM_INTERACTION_PIETY = 100,
+	ASK_FOR_CLAIM_INTERACTION_MONEY = 100,
+	ASK_FOR_CLAIM_INTERACTION_PIETY = 250,
 	ASK_FOR_CLAIM_INTERACTION_PRESTIGE = 0,
-	ASK_FOR_CLAIM_INTERACTION_THRESHOLD_FOR_NO = 50,
-	ASK_FOR_CLAIM_INTERACTION_THRESHOLD_FOR_YES = 150,
+	ASK_FOR_CLAIM_INTERACTION_THRESHOLD_FOR_NO = 75,
+	ASK_FOR_CLAIM_INTERACTION_THRESHOLD_FOR_YES = 175,
 	ASK_FOR_CLAIM_INTERACTION_MUST_HAVE_COST = 1,				-- Is having prestige/piety >= cost required for this action?
 	ASK_FOR_CLAIM_INTERACTION_ENABLED = 1,						-- Should this action be used at all?		
 	
@@ -508,7 +508,7 @@ NCharacter = {
 	PRESTIGE_FROM_DYNASTY_ON_MARRIAGE_DIV = 10, 	-- Characters get the dynasty prestige of the spouse divided by this on marriage
 	NEED_GUARDIAN_AT_AGE = 6, 						-- The age at which children should be appointed a mentor/guardian
 	ASSIGN_ACTION_DAYS = 0, 						-- Days before a Councillor can be assigned a new job in a county
-	MARRIAGE_TIER_DIFF_PRESTIGE_MULT = 50, 		-- Prestige multiplier from marrying below or above your rank.
+	MARRIAGE_TIER_DIFF_PRESTIGE_MULT = 100, 		-- Prestige multiplier from marrying below or above your rank.
 	CONSORT_TIER_PRESTIGE_MULT = 25,				-- Prestige multiplier for rank of consort	
 	RAISED_TROOPS_VASSAL_OPINION_DAYS = 73,			-- After 73 days of having their troops raised, vassals will get -1 opinion more of you
 	MAX_GENERATED_TRAITS_FOR_HISTORICAL = 3,		-- Generate random traits up this number for adult historical characters
@@ -1072,7 +1072,7 @@ NAI =
 	REVOLT_DISTANCE_FACTOR = 0,								-- Multiplier for how much distance from capital affects independence minded revolters
 	REVOLT_OTHER_INDEP_RISK = 0,							-- Each ongoing other independence revolt increases revolt risk by this amount for all independence-minded revolters
 	REVOLT_OTHER_INDEP_RISK_CAP = 0,						-- Cap to the total risk from the above	
-	MARRIAGE_AI_PRESTIGE_VALUE = 0.5,						-- Multiplier for how highly AI values prestige when arranging marriages and evaluating marriage offers
+	MARRIAGE_AI_PRESTIGE_VALUE = 1.0,						-- Multiplier for how highly AI values prestige when arranging marriages and evaluating marriage offers
 	MAX_KING_TITLES_TO_CREATE = 0,							-- AI will not seek to create/usurp more King-level titles than this (0 for unlimited)
 	MAX_EMPIRE_TITLES_TO_CREATE = 1,						-- AI will not seek to create/usurp more Empire-level titles than this (0 for unlimited)
 	AI_EMPEROR_CREATES_KINGDOMS = 1,						-- If set to 1, AI Emperors will create King-level titles
