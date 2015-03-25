@@ -1,0 +1,235 @@
+decisions = {
+
+	#set cadet status
+	cadet_status = {
+		potential = {
+			ai = yes
+			is_female = no
+			dynasty_head = {
+				#dynasty has 40+ members
+				any_dynasty_member = {
+					is_alive = yes
+					count = 40
+				}
+				#dynasty head is not a close relative to him or to his parents/wife
+				NOT = {
+					character = ROOT
+					is_close_relative = ROOT
+					ROOT = { father_even_if_dead = { is_close_relative = PREVPREV } }
+					ROOT = { mother_even_if_dead = { is_close_relative = PREVPREV } }
+					ROOT = { any_spouse = { is_close_relative = PREVPREV } }
+				}
+			}
+			#has an older legitimate brother
+			any_sibling = {
+				is_female = no
+				NOT = { trait = bastard }
+				is_older_than = ROOT
+			}
+			#is not married matrilineally, and not heir to any titles
+			NOT = {
+				dynasty = none
+				is_married_matrilineally = yes
+				any_heir_title = { always = yes }
+				has_character_modifier = potential_cadet
+				has_character_flag = became_cadet
+			}
+		}
+		allow = {
+			is_ruler = no
+			is_adult = yes
+		}
+		effect = {
+			set_character_flag = became_cadet
+			add_character_modifier = {
+				name = potential_cadet
+				hidden = yes
+				duration = -1
+			}
+		}
+		ai_will_do = {
+			factor = 1
+		}
+	}
+	
+	#remove cadet status if ineligible
+	remove_cadet_status = {
+		potential = {
+			ai = yes
+			has_character_modifier = potential_cadet
+		}
+		allow = {
+			OR = {
+				is_married_matrilineally = yes
+				#becomes heir to a title held by a close relative
+				any_heir_title = { holder_scope = { is_close_relative = ROOT } }
+				#no longer has an older legitimate brother
+				NOT = {
+					any_sibling = {
+						is_female = no
+						NOT = { trait = bastard }
+						is_older_than = ROOT
+					}
+				}
+				#has become the dynasty head
+				dynasty_head = { character = ROOT }
+				#dynasty head is a close relative of his spouse/children
+				dynasty_head = {
+					ROOT = {
+						OR = {
+							any_spouse = { is_close_relative = PREVPREV }
+							any_child = { is_close_relative = PREVPREV }
+						}
+					}
+				}
+			}
+		}
+		effect = {
+			remove_character_modifier = potential_cadet
+		}
+		ai_will_do = {
+			factor = 1
+		}
+	}
+	
+	#form a cadet branch once the son becomes a ruler
+	start_cadet_branch = {
+		potential = {
+			has_character_modifier = potential_cadet
+			is_ruler = yes
+			OR = {
+				is_tribal = yes
+				is_feudal = yes
+			}
+			NOT = {
+				is_married_matrilineally = yes
+				any_heir_title = { holder_scope = { is_close_relative = ROOT } }
+				dynasty_head = { character = ROOT }
+				dynasty_head = {
+					ROOT = {
+						OR = {
+							any_spouse = { is_close_relative = PREVPREV }
+							any_child = { is_close_relative = PREVPREV }
+						}
+					}
+				}
+			}
+		}
+		allow = {
+			war = no
+			prisoner = no
+			is_adult = yes
+			NOT = { trait = incapable }
+			prestige = 100
+			primary_title = {
+				NOT = {
+					any_previous_holder = { is_close_relative = ROOT }
+					has_law = succ_tanistry
+					has_law = succ_seniority
+					has_law = succ_elective_gavelkind
+				}
+			}
+		}
+		effect = {
+			prestige = -100
+			custom_tooltip = { text = ESTABLISH_CADET_BRANCH }
+			hidden_tooltip = {
+				remove_character_modifier = potential_cadet
+				dynasty_head = { save_event_target_as = old_dynasty_head }
+				if = {
+					limit = { ai = no }
+					character_event = { id = Plus.144 }
+				}
+				any_dynasty_member = {
+					limit = {
+						OR = {
+							is_child_of = ROOT
+							mother_even_if_dead = { is_child_of = ROOT }
+							father_even_if_dead = { is_child_of = ROOT }
+						}
+					}
+					character_event = { id = Plus.142 days = 1 }
+				}
+				any_dynasty_member = {
+					limit = {
+						NOT = {
+							is_child_of = ROOT
+							mother_even_if_dead = { is_child_of = ROOT }
+							father_even_if_dead = { is_child_of = ROOT }
+						}
+					}
+					character_event = { id = Plus.143 days = 1 }
+				}
+				any_realm_character = {
+					limit = {
+						NOT = { dynasty = ROOT }
+						OR = {
+							is_close_relative = ROOT
+							vassal_of = ROOT
+						}
+					}
+					set_character_flag = no_chronicle_update
+					character_event = { id = Plus.143 days = 1 }
+				}
+				if = {
+					limit = {
+						mother_even_if_dead = { dynasty = ROOT }
+						father_even_if_dead = { NOT = { dynasty = ROOT } }
+					}
+					dynasty = mother_bastard
+				}
+				if = {
+					limit = { father_even_if_dead = { dynasty = ROOT } }
+					dynasty = father_bastard
+				}
+			}
+			if = {
+				limit = { ai = no }
+				chronicle = {
+					entry = CHRONICLE_CADET_BRANCH
+					portrait = [Root.GetID]
+					picture = GFX_evt_coronation
+				}
+			}
+		}
+		ai_will_do = {
+			factor = 1
+			modifier = {
+				factor = 0
+				any_liege = {
+					dynasty = ROOT
+					OR = {
+						has_law = succ_tanistry
+						has_law = succ_elective_gavelkind
+					}
+				}
+			}
+			modifier = {
+				factor = 0
+				NOT = {
+					trait = ambitious
+					trait = proud
+					trait = legit_bastard
+				}
+			}
+			modifier = {
+				factor = 0
+				OR = {
+					trait = content
+					trait = humble
+				}
+			}
+			modifier = {
+				factor = 0
+				any_child = { ai = no }
+			}
+			modifier = {
+				factor = 0
+				any_child = {
+					any_child = { ai = no }
+				}
+			}
+		}
+	}
+}
+
