@@ -9293,7 +9293,6 @@ liberation_revolt = {
 	can_ask_to_join_war = no
 	is_independence = yes
 	apply_short_occ_mod = no
-	attacker_alliance_occ_warscore = yes
 
 	can_use = {
 		ROOT = { NOT = { has_character_modifier = holy_truce_timer } }
@@ -9313,61 +9312,82 @@ liberation_revolt = {
 	}
 
 	on_success = {
-		hidden_tooltip = {
-			any_attacker = {
-				limit = { trait = rebel }
-				any_opinion_modifier_target = {
-					limit = { reverse_has_opinion_modifier = { who = PREV modifier = revolting_against } }
-					reverse_remove_opinion = { who = PREV modifier = revolting_against }
-				}
-			}
-		}
 		ROOT = {
 			add_character_modifier = { name = victory_timer duration = 3 hidden = yes }
 			prestige = 1000
 			give_nickname = nick_the_liberator
+			hidden_tooltip = { disband_event_forces = nationalist_rebels }
 		}
 		FROM = {
 			prestige = -500
 			clr_character_flag = has_current_revolt
 		}
-		any_attacker = {
-			limit = { NOT = { character = ROOT } }
-			hidden_tooltip = {
-				participation_scaled_prestige = 100
-			}
-		}
 		hidden_tooltip = {
 			any_attacker = {
-				limit = { trait = rebel }
-				any_demesne_title = {
+				limit = {
+					trait = rebel
+					NOT = { vassal_of = ROOT }
+				}
+				random_opinion_modifier_target = {
 					limit = {
-						controls_religion = no
-						higher_tier_than = BARON
-						FROM = {
-							OR = { # If the old liege can use the subjugation CB, give no claims
-								NOT = { religion_group = pagan_group }
-								NOT = { culture_group = PREVPREV }
+						reverse_has_opinion_modifier = { who = PREV modifier = revolting_against }
+						same_realm = FROM
+					}
+					reverse_remove_opinion = { who = PREV modifier = revolting_against }
+					PREV = {
+						set_character_flag = will_vassalize
+						if = {
+							limit = { NOT = { character = ROOT } }
+							participation_scaled_prestige = 100
+						}
+						any_demesne_title = {
+							limit = {
+								controls_religion = no
+								higher_tier_than = BARON
+								FROM = {
+									OR = { # If the old liege can use the subjugation CB, give no claims
+										NOT = { religion_group = pagan_group }
+										NOT = { culture_group = PREVPREVPREVPREV }
+									}
+								}
+							}
+							add_pressed_claim = FROM
+						}
+						reverse_opinion = { who = FROM modifier = opinion_independent years = 100 }
+						opinion = { who = FROM modifier = opinion_independent years = 100 }
+					}
+				}
+			}
+			ROOT = {
+				any_vassal = {
+					limit = { trait = rebel }
+					participation_scaled_prestige = 100
+					any_opinion_modifier_target = {
+						limit = { reverse_has_opinion_modifier = { who = PREV modifier = revolting_against } }
+						reverse_remove_opinion = { who = PREV modifier = revolting_against }
+					}
+					any_demesne_title = {
+						limit = {
+							controls_religion = no
+							higher_tier_than = BARON
+							FROM = {
+								OR = { # If the old liege can use the subjugation CB, give no claims
+									NOT = { religion_group = pagan_group }
+									NOT = { culture_group = PREVPREV }
+								}
 							}
 						}
+						add_pressed_claim = FROM
 					}
-					add_pressed_claim = FROM
-				}
-				reverse_opinion = {
-					who = FROM
-					modifier = opinion_independent
-					years = 100
-				}					
-				opinion = {
-					who = FROM
-					modifier = opinion_independent
-					years = 100
+					reverse_opinion = { who = FROM modifier = opinion_independent years = 100 }
+					opinion = { who = FROM modifier = opinion_independent years = 100 }
 				}
 			}
 		}
 	}
 
 	on_success_title = {
+		#tooltips for the CB results
 		ROOT = {
 			custom_tooltip = { text = LIBERATION_TOOLTIP }
 			hidden_tooltip = { remove_trait = rebel }
@@ -9384,16 +9404,20 @@ liberation_revolt = {
 			limit = {
 				trait = rebel
 				NOT = { character = ROOT }
+				NOT = { vassal_of = ROOT }
 			}
 			custom_tooltip = { text = LIBERATION_TOOLTIP3 }
 		}
-		#usurp any titles in the kingdom held by the top liege or any vassal
-		#who is his culture, not the attacker's culture group, or their capital is elsewhere
+		ROOT = {
+			any_vassal = {
+				limit = { trait = rebel }
+				custom_tooltip = { text = LIBERATION_TOOLTIP4 }
+			}
+		}
 		hidden_tooltip = {
+			#make sure the landless revolter has a feudal/tribal capital
 			if = {
-				limit = {
-					ROOT = { has_character_flag = began_revolt }
-				}
+				limit = { ROOT = { has_character_flag = began_revolt } }
 				any_de_jure_vassal_title = {
 					limit = {
 						tier = BARON
@@ -9416,6 +9440,8 @@ liberation_revolt = {
 					}
 				}
 			}
+			#usurp any titles in the kingdom held by the top liege or any vassal who is
+			#his culture, not the attacker's culture group, or their capital is elsewhere
 			any_de_jure_vassal_title = {
 				limit = {
 					tier = BARON
@@ -9488,7 +9514,8 @@ liberation_revolt = {
 				}
 				usurp_title = { target = PREV type = revolt }
 			}
-			#take kingdom title if nobody holds it (but it was previously owned) and at least five counties are held
+			#take kingdom title if nobody holds it (but it was previously created)
+			#and at least five counties are held
 			if = {
 				limit = {
 					num_of_count_titles = 5
@@ -9506,7 +9533,7 @@ liberation_revolt = {
 				limit = {
 					holder_scope = {
 						top_liege = { character = FROM }
-						lower_tier_than = ROOT
+						lower_real_tier_than = ROOT
 						NOT = {
 							any_liege = {
 								culture_group = ROOT
@@ -9522,7 +9549,7 @@ liberation_revolt = {
 				limit = {
 					holder_scope = {
 						top_liege = { character = FROM }
-						NOT = { lower_tier_than = ROOT }
+						NOT = { lower_real_tier_than = ROOT }
 					}
 				}
 				usurp_title_plus_barony_if_unlanded = { target = ROOT type = revolt }
@@ -9532,41 +9559,26 @@ liberation_revolt = {
 			set_defacto_liege = THIS
 			clr_character_flag = nationalist_rebel
 		}
+		#vassalize any allies and set opinions
 		hidden_tooltip = {
 			any_attacker = {
 				limit = {
-					lower_tier_than = ROOT
 					trait = rebel
+					has_character_flag = will_vassalize
 				}
+				clr_character_flag = will_vassalize
 				remove_trait = rebel
 				set_defacto_liege = ROOT
-				reverse_opinion = {
-					who = ROOT
-					modifier = opinion_very_grateful
-					years = 20
-				}
-				opinion = {
-					who = ROOT
-					modifier = opinion_very_grateful
-					years = 20
-				}
+				reverse_opinion = { who = ROOT modifier = opinion_very_grateful years = 20 }
+				opinion = { who = ROOT modifier = opinion_very_grateful years = 20 }
 			}
-			any_attacker = {
-				limit = {
-					NOT = { lower_tier_than = ROOT }
-					trait = rebel
-				}
-				remove_trait = rebel
-				set_defacto_liege = THIS
-				reverse_opinion = {
-					who = ROOT
-					modifier = opinion_very_grateful
-					years = 20
-				}
-				opinion = {
-					who = ROOT
-					modifier = opinion_very_grateful
-					years = 20
+			ROOT = {
+				any_vassal = {
+					limit = { trait = rebel }
+					remove_trait = rebel
+					set_defacto_liege = PREV
+					reverse_opinion = { who = ROOT modifier = opinion_very_grateful years = 20 }
+					opinion = { who = ROOT modifier = opinion_very_grateful years = 20 }
 				}
 			}
 		}
@@ -9575,12 +9587,30 @@ liberation_revolt = {
 	on_fail_title = {
 		hidden_tooltip = {
 			any_attacker = {
-				limit = { trait = rebel }
-				remove_trait = rebel
-				any_opinion_modifier_target = {
-					limit = { reverse_has_opinion_modifier = { who = PREV modifier = revolting_against } }
+				limit = {
+					trait = rebel
+					NOT = { vassal_of = ROOT }
+					NOT = { character = ROOT }
+				}
+				random_opinion_modifier_target = {
+					limit = {
+						reverse_has_opinion_modifier = { who = PREV modifier = revolting_against }
+						same_realm = FROM
+					}
+					PREV = { remove_trait = rebel }
 					set_defacto_vassal = PREV
 					reverse_remove_opinion = { who = PREV modifier = revolting_against }
+				}
+			}
+			ROOT = {
+				any_vassal = {
+					limit = { trait = rebel }
+					remove_trait = rebel
+					any_opinion_modifier_target = {
+						limit = { reverse_has_opinion_modifier = { who = PREV modifier = revolting_against } }
+						reverse_remove_opinion = { who = PREV modifier = revolting_against }
+						set_defacto_vassal = PREV
+					}
 				}
 			}
 		}
@@ -9588,15 +9618,15 @@ liberation_revolt = {
 			clr_character_flag = has_current_revolt
 			prestige = 100
 			hidden_tooltip = {
-				opinion = {
-					modifier = opinion_rebel_traitor
-					who = ROOT
-					months = 1200
-				}
+				opinion = { modifier = opinion_rebel_traitor who = ROOT months = 1200 }
 			}
 		}
 		ROOT = {
 			prestige = -100
+			hidden_tooltip = {
+				disband_event_forces = nationalist_rebels
+				disband_event_forces = nationalist_rebels_1
+			}
 			if = {
 				limit = { NOT = { has_character_flag = began_revolt } }
 				clr_character_flag = nationalist_rebel
@@ -9605,15 +9635,8 @@ liberation_revolt = {
 					clr_character_flag = began_revolt
 					imprison = FROM
 					hidden_tooltip = {
-						reverse_opinion = {
-							modifier = opinion_rebel_traitor
-							who = FROM
-							months = 1200
-						}
-						add_character_modifier = { 
-							name = broken_spirit
-							days = 3650
-						}
+						reverse_opinion = { modifier = opinion_rebel_traitor who = FROM months = 1200 }
+						add_character_modifier = { name = broken_spirit days = 3650 }
 						remove_trait = inspiring_leader
 					}
 				}
@@ -9623,17 +9646,19 @@ liberation_revolt = {
 				imprison = FROM
 				clr_character_flag = nationalist_rebel
 				hidden_tooltip = {
-					reverse_opinion = {
-						modifier = opinion_rebel_traitor
-						who = FROM
-						months = 1200
-					}
-					add_character_modifier = { 
-						name = broken_spirit
-						days = 3650
-					}
+					reverse_opinion = { modifier = opinion_rebel_traitor who = FROM months = 1200 }
+					add_character_modifier = { name = broken_spirit days = 3650 }
 					remove_trait = inspiring_leader
 				}
+			}
+		}
+		hidden_tooltip = {
+			any_attacker = {
+				limit = {
+					trait = rebel
+					character = ROOT
+				}
+				character_event = { id = Plus.315 days = 1 }
 			}
 		}
 	}
@@ -9644,56 +9669,58 @@ liberation_revolt = {
 			prestige = 200
 			add_character_modifier = { name = victory_timer duration = 3 hidden = yes }
 			hidden_tooltip = {
-				opinion = {
-					modifier = opinion_rebel_traitor
-					who = ROOT
-					months = 1200
-				}
-				add_character_modifier = { 
-					name = crushed_major_revolt
-					days = 3650
-				}
+				opinion = { modifier = opinion_rebel_traitor who = ROOT months = 1200 }
+				add_character_modifier = { name = crushed_major_revolt days = 3650 }
 			}
 		}
 		any_attacker = {
 			limit = {
 				trait = rebel
 				NOT = { character = ROOT }
+				NOT = { vassal_of = ROOT }
 			}
-			hidden_tooltip = { remove_trait = rebel }
-			any_opinion_modifier_target = {
-				limit = { reverse_has_opinion_modifier = { who = PREV modifier = revolting_against } }
+			random_opinion_modifier_target = {
+				limit = {
+					reverse_has_opinion_modifier = { who = PREV modifier = revolting_against }
+					same_realm = FROM
+				}
 				hidden_tooltip = {
 					set_defacto_vassal = PREV
 					reverse_remove_opinion = { who = PREV modifier = revolting_against }
 					opinion = { who = PREV modifier = opinion_civil_war_loser months = 60 }
 					reverse_opinion = { who = PREV modifier = opinion_coerced_into_leaving_faction months = 60 }
+					PREV = { remove_trait = rebel }
 				}
 				reverse_imprison = PREV
+				PREV = { participation_scaled_prestige = -100 }
 			}
 		}
-		any_attacker = {
-			limit = {
-				trait = rebel
-				character = ROOT
-			}
-			hidden_tooltip = {
-				remove_trait = rebel
-				reverse_opinion = { who = FROM modifier = opinion_rebel_traitor months = 60 }
-			}
-			imprison = FROM
-			any_opinion_modifier_target = {
-				limit = { reverse_has_opinion_modifier = { who = PREV modifier = revolting_against } }
-				hidden_tooltip = {
-					set_defacto_vassal = PREV
-					reverse_remove_opinion = { who = PREV modifier = revolting_against }
-					opinion = { who = PREV modifier = opinion_civil_war_loser months = 60 }
-					reverse_opinion = { who = PREV modifier = opinion_coerced_into_leaving_faction months = 60 }
+		ROOT = {
+			any_vassal = {
+				limit = { trait = rebel }
+				random_opinion_modifier_target = {
+					limit = {
+						reverse_has_opinion_modifier = { who = PREV modifier = revolting_against }
+						same_realm = FROM
+					}
+					hidden_tooltip = {
+						set_defacto_vassal = PREV
+						reverse_remove_opinion = { who = PREV modifier = revolting_against }
+						opinion = { who = PREV modifier = opinion_civil_war_loser months = 60 }
+						reverse_opinion = { who = PREV modifier = opinion_coerced_into_leaving_faction months = 60 }
+						PREV = { remove_trait = rebel }
+					}
+					reverse_imprison = PREV
+					PREV = { participation_scaled_prestige = -100 }
 				}
 			}
 		}
 		ROOT = {
 			prestige = -200
+			hidden_tooltip = {
+				disband_event_forces = nationalist_rebels
+				disband_event_forces = nationalist_rebels_1
+			}
 			if = {
 				limit = { NOT = { has_character_flag = began_revolt } }
 				clr_character_flag = nationalist_rebel
@@ -9702,15 +9729,8 @@ liberation_revolt = {
 					clr_character_flag = began_revolt
 					imprison = FROM
 					hidden_tooltip = {
-						reverse_opinion = {
-							modifier = opinion_rebel_traitor
-							who = FROM
-							months = 1200
-						}
-						add_character_modifier = { 
-							name = broken_spirit
-							days = 3650
-						}
+						reverse_opinion = { modifier = opinion_rebel_traitor who = FROM months = 1200 }
+						add_character_modifier = { name = broken_spirit days = 3650 }
 						remove_trait = inspiring_leader
 					}
 				}
@@ -9720,24 +9740,29 @@ liberation_revolt = {
 				imprison = FROM
 				clr_character_flag = nationalist_rebel
 				hidden_tooltip = {
-					reverse_opinion = {
-						modifier = opinion_rebel_traitor
-						who = FROM
-						months = 1200
-					}
-					add_character_modifier = { 
-						name = broken_spirit
-						days = 3650
-					}
+					reverse_opinion = { modifier = opinion_rebel_traitor who = FROM months = 1200 }
+					add_character_modifier = { name = broken_spirit days = 3650 }
 					remove_trait = inspiring_leader
 				}
 			}
 		}
 		any_attacker = {
-			limit = { 
-				NOT = { character = ROOT } 
+			limit = {
+				trait = rebel
+				character = ROOT
 			}
-			participation_scaled_prestige = -100
+			hidden_tooltip = {
+				reverse_opinion = { who = FROM modifier = opinion_rebel_traitor months = 60 }
+				character_event = { id = Plus.315 days = 1 }
+			}
+			imprison = FROM
+			any_opinion_modifier_target = {
+				limit = { reverse_has_opinion_modifier = { who = PREV modifier = revolting_against } }
+				hidden_tooltip = {
+					opinion = { who = PREV modifier = opinion_civil_war_loser months = 60 }
+					reverse_opinion = { who = PREV modifier = opinion_coerced_into_leaving_faction months = 60 }
+				}
+			}
 		}
 	}
 
