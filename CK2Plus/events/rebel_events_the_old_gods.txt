@@ -43,14 +43,9 @@ province_event = {
 		
 		# Nationalist revolts have prio
 		OR = {
-			owner = {
-				top_liege = {
-					culture = ROOT
-				}
-			}
-			kingdom = {
-				NOT = { culture = ROOT }
-			}
+			owner = { top_liege = { culture = ROOT } }
+			owner = { any_demesne_title = { temporary = yes } }
+			kingdom = { NOT = { culture = ROOT } }
 		}
 		
 		NOT = { # Not if there is already an ongoing peasant revolt for this province
@@ -507,7 +502,7 @@ province_event = {
 			ROOT = {
 				owner = {
 					top_liege = {
-#						set_defacto_vassal = PREVPREVPREV
+						set_character_flag = has_current_revolt
 						reverse_war = {
 							target = PREVPREVPREV
 							casus_belli = peasant_revolt
@@ -1130,27 +1125,12 @@ province_event = {
 			}
 		}
 		
-		NOT = { # Not if there is already an ongoing revolt
+		#not if there is already an ongoing revolt
+		NOT = {
 			owner = {
 				top_liege = {
+					has_character_flag = has_current_revolt
 					war = yes
-					any_war = {
-						defender = { character = PREV }
-						OR = {
-							AND = {
-								using_cb = peasant_revolt
-								war_title = ROOT # The county
-							}
-							AND = {
-								using_cb = heretic_revolt
-								attacker = { religion = ROOT }
-							}
-							AND = {
-								using_cb = religious_revolt
-								attacker = { religion = ROOT }
-							}
-						}
-					}
 				}
 			}
 		}
@@ -1386,6 +1366,7 @@ province_event = {
 			ROOT = {
 				owner = {
 					top_liege = {
+						set_character_flag = has_current_revolt
 						reverse_war = {
 							target = PREVPREVPREV
 							casus_belli = heretic_revolt
@@ -1776,68 +1757,45 @@ character_event = {
 	}
 }
 
-# Royalist Nationalist Rebels rise up to create a kingdom (temporary rebel title created, with a leader and a war)
+# Nationalist Rebels rise up to free their kingdom
 # Triggered from "on_rebel_revolt"
 province_event = {
 	id = TOG.1040
-	desc = EVTDESC_TOG_1040
-	picture = GFX_evt_siege
-	border = GFX_event_normal_frame_war
 	
 	is_triggered_only = yes
-
+	hide_window = yes
+	
 	trigger = {
 		has_dlc = "The Old Gods"
-		
 		owner = {
 			top_liege = {
 				NOT = { culture = ROOT }
+				NOT = { any_demesne_title = { temporary = yes } }
 			}
 		}
-		
-		kingdom = {
-			culture = ROOT
-		}
-		
-		# Heretic revolts have prio
+		kingdom = { culture = ROOT }
+		# Heretic revolts have priority
 		OR = { 
 			is_heretic = no
 			owner = {
-				top_liege = {
-					NOT = { is_parent_religion = ROOT }
-				}
+				top_liege = { NOT = { is_parent_religion = ROOT } }
 			}
 		}
-		
-		NOT = { # Not if there is already an ongoing revolt
+		# Not if there is already an ongoing revolt
+		NOT = {
 			owner = {
 				top_liege = {
+					has_character_flag = has_current_revolt
 					war = yes
-					any_war = {
-						defender = { character = PREV }
-						OR = {
-							AND = {
-								using_cb = heretic_revolt
-								attacker = { religion = ROOT }
-							}
-							AND = {
-								using_cb = liberation_revolt
-								thirdparty_title_scope = {
-									ROOT = {
-										kingdom = {
-											title = PREVPREV
-										}
-									}
-								}
-							}
-						}
-					}
 				}
 			}
 		}
 	}
 	
 	immediate = {
+		save_event_target_as = revolt_location
+		kingdom = { save_event_target_as = revolt_kingdom }
+		owner = { top_liege = { save_event_target_as = revolt_top_liege } }
 		create_character = {
 			random_traits = yes
 			dynasty = random
@@ -1858,36 +1816,372 @@ province_event = {
 			trait = brilliant_strategist
 			trait = inspiring_leader
 		}
-		
 		new_character = {
-			set_character_flag = nationalist_rebel
-			
-			create_title = {
-				tier = DUKE
-				landless = yes
-				temporary = yes
-				rebel = yes
-				culture = ROOT
-				name = "NATIONALIST_REVOLT"
-				holder = THIS
+			save_event_target_as = nationalist_revolt_leader
+			set_character_flag = began_revolt
+			opinion = {
+				who = event_target:revolt_top_liege
+				modifier = opinion_evil_tyrant
 			}
-			
-			spawn_unit = {
-				province = ROOT
-				home = ROOT
-				owner = THIS
-				leader = THIS
-				scaled_by_biggest_garrison = 2.0
-				troops = {
-					archers = { 6 6 }
-					light_cavalry = { 3 3 }
-					knights = { 1 1 }
-					light_infantry = { 7 7 }
-					heavy_infantry = { 3 3 }
+			character_event = { id = TOG.1041 }
+		}
+	}
+}
+
+# The revolt leader will attempt to find a ruler to lead the charge, or lead it himself
+character_event = {
+	id = TOG.1041
+	
+	is_triggered_only = yes
+	hide_window = yes
+	
+	immediate = {
+		#start with kingdom level vassal
+		if = {
+			limit = {
+				event_target:revolt_kingdom = {
+					has_holder = yes
+					holder_scope = {
+						culture = ROOT
+						religion = ROOT
+						capital_scope = { kingdom = { title = event_target:revolt_kingdom } }
+						top_liege = { character = event_target:revolt_top_liege }
+						NOT = {
+							character = event_target:revolt_top_liege
+							has_truce = event_target:revolt_top_liege
+							prisoner = yes
+							trait = incapable
+							is_adult = no
+							reverse_has_opinion_modifier = { who = ROOT modifier = refused_revolt_call }
+						}
+					}
 				}
-				attrition = 1.0
 			}
-			
+			event_target:revolt_kingdom = {
+				holder_scope = { character_event = { id = TOG.1042 } }
+			}
+			break = yes
+		}
+		#move onto duke level vassal
+		if = {
+			limit = {
+				event_target:revolt_location = {
+					duchy = {
+						has_holder = yes
+						holder_scope = {
+							culture = ROOT
+							religion = ROOT
+							capital_scope = { kingdom = { title = event_target:revolt_kingdom } }
+							top_liege = { character = event_target:revolt_top_liege }
+							NOT = {
+								character = event_target:revolt_top_liege
+								has_truce = event_target:revolt_top_liege
+								prisoner = yes
+								trait = incapable
+								is_adult = no
+								reverse_has_opinion_modifier = { who = ROOT modifier = refused_revolt_call }
+							}
+						}
+					}
+				}
+			}
+			event_target:revolt_location = {
+				duchy = {
+					holder_scope = { character_event = { id = TOG.1042 } }
+				}
+			}
+			break = yes
+		}
+		#move onto county owner
+		if = {
+			limit = {
+				event_target:revolt_location = {
+					owner = {
+						culture = ROOT
+						religion = ROOT
+						top_liege = { character = event_target:revolt_top_liege }
+						capital_scope = { kingdom = { title = event_target:revolt_kingdom } }
+						NOT = {
+							character = event_target:revolt_top_liege
+							has_truce = event_target:revolt_top_liege
+							prisoner = yes
+							trait = incapable
+							is_adult = no
+							reverse_has_opinion_modifier = { who = ROOT modifier = refused_revolt_call }
+						}
+					}
+				}
+			}
+			event_target:revolt_location = {
+				owner = { character_event = { id = TOG.1042 } }
+			}
+			break = yes
+		}
+		#failing that, the revolt leader will do it himself
+		set_character_flag = nationalist_rebel
+		create_title = {
+			tier = DUKE
+			landless = yes
+			temporary = yes
+			#rebel = yes
+			culture = ROOT
+			name = "NATIONALIST_REVOLT"
+			holder = ROOT
+		}
+		event_target:revolt_location = {
+			event_target:nationalist_revolt_leader = {
+				hidden_tooltip = {
+					spawn_unit = {
+						province = PREV
+						home = PREV
+						owner = ROOT
+						leader = THIS
+						scaled_by_biggest_garrison = 2.0
+						troops = {
+							archers = { 6 6 }
+							light_cavalry = { 3 3 }
+							knights = { 1 1 }
+							light_infantry = { 7 7 }
+							heavy_infantry = { 3 3 }
+						}
+						cannot_inherit = yes
+						attrition = 0.5
+						maintenance_multiplier = 0
+					}
+				}
+			}
+		}
+		create_character = {
+			random_traits = yes
+			dynasty = none
+			religion = ROOT
+			culture = ROOT
+			female = no
+			age = 34
+			attributes = {
+				martial = 7
+			}
+			trait = skilled_tactician
+		}
+		event_target:revolt_location = {
+			new_character = {
+				opinion = { who = ROOT modifier = opinion_loyal_servant years = 20 }
+				spawn_unit = {
+					province = PREV
+					home = PREV
+					owner = ROOT
+					leader = THIS
+					scaled_by_biggest_garrison = 2.0
+					troops = {
+						archers = { 6 6 }
+						light_cavalry = { 3 3 }
+						knights = { 1 1 }
+						light_infantry = { 7 7 }
+						heavy_infantry = { 3 3 }
+					}
+					disband_on_peace = yes
+					attrition = 0.5
+					maintenance_multiplier = 0
+				}
+			}
+		}
+		create_character = {
+			random_traits = yes
+			dynasty = none
+			religion = ROOT
+			culture = ROOT
+			female = no
+			age = 23
+			attributes = {
+				martial = 7
+			}
+			trait = skilled_tactician
+		}
+		event_target:revolt_location = {
+			new_character = {
+				opinion = { who = ROOT modifier = opinion_loyal_servant years = 20 }
+				spawn_unit = {
+					province = PREV
+					home = PREV
+					owner = ROOT
+					leader = THIS
+					scaled_by_biggest_garrison = 2.0
+					troops = {
+						archers = { 6 6 }
+						light_cavalry = { 3 3 }
+						knights = { 1 1 }
+						light_infantry = { 7 7 }
+						heavy_infantry = { 3 3 }
+					}
+					disband_on_peace = yes
+					attrition = 0.5
+					maintenance_multiplier = 0
+				}
+			}
+		}
+		event_target:revolt_location = {
+			event_target:revolt_top_liege = {
+				set_character_flag = has_current_revolt
+				reverse_war = {
+					target = ROOT
+					casus_belli = liberation_revolt
+					thirdparty_title = PREV # The county...
+					tier = KING # ... but really the de jure kingdom
+				}
+			}
+		}
+		hidden_tooltip = {
+			event_target:revolt_top_liege = {
+				character_event = { id = TOG.1044 }
+				any_realm_lord = {
+					limit = {
+						higher_tier_than = BARON
+						OR = {
+							culture = ROOT
+							AND = {
+								culture_group = ROOT
+								PREV = { NOT = { culture_group = ROOT } }
+							}
+						}
+						religion = ROOT
+						capital_scope = { kingdom = { title = event_target:revolt_kingdom } }
+						NOT = {
+							character = PREV
+							has_truce = PREV
+							prisoner = yes
+							trait = incapable
+							is_adult = no
+							reverse_has_opinion_modifier = { who = ROOT modifier = refused_revolt_call }
+							any_liege = {
+								OR = {
+									culture = ROOT
+									AND = {
+										culture_group = ROOT
+										PREVPREV = { NOT = { culture_group = ROOT } }
+									}
+								}
+								religion = ROOT
+								capital_scope = { kingdom = { title = event_target:revolt_kingdom } }
+								NOT = {
+									character = PREVPREV
+									has_truce = PREVPREV
+									prisoner = yes
+									trait = incapable
+									is_adult = no
+									reverse_has_opinion_modifier = { who = ROOT modifier = refused_revolt_call }
+								}
+							}
+						}
+					}
+					character_event = { id = TOG.1043 } #Ask to join the war
+				}
+			}
+		}
+	}
+}
+
+# Same-culture ruler is approached to lead the revolt
+character_event = {
+	id = TOG.1042
+	desc = EVTDESC_TOG_1042
+	picture = GFX_evt_siege
+	border = GFX_event_normal_frame_war
+	
+	is_triggered_only = yes
+	
+	option = {
+		name = EVTOPTA_TOG_1042 # We will lead the revolt
+		ai_chance = {
+			factor = 30
+			modifier = {
+				factor = 0
+				opinion = { who = event_target:revolt_top_liege value = 35 }
+			}
+			modifier = {
+				factor = 0.25
+				event_target:revolt_top_liege = { dynasty = ROOT }
+			}
+			modifier = {
+				factor = 0.25
+				event_target:revolt_top_liege = { is_close_relative = ROOT }
+			}
+			modifier = {
+				factor = 0.1
+				vassal_of = event_target:revolt_top_liege
+				NOT = {
+					in_faction = faction_separatist
+					leads_faction = faction_separatist
+				}
+			}
+			modifier = {
+				factor = 1.5
+				NOT = { opinion = { who = event_target:revolt_top_liege value = -25 } }
+			}
+			modifier = {
+				factor = 1.5
+				NOT = { opinion = { who = event_target:revolt_top_liege value = -50 } }
+			}
+			modifier = {
+				factor = 1.5
+				NOT = { opinion = { who = event_target:revolt_top_liege value = -75 } }
+			}
+			modifier = {
+				factor = 1.25
+				trait = brave
+			}
+			modifier = {
+				factor = 1.25
+				trait = wroth
+			}
+			modifier = {
+				factor = 1.25
+				trait = proud
+			}
+			modifier = {
+				factor = 2.0
+				trait = ambitious
+			}
+			modifier = {
+				factor = 3.0
+				OR = {
+					trait = lunatic
+					trait = possessed
+				}
+			}
+			modifier = {
+				factor = 1.5
+				event_target:revolt_top_liege = { NOT = { culture_group = ROOT } }
+			}
+		}
+		set_character_flag = nationalist_rebel
+		save_event_target_as = leading_revolt
+		add_trait = rebel
+		event_target:revolt_location = {
+			event_target:nationalist_revolt_leader = {
+				set_defacto_liege = ROOT
+				add_friend = ROOT
+				hidden_tooltip = {
+					spawn_unit = {
+						province = PREV
+						home = PREV
+						owner = ROOT
+						leader = THIS
+						scaled_by_biggest_garrison = 2.0
+						troops = {
+							archers = { 6 6 }
+							light_cavalry = { 3 3 }
+							knights = { 1 1 }
+							light_infantry = { 7 7 }
+							heavy_infantry = { 3 3 }
+						}
+						cannot_inherit = yes
+						attrition = 0.5
+						maintenance_multiplier = 0
+					}
+				}
+			}
+		}
+		hidden_tooltip = {
 			create_character = {
 				random_traits = yes
 				dynasty = none
@@ -1900,23 +2194,28 @@ province_event = {
 				}
 				trait = skilled_tactician
 			}
-			new_character = {
-				spawn_unit = {
-					province = ROOT
-					home = ROOT
-					owner = PREV
-					leader = THIS
-					scaled_by_biggest_garrison = 2.0
-					troops = {
-						archers = { 6 6 }
-						light_cavalry = { 3 3 }
-						knights = { 1 1 }
-						light_infantry = { 7 7 }
-						heavy_infantry = { 3 3 }
+			event_target:revolt_location = {
+				new_character = {
+					opinion = { who = ROOT modifier = opinion_loyal_servant years = 20 }
+					spawn_unit = {
+						province = PREV
+						home = PREV
+						owner = ROOT
+						leader = THIS
+						scaled_by_biggest_garrison = 2.0
+						troops = {
+							archers = { 6 6 }
+							light_cavalry = { 3 3 }
+							knights = { 1 1 }
+							light_infantry = { 7 7 }
+							heavy_infantry = { 3 3 }
+						}
+						disband_on_peace = yes
+						attrition = 0.5
+						maintenance_multiplier = 0
 					}
 				}
 			}
-			
 			create_character = {
 				random_traits = yes
 				dynasty = none
@@ -1929,66 +2228,330 @@ province_event = {
 				}
 				trait = skilled_tactician
 			}
-			new_character = {
-				spawn_unit = {
-					province = ROOT
-					home = ROOT
-					owner = PREV
-					leader = THIS
-					scaled_by_biggest_garrison = 2.0
-					troops = {
-						archers = { 6 6 }
-						light_cavalry = { 3 3 }
-						knights = { 1 1 }
-						light_infantry = { 7 7 }
-						heavy_infantry = { 3 3 }
+			event_target:revolt_location = {
+				new_character = {
+					opinion = { who = ROOT modifier = opinion_loyal_servant years = 20 }
+					spawn_unit = {
+						province = PREV
+						home = PREV
+						owner = ROOT
+						leader = THIS
+						scaled_by_biggest_garrison = 2.0
+						troops = {
+							archers = { 6 6 }
+							light_cavalry = { 3 3 }
+							knights = { 1 1 }
+							light_infantry = { 7 7 }
+							heavy_infantry = { 3 3 }
+						}
+						disband_on_peace = yes
+						attrition = 0.5
+						maintenance_multiplier = 0
 					}
 				}
 			}
-			
-			# DoW on the province top liege
+			liege = { reverse_opinion = { who = ROOT modifier = revolting_against years = 100 } }
+			any_liege = { character_event = { id = TOG.1044 } }
+		}
+		event_target:revolt_location = {
 			ROOT = {
-				owner = {
-					top_liege = {
-						reverse_war = {
-							target = PREVPREVPREV
-							casus_belli = liberation_revolt
-							thirdparty_title = ROOT # The county...
-							tier = KING # ... but really the de jure kingdom
-						}
-						reverse_opinion = {
-							who = PREVPREVPREV
-							modifier = opinion_evil_tyrant
-						}
+				event_target:revolt_top_liege = {
+					set_character_flag = has_current_revolt
+					reverse_war = {
+						target = ROOT
+						casus_belli = liberation_revolt
+						thirdparty_title = PREVPREV # The county...
+						tier = KING # ... but really the de jure kingdom
 					}
 				}
 			}
 		}
-		
-		owner = {
-			any_liege = { # Inform the lieges
-				character_event = {
-					id = TOG.1041
+		hidden_tooltip = {
+			event_target:revolt_top_liege = {
+				any_realm_lord = {
+					limit = {
+						higher_tier_than = BARON
+						OR = {
+							culture = ROOT
+							AND = {
+								culture_group = ROOT
+								PREV = { NOT = { culture_group = ROOT } }
+							}
+						}
+						religion = ROOT
+						capital_scope = { kingdom = { title = event_target:revolt_kingdom } }
+						NOT = {
+							has_truce = PREV
+							prisoner = yes
+							trait = incapable
+							is_adult = no
+							reverse_has_opinion_modifier = { who = event_target:nationalist_revolt_leader modifier = refused_revolt_call }
+							any_liege = {
+								OR = {
+									culture = ROOT
+									AND = {
+										culture_group = ROOT
+										event_target:revolt_top_liege = { NOT = { culture_group = ROOT } }
+									}
+								}
+								religion = ROOT
+								capital_scope = { kingdom = { title = event_target:revolt_kingdom } }
+								NOT = {
+									character = PREVPREV
+									has_truce = PREVPREV
+									prisoner = yes
+									trait = incapable
+									is_adult = no
+									reverse_has_opinion_modifier = { who = event_target:nationalist_revolt_leader modifier = refused_revolt_call }
+								}
+							}
+						}
+					}
+					character_event = { id = TOG.1043 } #Ask to join the war
 				}
 			}
 		}
 	}
-	
 	option = {
-		name = "EVTOPTA_TOG_1040"
+		name = EVTOPTB_TOG_1042 # No, this man cannot be trusted
+		ai_chance = {
+			factor = 70
+			modifier = {
+				factor = 0.1
+				vassal_of = event_target:revolt_top_liege
+				OR = {
+					in_faction = faction_separatist
+					leads_faction = faction_separatist
+				}
+			}
+			modifier = {
+				factor = 1.5
+				opinion = { who = event_target:revolt_top_liege value = 0 }
+			}
+			modifier = {
+				factor = 1.5
+				opinion = { who = event_target:revolt_top_liege value = 25 }
+			}
+			modifier = {
+				factor = 1.5
+				trait = craven
+			}
+			modifier = {
+				factor = 1.5
+				trait = humble
+			}
+			modifier = {
+				factor = 2.0
+				trait = content
+			}
+		}
+		event_target:nationalist_revolt_leader = {
+			opinion = { who = ROOT modifier = refused_revolt_call years = 20 }
+			hidden_tooltip = {
+				character_event = { id = TOG.1041 }
+			}
+		}
 	}
 }
 
+# Other same-culture rulers in the kingdom are approached to join the revolt
 character_event = {
-	id = TOG.1041
-	desc = EVTDESC_TOG_1041
+	id = TOG.1043
 	picture = GFX_evt_siege
 	border = GFX_event_normal_frame_war
+
+	desc = {
+		trigger = {
+			event_target:nationalist_revolt_leader = { has_character_flag = nationalist_rebel }
+		}
+		text = EVTDESC_TOG_1043A
+	}
+	desc = {
+		trigger = {
+			event_target:nationalist_revolt_leader = { NOT = { has_character_flag = nationalist_rebel } }
+		}
+		text = EVTDESC_TOG_1043B
+	}
 	
 	is_triggered_only = yes
 	
 	option = {
-		name = EVTOPTA_TOG_1040
+		name = EVTOPTA_TOG_1043 #Agree
+		ai_chance = {
+			factor = 50
+			modifier = {
+				factor = 0.6
+				FROM = { has_character_flag = began_revolt }
+			}
+			modifier = {
+				factor = 0
+				opinion = { who = event_target:revolt_top_liege value = 35 }
+			}
+			modifier = {
+				factor = 0.25
+				event_target:revolt_top_liege = { dynasty = ROOT }
+			}
+			modifier = {
+				factor = 0.25
+				event_target:revolt_top_liege = { is_close_relative = ROOT }
+			}
+			modifier = {
+				factor = 0.1
+				vassal_of = event_target:revolt_top_liege
+				NOT = {
+					in_faction = faction_separatist
+					leads_faction = faction_separatist
+				}
+			}
+			modifier = {
+				factor = 1.5
+				NOT = { opinion = { who = event_target:revolt_top_liege value = -25 } }
+			}
+			modifier = {
+				factor = 1.5
+				NOT = { opinion = { who = event_target:revolt_top_liege value = -50 } }
+			}
+			modifier = {
+				factor = 1.5
+				NOT = { opinion = { who = event_target:revolt_top_liege value = -75 } }
+			}
+			modifier = {
+				factor = 1.25
+				trait = brave
+			}
+			modifier = {
+				factor = 1.25
+				trait = wroth
+			}
+			modifier = {
+				factor = 1.25
+				trait = proud
+			}
+			modifier = {
+				factor = 2.0
+				trait = ambitious
+			}
+			modifier = {
+				factor = 3.0
+				OR = {
+					trait = lunatic
+					trait = possessed
+				}
+			}
+			modifier = {
+				factor = 1.5
+				event_target:revolt_top_liege = { NOT = { culture_group = ROOT } }
+			}
+			modifier = {
+				factor = 0.75
+				event_target:nationalist_revolt_leader = { NOT = { culture = ROOT } }
+			}
+		}
+		add_trait = rebel
+		hidden_tooltip = {
+			liege = { reverse_opinion = { who = ROOT modifier = revolting_against years = 100 } }
+			set_defacto_liege = ROOT
+		}
+		if = {
+			limit = { event_target:nationalist_revolt_leader = { has_character_flag = nationalist_rebel } }
+			join_attacker_wars = event_target:nationalist_revolt_leader
+		}
+		if = {
+			limit = { event_target:leading_revolt = { has_character_flag = nationalist_rebel } }
+			join_attacker_wars = event_target:leading_revolt
+		}
+	}
+	option = {
+		name = EVTOPTB_TOG_1042 #Refuse
+		ai_chance = {
+			factor = 50
+			modifier = {
+				factor = 1.4
+				FROM = { has_character_flag = began_revolt }
+			}
+			modifier = {
+				factor = 0.1
+				vassal_of = event_target:revolt_top_liege
+				OR = {
+					in_faction = faction_separatist
+					leads_faction = faction_separatist
+				}
+			}
+			modifier = {
+				factor = 1.5
+				opinion = { who = event_target:revolt_top_liege value = 0 }
+			}
+			modifier = {
+				factor = 1.5
+				opinion = { who = event_target:revolt_top_liege value = 25 }
+			}
+			modifier = {
+				factor = 1.5
+				trait = craven
+			}
+			modifier = {
+				factor = 1.5
+				trait = humble
+			}
+			modifier = {
+				factor = 2.0
+				trait = content
+			}
+		}
+		if = {
+			limit = { FROM = { NOT = { has_character_flag = began_revolt } } }
+			reverse_opinion = { who = FROM modifier = refused_revolt_call years = 20 }
+		}
+		reverse_opinion = { who = event_target:nationalist_revolt_leader modifier = refused_revolt_call years = 20 }
+		hidden_tooltip = {
+			if = {
+				limit = { FROM = { has_character_flag = nationalist_rebel } }
+				any_vassal = {
+					limit = {
+						higher_tier_than = BARON
+						OR = {
+							culture = event_target:nationalist_revolt_leader
+							AND = {
+								culture_group = event_target:nationalist_revolt_leader
+								event_target:revolt_top_liege = { NOT = { culture_group = event_target:nationalist_revolt_leader } }
+							}
+						}
+						religion = ROOT
+						capital_scope = { kingdom = { title = event_target:revolt_kingdom } }
+						NOT = {
+							has_truce = event_target:revolt_top_liege
+							prisoner = yes
+							trait = incapable
+							is_adult = no
+							reverse_has_opinion_modifier = { who = event_target:nationalist_revolt_leader modifier = refused_revolt_call }
+						}
+					}
+					character_event = { id = TOG.1043 } #Ask to join the war
+				}
+			}
+		}
+	}
+}	
+
+# Inform lieges of revolt
+character_event = {
+	id = TOG.1044
+	picture = GFX_evt_siege
+	border = GFX_event_normal_frame_war
+	
+	desc = {
+		trigger = { FROM = { has_character_flag = began_revolt } }
+		text = EVTDESC_TOG_1044A
+	}
+	desc = {
+		trigger = { FROM = { NOT = { has_character_flag = began_revolt } } }
+		text = EVTDESC_TOG_1044B
+	}
+	
+	is_triggered_only = yes
+	
+	option = {
+		name = CURSES
 	}
 }
 
@@ -2018,7 +2581,7 @@ character_event = {
 			location = {
 				if = {
 					limit = {
-						NOT = { culture = ROOT }
+						NOT = { culture_group = ROOT }
 						kingdom = { culture = ROOT }
 					}
 					random = {
@@ -2209,7 +2772,6 @@ character_event = {
 	}
 }
 
-
 # Religious Rebels rise up (temporary rebel title created, with a leader and a war)
 # Triggered from "on_rebel_revolt"
 province_event = {
@@ -2233,37 +2795,17 @@ province_event = {
 		
 		# Nationalist revolts have prio
 		OR = {
-			owner = {
-				top_liege = {
-					culture = ROOT
-				}
-			}
-			kingdom = {
-				NOT = { culture = ROOT }
-			}
+			owner = { top_liege = { culture = ROOT } }
+			owner = { any_demesne_title = { temporary = yes } }
+			kingdom = { NOT = { culture = ROOT } }
 		}
 		
-		NOT = { # Not if there is already an ongoing revolt
+		# not if there is already an ongoing revolt
+		NOT = {
 			owner = {
 				top_liege = {
+					has_character_flag = has_current_revolt
 					war = yes
-					any_war = {
-						defender = { character = PREV }
-						OR = {
-							AND = {
-								using_cb = peasant_revolt
-								war_title = ROOT # The county
-							}
-							AND = {
-								using_cb = heretic_revolt
-								attacker = { religion = ROOT }
-							}
-							AND = {
-								using_cb = religious_revolt
-								attacker = { religion = ROOT }
-							}
-						}
-					}
 				}
 			}
 		}
@@ -2498,6 +3040,7 @@ province_event = {
 			ROOT = {
 				owner = {
 					top_liege = {
+						set_character_flag = has_current_revolt
 						reverse_war = {
 							target = PREVPREVPREV
 							casus_belli = religious_revolt
