@@ -1,6 +1,7 @@
 namespace = Plus
 
 #reserved: Plus.600 to Plus.619
+#reserved: Plus.1600 to Plus.1649
 
 #################################
 # VOTING ON SUCCESSION LAW CHANGES
@@ -2433,10 +2434,10 @@ character_event = {
 	}
 }
 
-#################################
+#######################################
 # REACTIONS TO SUCCESSION LAW CHANGES
 # Written by Rylock
-#################################
+#######################################
 
 # Base event fired on the ruler after changing a law
 character_event = {
@@ -3662,6 +3663,254 @@ character_event = {
 					modifier = opinion_good_succ_law_change
 					months = 240
 				}
+			}
+		}
+	}
+}
+
+######################################
+# ASKING VASSALS TO SUPPORT YOUR HEIR
+# Written by Rylock
+######################################
+
+# Vassal is asked to support the current heir
+character_event = {
+	id = Plus.1600
+	
+	hide_window = yes
+	is_triggered_only = yes
+	
+	immediate = {
+		FROMFROM = { current_heir = { save_event_target_as = liege_heir } }
+		opinion = { who = FROMFROM modifier = asked_to_support_heir years = 20 }
+		random_list = {
+			50 = {
+				modifier = {
+					factor = 1.5
+					FROMFROM = { primary_title = { has_law = crown_authority_4 } }
+				}
+				modifier = {
+					factor = 1.5
+					is_friend = FROMFROM
+				}
+				modifier = {
+					factor = 1.2
+					opinion = { who = FROMFROM value = 90 }
+				}
+				modifier = {
+					factor = 1.2
+					FROMFROM = { diplomacy = 16 }
+				}
+				modifier = {
+					factor = 1.2
+					FROMFROM = { diplomacy = 20 }
+				}
+				modifier = {
+					factor = 1.5
+					is_friend = event_target:liege_heir
+				}
+				modifier = {
+					factor = 1.5
+					is_close_relative = event_target:liege_heir
+				}
+				modifier = {
+					factor = 1.2
+					event_target:liege_heir = { is_ruler = yes }
+				}
+				modifier = {
+					factor = 1.1
+					opinion = { who = event_target:liege_heir value = 20 }
+				}
+				modifier = {
+					factor = 1.1
+					opinion = { who = event_target:liege_heir value = 40 }
+				}
+				modifier = {
+					factor = 1.1
+					opinion = { who = event_target:liege_heir value = 60 }
+				}
+				modifier = {
+					factor = 1.1
+					opinion = { who = event_target:liege_heir value = 80 }
+				}
+				modifier = {
+					factor = 1.2
+					trait = trusting
+				}
+				modifier = {
+					factor = 1.5
+					trait = content
+				}
+				modifier = {
+					factor = 1.2
+					trait = humble
+				}
+				modifier = {
+					factor = 1.2
+					trait = kind
+				}
+				FROMFROM = { letter_event = { id = Plus.1601 days = 15 } } # Agree
+			}
+			50 = {
+				modifier = {
+					factor = 0.5
+					FROMFROM = { primary_title = { has_law = crown_authority_4 } }
+				}
+				modifier = {
+					factor = 1.2
+					FROMFROM = { NOT = { diplomacy = 8 } }
+				}
+				modifier = {
+					factor = 1.2
+					FROMFROM = { NOT = { diplomacy = 4 } }
+				}
+				modifier = {
+					factor = 1.2
+					NOT = { opinion = { who = FROMFROM value = 70 } }
+				}
+				modifier = {
+					factor = 1.2
+					NOT = { opinion = { who = event_target:liege_heir value = 0 } }
+				}
+				modifier = {
+					factor = 1.5
+					NOT = { opinion = { who = event_target:liege_heir value = -25 } }
+				}
+				modifier = {
+					factor = 1.5
+					NOT = { opinion = { who = event_target:liege_heir value = -50 } }
+				}
+				modifier = {
+					factor = 1.5
+					NOT = {
+						religion = event_target:liege_heir
+						culture = event_target:liege_heir
+					}
+				}
+				modifier = {
+					factor = 1.2
+					trait = paranoid
+				}
+				modifier = {
+					factor = 1.5
+					trait = ambitious
+				}
+				modifier = {
+					factor = 1.2
+					trait = proud
+				}
+				modifier = {
+					factor = 1.2
+					trait = envious
+				}
+				modifier = {
+					factor = 1.2
+					trait = cruel
+				}
+				FROMFROM = { letter_event = { id = Plus.1602 days = 15 } } # Refuse
+			}
+		}
+	}
+}
+
+# Vassal agrees to support heir
+letter_event = {
+	id = Plus.1601
+	desc = EVTDESC_Plus_1601
+	border = GFX_event_letter_frame_diplomacy
+	
+	is_triggered_only = yes
+	
+	trigger = {
+		current_heir = { character = event_target:liege_heir }
+		FROM = { vassal_of = ROOT }
+	}
+	
+	option = {
+		name = EXCELLENT
+		FROM = {
+			opinion = { who = event_target:liege_heir modifier = sworn_to_support_heir years = 20 }
+			reverse_opinion = { who = ROOT modifier = opinion_pleased years = 5 }
+		}
+	}
+}
+
+# Vassal refuses to support heir
+letter_event = {
+	id = Plus.1602
+	desc = EVTDESC_Plus_1602
+	border = GFX_event_letter_frame_diplomacy
+	
+	is_triggered_only = yes
+	
+	trigger = {
+		current_heir = { character = event_target:liege_heir }
+		FROM = { vassal_of = ROOT }
+	}
+	
+	option = {
+		name = CURSES
+		opinion = { who = FROM modifier = refused_to_support_heir years = 10 }
+		if = {
+			limit = { FROM = { tier = COUNT } }
+			prestige = 50
+		}
+		if = {
+			limit = { FROM = { tier = DUKE } }
+			prestige = 125
+		}
+		if = {
+			limit = { FROM = { tier = KING } }
+			prestige = 250
+		}
+	}
+}
+
+# Maintenance event: remove support for heir if he is neither heir nor liege
+character_event = {
+	id = Plus.1603
+	
+	hide_window = yes
+	is_triggered_only = yes
+	
+	trigger = {
+		any_opinion_modifier_target = {
+			reverse_has_opinion_modifier = {
+				who = ROOT
+				modifier = sworn_to_support_heir
+			}
+			NOT = {
+				is_liege_or_above = ROOT
+				any_heir_title = {
+					is_primary_holder_title = yes
+					holder_scope = { is_vassal_or_below = ROOT }
+				}
+			}
+		}
+	}
+	
+	weight_multiplier = {
+		days = 1
+	}
+	
+	immediate = {
+		any_opinion_modifier_target = {
+			limit = {
+				reverse_has_opinion_modifier = {
+					who = ROOT
+					modifier = sworn_to_support_heir
+				}
+				NOT = {
+					is_liege_or_above = ROOT
+					any_heir_title = {
+						is_primary_holder_title = yes
+						holder_scope = { is_vassal_or_below = ROOT }
+					}
+				}
+			}
+			reverse_remove_opinion = {
+				who = ROOT
+				modifier = sworn_to_support_heir
 			}
 		}
 	}
