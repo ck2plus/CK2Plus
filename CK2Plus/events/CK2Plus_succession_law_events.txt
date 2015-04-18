@@ -3951,3 +3951,3600 @@ character_event = {
 	}
 }
 
+######################################
+# SUCCESSION CRISIS EVENTS
+# Written by Rylock
+######################################
+
+# King/Emperor dies at low CA with possibly unsuitable heir
+character_event = {
+	id = Plus.1610
+	
+	hide_window = yes
+	is_triggered_only = yes
+	
+	trigger = {
+		is_feudal = yes
+		primary_title = {
+			higher_real_tier_than = DUKE
+			#low crown authority
+			OR = {
+				has_law = crown_authority_0
+				has_law = crown_authority_1
+			}
+			#only applies to non-voting successions
+			OR = {
+				has_law = succ_seniority
+				has_law = succ_primogeniture
+				has_law = succ_ultimogeniture
+			}
+			#current heir is female or unsuitable
+			OR = {
+				AND = {
+					OR = {
+						has_law = cognatic_succession
+						has_law = true_cognatic_succession
+					}
+					current_heir = { is_female = yes }
+				}
+				current_heir = {
+					OR = {
+						NOT = { age = 13 }
+						trait = incapable
+						trait = imbecile
+						trait = inbred
+						trait = lunatic
+					}
+				}
+			}
+		}
+		#at least three vassals who can vote
+		any_vassal = {
+			has_regent = no
+			higher_real_tier_than = COUNT
+			count = 3
+		}
+		#there is another suitable male heir available
+		any_dynasty_member = {
+			is_alive = yes
+			is_female = no
+			is_theocracy = no
+			is_republic = no
+			mercenary = no
+			holy_order = no
+			age = 13
+			NOT = {
+				is_primary_heir = ROOT
+				character = ROOT
+				trait = incapable
+				trait = imbecile
+				trait = inbred
+				trait = lunatic
+				trait = possessed
+				trait = eunuch
+				trait = monk
+				trait = nun
+				trait = abdicated
+				trait = disinherited
+				trait = druid
+				trait = bad_druid
+				trait = retired_vestalis
+				trait = vestalis
+				any_liege = {
+					OR = {
+						holy_order = yes
+						mercenary = yes
+					}
+				}
+			}
+		}
+	}
+	
+	immediate = {
+		set_variable = { which = "succ_candidates" value = 0 }
+		current_heir = { save_event_target_as = next_in_line }
+		
+		#save current laws
+		primary_title = {
+			if = {
+				limit = { has_law = succ_seniority }
+				set_title_flag = revert_seniority
+			}
+			if = {
+				limit = { has_law = succ_primogeniture }
+				set_title_flag = revert_primogeniture
+			}
+			if = {
+				limit = { has_law = succ_ultimogeniture }
+				set_title_flag = revert_ultimogeniture
+			}
+			if = {
+				limit = { has_law = cognatic_succession }
+				set_title_flag = revert_cognatic
+			}
+			if = {
+				limit = { has_law = true_cognatic_succession }
+				set_title_flag = revert_true_cognatic
+			}
+			if = {
+				limit = { has_law = agnatic_succession }
+				set_title_flag = revert_agnatic
+			}
+			if = {
+				limit = { has_law = enatic_succession }
+				set_title_flag = revert_enatic
+			}
+			if = {
+				limit = { has_law = enatic_cognatic_succession }
+				set_title_flag = revert_enatic_cognatic
+			}
+		}
+		
+		#check whether we should be accepting female candidates
+		if = {
+			limit = {
+				current_heir = {
+					is_female = yes
+					age = 13
+					NOT = {
+						trait = incapable
+						trait = imbecile
+						trait = inbred
+						trait = lunatic
+					}
+				}
+			}
+			set_character_flag = no_female_candidates
+		}
+		
+		#first the actual pretender
+		current_heir = { 
+			add_trait = disinherited 
+			ROOT = {
+				recalc_succession = yes
+				current_heir = { 
+					if = {
+						limit = {
+							OR = {
+								is_female = no
+								ROOT = { NOT = { has_character_flag = no_female_candidates } }
+							}
+							age = 13
+							NOT = {
+								character = event_target:next_in_line
+								trait = incapable
+								trait = imbecile
+								trait = inbred
+								trait = lunatic
+							}
+						}
+						save_event_target_as = candidate_second_heir
+						ROOT = { change_variable = { which = "succ_candidates" value = 1 } }
+					}
+				}
+			}
+			remove_trait = disinherited 
+		}
+		recalc_succession = yes
+		
+		#then the male candidate
+		if = {
+			limit = {
+				current_heir = { is_female = yes }
+			}
+			primary_title = { gender_succ = agnatic }
+			recalc_succession = yes
+			current_heir = { 
+				if = {
+					limit = {
+						age = 13
+						NOT = {
+							character = event_target:next_in_line
+							character = event_target:candidate_second_heir
+							trait = incapable
+							trait = imbecile
+							trait = inbred
+							trait = lunatic
+						}
+					}
+					save_event_target_as = candidate_male
+					ROOT = { change_variable = { which = "succ_candidates" value = 1 } }
+				}	
+			}
+		}
+		
+		#then an older female candidate
+		if = {
+			limit = {
+				current_heir = { is_female = no }
+				ROOT = { NOT = { has_character_flag = no_female_candidates } }
+			}
+			primary_title = { gender_succ = true_cognatic }
+			recalc_succession = yes
+			current_heir = { 
+				if = {
+					limit = {
+						age = 13
+						NOT = {
+							character = event_target:next_in_line
+							character = event_target:candidate_second_heir
+							character = event_target:candidate_male
+							trait = incapable
+							trait = imbecile
+							trait = inbred
+							trait = lunatic
+						}
+					}
+					save_event_target_as = candidate_female
+					ROOT = { change_variable = { which = "succ_candidates" value = 1 } }
+				}	
+			}
+		}
+		
+		#restore gender law
+		primary_title = {
+			if = {
+				limit = { has_title_flag = revert_agnatic }
+				clr_title_flag = revert_agnatic
+				gender_succ = agnatic
+			}
+			if = {
+				limit = { has_title_flag = revert_cognatic }
+				clr_title_flag = revert_cognatic
+				gender_succ = cognatic
+			}
+			if = {
+				limit = { has_title_flag = revert_true_cognatic }
+				clr_title_flag = revert_true_cognatic
+				gender_succ = true_cognatic
+			}
+			if = {
+				limit = { has_title_flag = revert_enatic }
+				clr_title_flag = revert_enatic
+				gender_succ = enatic
+			}
+			if = {
+				limit = { has_title_flag = revert_enatic_cognatic }
+				clr_title_flag = revert_enatic_cognatic
+				gender_succ = enatic_cognatic
+			}
+		}
+		
+		#then the primogeniture candidate
+		if = {
+			limit = {
+				primary_title = { NOT = { has_title_flag = revert_primogeniture } }
+				NOT = { check_variable = { which = "succ_candidates" value = 2.5 } }
+			}
+			primary_title = { succession = primogeniture }
+			recalc_succession = yes
+			current_heir = { 
+				if = {
+					limit = {
+						OR = {
+							is_female = no
+							ROOT = { NOT = { has_character_flag = no_female_candidates } }
+						}
+						age = 13
+						NOT = {
+							character = event_target:next_in_line
+							character = event_target:candidate_second_heir
+							character = event_target:candidate_male
+							character = event_target:candidate_female
+							trait = incapable
+							trait = imbecile
+							trait = inbred
+							trait = lunatic
+						}
+					}
+					save_event_target_as = candidate_primo
+					ROOT = { change_variable = { which = "succ_candidates" value = 1 } }
+				}	
+			}
+		}
+		
+		#then the seniority candidate
+		if = {
+			limit = {
+				primary_title = { NOT = { has_title_flag = revert_seniority } }
+				NOT = { check_variable = { which = "succ_candidates" value = 2.5 } }
+			}
+			primary_title = { succession = seniority }
+			recalc_succession = yes
+			current_heir = { 
+				if = {
+					limit = {
+						OR = {
+							is_female = no
+							ROOT = { NOT = { has_character_flag = no_female_candidates } }
+						}
+						age = 13
+						NOT = {
+							character = event_target:next_in_line
+							character = event_target:candidate_second_heir
+							character = event_target:candidate_male
+							character = event_target:candidate_female
+							character = event_target:candidate_primo
+							trait = incapable
+							trait = imbecile
+							trait = inbred
+							trait = lunatic
+						}
+					}
+					save_event_target_as = candidate_senior
+					ROOT = { change_variable = { which = "succ_candidates" value = 1 } }
+				}
+			}
+		}
+		
+		#restore succession law
+		primary_title = {
+			if = {
+				limit = { has_title_flag = revert_primogeniture }
+				clr_title_flag = revert_primogeniture
+				succession = primogeniture
+			}
+			if = {
+				limit = { has_title_flag = revert_seniority }
+				clr_title_flag = revert_seniority
+				succession = seniority
+			}
+			if = {
+				limit = { has_title_flag = revert_ultimogeniture }
+				clr_title_flag = revert_ultimogeniture
+				succession = ultimogeniture
+			}
+		}
+		recalc_succession = yes
+		clear_event_target = next_in_line
+		
+		#then the ability candidate, if there is one
+		if = {
+			limit = {
+				NOT = { check_variable = { which = "succ_candidates" value = 2.5 } }
+			}
+			random_dynasty_member = {
+				limit = {
+					OR = {
+						is_female = no
+						ROOT = { NOT = { has_character_flag = no_female_candidates } }
+					}
+					is_alive = yes
+					is_theocracy = no
+					is_republic = no
+					mercenary = no
+					holy_order = no
+					is_adult = yes
+					same_realm = ROOT
+					diplomacy = 15
+					NOT = {
+						any_dynasty_member = {
+							OR = {
+								is_female = no
+								ROOT = { NOT = { has_character_flag = no_female_candidates } }
+							}
+							is_alive = yes
+							is_theocracy = no
+							is_republic = no
+							mercenary = no
+							holy_order = no
+							is_adult = yes
+							same_realm = ROOT
+							attribute_diff = {
+								attribute = diplomacy
+								character = PREV
+								value = 1
+							}
+						}
+						character = event_target:next_in_line
+						character = event_target:candidate_second_heir
+						character = event_target:candidate_male
+						character = event_target:candidate_female
+						character = event_target:candidate_primo
+						character = event_target:candidate_senior
+						is_primary_heir = ROOT
+						character = ROOT
+						trait = incapable
+						trait = imbecile
+						trait = inbred
+						trait = lunatic
+						trait = possessed
+						trait = eunuch
+						trait = monk
+						trait = nun
+						trait = abdicated
+						trait = disinherited
+						trait = druid
+						trait = bad_druid
+						trait = retired_vestalis
+						trait = vestalis
+						any_liege = {
+							OR = {
+								holy_order = yes
+								mercenary = yes
+							}
+						}
+					}
+				}
+				save_event_target_as = candidate_ability
+				ROOT = { change_variable = { which = "succ_candidates" value = 1 } }
+			}
+		}
+		
+		#is there still a succession crisis?
+		if = {
+			limit = { check_variable = { which = "succ_candidates" value = 0.5 } }
+			current_heir = {
+				if = {
+					limit = { NOT = { age = 13 } }
+					set_character_flag = crisis_too_young
+				}
+				if = {
+					limit = {
+						age = 13
+						OR = {
+							trait = incapable
+							trait = imbecile
+							trait = inbred
+							trait = lunatic
+						}
+					}
+					set_character_flag = crisis_unsuitable
+				}
+				if = {
+					limit = {
+						age = 13
+						NOT = {
+							trait = incapable
+							trait = imbecile
+							trait = inbred
+							trait = lunatic
+						}
+					}
+					set_character_flag = crisis_female
+				}				
+				ROOT = {
+					any_demesne_title = {
+						limit = { current_heir = { character = PREVPREVPREV } }
+						set_title_flag = will_be_inherited
+					}
+				}
+				narrative_event = { id = Plus.1611 days = 1 }
+				character_event = { id = Plus.1617 days = 1 }
+			}
+		}
+	}
+}
+
+# The succession crisis is raised
+narrative_event = {
+	id = Plus.1611
+	title = EVTNAME_Plus_1611
+	picture = GFX_evt_coronation
+	
+	desc = {
+		text = EVTDESC_Plus_1611A
+		trigger = { has_character_flag = crisis_too_young }
+	}
+	desc = {
+		text = EVTDESC_Plus_1611B
+		trigger = { has_character_flag = crisis_unsuitable }
+	}
+	desc = {
+		text = EVTDESC_Plus_1611C
+		trigger = { has_character_flag = crisis_female }
+	}
+	
+	is_triggered_only = yes
+	
+	trigger = {
+		NOT = {
+			trait = rebel
+			any_demesne_title = { is_contested = yes }
+			any_demesne_title = { temporary = yes }
+			has_character_flag = faction_court_war
+			has_character_flag = faction_prosperity_war
+			has_character_flag = faction_glory_war
+			has_character_flag = faction_tradition_war
+			has_character_flag = faction_separatist_war
+			has_character_flag = faction_pretender_war
+			has_character_flag = faction_religious_war
+		}
+	}
+	
+	immediate = {
+		add_character_modifier = {
+			name = succession_crisis
+			duration = 8
+		}
+		set_variable = { which = "votes_for_heir" value = 0 }
+		set_variable = { which = "votes_against_heir" value = 0 }
+		set_variable = { which = "votes_for_second_heir" value = 0 }
+		set_variable = { which = "votes_for_male" value = 0 }
+		set_variable = { which = "votes_for_female" value = 0 }
+		set_variable = { which = "votes_for_primo" value = 0 }
+		set_variable = { which = "votes_for_senior" value = 0 }
+		set_variable = { which = "votes_for_ability" value = 0 }
+	}
+
+	option = {
+		name = EVTOPTA_Plus_1611
+		event_target:candidate_second_heir = { custom_tooltip = { text = IS_SUCCESSION_CANDIDATE } }
+		event_target:candidate_male = { custom_tooltip = { text = IS_SUCCESSION_CANDIDATE } }
+		event_target:candidate_female = { custom_tooltip = { text = IS_SUCCESSION_CANDIDATE } }
+		event_target:candidate_primo = { custom_tooltip = { text = IS_SUCCESSION_CANDIDATE } }
+		event_target:candidate_senior = { custom_tooltip = { text = IS_SUCCESSION_CANDIDATE } }
+		event_target:candidate_ability = { custom_tooltip = { text = IS_SUCCESSION_CANDIDATE } }
+		hidden_tooltip = {
+			if = {
+				limit = { independent = no }
+				top_liege = { narrative_event = { id = Plus.1612 days = 3 } }
+			}
+			top_liege = {
+				any_realm_character = {
+					limit = { is_playable = yes }
+					narrative_event = { id = Plus.1612 days = 3 }
+				}
+			}
+			any_dynasty_member = {
+				limit = {
+					NOT = { same_realm = ROOT }
+					ai = no
+				}
+				narrative_event = { id = Plus.1612 days = 3 }
+			}
+			character_event = { id = Plus.1613 days = 7 }
+			character_event = { id = Plus.1617 days = 7 }
+		}
+	}
+}
+
+# Vassals vote on whether to depose the ruler
+narrative_event = {
+	id = Plus.1612
+	title = EVTNAME_Plus_1611
+	picture = GFX_evt_coronation
+	
+	desc = {
+		text = EVTDESC_Plus_1612A
+		trigger = { FROM = { has_character_flag = crisis_too_young } }
+	}
+	desc = {
+		text = EVTDESC_Plus_1612B
+		trigger = { FROM = { has_character_flag = crisis_unsuitable } }
+	}
+	desc = {
+		text = EVTDESC_Plus_1612C
+		trigger = { FROM = { has_character_flag = crisis_female } }
+	}
+	
+	is_triggered_only = yes
+	
+	option = {
+		name = EVTOPTA_Plus_1612 #Support current ruler
+		trigger = {
+			vassal_of = FROM
+			higher_tier_than = COUNT
+			has_regent = no
+		}
+		ai_chance = {
+			factor = 100
+			modifier = {
+				factor = 2.0
+				FROM = { primary_title = { has_law = crown_authority_1 } }
+			}
+			modifier = {
+				factor = 0.5
+				FROM = { is_adult = no }
+			}
+			modifier = {
+				factor = 0.5
+				is_female = no
+				FROM = {
+					is_female = yes
+					primary_title = {
+						OR = {
+							has_law = cognatic_succession
+							has_law = true_cognatic_succession
+						}
+					}
+				}
+			}
+			modifier = {
+				factor = 0.75
+				is_female = no
+				FROM = {
+					is_female = yes
+					primary_title = {
+						NOT = {
+							has_law = cognatic_succession
+							has_law = true_cognatic_succession
+						}
+					}
+				}
+			}
+			modifier = {
+				factor = 0.25
+				FROM = {
+					OR = {
+						trait = incapable
+						trait = imbecile
+						trait = inbred
+					}
+				}
+			}
+			modifier = {
+				factor = 0.5
+				FROM = { trait = lunatic }
+			}
+			modifier = {
+				factor = 0
+				OR = {
+					character = event_target:candidate_second_heir
+					character = event_target:candidate_male
+					character = event_target:candidate_female
+					character = event_target:candidate_primo
+					character = event_target:candidate_senior
+					character = event_target:candidate_ability
+				}
+				NOT = {
+					trait = content
+					trait = humble
+				}
+			}		
+			modifier = {
+				factor = 0.5
+				NOT = { dynasty = FROM }
+			}
+			modifier = {
+				factor = 1.5
+				is_close_relative = FROM
+			}
+			modifier = {
+				factor = 2.0
+				OR = {
+					is_child_of = FROM
+					is_father = FROM
+					is_mother = FROM
+				}
+			}
+			modifier = {
+				factor = 0.5
+				NOT = { religion = FROM }
+			}
+			modifier = {
+				factor = 0.75
+				NOT = { culture = FROM }
+			}
+			modifier = {
+				factor = 0.75
+				NOT = { culture_group = FROM }
+			}
+			modifier = {
+				factor = 1.5
+				FROM = {
+					primary_title = {
+						OR = {
+							title = e_roman_empire
+							title = e_byzantium
+						}
+					}
+					trait = born_in_the_purple
+				}
+			}
+		}
+		hidden_tooltip = {
+			FROM = { change_variable = { which = "votes_for_heir" value = 1 } }
+		}
+		FROM = {
+			custom_tooltip = { text = ENDORSE_FOR_SUCCESSION }
+		}
+		opinion = { who = FROM modifier = supported_in_succession years = 5 }
+		reverse_opinion = { who = FROM modifier = supported_in_succession years = 5 }
+	}
+	option = {
+		name = EVTOPTB_Plus_1612 #Support second heir
+		trigger = {
+			event_target:candidate_second_heir = { is_alive = yes }
+			vassal_of = FROM
+			higher_tier_than = COUNT
+			has_regent = no
+		}
+		ai_chance = {
+			factor = 50
+			modifier = {
+				factor = 0.5
+				event_target:candidate_second_heir = { is_adult = no }
+			}
+			modifier = {
+				factor = 1.25
+				OR = {
+					leads_faction = faction_tradition
+					in_faction = faction_tradition
+				}
+			}
+			modifier = {
+				factor = 0.5
+				is_female = no
+				event_target:candidate_second_heir = {
+					is_female = yes
+					FROM = {
+						primary_title = {
+							OR = {
+								has_law = cognatic_succession
+								has_law = true_cognatic_succession
+							}
+						}
+					}
+				}
+			}
+			modifier = {
+				factor = 0.75
+				is_female = no
+				event_target:candidate_second_heir = {
+					is_female = yes
+					FROM = {
+						primary_title = {
+							NOT = {
+								has_law = cognatic_succession
+								has_law = true_cognatic_succession
+							}
+						}
+					}
+				}
+			}
+			modifier = {
+				factor = 0
+				OR = {
+					character = event_target:candidate_second_heir
+					character = event_target:candidate_male
+					character = event_target:candidate_female
+					character = event_target:candidate_senior
+					character = event_target:candidate_ability
+				}
+				NOT = {
+					trait = content
+					trait = humble
+				}
+			}
+			modifier = {
+				factor = 0.5
+				NOT = { dynasty = event_target:candidate_second_heir }
+			}
+			modifier = {
+				factor = 1.5
+				is_close_relative = event_target:candidate_second_heir
+			}
+			modifier = {
+				factor = 2.0
+				OR = {
+					is_child_of = event_target:candidate_second_heir
+					is_father = event_target:candidate_second_heir
+					is_mother = event_target:candidate_second_heir
+				}
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_second_heir = {
+					NOT = { character = ROOT }
+					ROOT = { opinion_diff = { first = PREV second = FROM value = 20 as_if_liege = yes } }
+				}
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_second_heir = {
+					NOT = { character = ROOT }
+					ROOT = { opinion_diff = { first = PREV second = FROM value = 30 as_if_liege = yes } }
+				}
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_second_heir = {
+					NOT = { character = ROOT }
+					ROOT = { opinion_diff = { first = PREV second = FROM value = 40 as_if_liege = yes } }
+				}
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_second_heir = {
+					NOT = { character = ROOT }
+					ROOT = { opinion_diff = { first = PREV second = FROM value = 50 as_if_liege = yes } }
+				}
+			}
+			modifier = {
+				factor = 0.5
+				event_target:candidate_second_heir = {
+					NOT = { character = ROOT }
+					ROOT = { opinion_diff = { first = FROM second = PREV value = 10 as_if_liege = yes } }
+				}
+			}
+			modifier = {
+				factor = 0.5
+				event_target:candidate_second_heir = {
+					NOT = { character = ROOT }
+					ROOT = { opinion_diff = { first = FROM second = PREV value = 20 as_if_liege = yes } }
+				}
+			}
+			modifier = {
+				factor = 0.5
+				NOT = { religion = event_target:candidate_second_heir }
+			}
+			modifier = {
+				factor = 0.75
+				NOT = { culture = event_target:candidate_second_heir }
+			}
+			modifier = {
+				factor = 0.75
+				NOT = { culture_group = event_target:candidate_second_heir }
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_second_heir = {
+					attribute_diff = { character = FROM attribute = diplomacy value = 3 }
+				}
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_second_heir = {
+					attribute_diff = { character = FROM attribute = diplomacy value = 5 }
+				}
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_second_heir = {
+					attribute_diff = { character = FROM attribute = diplomacy value = 7 }
+				}
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_second_heir = {
+					attribute_diff = { character = FROM attribute = diplomacy value = 9 }
+				}
+			}
+			modifier = {
+				factor = 0.8
+				FROM = {
+					attribute_diff = { character = event_target:candidate_second_heir attribute = diplomacy value = 1 }
+				}
+			}
+			modifier = {
+				factor = 0.8
+				FROM = {
+					attribute_diff = { character = event_target:candidate_second_heir attribute = diplomacy value = 3 }
+				}
+			}
+			modifier = {
+				factor = 0.8
+				FROM = {
+					attribute_diff = { character = event_target:candidate_second_heir attribute = diplomacy value = 5 }
+				}
+			}
+			modifier = {
+				factor = 0.8
+				FROM = {
+					attribute_diff = { character = event_target:candidate_second_heir attribute = diplomacy value = 7 }
+				}
+			}
+			modifier = {
+				factor = 0.8
+				FROM = {
+					attribute_diff = { character = event_target:candidate_second_heir attribute = diplomacy value = 9 }
+				}
+			}
+			modifier = {
+				factor = 1.25
+				event_target:candidate_second_heir = {
+					attribute_diff = { character = FROM attribute = martial value = 5 }
+				}
+			}
+			modifier = {
+				factor = 1.25
+				event_target:candidate_second_heir = {
+					attribute_diff = { character = FROM attribute = martial value = 10 }
+				}
+			}
+			modifier = {
+				factor = 0.75
+				FROM = {
+					attribute_diff = { character = event_target:candidate_second_heir attribute = martial value = 5 }
+				}
+			}
+			modifier = {
+				factor = 0.75
+				FROM = {
+					attribute_diff = { character = event_target:candidate_second_heir attribute = martial value = 10 }
+				}
+			}
+			modifier = {
+				factor = 1.25
+				event_target:candidate_second_heir = {
+					attribute_diff = { character = FROM attribute = stewardship value = 5 }
+				}
+			}
+			modifier = {
+				factor = 1.25
+				event_target:candidate_second_heir = {
+					attribute_diff = { character = FROM attribute = stewardship value = 10 }
+				}
+			}
+			modifier = {
+				factor = 0.75
+				FROM = {
+					attribute_diff = { character = event_target:candidate_second_heir attribute = stewardship value = 5 }
+				}
+			}
+			modifier = {
+				factor = 0.75
+				FROM = {
+					attribute_diff = { character = event_target:candidate_second_heir attribute = stewardship value = 10 }
+				}
+			}
+			modifier = {
+				factor = 1.25
+				OR = {
+					leads_faction = faction_court
+					in_faction = faction_court
+				}
+				event_target:candidate_second_heir = {
+					OR = {
+						leads_faction = faction_court
+						in_faction = faction_court
+					}
+				}
+			}
+			modifier = {
+				factor = 1.25
+				OR = {
+					leads_faction = faction_glory
+					in_faction = faction_glory
+				}
+				event_target:candidate_second_heir = {
+					OR = {
+						leads_faction = faction_glory
+						in_faction = faction_glory
+					}
+				}
+			}
+			modifier = {
+				factor = 1.25
+				OR = {
+					leads_faction = faction_prosperity
+					in_faction = faction_prosperity
+				}
+				event_target:candidate_second_heir = {
+					OR = {
+						leads_faction = faction_prosperity
+						in_faction = faction_prosperity
+					}
+				}
+			}
+			modifier = {
+				factor = 1.5
+				FROM = {
+					primary_title = {
+						OR = {
+							title = e_roman_empire
+							title = e_byzantium
+						}
+					}
+				}
+				event_target:candidate_second_heir = {
+					trait = born_in_the_purple
+				}
+			}
+		}
+		hidden_tooltip = {
+			FROM = {
+				change_variable = { which = "votes_for_second_heir" value = 1 }
+				change_variable = { which = "votes_against_heir" value = 1 }
+			}
+		}
+		event_target:candidate_second_heir = {
+			custom_tooltip = { text = ENDORSE_FOR_SUCCESSION }
+		}
+		if = {
+			limit = { NOT = { character = event_target:candidate_second_heir } }
+			opinion = { who = event_target:candidate_second_heir modifier = supported_in_succession years = 5 }
+			reverse_opinion = { who = event_target:candidate_second_heir modifier = supported_in_succession multiplier = 2 years = 5 }
+		}
+	}
+	option = {
+		name = EVTOPTC_Plus_1612 #Support male candidate
+		trigger = {
+			event_target:candidate_male = { is_alive = yes }
+			vassal_of = FROM
+			higher_tier_than = COUNT
+			has_regent = no
+		}
+		ai_chance = {
+			factor = 50
+			modifier = {
+				factor = 0.5
+				event_target:candidate_male = { is_adult = no }
+			}
+			modifier = {
+				factor = 1.25
+				OR = {
+					leads_faction = faction_tradition
+					in_faction = faction_tradition
+				}
+			}
+			modifier = {
+				factor = 0.5
+				is_female = no
+				event_target:candidate_male = {
+					is_female = yes
+					FROM = {
+						primary_title = {
+							OR = {
+								has_law = cognatic_succession
+								has_law = true_cognatic_succession
+							}
+						}
+					}
+				}
+			}
+			modifier = {
+				factor = 0.75
+				is_female = no
+				event_target:candidate_male = {
+					is_female = yes
+					FROM = {
+						primary_title = {
+							NOT = {
+								has_law = cognatic_succession
+								has_law = true_cognatic_succession
+							}
+						}
+					}
+				}
+			}
+			modifier = {
+				factor = 0
+				OR = {
+					character = event_target:candidate_second_heir
+					character = event_target:candidate_male
+					character = event_target:candidate_female
+					character = event_target:candidate_senior
+					character = event_target:candidate_ability
+				}
+				NOT = {
+					trait = content
+					trait = humble
+				}
+			}
+			modifier = {
+				factor = 0.5
+				NOT = { dynasty = event_target:candidate_male }
+			}
+			modifier = {
+				factor = 1.5
+				is_close_relative = event_target:candidate_male
+			}
+			modifier = {
+				factor = 2.0
+				OR = {
+					is_child_of = event_target:candidate_male
+					is_father = event_target:candidate_male
+					is_mother = event_target:candidate_male
+				}
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_male = {
+					NOT = { character = ROOT }
+					ROOT = { opinion_diff = { first = PREV second = FROM value = 20 as_if_liege = yes } }
+				}
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_male = {
+					NOT = { character = ROOT }
+					ROOT = { opinion_diff = { first = PREV second = FROM value = 30 as_if_liege = yes } }
+				}
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_male = {
+					NOT = { character = ROOT }
+					ROOT = { opinion_diff = { first = PREV second = FROM value = 40 as_if_liege = yes } }
+				}
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_male = {
+					NOT = { character = ROOT }
+					ROOT = { opinion_diff = { first = PREV second = FROM value = 50 as_if_liege = yes } }
+				}
+			}
+			modifier = {
+				factor = 0.5
+				event_target:candidate_male = {
+					NOT = { character = ROOT }
+					ROOT = { opinion_diff = { first = FROM second = PREV value = 10 as_if_liege = yes } }
+				}
+			}
+			modifier = {
+				factor = 0.5
+				event_target:candidate_male = {
+					NOT = { character = ROOT }
+					ROOT = { opinion_diff = { first = FROM second = PREV value = 20 as_if_liege = yes } }
+				}
+			}
+			modifier = {
+				factor = 0.5
+				NOT = { religion = event_target:candidate_male }
+			}
+			modifier = {
+				factor = 0.75
+				NOT = { culture = event_target:candidate_male }
+			}
+			modifier = {
+				factor = 0.75
+				NOT = { culture_group = event_target:candidate_male }
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_male = {
+					attribute_diff = { character = FROM attribute = diplomacy value = 3 }
+				}
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_male = {
+					attribute_diff = { character = FROM attribute = diplomacy value = 5 }
+				}
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_male = {
+					attribute_diff = { character = FROM attribute = diplomacy value = 7 }
+				}
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_male = {
+					attribute_diff = { character = FROM attribute = diplomacy value = 9 }
+				}
+			}
+			modifier = {
+				factor = 0.8
+				FROM = {
+					attribute_diff = { character = event_target:candidate_male attribute = diplomacy value = 1 }
+				}
+			}
+			modifier = {
+				factor = 0.8
+				FROM = {
+					attribute_diff = { character = event_target:candidate_male attribute = diplomacy value = 3 }
+				}
+			}
+			modifier = {
+				factor = 0.8
+				FROM = {
+					attribute_diff = { character = event_target:candidate_male attribute = diplomacy value = 5 }
+				}
+			}
+			modifier = {
+				factor = 0.8
+				FROM = {
+					attribute_diff = { character = event_target:candidate_male attribute = diplomacy value = 7 }
+				}
+			}
+			modifier = {
+				factor = 0.8
+				FROM = {
+					attribute_diff = { character = event_target:candidate_male attribute = diplomacy value = 9 }
+				}
+			}
+			modifier = {
+				factor = 1.25
+				event_target:candidate_male = {
+					attribute_diff = { character = FROM attribute = martial value = 5 }
+				}
+			}
+			modifier = {
+				factor = 1.25
+				event_target:candidate_male = {
+					attribute_diff = { character = FROM attribute = martial value = 10 }
+				}
+			}
+			modifier = {
+				factor = 0.75
+				FROM = {
+					attribute_diff = { character = event_target:candidate_male attribute = martial value = 5 }
+				}
+			}
+			modifier = {
+				factor = 0.75
+				FROM = {
+					attribute_diff = { character = event_target:candidate_male attribute = martial value = 10 }
+				}
+			}
+			modifier = {
+				factor = 1.25
+				event_target:candidate_male = {
+					attribute_diff = { character = FROM attribute = stewardship value = 5 }
+				}
+			}
+			modifier = {
+				factor = 1.25
+				event_target:candidate_male = {
+					attribute_diff = { character = FROM attribute = stewardship value = 10 }
+				}
+			}
+			modifier = {
+				factor = 0.75
+				FROM = {
+					attribute_diff = { character = event_target:candidate_male attribute = stewardship value = 5 }
+				}
+			}
+			modifier = {
+				factor = 0.75
+				FROM = {
+					attribute_diff = { character = event_target:candidate_male attribute = stewardship value = 10 }
+				}
+			}
+			modifier = {
+				factor = 1.25
+				OR = {
+					leads_faction = faction_court
+					in_faction = faction_court
+				}
+				event_target:candidate_male = {
+					OR = {
+						leads_faction = faction_court
+						in_faction = faction_court
+					}
+				}
+			}
+			modifier = {
+				factor = 1.25
+				OR = {
+					leads_faction = faction_glory
+					in_faction = faction_glory
+				}
+				event_target:candidate_male = {
+					OR = {
+						leads_faction = faction_glory
+						in_faction = faction_glory
+					}
+				}
+			}
+			modifier = {
+				factor = 1.25
+				OR = {
+					leads_faction = faction_prosperity
+					in_faction = faction_prosperity
+				}
+				event_target:candidate_male = {
+					OR = {
+						leads_faction = faction_prosperity
+						in_faction = faction_prosperity
+					}
+				}
+			}
+			modifier = {
+				factor = 1.5
+				FROM = {
+					primary_title = {
+						OR = {
+							title = e_roman_empire
+							title = e_byzantium
+						}
+					}
+				}
+				event_target:candidate_male = {
+					trait = born_in_the_purple
+				}
+			}
+		}
+		hidden_tooltip = {
+			FROM = {
+				change_variable = { which = "votes_for_male" value = 1 }
+				change_variable = { which = "votes_against_heir" value = 1 }
+			}
+		}
+		event_target:candidate_male = {
+			custom_tooltip = { text = ENDORSE_FOR_SUCCESSION }
+		}
+		if = {
+			limit = { NOT = { character = event_target:candidate_male } }
+			opinion = { who = event_target:candidate_male modifier = supported_in_succession years = 5 }
+			reverse_opinion = { who = event_target:candidate_male modifier = supported_in_succession multiplier = 2 years = 5 }
+		}
+	}
+	option = {
+		name = EVTOPTD_Plus_1612 #Support female candidate
+		trigger = {
+			event_target:candidate_female = { is_alive = yes }
+			vassal_of = FROM
+			higher_tier_than = COUNT
+			has_regent = no
+		}
+		ai_chance = {
+			factor = 50
+			modifier = {
+				factor = 0.5
+				event_target:candidate_female = { is_adult = no }
+			}
+			modifier = {
+				factor = 1.25
+				OR = {
+					leads_faction = faction_tradition
+					in_faction = faction_tradition
+				}
+			}
+			modifier = {
+				factor = 0.5
+				is_female = no
+				event_target:candidate_female = {
+					is_female = yes
+					FROM = {
+						primary_title = {
+							OR = {
+								has_law = cognatic_succession
+								has_law = true_cognatic_succession
+							}
+						}
+					}
+				}
+			}
+			modifier = {
+				factor = 0.75
+				is_female = no
+				event_target:candidate_female = {
+					is_female = yes
+					FROM = {
+						primary_title = {
+							NOT = {
+								has_law = cognatic_succession
+								has_law = true_cognatic_succession
+							}
+						}
+					}
+				}
+			}
+			modifier = {
+				factor = 0
+				OR = {
+					character = event_target:candidate_second_heir
+					character = event_target:candidate_male
+					character = event_target:candidate_female
+					character = event_target:candidate_senior
+					character = event_target:candidate_ability
+				}
+				NOT = {
+					trait = content
+					trait = humble
+				}
+			}
+			modifier = {
+				factor = 0.5
+				NOT = { dynasty = event_target:candidate_female }
+			}
+			modifier = {
+				factor = 1.5
+				is_close_relative = event_target:candidate_female
+			}
+			modifier = {
+				factor = 2.0
+				OR = {
+					is_child_of = event_target:candidate_female
+					is_father = event_target:candidate_female
+					is_mother = event_target:candidate_female
+				}
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_female = {
+					NOT = { character = ROOT }
+					ROOT = { opinion_diff = { first = PREV second = FROM value = 20 as_if_liege = yes } }
+				}
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_female = {
+					NOT = { character = ROOT }
+					ROOT = { opinion_diff = { first = PREV second = FROM value = 30 as_if_liege = yes } }
+				}
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_female = {
+					NOT = { character = ROOT }
+					ROOT = { opinion_diff = { first = PREV second = FROM value = 40 as_if_liege = yes } }
+				}
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_female = {
+					NOT = { character = ROOT }
+					ROOT = { opinion_diff = { first = PREV second = FROM value = 50 as_if_liege = yes } }
+				}
+			}
+			modifier = {
+				factor = 0.5
+				event_target:candidate_female = {
+					NOT = { character = ROOT }
+					ROOT = { opinion_diff = { first = FROM second = PREV value = 10 as_if_liege = yes } }
+				}
+			}
+			modifier = {
+				factor = 0.5
+				event_target:candidate_female = {
+					NOT = { character = ROOT }
+					ROOT = { opinion_diff = { first = FROM second = PREV value = 20 as_if_liege = yes } }
+				}
+			}
+			modifier = {
+				factor = 0.5
+				NOT = { religion = event_target:candidate_female }
+			}
+			modifier = {
+				factor = 0.75
+				NOT = { culture = event_target:candidate_female }
+			}
+			modifier = {
+				factor = 0.75
+				NOT = { culture_group = event_target:candidate_female }
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_female = {
+					attribute_diff = { character = FROM attribute = diplomacy value = 3 }
+				}
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_female = {
+					attribute_diff = { character = FROM attribute = diplomacy value = 5 }
+				}
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_female = {
+					attribute_diff = { character = FROM attribute = diplomacy value = 7 }
+				}
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_female = {
+					attribute_diff = { character = FROM attribute = diplomacy value = 9 }
+				}
+			}
+			modifier = {
+				factor = 0.8
+				FROM = {
+					attribute_diff = { character = event_target:candidate_female attribute = diplomacy value = 1 }
+				}
+			}
+			modifier = {
+				factor = 0.8
+				FROM = {
+					attribute_diff = { character = event_target:candidate_female attribute = diplomacy value = 3 }
+				}
+			}
+			modifier = {
+				factor = 0.8
+				FROM = {
+					attribute_diff = { character = event_target:candidate_female attribute = diplomacy value = 5 }
+				}
+			}
+			modifier = {
+				factor = 0.8
+				FROM = {
+					attribute_diff = { character = event_target:candidate_female attribute = diplomacy value = 7 }
+				}
+			}
+			modifier = {
+				factor = 0.8
+				FROM = {
+					attribute_diff = { character = event_target:candidate_female attribute = diplomacy value = 9 }
+				}
+			}
+			modifier = {
+				factor = 1.25
+				event_target:candidate_female = {
+					attribute_diff = { character = FROM attribute = martial value = 5 }
+				}
+			}
+			modifier = {
+				factor = 1.25
+				event_target:candidate_female = {
+					attribute_diff = { character = FROM attribute = martial value = 10 }
+				}
+			}
+			modifier = {
+				factor = 0.75
+				FROM = {
+					attribute_diff = { character = event_target:candidate_female attribute = martial value = 5 }
+				}
+			}
+			modifier = {
+				factor = 0.75
+				FROM = {
+					attribute_diff = { character = event_target:candidate_female attribute = martial value = 10 }
+				}
+			}
+			modifier = {
+				factor = 1.25
+				event_target:candidate_female = {
+					attribute_diff = { character = FROM attribute = stewardship value = 5 }
+				}
+			}
+			modifier = {
+				factor = 1.25
+				event_target:candidate_female = {
+					attribute_diff = { character = FROM attribute = stewardship value = 10 }
+				}
+			}
+			modifier = {
+				factor = 0.75
+				FROM = {
+					attribute_diff = { character = event_target:candidate_female attribute = stewardship value = 5 }
+				}
+			}
+			modifier = {
+				factor = 0.75
+				FROM = {
+					attribute_diff = { character = event_target:candidate_female attribute = stewardship value = 10 }
+				}
+			}
+			modifier = {
+				factor = 1.25
+				OR = {
+					leads_faction = faction_court
+					in_faction = faction_court
+				}
+				event_target:candidate_female = {
+					OR = {
+						leads_faction = faction_court
+						in_faction = faction_court
+					}
+				}
+			}
+			modifier = {
+				factor = 1.25
+				OR = {
+					leads_faction = faction_glory
+					in_faction = faction_glory
+				}
+				event_target:candidate_female = {
+					OR = {
+						leads_faction = faction_glory
+						in_faction = faction_glory
+					}
+				}
+			}
+			modifier = {
+				factor = 1.25
+				OR = {
+					leads_faction = faction_prosperity
+					in_faction = faction_prosperity
+				}
+				event_target:candidate_female = {
+					OR = {
+						leads_faction = faction_prosperity
+						in_faction = faction_prosperity
+					}
+				}
+			}
+			modifier = {
+				factor = 1.5
+				FROM = {
+					primary_title = {
+						OR = {
+							title = e_roman_empire
+							title = e_byzantium
+						}
+					}
+				}
+				event_target:candidate_female = {
+					trait = born_in_the_purple
+				}
+			}
+		}
+		hidden_tooltip = {
+			FROM = {
+				change_variable = { which = "votes_for_female" value = 1 }
+				change_variable = { which = "votes_against_heir" value = 1 }
+			}
+		}
+		event_target:candidate_female = {
+			custom_tooltip = { text = ENDORSE_FOR_SUCCESSION }
+		}
+		if = {
+			limit = { NOT = { character = event_target:candidate_female } }
+			opinion = { who = event_target:candidate_female modifier = supported_in_succession years = 5 }
+			reverse_opinion = { who = event_target:candidate_female modifier = supported_in_succession multiplier = 2 years = 5 }
+		}
+	}
+	option = {
+		name = EVTOPTE_Plus_1612 #Support primo candidate
+		trigger = {
+			event_target:candidate_primo = { is_alive = yes }
+			vassal_of = FROM
+			higher_tier_than = COUNT
+			has_regent = no
+		}
+		ai_chance = {
+			factor = 50
+			modifier = {
+				factor = 0.5
+				event_target:candidate_primo = { is_adult = no }
+			}
+			modifier = {
+				factor = 1.25
+				OR = {
+					leads_faction = faction_tradition
+					in_faction = faction_tradition
+				}
+			}
+			modifier = {
+				factor = 0.5
+				is_female = no
+				event_target:candidate_primo = {
+					is_female = yes
+					FROM = {
+						primary_title = {
+							OR = {
+								has_law = cognatic_succession
+								has_law = true_cognatic_succession
+							}
+						}
+					}
+				}
+			}
+			modifier = {
+				factor = 0.75
+				is_female = no
+				event_target:candidate_primo = {
+					is_female = yes
+					FROM = {
+						primary_title = {
+							NOT = {
+								has_law = cognatic_succession
+								has_law = true_cognatic_succession
+							}
+						}
+					}
+				}
+			}
+			modifier = {
+				factor = 0
+				OR = {
+					character = event_target:candidate_second_heir
+					character = event_target:candidate_male
+					character = event_target:candidate_female
+					character = event_target:candidate_senior
+					character = event_target:candidate_ability
+				}
+				NOT = {
+					trait = content
+					trait = humble
+				}
+			}
+			modifier = {
+				factor = 0.5
+				NOT = { dynasty = event_target:candidate_primo }
+			}
+			modifier = {
+				factor = 1.5
+				is_close_relative = event_target:candidate_primo
+			}
+			modifier = {
+				factor = 2.0
+				OR = {
+					is_child_of = event_target:candidate_primo
+					is_father = event_target:candidate_primo
+					is_mother = event_target:candidate_primo
+				}
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_primo = {
+					NOT = { character = ROOT }
+					ROOT = { opinion_diff = { first = PREV second = FROM value = 20 as_if_liege = yes } }
+				}
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_primo = {
+					NOT = { character = ROOT }
+					ROOT = { opinion_diff = { first = PREV second = FROM value = 30 as_if_liege = yes } }
+				}
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_primo = {
+					NOT = { character = ROOT }
+					ROOT = { opinion_diff = { first = PREV second = FROM value = 40 as_if_liege = yes } }
+				}
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_primo = {
+					NOT = { character = ROOT }
+					ROOT = { opinion_diff = { first = PREV second = FROM value = 50 as_if_liege = yes } }
+				}
+			}
+			modifier = {
+				factor = 0.5
+				event_target:candidate_primo = {
+					NOT = { character = ROOT }
+					ROOT = { opinion_diff = { first = FROM second = PREV value = 10 as_if_liege = yes } }
+				}
+			}
+			modifier = {
+				factor = 0.5
+				event_target:candidate_primo = {
+					NOT = { character = ROOT }
+					ROOT = { opinion_diff = { first = FROM second = PREV value = 20 as_if_liege = yes } }
+				}
+			}
+			modifier = {
+				factor = 0.5
+				NOT = { religion = event_target:candidate_primo }
+			}
+			modifier = {
+				factor = 0.75
+				NOT = { culture = event_target:candidate_primo }
+			}
+			modifier = {
+				factor = 0.75
+				NOT = { culture_group = event_target:candidate_primo }
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_primo = {
+					attribute_diff = { character = FROM attribute = diplomacy value = 3 }
+				}
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_primo = {
+					attribute_diff = { character = FROM attribute = diplomacy value = 5 }
+				}
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_primo = {
+					attribute_diff = { character = FROM attribute = diplomacy value = 7 }
+				}
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_primo = {
+					attribute_diff = { character = FROM attribute = diplomacy value = 9 }
+				}
+			}
+			modifier = {
+				factor = 0.8
+				FROM = {
+					attribute_diff = { character = event_target:candidate_primo attribute = diplomacy value = 1 }
+				}
+			}
+			modifier = {
+				factor = 0.8
+				FROM = {
+					attribute_diff = { character = event_target:candidate_primo attribute = diplomacy value = 3 }
+				}
+			}
+			modifier = {
+				factor = 0.8
+				FROM = {
+					attribute_diff = { character = event_target:candidate_primo attribute = diplomacy value = 5 }
+				}
+			}
+			modifier = {
+				factor = 0.8
+				FROM = {
+					attribute_diff = { character = event_target:candidate_primo attribute = diplomacy value = 7 }
+				}
+			}
+			modifier = {
+				factor = 0.8
+				FROM = {
+					attribute_diff = { character = event_target:candidate_primo attribute = diplomacy value = 9 }
+				}
+			}
+			modifier = {
+				factor = 1.25
+				event_target:candidate_primo = {
+					attribute_diff = { character = FROM attribute = martial value = 5 }
+				}
+			}
+			modifier = {
+				factor = 1.25
+				event_target:candidate_primo = {
+					attribute_diff = { character = FROM attribute = martial value = 10 }
+				}
+			}
+			modifier = {
+				factor = 0.75
+				FROM = {
+					attribute_diff = { character = event_target:candidate_primo attribute = martial value = 5 }
+				}
+			}
+			modifier = {
+				factor = 0.75
+				FROM = {
+					attribute_diff = { character = event_target:candidate_primo attribute = martial value = 10 }
+				}
+			}
+			modifier = {
+				factor = 1.25
+				event_target:candidate_primo = {
+					attribute_diff = { character = FROM attribute = stewardship value = 5 }
+				}
+			}
+			modifier = {
+				factor = 1.25
+				event_target:candidate_primo = {
+					attribute_diff = { character = FROM attribute = stewardship value = 10 }
+				}
+			}
+			modifier = {
+				factor = 0.75
+				FROM = {
+					attribute_diff = { character = event_target:candidate_primo attribute = stewardship value = 5 }
+				}
+			}
+			modifier = {
+				factor = 0.75
+				FROM = {
+					attribute_diff = { character = event_target:candidate_primo attribute = stewardship value = 10 }
+				}
+			}
+			modifier = {
+				factor = 1.25
+				OR = {
+					leads_faction = faction_court
+					in_faction = faction_court
+				}
+				event_target:candidate_primo = {
+					OR = {
+						leads_faction = faction_court
+						in_faction = faction_court
+					}
+				}
+			}
+			modifier = {
+				factor = 1.25
+				OR = {
+					leads_faction = faction_glory
+					in_faction = faction_glory
+				}
+				event_target:candidate_primo = {
+					OR = {
+						leads_faction = faction_glory
+						in_faction = faction_glory
+					}
+				}
+			}
+			modifier = {
+				factor = 1.25
+				OR = {
+					leads_faction = faction_prosperity
+					in_faction = faction_prosperity
+				}
+				event_target:candidate_primo = {
+					OR = {
+						leads_faction = faction_prosperity
+						in_faction = faction_prosperity
+					}
+				}
+			}
+			modifier = {
+				factor = 1.5
+				FROM = {
+					primary_title = {
+						OR = {
+							title = e_roman_empire
+							title = e_byzantium
+						}
+					}
+				}
+				event_target:candidate_primo = {
+					trait = born_in_the_purple
+				}
+			}
+		}
+		hidden_tooltip = {
+			FROM = {
+				change_variable = { which = "votes_for_primo" value = 1 }
+				change_variable = { which = "votes_against_heir" value = 1 }
+			}
+		}
+		event_target:candidate_primo = {
+			custom_tooltip = { text = ENDORSE_FOR_SUCCESSION }
+		}
+		if = {
+			limit = { NOT = { character = event_target:candidate_primo } }
+			opinion = { who = event_target:candidate_primo modifier = supported_in_succession years = 5 }
+			reverse_opinion = { who = event_target:candidate_primo modifier = supported_in_succession multiplier = 2 years = 5 }
+		}
+	}
+	option = {
+		name = EVTOPTF_Plus_1612 #Support senior candidate
+		trigger = {
+			event_target:candidate_senior = { is_alive = yes }
+			vassal_of = FROM
+			higher_tier_than = COUNT
+			has_regent = no
+		}
+		ai_chance = {
+			factor = 50
+			modifier = {
+				factor = 0.5
+				event_target:candidate_senior = { is_adult = no }
+			}
+			modifier = {
+				factor = 1.25
+				OR = {
+					leads_faction = faction_tradition
+					in_faction = faction_tradition
+				}
+			}
+			modifier = {
+				factor = 0.5
+				is_female = no
+				event_target:candidate_senior = {
+					is_female = yes
+					FROM = {
+						primary_title = {
+							OR = {
+								has_law = cognatic_succession
+								has_law = true_cognatic_succession
+							}
+						}
+					}
+				}
+			}
+			modifier = {
+				factor = 0.75
+				is_female = no
+				event_target:candidate_senior = {
+					is_female = yes
+					FROM = {
+						primary_title = {
+							NOT = {
+								has_law = cognatic_succession
+								has_law = true_cognatic_succession
+							}
+						}
+					}
+				}
+			}
+			modifier = {
+				factor = 0
+				OR = {
+					character = event_target:candidate_second_heir
+					character = event_target:candidate_male
+					character = event_target:candidate_female
+					character = event_target:candidate_senior
+					character = event_target:candidate_ability
+				}
+				NOT = {
+					trait = content
+					trait = humble
+				}
+			}
+			modifier = {
+				factor = 0.5
+				NOT = { dynasty = event_target:candidate_senior }
+			}
+			modifier = {
+				factor = 1.5
+				is_close_relative = event_target:candidate_senior
+			}
+			modifier = {
+				factor = 2.0
+				OR = {
+					is_child_of = event_target:candidate_senior
+					is_father = event_target:candidate_senior
+					is_mother = event_target:candidate_senior
+				}
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_senior = {
+					NOT = { character = ROOT }
+					ROOT = { opinion_diff = { first = PREV second = FROM value = 20 as_if_liege = yes } }
+				}
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_senior = {
+					NOT = { character = ROOT }
+					ROOT = { opinion_diff = { first = PREV second = FROM value = 30 as_if_liege = yes } }
+				}
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_senior = {
+					NOT = { character = ROOT }
+					ROOT = { opinion_diff = { first = PREV second = FROM value = 40 as_if_liege = yes } }
+				}
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_senior = {
+					NOT = { character = ROOT }
+					ROOT = { opinion_diff = { first = PREV second = FROM value = 50 as_if_liege = yes } }
+				}
+			}
+			modifier = {
+				factor = 0.5
+				event_target:candidate_senior = {
+					NOT = { character = ROOT }
+					ROOT = { opinion_diff = { first = FROM second = PREV value = 10 as_if_liege = yes } }
+				}
+			}
+			modifier = {
+				factor = 0.5
+				event_target:candidate_senior = {
+					NOT = { character = ROOT }
+					ROOT = { opinion_diff = { first = FROM second = PREV value = 20 as_if_liege = yes } }
+				}
+			}
+			modifier = {
+				factor = 0.5
+				NOT = { religion = event_target:candidate_senior }
+			}
+			modifier = {
+				factor = 0.75
+				NOT = { culture = event_target:candidate_senior }
+			}
+			modifier = {
+				factor = 0.75
+				NOT = { culture_group = event_target:candidate_senior }
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_senior = {
+					attribute_diff = { character = FROM attribute = diplomacy value = 3 }
+				}
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_senior = {
+					attribute_diff = { character = FROM attribute = diplomacy value = 5 }
+				}
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_senior = {
+					attribute_diff = { character = FROM attribute = diplomacy value = 7 }
+				}
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_senior = {
+					attribute_diff = { character = FROM attribute = diplomacy value = 9 }
+				}
+			}
+			modifier = {
+				factor = 0.8
+				FROM = {
+					attribute_diff = { character = event_target:candidate_senior attribute = diplomacy value = 1 }
+				}
+			}
+			modifier = {
+				factor = 0.8
+				FROM = {
+					attribute_diff = { character = event_target:candidate_senior attribute = diplomacy value = 3 }
+				}
+			}
+			modifier = {
+				factor = 0.8
+				FROM = {
+					attribute_diff = { character = event_target:candidate_senior attribute = diplomacy value = 5 }
+				}
+			}
+			modifier = {
+				factor = 0.8
+				FROM = {
+					attribute_diff = { character = event_target:candidate_senior attribute = diplomacy value = 7 }
+				}
+			}
+			modifier = {
+				factor = 0.8
+				FROM = {
+					attribute_diff = { character = event_target:candidate_senior attribute = diplomacy value = 9 }
+				}
+			}
+			modifier = {
+				factor = 1.25
+				event_target:candidate_senior = {
+					attribute_diff = { character = FROM attribute = martial value = 5 }
+				}
+			}
+			modifier = {
+				factor = 1.25
+				event_target:candidate_senior = {
+					attribute_diff = { character = FROM attribute = martial value = 10 }
+				}
+			}
+			modifier = {
+				factor = 0.75
+				FROM = {
+					attribute_diff = { character = event_target:candidate_senior attribute = martial value = 5 }
+				}
+			}
+			modifier = {
+				factor = 0.75
+				FROM = {
+					attribute_diff = { character = event_target:candidate_senior attribute = martial value = 10 }
+				}
+			}
+			modifier = {
+				factor = 1.25
+				event_target:candidate_senior = {
+					attribute_diff = { character = FROM attribute = stewardship value = 5 }
+				}
+			}
+			modifier = {
+				factor = 1.25
+				event_target:candidate_senior = {
+					attribute_diff = { character = FROM attribute = stewardship value = 10 }
+				}
+			}
+			modifier = {
+				factor = 0.75
+				FROM = {
+					attribute_diff = { character = event_target:candidate_senior attribute = stewardship value = 5 }
+				}
+			}
+			modifier = {
+				factor = 0.75
+				FROM = {
+					attribute_diff = { character = event_target:candidate_senior attribute = stewardship value = 10 }
+				}
+			}
+			modifier = {
+				factor = 1.25
+				OR = {
+					leads_faction = faction_court
+					in_faction = faction_court
+				}
+				event_target:candidate_senior = {
+					OR = {
+						leads_faction = faction_court
+						in_faction = faction_court
+					}
+				}
+			}
+			modifier = {
+				factor = 1.25
+				OR = {
+					leads_faction = faction_glory
+					in_faction = faction_glory
+				}
+				event_target:candidate_senior = {
+					OR = {
+						leads_faction = faction_glory
+						in_faction = faction_glory
+					}
+				}
+			}
+			modifier = {
+				factor = 1.25
+				OR = {
+					leads_faction = faction_prosperity
+					in_faction = faction_prosperity
+				}
+				event_target:candidate_senior = {
+					OR = {
+						leads_faction = faction_prosperity
+						in_faction = faction_prosperity
+					}
+				}
+			}
+			modifier = {
+				factor = 1.5
+				FROM = {
+					primary_title = {
+						OR = {
+							title = e_roman_empire
+							title = e_byzantium
+						}
+					}
+				}
+				event_target:candidate_senior = {
+					trait = born_in_the_purple
+				}
+			}
+		}
+		hidden_tooltip = {
+			FROM = {
+				change_variable = { which = "votes_for_senior" value = 1 }
+				change_variable = { which = "votes_against_heir" value = 1 }
+			}
+		}
+		event_target:candidate_senior = {
+			custom_tooltip = { text = ENDORSE_FOR_SUCCESSION }
+		}
+		if = {
+			limit = { NOT = { character = event_target:candidate_senior } }
+			opinion = { who = event_target:candidate_senior modifier = supported_in_succession years = 5 }
+			reverse_opinion = { who = event_target:candidate_senior modifier = supported_in_succession multiplier = 2 years = 5 }
+		}
+	}
+	option = {
+		name = EVTOPTG_Plus_1612 #Support ability candidate
+		trigger = {
+			event_target:candidate_ability = { is_alive = yes }
+			vassal_of = FROM
+			higher_tier_than = COUNT
+			has_regent = no
+		}
+		ai_chance = {
+			factor = 25
+			modifier = {
+				factor = 0.5
+				event_target:candidate_ability = { is_adult = no }
+			}
+			modifier = {
+				factor = 1.25
+				OR = {
+					leads_faction = faction_tradition
+					in_faction = faction_tradition
+				}
+			}
+			modifier = {
+				factor = 0.5
+				is_female = no
+				event_target:candidate_ability = {
+					is_female = yes
+					FROM = {
+						primary_title = {
+							OR = {
+								has_law = cognatic_succession
+								has_law = true_cognatic_succession
+							}
+						}
+					}
+				}
+			}
+			modifier = {
+				factor = 0.75
+				is_female = no
+				event_target:candidate_ability = {
+					is_female = yes
+					FROM = {
+						primary_title = {
+							NOT = {
+								has_law = cognatic_succession
+								has_law = true_cognatic_succession
+							}
+						}
+					}
+				}
+			}
+			modifier = {
+				factor = 0
+				OR = {
+					character = event_target:candidate_second_heir
+					character = event_target:candidate_male
+					character = event_target:candidate_female
+					character = event_target:candidate_senior
+					character = event_target:candidate_ability
+				}
+				NOT = {
+					trait = content
+					trait = humble
+				}
+			}
+			modifier = {
+				factor = 0.5
+				NOT = { dynasty = event_target:candidate_ability }
+			}
+			modifier = {
+				factor = 1.5
+				is_close_relative = event_target:candidate_ability
+			}
+			modifier = {
+				factor = 2.0
+				OR = {
+					is_child_of = event_target:candidate_ability
+					is_father = event_target:candidate_ability
+					is_mother = event_target:candidate_ability
+				}
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_ability = {
+					NOT = { character = ROOT }
+					ROOT = { opinion_diff = { first = PREV second = FROM value = 20 as_if_liege = yes } }
+				}
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_ability = {
+					NOT = { character = ROOT }
+					ROOT = { opinion_diff = { first = PREV second = FROM value = 30 as_if_liege = yes } }
+				}
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_ability = {
+					NOT = { character = ROOT }
+					ROOT = { opinion_diff = { first = PREV second = FROM value = 40 as_if_liege = yes } }
+				}
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_ability = {
+					NOT = { character = ROOT }
+					ROOT = { opinion_diff = { first = PREV second = FROM value = 50 as_if_liege = yes } }
+				}
+			}
+			modifier = {
+				factor = 0.5
+				event_target:candidate_ability = {
+					NOT = { character = ROOT }
+					ROOT = { opinion_diff = { first = FROM second = PREV value = 10 as_if_liege = yes } }
+				}
+			}
+			modifier = {
+				factor = 0.5
+				event_target:candidate_ability = {
+					NOT = { character = ROOT }
+					ROOT = { opinion_diff = { first = FROM second = PREV value = 20 as_if_liege = yes } }
+				}
+			}
+			modifier = {
+				factor = 0.5
+				NOT = { religion = event_target:candidate_ability }
+			}
+			modifier = {
+				factor = 0.75
+				NOT = { culture = event_target:candidate_ability }
+			}
+			modifier = {
+				factor = 0.75
+				NOT = { culture_group = event_target:candidate_ability }
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_ability = {
+					attribute_diff = { character = FROM attribute = diplomacy value = 3 }
+				}
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_ability = {
+					attribute_diff = { character = FROM attribute = diplomacy value = 5 }
+				}
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_ability = {
+					attribute_diff = { character = FROM attribute = diplomacy value = 7 }
+				}
+			}
+			modifier = {
+				factor = 1.2
+				event_target:candidate_ability = {
+					attribute_diff = { character = FROM attribute = diplomacy value = 9 }
+				}
+			}
+			modifier = {
+				factor = 0.8
+				FROM = {
+					attribute_diff = { character = event_target:candidate_ability attribute = diplomacy value = 1 }
+				}
+			}
+			modifier = {
+				factor = 0.8
+				FROM = {
+					attribute_diff = { character = event_target:candidate_ability attribute = diplomacy value = 3 }
+				}
+			}
+			modifier = {
+				factor = 0.8
+				FROM = {
+					attribute_diff = { character = event_target:candidate_ability attribute = diplomacy value = 5 }
+				}
+			}
+			modifier = {
+				factor = 0.8
+				FROM = {
+					attribute_diff = { character = event_target:candidate_ability attribute = diplomacy value = 7 }
+				}
+			}
+			modifier = {
+				factor = 0.8
+				FROM = {
+					attribute_diff = { character = event_target:candidate_ability attribute = diplomacy value = 9 }
+				}
+			}
+			modifier = {
+				factor = 1.25
+				event_target:candidate_ability = {
+					attribute_diff = { character = FROM attribute = martial value = 5 }
+				}
+			}
+			modifier = {
+				factor = 1.25
+				event_target:candidate_ability = {
+					attribute_diff = { character = FROM attribute = martial value = 10 }
+				}
+			}
+			modifier = {
+				factor = 0.75
+				FROM = {
+					attribute_diff = { character = event_target:candidate_ability attribute = martial value = 5 }
+				}
+			}
+			modifier = {
+				factor = 0.75
+				FROM = {
+					attribute_diff = { character = event_target:candidate_ability attribute = martial value = 10 }
+				}
+			}
+			modifier = {
+				factor = 1.25
+				event_target:candidate_ability = {
+					attribute_diff = { character = FROM attribute = stewardship value = 5 }
+				}
+			}
+			modifier = {
+				factor = 1.25
+				event_target:candidate_ability = {
+					attribute_diff = { character = FROM attribute = stewardship value = 10 }
+				}
+			}
+			modifier = {
+				factor = 0.75
+				FROM = {
+					attribute_diff = { character = event_target:candidate_ability attribute = stewardship value = 5 }
+				}
+			}
+			modifier = {
+				factor = 0.75
+				FROM = {
+					attribute_diff = { character = event_target:candidate_ability attribute = stewardship value = 10 }
+				}
+			}
+			modifier = {
+				factor = 1.25
+				OR = {
+					leads_faction = faction_court
+					in_faction = faction_court
+				}
+				event_target:candidate_ability = {
+					OR = {
+						leads_faction = faction_court
+						in_faction = faction_court
+					}
+				}
+			}
+			modifier = {
+				factor = 1.25
+				OR = {
+					leads_faction = faction_glory
+					in_faction = faction_glory
+				}
+				event_target:candidate_ability = {
+					OR = {
+						leads_faction = faction_glory
+						in_faction = faction_glory
+					}
+				}
+			}
+			modifier = {
+				factor = 1.25
+				OR = {
+					leads_faction = faction_prosperity
+					in_faction = faction_prosperity
+				}
+				event_target:candidate_ability = {
+					OR = {
+						leads_faction = faction_prosperity
+						in_faction = faction_prosperity
+					}
+				}
+			}
+			modifier = {
+				factor = 1.5
+				FROM = {
+					primary_title = {
+						OR = {
+							title = e_roman_empire
+							title = e_byzantium
+						}
+					}
+				}
+				event_target:candidate_ability = {
+					trait = born_in_the_purple
+				}
+			}
+		}
+		hidden_tooltip = {
+			FROM = {
+				change_variable = { which = "votes_for_ability" value = 1 }
+				change_variable = { which = "votes_against_heir" value = 1 }
+			}
+		}
+		event_target:candidate_ability = {
+			custom_tooltip = { text = ENDORSE_FOR_SUCCESSION }
+		}
+		if = {
+			limit = { NOT = { character = event_target:candidate_ability } }
+			opinion = { who = event_target:candidate_ability modifier = supported_in_succession years = 5 }
+			reverse_opinion = { who = event_target:candidate_ability modifier = supported_in_succession multiplier = 2 years = 5 }
+		}
+	}
+	option = {
+		name = EVTOPTH_Plus_1612
+		trigger = {
+			NOT = {
+				AND = {
+					vassal_of = FROM
+					higher_tier_than = COUNT
+					has_regent = no
+				}
+			}
+		}
+	}
+}
+
+# Bounce event to check if the ruler won or not
+character_event = {
+	id = Plus.1613
+	
+	hide_window = yes
+	is_triggered_only = yes
+	
+	trigger = {
+		primary_title = {
+			higher_tier_than = DUKE
+			has_title_flag = will_be_inherited
+		}
+		NOT = {
+			trait = rebel
+			any_demesne_title = { is_contested = yes }
+			any_demesne_title = { temporary = yes }
+			has_character_flag = faction_court_war
+			has_character_flag = faction_prosperity_war
+			has_character_flag = faction_glory_war
+			has_character_flag = faction_tradition_war
+			has_character_flag = faction_separatist_war
+			has_character_flag = faction_pretender_war
+			has_character_flag = faction_religious_war
+		}
+	}
+	
+	immediate = {
+		#see if the ruler won
+		if = {
+			limit = {
+				NOT = { check_variable = { which = "votes_against_heir" which = "votes_for_heir" } }
+				check_variable = { which = "votes_for_heir" which = "votes_for_second_heir" }
+				check_variable = { which = "votes_for_heir" which = "votes_for_male" }
+				check_variable = { which = "votes_for_heir" which = "votes_for_female" }
+				check_variable = { which = "votes_for_heir" which = "votes_for_primo" }
+				check_variable = { which = "votes_for_heir" which = "votes_for_senior" }
+				check_variable = { which = "votes_for_heir" which = "votes_for_ability" }
+			}
+			narrative_event = { id = Plus.1614 }
+			break = yes
+		}
+		#see if the second_heir won
+		if = {
+			limit = {
+				check_variable = { which = "votes_for_second_heir" which = "votes_for_heir" }
+				check_variable = { which = "votes_for_second_heir" which = "votes_for_male" }
+				check_variable = { which = "votes_for_second_heir" which = "votes_for_female" }
+				check_variable = { which = "votes_for_second_heir" which = "votes_for_primo" }
+				check_variable = { which = "votes_for_second_heir" which = "votes_for_senior" }
+				check_variable = { which = "votes_for_second_heir" which = "votes_for_ability" }
+			}
+			event_target:candidate_second_heir = { save_event_target_as = succession_winner }
+			narrative_event = { id = Plus.1615 }
+			break = yes
+		}
+		#see if the male candidate won
+		if = {
+			limit = {
+				check_variable = { which = "votes_for_male" which = "votes_for_heir" }
+				check_variable = { which = "votes_for_male" which = "votes_for_second_heir" }
+				check_variable = { which = "votes_for_male" which = "votes_for_female" }
+				check_variable = { which = "votes_for_male" which = "votes_for_primo" }
+				check_variable = { which = "votes_for_male" which = "votes_for_senior" }
+				check_variable = { which = "votes_for_male" which = "votes_for_ability" }
+			}
+			event_target:candidate_male = { save_event_target_as = succession_winner }
+			narrative_event = { id = Plus.1615 }
+			break = yes
+		}
+		#see if the female candidate won
+		if = {
+			limit = {
+				check_variable = { which = "votes_for_female" which = "votes_for_heir" }
+				check_variable = { which = "votes_for_female" which = "votes_for_second_heir" }
+				check_variable = { which = "votes_for_female" which = "votes_for_male" }
+				check_variable = { which = "votes_for_female" which = "votes_for_primo" }
+				check_variable = { which = "votes_for_female" which = "votes_for_senior" }
+				check_variable = { which = "votes_for_female" which = "votes_for_ability" }
+			}
+			event_target:candidate_female = { save_event_target_as = succession_winner }
+			narrative_event = { id = Plus.1615 }
+			break = yes
+		}
+		#see if the primo candidate won
+		if = {
+			limit = {
+				check_variable = { which = "votes_for_primo" which = "votes_for_heir" }
+				check_variable = { which = "votes_for_primo" which = "votes_for_second_heir" }
+				check_variable = { which = "votes_for_primo" which = "votes_for_male" }
+				check_variable = { which = "votes_for_primo" which = "votes_for_female" }
+				check_variable = { which = "votes_for_primo" which = "votes_for_senior" }
+				check_variable = { which = "votes_for_primo" which = "votes_for_ability" }
+			}
+			event_target:candidate_primo = { save_event_target_as = succession_winner }
+			narrative_event = { id = Plus.1615 }
+			break = yes
+		}
+		#see if seniority candidate won
+		if = {
+			limit = {
+				check_variable = { which = "votes_for_senior" which = "votes_for_heir" }
+				check_variable = { which = "votes_for_senior" which = "votes_for_second_heir" }
+				check_variable = { which = "votes_for_senior" which = "votes_for_male" }
+				check_variable = { which = "votes_for_senior" which = "votes_for_female" }
+				check_variable = { which = "votes_for_senior" which = "votes_for_primo" }
+				check_variable = { which = "votes_for_senior" which = "votes_for_ability" }
+			}
+			event_target:candidate_senior = { save_event_target_as = succession_winner }
+			narrative_event = { id = Plus.1615 }
+			break = yes
+		}
+		#see if ability candidate won
+		if = {
+			limit = {
+				check_variable = { which = "votes_for_ability" which = "votes_for_heir" }
+				check_variable = { which = "votes_for_ability" which = "votes_for_second_heir" }
+				check_variable = { which = "votes_for_ability" which = "votes_for_male" }
+				check_variable = { which = "votes_for_ability" which = "votes_for_female" }
+				check_variable = { which = "votes_for_ability" which = "votes_for_primo" }
+				check_variable = { which = "votes_for_ability" which = "votes_for_senior" }
+			}
+			event_target:candidate_ability = { save_event_target_as = succession_winner }
+			narrative_event = { id = Plus.1615 }
+			break = yes
+		}
+		#otherwise there is a stalemate
+		narrative_event = { id = Plus.1616 }
+	}
+}
+
+# The original heir wins decisively
+narrative_event = {
+	id = Plus.1614
+	title = EVTNAME_Plus_1611
+	desc = EVTDESC_Plus_1614
+	picture = GFX_evt_coronation
+
+	is_triggered_only = yes
+	major = yes
+	
+	major_trigger = {
+		OR = {
+			character = ROOT
+			same_realm = ROOT
+			dynasty = ROOT
+		}
+	}
+	
+	option = {
+		name = EXCELLENT
+		trigger = {
+			character = ROOT
+		}
+		prestige = 100
+		add_character_modifier = {
+			name = won_succession
+			duration = 730
+		}
+		any_vassal = {
+			limit = {
+				OR = {
+					has_any_opinion_modifier = supported_in_succession
+					character = event_target:candidate_second_heir
+					character = event_target:candidate_male
+					character = event_target:candidate_female
+					character = event_target:candidate_primo
+					character = event_target:candidate_senior
+					character = event_target:candidate_ability
+				}
+			}
+			if = {
+				limit = { has_opinion_modifier = { who = ROOT modifier = supported_in_succession } }
+				custom_tooltip = { text = SUPPORTED_HEIR }
+			}
+			if = {
+				limit = {
+					OR = {
+						has_opinion_modifier = { who = event_target:candidate_second_heir modifier = supported_in_succession }
+						AND = {
+							character = event_target:candidate_second_heir
+							NOT = { has_any_opinion_modifier = supported_in_succession }
+						}
+					}
+				}
+				custom_tooltip = { text = SUPPORTED_SECOND_HEIR }
+			}
+			if = {
+				limit = {
+					OR = {
+						has_opinion_modifier = { who = event_target:candidate_male modifier = supported_in_succession }
+						AND = {
+							character = event_target:candidate_male
+							NOT = { has_any_opinion_modifier = supported_in_succession }
+						}
+					}
+				}
+				custom_tooltip = { text = SUPPORTED_MALE }
+			}
+			if = {
+				limit = {
+					OR = {
+						has_opinion_modifier = { who = event_target:candidate_female modifier = supported_in_succession }
+						AND = {
+							character = event_target:candidate_female
+							NOT = { has_any_opinion_modifier = supported_in_succession }
+						}
+					}
+				}
+				custom_tooltip = { text = SUPPORTED_FEMALE }
+			}
+			if = {
+				limit = {
+					OR = {
+						has_opinion_modifier = { who = event_target:candidate_primo modifier = supported_in_succession }
+						AND = {
+							character = event_target:candidate_primo
+							NOT = { has_any_opinion_modifier = supported_in_succession }
+						}
+					}
+				}
+				custom_tooltip = { text = SUPPORTED_PRIMO }
+			}
+			if = {
+				limit = {
+					OR = {
+						has_opinion_modifier = { who = event_target:candidate_senior modifier = supported_in_succession }
+						AND = {
+							character = event_target:candidate_senior
+							NOT = { has_any_opinion_modifier = supported_in_succession }
+						}
+					}
+				}
+				custom_tooltip = { text = SUPPORTED_SENIOR }
+			}
+			if = {
+				limit = {
+					OR = {
+						has_opinion_modifier = { who = event_target:candidate_ability modifier = supported_in_succession }
+						AND = {
+							character = event_target:candidate_ability
+							NOT = { has_any_opinion_modifier = supported_in_succession }
+						}
+					}
+				}
+				custom_tooltip = { text = SUPPORTED_ABILITY }
+			}
+		}
+		hidden_tooltip = {
+			any_demesne_title = {
+				limit = { has_title_flag = will_be_inherited }
+				clr_title_flag = will_be_inherited
+			}
+		}
+	}
+	option = {
+		name = CURSES
+		trigger = {
+			OR = {
+				character = event_target:candidate_second_heir
+				character = event_target:candidate_male
+				character = event_target:candidate_female
+				character = event_target:candidate_primo
+				character = event_target:candidate_senior
+				character = event_target:candidate_ability
+			}
+		}
+		ROOT = {
+			any_vassal = {
+				limit = {
+					OR = {
+						has_any_opinion_modifier = supported_in_succession
+						character = event_target:candidate_second_heir
+						character = event_target:candidate_male
+						character = event_target:candidate_female
+						character = event_target:candidate_primo
+						character = event_target:candidate_senior
+						character = event_target:candidate_ability
+					}
+				}
+				if = {
+					limit = { has_opinion_modifier = { who = ROOT modifier = supported_in_succession } }
+					custom_tooltip = { text = SUPPORTED_HEIR }
+				}
+				if = {
+					limit = {
+						OR = {
+							has_opinion_modifier = { who = event_target:candidate_second_heir modifier = supported_in_succession }
+							AND = {
+								character = event_target:candidate_second_heir
+								NOT = { has_any_opinion_modifier = supported_in_succession }
+							}
+						}
+					}
+					custom_tooltip = { text = SUPPORTED_SECOND_HEIR }
+				}
+				if = {
+					limit = {
+						OR = {
+							has_opinion_modifier = { who = event_target:candidate_male modifier = supported_in_succession }
+							AND = {
+								character = event_target:candidate_male
+								NOT = { has_any_opinion_modifier = supported_in_succession }
+							}
+						}
+					}
+					custom_tooltip = { text = SUPPORTED_MALE }
+				}
+				if = {
+					limit = {
+						OR = {
+							has_opinion_modifier = { who = event_target:candidate_female modifier = supported_in_succession }
+							AND = {
+								character = event_target:candidate_female
+								NOT = { has_any_opinion_modifier = supported_in_succession }
+							}
+						}
+					}
+					custom_tooltip = { text = SUPPORTED_FEMALE }
+				}
+				if = {
+					limit = {
+						OR = {
+							has_opinion_modifier = { who = event_target:candidate_primo modifier = supported_in_succession }
+							AND = {
+								character = event_target:candidate_primo
+								NOT = { has_any_opinion_modifier = supported_in_succession }
+							}
+						}
+					}
+					custom_tooltip = { text = SUPPORTED_PRIMO }
+				}
+				if = {
+					limit = {
+						OR = {
+							has_opinion_modifier = { who = event_target:candidate_senior modifier = supported_in_succession }
+							AND = {
+								character = event_target:candidate_senior
+								NOT = { has_any_opinion_modifier = supported_in_succession }
+							}
+						}
+					}
+					custom_tooltip = { text = SUPPORTED_SENIOR }
+				}
+				if = {
+					limit = {
+						OR = {
+							has_opinion_modifier = { who = event_target:candidate_ability modifier = supported_in_succession }
+							AND = {
+								character = event_target:candidate_ability
+								NOT = { has_any_opinion_modifier = supported_in_succession }
+							}
+						}
+					}
+					custom_tooltip = { text = SUPPORTED_ABILITY }
+				}
+			}
+		}
+	}
+	option = {
+		name = OK
+		trigger = {
+			NOT = {
+				character = ROOT
+				character = event_target:candidate_second_heir
+				character = event_target:candidate_male
+				character = event_target:candidate_female
+				character = event_target:candidate_primo
+				character = event_target:candidate_senior
+				character = event_target:candidate_ability
+			}
+		}
+	}
+}
+
+# The original heir loses
+narrative_event = {
+	id = Plus.1615
+	title = EVTNAME_Plus_1611
+	desc = EVTDESC_Plus_1615
+	picture = GFX_evt_coronation
+
+	is_triggered_only = yes
+	major = yes
+	
+	major_trigger = {
+		OR = {
+			character = ROOT
+			same_realm = ROOT
+			dynasty = ROOT
+		}
+	}
+	
+	option = {
+		name = CURSES
+		trigger = {
+			character = ROOT
+		}
+		set_character_flag = justified_claimant
+		prestige = -250
+		tooltip = {
+			event_target:succession_winner = {
+				ROOT = {
+					primary_title = {
+						usurp_title_plus_barony_if_unlanded = PREVPREV
+					}
+				}
+			}
+		}
+		any_vassal = {
+			limit = {
+				OR = {
+					has_any_opinion_modifier = supported_in_succession
+					character = event_target:candidate_second_heir
+					character = event_target:candidate_male
+					character = event_target:candidate_female
+					character = event_target:candidate_primo
+					character = event_target:candidate_senior
+					character = event_target:candidate_ability
+				}
+			}
+			if = {
+				limit = { has_opinion_modifier = { who = ROOT modifier = supported_in_succession } }
+				custom_tooltip = { text = SUPPORTED_HEIR }
+			}
+			if = {
+				limit = {
+					OR = {
+						has_opinion_modifier = { who = event_target:candidate_second_heir modifier = supported_in_succession }
+						AND = {
+							character = event_target:candidate_second_heir
+							NOT = { has_any_opinion_modifier = supported_in_succession }
+						}
+					}
+				}
+				custom_tooltip = { text = SUPPORTED_SECOND_HEIR }
+			}
+			if = {
+				limit = {
+					OR = {
+						has_opinion_modifier = { who = event_target:candidate_male modifier = supported_in_succession }
+						AND = {
+							character = event_target:candidate_male
+							NOT = { has_any_opinion_modifier = supported_in_succession }
+						}
+					}
+				}
+				custom_tooltip = { text = SUPPORTED_MALE }
+			}
+			if = {
+				limit = {
+					OR = {
+						has_opinion_modifier = { who = event_target:candidate_female modifier = supported_in_succession }
+						AND = {
+							character = event_target:candidate_female
+							NOT = { has_any_opinion_modifier = supported_in_succession }
+						}
+					}
+				}
+				custom_tooltip = { text = SUPPORTED_FEMALE }
+			}
+			if = {
+				limit = {
+					OR = {
+						has_opinion_modifier = { who = event_target:candidate_primo modifier = supported_in_succession }
+						AND = {
+							character = event_target:candidate_primo
+							NOT = { has_any_opinion_modifier = supported_in_succession }
+						}
+					}
+				}
+				custom_tooltip = { text = SUPPORTED_PRIMO }
+			}
+			if = {
+				limit = {
+					OR = {
+						has_opinion_modifier = { who = event_target:candidate_senior modifier = supported_in_succession }
+						AND = {
+							character = event_target:candidate_senior
+							NOT = { has_any_opinion_modifier = supported_in_succession }
+						}
+					}
+				}
+				custom_tooltip = { text = SUPPORTED_SENIOR }
+			}
+			if = {
+				limit = {
+					OR = {
+						has_opinion_modifier = { who = event_target:candidate_ability modifier = supported_in_succession }
+						AND = {
+							character = event_target:candidate_ability
+							NOT = { has_any_opinion_modifier = supported_in_succession }
+						}
+					}
+				}
+				custom_tooltip = { text = SUPPORTED_ABILITY }
+			}
+		}
+		hidden_tooltip = {
+			if = {
+				limit = {
+					event_target:succession_winner = {
+						is_ruler = yes
+						OR = {
+							is_theocracy = yes
+							is_republic = yes
+						}
+					}
+					ROOT = {
+						primary_title = { higher_tier_than = event_target:succession_winner }
+					}
+				}
+				event_target:succession_winner = { abdicate = yes }
+			}
+		}
+		event_target:succession_winner = {
+			hidden_tooltip = {
+				prestige = 100
+				add_character_modifier = {
+					name = won_succession
+					duration = 730
+				}
+			}
+			ROOT = {
+				hidden_tooltip = {
+					any_demesne_title = {
+						limit = { has_title_flag = will_be_inherited }
+						clr_title_flag = will_be_inherited
+						usurp_title_plus_barony_if_unlanded = { target = PREVPREV type = faction_demand }
+					}
+					set_defacto_liege = PREV
+					any_vassal = {
+						limit = { NOT = { primary_title = { de_jure_liege_or_above = PREVPREV } } }
+						set_defacto_liege = PREVPREV 
+					}
+				}
+			}
+		}
+	}
+	option = {
+		name = EXCELLENT
+		trigger = {
+			character = event_target:succession_winner
+		}
+		ROOT = {
+			any_vassal = {
+				limit = {
+					OR = {
+						has_any_opinion_modifier = supported_in_succession
+						character = event_target:candidate_second_heir
+						character = event_target:candidate_male
+						character = event_target:candidate_female
+						character = event_target:candidate_primo
+						character = event_target:candidate_senior
+						character = event_target:candidate_ability
+					}
+				}
+				if = {
+					limit = { has_opinion_modifier = { who = ROOT modifier = supported_in_succession } }
+					custom_tooltip = { text = SUPPORTED_HEIR }
+				}
+				if = {
+					limit = {
+						OR = {
+							has_opinion_modifier = { who = event_target:candidate_second_heir modifier = supported_in_succession }
+							AND = {
+								character = event_target:candidate_second_heir
+								NOT = { has_any_opinion_modifier = supported_in_succession }
+							}
+						}
+					}
+					custom_tooltip = { text = SUPPORTED_SECOND_HEIR }
+				}
+				if = {
+					limit = {
+						OR = {
+							has_opinion_modifier = { who = event_target:candidate_male modifier = supported_in_succession }
+							AND = {
+								character = event_target:candidate_male
+								NOT = { has_any_opinion_modifier = supported_in_succession }
+							}
+						}
+					}
+					custom_tooltip = { text = SUPPORTED_MALE }
+				}
+				if = {
+					limit = {
+						OR = {
+							has_opinion_modifier = { who = event_target:candidate_female modifier = supported_in_succession }
+							AND = {
+								character = event_target:candidate_female
+								NOT = { has_any_opinion_modifier = supported_in_succession }
+							}
+						}
+					}
+					custom_tooltip = { text = SUPPORTED_FEMALE }
+				}
+				if = {
+					limit = {
+						OR = {
+							has_opinion_modifier = { who = event_target:candidate_primo modifier = supported_in_succession }
+							AND = {
+								character = event_target:candidate_primo
+								NOT = { has_any_opinion_modifier = supported_in_succession }
+							}
+						}
+					}
+					custom_tooltip = { text = SUPPORTED_PRIMO }
+				}
+				if = {
+					limit = {
+						OR = {
+							has_opinion_modifier = { who = event_target:candidate_senior modifier = supported_in_succession }
+							AND = {
+								character = event_target:candidate_senior
+								NOT = { has_any_opinion_modifier = supported_in_succession }
+							}
+						}
+					}
+					custom_tooltip = { text = SUPPORTED_SENIOR }
+				}
+				if = {
+					limit = {
+						OR = {
+							has_opinion_modifier = { who = event_target:candidate_ability modifier = supported_in_succession }
+							AND = {
+								character = event_target:candidate_ability
+								NOT = { has_any_opinion_modifier = supported_in_succession }
+							}
+						}
+					}
+					custom_tooltip = { text = SUPPORTED_ABILITY }
+				}
+			}
+		}
+	}
+	option = {
+		name = CURSES
+		trigger = {
+			NOT = { character = event_target:succession_winner }
+			OR = {
+				character = event_target:candidate_second_heir
+				character = event_target:candidate_male
+				character = event_target:candidate_female
+				character = event_target:candidate_primo
+				character = event_target:candidate_senior
+				character = event_target:candidate_ability
+			}
+		}
+		ROOT = {
+			any_vassal = {
+				limit = {
+					OR = {
+						has_any_opinion_modifier = supported_in_succession
+						character = event_target:candidate_second_heir
+						character = event_target:candidate_male
+						character = event_target:candidate_female
+						character = event_target:candidate_primo
+						character = event_target:candidate_senior
+						character = event_target:candidate_ability
+					}
+				}
+				if = {
+					limit = { has_opinion_modifier = { who = ROOT modifier = supported_in_succession } }
+					custom_tooltip = { text = SUPPORTED_HEIR }
+				}
+				if = {
+					limit = {
+						OR = {
+							has_opinion_modifier = { who = event_target:candidate_second_heir modifier = supported_in_succession }
+							AND = {
+								character = event_target:candidate_second_heir
+								NOT = { has_any_opinion_modifier = supported_in_succession }
+							}
+						}
+					}
+					custom_tooltip = { text = SUPPORTED_SECOND_HEIR }
+				}
+				if = {
+					limit = {
+						OR = {
+							has_opinion_modifier = { who = event_target:candidate_male modifier = supported_in_succession }
+							AND = {
+								character = event_target:candidate_male
+								NOT = { has_any_opinion_modifier = supported_in_succession }
+							}
+						}
+					}
+					custom_tooltip = { text = SUPPORTED_MALE }
+				}
+				if = {
+					limit = {
+						OR = {
+							has_opinion_modifier = { who = event_target:candidate_female modifier = supported_in_succession }
+							AND = {
+								character = event_target:candidate_female
+								NOT = { has_any_opinion_modifier = supported_in_succession }
+							}
+						}
+					}
+					custom_tooltip = { text = SUPPORTED_FEMALE }
+				}
+				if = {
+					limit = {
+						OR = {
+							has_opinion_modifier = { who = event_target:candidate_primo modifier = supported_in_succession }
+							AND = {
+								character = event_target:candidate_primo
+								NOT = { has_any_opinion_modifier = supported_in_succession }
+							}
+						}
+					}
+					custom_tooltip = { text = SUPPORTED_PRIMO }
+				}
+				if = {
+					limit = {
+						OR = {
+							has_opinion_modifier = { who = event_target:candidate_senior modifier = supported_in_succession }
+							AND = {
+								character = event_target:candidate_senior
+								NOT = { has_any_opinion_modifier = supported_in_succession }
+							}
+						}
+					}
+					custom_tooltip = { text = SUPPORTED_SENIOR }
+				}
+				if = {
+					limit = {
+						OR = {
+							has_opinion_modifier = { who = event_target:candidate_ability modifier = supported_in_succession }
+							AND = {
+								character = event_target:candidate_ability
+								NOT = { has_any_opinion_modifier = supported_in_succession }
+							}
+						}
+					}
+					custom_tooltip = { text = SUPPORTED_ABILITY }
+				}
+			}
+		}
+	}
+	option = {
+		name = OK
+		trigger = {
+			NOT = {
+				character = ROOT
+				character = event_target:candidate_second_heir
+				character = event_target:candidate_male
+				character = event_target:candidate_female
+				character = event_target:candidate_primo
+				character = event_target:candidate_senior
+				character = event_target:candidate_ability
+			}
+		}
+	}
+}
+
+# Nobody wins the crisis -- it stalls
+narrative_event = {
+	id = Plus.1616
+	title = EVTNAME_Plus_1611
+	desc = EVTDESC_Plus_1616
+	picture = GFX_evt_coronation
+
+	is_triggered_only = yes
+	major = yes
+	
+	major_trigger = {
+		OR = {
+			character = ROOT
+			same_realm = ROOT
+			dynasty = ROOT
+		}
+	}
+	
+	option = {
+		name = OK
+		trigger = {
+			character = ROOT
+		}
+		prestige = -100
+		hidden_tooltip = {
+			any_demesne_title = {
+				limit = { has_title_flag = will_be_inherited }
+				clr_title_flag = will_be_inherited
+			}
+			event_target:candidate_second_heir = { set_character_flag = justified_claimant }
+			event_target:candidate_male = { set_character_flag = justified_claimant }
+			event_target:candidate_female = { set_character_flag = justified_claimant }
+			event_target:candidate_primo = { set_character_flag = justified_claimant }
+			event_target:candidate_senior = { set_character_flag = justified_claimant }
+			event_target:candidate_ability = { set_character_flag = justified_claimant }
+		}
+		any_vassal = {
+			limit = {
+				OR = {
+					has_any_opinion_modifier = supported_in_succession
+					character = event_target:candidate_second_heir
+					character = event_target:candidate_male
+					character = event_target:candidate_female
+					character = event_target:candidate_primo
+					character = event_target:candidate_senior
+					character = event_target:candidate_ability
+				}
+			}
+			if = {
+				limit = { has_opinion_modifier = { who = ROOT modifier = supported_in_succession } }
+				custom_tooltip = { text = SUPPORTED_HEIR }
+			}
+			if = {
+				limit = {
+					OR = {
+						has_opinion_modifier = { who = event_target:candidate_second_heir modifier = supported_in_succession }
+						AND = {
+							character = event_target:candidate_second_heir
+							NOT = { has_any_opinion_modifier = supported_in_succession }
+						}
+					}
+				}
+				custom_tooltip = { text = SUPPORTED_SECOND_HEIR }
+			}
+			if = {
+				limit = {
+					OR = {
+						has_opinion_modifier = { who = event_target:candidate_male modifier = supported_in_succession }
+						AND = {
+							character = event_target:candidate_male
+							NOT = { has_any_opinion_modifier = supported_in_succession }
+						}
+					}
+				}
+				custom_tooltip = { text = SUPPORTED_MALE }
+			}
+			if = {
+				limit = {
+					OR = {
+						has_opinion_modifier = { who = event_target:candidate_female modifier = supported_in_succession }
+						AND = {
+							character = event_target:candidate_female
+							NOT = { has_any_opinion_modifier = supported_in_succession }
+						}
+					}
+				}
+				custom_tooltip = { text = SUPPORTED_FEMALE }
+			}
+			if = {
+				limit = {
+					OR = {
+						has_opinion_modifier = { who = event_target:candidate_primo modifier = supported_in_succession }
+						AND = {
+							character = event_target:candidate_primo
+							NOT = { has_any_opinion_modifier = supported_in_succession }
+						}
+					}
+				}
+				custom_tooltip = { text = SUPPORTED_PRIMO }
+			}
+			if = {
+				limit = {
+					OR = {
+						has_opinion_modifier = { who = event_target:candidate_senior modifier = supported_in_succession }
+						AND = {
+							character = event_target:candidate_senior
+							NOT = { has_any_opinion_modifier = supported_in_succession }
+						}
+					}
+				}
+				custom_tooltip = { text = SUPPORTED_SENIOR }
+			}
+			if = {
+				limit = {
+					OR = {
+						has_opinion_modifier = { who = event_target:candidate_ability modifier = supported_in_succession }
+						AND = {
+							character = event_target:candidate_ability
+							NOT = { has_any_opinion_modifier = supported_in_succession }
+						}
+					}
+				}
+				custom_tooltip = { text = SUPPORTED_ABILITY }
+			}
+		}
+	}
+	option = {
+		name = CURSES
+		trigger = {
+			OR = {
+				character = event_target:candidate_second_heir
+				character = event_target:candidate_male
+				character = event_target:candidate_female
+				character = event_target:candidate_primo
+				character = event_target:candidate_senior
+				character = event_target:candidate_ability
+			}
+		}
+		ROOT = {
+			any_vassal = {
+				limit = {
+					OR = {
+						has_any_opinion_modifier = supported_in_succession
+						character = event_target:candidate_second_heir
+						character = event_target:candidate_male
+						character = event_target:candidate_female
+						character = event_target:candidate_primo
+						character = event_target:candidate_senior
+						character = event_target:candidate_ability
+					}
+				}
+				if = {
+					limit = { has_opinion_modifier = { who = ROOT modifier = supported_in_succession } }
+					custom_tooltip = { text = SUPPORTED_HEIR }
+				}
+				if = {
+					limit = {
+						OR = {
+							has_opinion_modifier = { who = event_target:candidate_second_heir modifier = supported_in_succession }
+							AND = {
+								character = event_target:candidate_second_heir
+								NOT = { has_any_opinion_modifier = supported_in_succession }
+							}
+						}
+					}
+					custom_tooltip = { text = SUPPORTED_SECOND_HEIR }
+				}
+				if = {
+					limit = {
+						OR = {
+							has_opinion_modifier = { who = event_target:candidate_male modifier = supported_in_succession }
+							AND = {
+								character = event_target:candidate_male
+								NOT = { has_any_opinion_modifier = supported_in_succession }
+							}
+						}
+					}
+					custom_tooltip = { text = SUPPORTED_MALE }
+				}
+				if = {
+					limit = {
+						OR = {
+							has_opinion_modifier = { who = event_target:candidate_female modifier = supported_in_succession }
+							AND = {
+								character = event_target:candidate_female
+								NOT = { has_any_opinion_modifier = supported_in_succession }
+							}
+						}
+					}
+					custom_tooltip = { text = SUPPORTED_FEMALE }
+				}
+				if = {
+					limit = {
+						OR = {
+							has_opinion_modifier = { who = event_target:candidate_primo modifier = supported_in_succession }
+							AND = {
+								character = event_target:candidate_primo
+								NOT = { has_any_opinion_modifier = supported_in_succession }
+							}
+						}
+					}
+					custom_tooltip = { text = SUPPORTED_PRIMO }
+				}
+				if = {
+					limit = {
+						OR = {
+							has_opinion_modifier = { who = event_target:candidate_senior modifier = supported_in_succession }
+							AND = {
+								character = event_target:candidate_senior
+								NOT = { has_any_opinion_modifier = supported_in_succession }
+							}
+						}
+					}
+					custom_tooltip = { text = SUPPORTED_SENIOR }
+				}
+				if = {
+					limit = {
+						OR = {
+							has_opinion_modifier = { who = event_target:candidate_ability modifier = supported_in_succession }
+							AND = {
+								character = event_target:candidate_ability
+								NOT = { has_any_opinion_modifier = supported_in_succession }
+							}
+						}
+					}
+					custom_tooltip = { text = SUPPORTED_ABILITY }
+				}
+			}
+		}
+	}
+	option = {
+		name = OK
+		trigger = {
+			NOT = {
+				character = ROOT
+				character = event_target:candidate_second_heir
+				character = event_target:candidate_male
+				character = event_target:candidate_female
+				character = event_target:candidate_primo
+				character = event_target:candidate_senior
+				character = event_target:candidate_ability
+			}
+		}
+	}
+}
+
+# The succession crisis is averted due to war
+character_event = {
+	id = Plus.1617
+	desc = EVTDESC_Plus_1617
+	picture = GFX_evt_coronation
+	
+	is_triggered_only = yes
+	major = yes
+	
+	major_trigger = {
+		OR = {
+			character = ROOT
+			same_realm = ROOT
+			dynasty = ROOT
+		}
+	}
+	
+	trigger = {
+		OR = {
+			trait = rebel
+			any_demesne_title = { is_contested = yes }
+			any_demesne_title = { temporary = yes }
+			has_character_flag = faction_court_war
+			has_character_flag = faction_prosperity_war
+			has_character_flag = faction_glory_war
+			has_character_flag = faction_tradition_war
+			has_character_flag = faction_separatist_war
+			has_character_flag = faction_pretender_war
+			has_character_flag = faction_religious_war
+		}
+	}
+	
+	option = {
+		name = EVTOPTA_Plus_1617
+		trigger = { character = ROOT }
+		hidden_tooltip = {
+			any_demesne_title = {
+				limit = { has_title_flag = will_be_inherited }
+				clr_title_flag = will_be_inherited
+			}
+			event_target:candidate_second_heir = { set_character_flag = justified_claimant }
+			event_target:candidate_male = { set_character_flag = justified_claimant }
+			event_target:candidate_female = { set_character_flag = justified_claimant }
+			event_target:candidate_primo = { set_character_flag = justified_claimant }
+			event_target:candidate_senior = { set_character_flag = justified_claimant }
+			event_target:candidate_ability = { set_character_flag = justified_claimant }
+		}
+	}
+	option = {
+		name = OK
+		trigger = { NOT = { character = ROOT } }
+	}
+}
+
