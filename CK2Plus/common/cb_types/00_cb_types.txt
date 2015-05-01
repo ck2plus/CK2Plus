@@ -9744,24 +9744,19 @@ liberation_revolt = {
 				limit = { ROOT = { has_character_flag = began_revolt } }
 				any_de_jure_vassal_title = {
 					limit = {
-						tier = BARON
-						is_theocracy = no
-						is_republic = no
-						holder_scope = { top_liege = { character = FROM } }
-					}
-					if = {
-						limit = {
-							holder_scope = {
-								OR = {
-									character = FROM
-									culture = FROM
-									NOT = { culture_group = ROOT }
-									NOT = { capital_scope = { kingdom = { title = PREVPREVPREVPREV } } }
-								}
+						tier = COUNT
+						is_feudal = yes
+						holder_scope = {
+							top_liege = { character = FROM }
+							OR = {
+								character = FROM
+								culture = FROM
+								NOT = { culture_group = ROOT }
+								NOT = { capital_scope = { kingdom = { title = PREVPREVPREVPREV } } }
 							}
 						}
-						usurp_title = { target = ROOT type = revolt }
 					}
+					usurp_title = { target = ROOT type = revolt }
 				}
 			}
 			#usurp any titles in the kingdom held by the top liege or any vassal who is
@@ -9769,7 +9764,12 @@ liberation_revolt = {
 			any_de_jure_vassal_title = {
 				limit = {
 					tier = BARON
-					holder_scope = { top_liege = { character = FROM } }
+					holder_scope = {
+						OR = {
+							top_liege = { character = FROM }
+							liege = { character = ROOT }
+						}
+					}
 				}
 				if = {
 					limit = {
@@ -9906,9 +9906,50 @@ liberation_revolt = {
 				}
 			}
 		}
-		#move capital to primary capital, if possible
+		#deal with liberator's capital
 		ROOT = {
 			save_event_target_as = new_ruler
+			hidden_tooltip = {
+				any_demesne_title = {
+					limit = { temporary = yes }
+					unsafe_destroy_landed_title = THIS
+				}
+			}
+			#move non-feudal capital to feudal or tribal one
+			if = {
+				limit = {
+					has_character_flag = began_revolt
+					is_feudal = no
+					any_demesne_title = {
+						tier = COUNT
+						OR = {
+							is_feudal = yes
+							is_tribal = yes
+						}
+					}
+				}
+				random_demesne_title = {
+					limit = {
+						tier = COUNT
+						is_feudal = yes
+					}
+					event_target:new_ruler = { capital = PREV }
+				}
+				if = {
+					limit = {
+						is_feudal = no
+						is_tribal = no
+					}
+					random_demesne_title = {
+						limit = {
+							tier = COUNT
+							is_tribal = yes
+						}
+						event_target:new_ruler = { capital = PREV }
+					}
+				}
+			}
+			#move capital to primary title's capital, if owned
 			if = {
 				limit = {
 					ai = yes
@@ -9925,36 +9966,6 @@ liberation_revolt = {
 							event_target:new_ruler = { capital = PREV }
 						}
 					}
-				}
-			}
-			clear_event_target = new_ruler
-		}
-		#move tribal capital to feudal one, if primary capital not held
-		ROOT = {
-			save_event_target_as = new_ruler
-			if = {
-				limit = {
-					has_character_flag = began_revolt
-					is_tribal = yes
-					NOT = {
-						primary_title = {
-							capital_scope = {
-								owner = { character = event_target:new_ruler }
-								is_capital = yes
-							}
-						}
-					}
-					any_demesne_title = {
-						tier = COUNT
-						is_tribal = no
-					}
-				}
-				random_demesne_title = {
-					limit = {
-						tier = COUNT
-						is_tribal = no
-					}
-					event_target:new_ruler = { capital = PREV }
 				}
 			}
 			clear_event_target = new_ruler
