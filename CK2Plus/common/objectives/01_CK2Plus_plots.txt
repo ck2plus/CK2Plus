@@ -799,43 +799,492 @@ plot_kidnapping = {
 		is_adult = yes
 		is_ruler = yes
 		NOT = { trait = incapable }
-		hidden_tooltip = { ai = no }
+		hidden_tooltip = {
+			OR = {
+				ai = no
+				has_character_flag = allow_plotting
+			}
+		}
 	}
 
 	# Target allow trigger for when players target a specific character in the GUI
 	player_allow = {
 		NOT = { has_opinion_modifier = { who = FROM modifier = opinion_recent_plot } }
 		prisoner = no
-		OR = {
-			is_ruler = no
-			any_liege = { character = FROM }
-		}
 		is_within_diplo_range = FROM
 	}
 
 	# Target scope
 	allow = {
 		NOT = { has_opinion_modifier = { who = FROM modifier = opinion_recent_plot } }
-		OR = {
-			is_ruler = no
-			any_liege = { character = FROM }
-		}
 		prisoner = no
 		is_within_diplo_range = FROM
 		OR = {
-			AND = {
-				leads_faction = yes
-				same_realm = FROM
+			NOT = { reverse_opinion = { who = FROM value = -25 } }
+			NOT = { is_close_relative = FROM }
+		}
+		NOT = { reverse_opinion = { who = FROM value = 0 } }
+		OR = {
+			# declared war on me
+			any_war = {
+				attacker = { character = ROOT }
+				defender = { character = FROM }
 			}
-			reverse_has_opinion_modifier = { who = FROM modifier = opinion_targeted_by_adventurer }
-			reverse_has_opinion_modifier = { who = FROM modifier = declared_war }
-			reverse_has_opinion_modifier = { who = FROM modifier = opinion_refused_abdicate_title }
-			reverse_has_opinion_modifier = { who = FROM modifier = opinion_fatwa_target }
+			any_war = {
+				attacker = { character = FROM }
+				defender = { character = ROOT }
+			}
+			# has my de jure vassal in a kingdom where inter-vassal fighting isn't allowed
+			AND = {
+				same_liege = FROM
+				FROM = {
+					liege = {
+						NOT = {
+							is_mother = ROOT
+							is_father = ROOT
+							is_child_of = ROOT
+							sibling = ROOT
+							is_married = ROOT
+						}
+					}
+				}
+				any_vassal = {
+					lower_tier_than = FROM
+					higher_tier_than = BARON
+					OR = {
+						de_jure_liege = FROM
+						dejure_liege_title = { claimed_by = FROM }
+					}
+					war = no
+					is_patrician = no
+				}
+			}
+			# holds a county claim of mine in a kingdom where inter-vassal fighting isn't allowed
+			AND = {
+				same_liege = FROM
+				FROM = {
+					liege = {
+						NOT = {
+							is_mother = ROOT
+							is_father = ROOT
+							is_child_of = ROOT
+							sibling = ROOT
+							is_married = ROOT
+						}
+					}
+				}
+				any_demesne_title = {
+					lower_tier_than = DUKE
+					can_be_given_away = yes
+					is_primary_holder_title = no
+					location = { is_capital = no }
+					OR = {
+						claimed_by = FROM
+						dejure_liege_title = { claimed_by = FROM }
+						de_jure_liege_or_above = FROM
+					}
+				}
+			}
+			# I need to stop their plot but can't arrest them
+			AND = {
+				NOT = { is_liege_or_above = FROM }
+				FROM = {
+					liege = {
+						NOT = {
+							is_mother = ROOT
+							is_father = ROOT
+							is_child_of = ROOT
+							sibling = ROOT
+							is_married = ROOT
+						}
+					}
+					any_known_plotter = {
+						character = ROOT
+						plot_target_char = {
+							OR = {
+								character = PREVPREV
+								is_child_of = PREVPREV
+								is_mother = PREVPREV
+								is_father = PREVPREV
+								is_married = PREVPREV
+							}
+						}
+					}
+				}
+			}
+			# I want to execute them but can't arrest them
+			AND = {
+				NOT = { is_liege_or_above = FROM }
+				OR = {
+					reverse_has_opinion_modifier = { who = FROM modifier = opinion_targeted_by_adventurer }
+					reverse_has_opinion_modifier = { who = FROM modifier = opinion_traitor }
+					reverse_has_opinion_modifier = { who = FROM modifier = declared_war }
+					reverse_has_opinion_modifier = { who = FROM modifier = opinion_dishonorable }
+					reverse_has_opinion_modifier = { who = FROM modifier = opinion_rebel_traitor }
+					reverse_has_opinion_modifier = { who = FROM modifier = attempted_murder_of_spouse }
+					reverse_has_opinion_modifier = { who = FROM modifier = attempted_murder_of_vassal }
+					reverse_has_opinion_modifier = { who = FROM modifier = attempted_murder }
+					reverse_has_opinion_modifier = { who = FROM modifier = attempted_murder_of_child }
+					reverse_has_opinion_modifier = { who = FROM modifier = opinion_spouse_slayer }
+					reverse_has_opinion_modifier = { who = FROM modifier = opinion_murder_attempt }
+					reverse_has_opinion_modifier = { who = FROM modifier = opinion_killed_close_kin }
+					reverse_has_opinion_modifier = { who = FROM modifier = opinion_witch }
+					reverse_has_opinion_modifier = { who = FROM modifier = opinion_takfir }
+					reverse_has_opinion_modifier = { who = FROM modifier = attempted_murder_of_close_kin }
+					reverse_has_opinion_modifier = { who = FROM modifier = killed_vassal }
+					reverse_has_opinion_modifier = { who = FROM modifier = opinion_civil_war_loser }
+					reverse_has_opinion_modifier = { who = FROM modifier = devious_plotter }
+					reverse_has_opinion_modifier = { who = FROM modifier = attempted_kidnapping }
+				}
+			}
 		}
 	}
 
 	chance = {
 		factor = 1
+		modifier = {
+			factor = 0
+			FROM = {
+				OR = {
+					trait = kind
+					trait = craven
+					trait = content
+					trait = humble
+					NOT = { intrigue = 6 }
+				}
+			}
+		}
+		modifier = {
+			factor = 2.0
+			FROM = {
+				OR = {
+					trait = wroth
+					trait = just
+					trait = diligent
+				}
+			}
+			OR = {
+				any_war = {
+					attacker = { character = ROOT }
+					defender = { character = FROM }
+				}
+				any_war = {
+					attacker = { character = FROM }
+					defender = { character = ROOT }
+				}
+				FROM = {
+					any_known_plotter = {
+						character = ROOT
+						plot_target_char = {
+							OR = {
+								character = PREVPREV
+								is_child_of = PREVPREV
+								is_mother = PREVPREV
+								is_father = PREVPREV
+								is_married = PREVPREV
+							}
+						}
+					}
+				}
+				reverse_has_opinion_modifier = { who = FROM modifier = opinion_targeted_by_adventurer }
+				reverse_has_opinion_modifier = { who = FROM modifier = opinion_traitor }
+				reverse_has_opinion_modifier = { who = FROM modifier = declared_war }
+				reverse_has_opinion_modifier = { who = FROM modifier = opinion_dishonorable }
+				reverse_has_opinion_modifier = { who = FROM modifier = opinion_rebel_traitor }
+				reverse_has_opinion_modifier = { who = FROM modifier = attempted_murder_of_spouse }
+				reverse_has_opinion_modifier = { who = FROM modifier = attempted_murder_of_vassal }
+				reverse_has_opinion_modifier = { who = FROM modifier = attempted_murder }
+				reverse_has_opinion_modifier = { who = FROM modifier = attempted_murder_of_child }
+				reverse_has_opinion_modifier = { who = FROM modifier = opinion_spouse_slayer }
+				reverse_has_opinion_modifier = { who = FROM modifier = opinion_murder_attempt }
+				reverse_has_opinion_modifier = { who = FROM modifier = opinion_killed_close_kin }
+				reverse_has_opinion_modifier = { who = FROM modifier = opinion_witch }
+				reverse_has_opinion_modifier = { who = FROM modifier = opinion_takfir }
+				reverse_has_opinion_modifier = { who = FROM modifier = attempted_murder_of_close_kin }
+				reverse_has_opinion_modifier = { who = FROM modifier = killed_vassal }
+				reverse_has_opinion_modifier = { who = FROM modifier = opinion_civil_war_loser }
+				reverse_has_opinion_modifier = { who = FROM modifier = devious_plotter }
+				reverse_has_opinion_modifier = { who = FROM modifier = attempted_kidnapping }
+			}
+		}
+		modifier = {
+			factor = 0.25
+			FROM = {
+				NOT = {
+					crownlaw_title = {
+						OR = {
+							has_law = crown_authority_3
+							has_law = crown_authority_4
+						}
+					}
+				}
+			}
+			NOT = {
+				any_war = {
+					attacker = { character = ROOT }
+					defender = { character = FROM }
+				}
+				any_war = {
+					attacker = { character = FROM }
+					defender = { character = ROOT }
+				}
+				FROM = {
+					any_known_plotter = {
+						character = ROOT
+						plot_target_char = {
+							OR = {
+								character = PREVPREV
+								is_child_of = PREVPREV
+								is_mother = PREVPREV
+								is_father = PREVPREV
+								is_married = PREVPREV
+							}
+						}
+					}
+				}
+				reverse_has_opinion_modifier = { who = FROM modifier = opinion_targeted_by_adventurer }
+				reverse_has_opinion_modifier = { who = FROM modifier = opinion_traitor }
+				reverse_has_opinion_modifier = { who = FROM modifier = declared_war }
+				reverse_has_opinion_modifier = { who = FROM modifier = opinion_dishonorable }
+				reverse_has_opinion_modifier = { who = FROM modifier = opinion_rebel_traitor }
+				reverse_has_opinion_modifier = { who = FROM modifier = attempted_murder_of_spouse }
+				reverse_has_opinion_modifier = { who = FROM modifier = attempted_murder_of_vassal }
+				reverse_has_opinion_modifier = { who = FROM modifier = attempted_murder }
+				reverse_has_opinion_modifier = { who = FROM modifier = attempted_murder_of_child }
+				reverse_has_opinion_modifier = { who = FROM modifier = opinion_spouse_slayer }
+				reverse_has_opinion_modifier = { who = FROM modifier = opinion_murder_attempt }
+				reverse_has_opinion_modifier = { who = FROM modifier = opinion_killed_close_kin }
+				reverse_has_opinion_modifier = { who = FROM modifier = opinion_witch }
+				reverse_has_opinion_modifier = { who = FROM modifier = opinion_takfir }
+				reverse_has_opinion_modifier = { who = FROM modifier = attempted_murder_of_close_kin }
+				reverse_has_opinion_modifier = { who = FROM modifier = killed_vassal }
+				reverse_has_opinion_modifier = { who = FROM modifier = opinion_civil_war_loser }
+				reverse_has_opinion_modifier = { who = FROM modifier = devious_plotter }
+				reverse_has_opinion_modifier = { who = FROM modifier = attempted_kidnapping }
+			}
+		}
+		modifier = {
+			factor = 0
+			FROM = {
+				OR = {
+					trait = honest
+					trait = just
+					trait = humble
+				}
+			}
+			NOT = {
+				any_war = {
+					attacker = { character = ROOT }
+					defender = { character = FROM }
+				}
+				any_war = {
+					attacker = { character = FROM }
+					defender = { character = ROOT }
+				}
+				FROM = {
+					any_known_plotter = {
+						character = ROOT
+						plot_target_char = {
+							OR = {
+								character = PREVPREV
+								is_child_of = PREVPREV
+								is_mother = PREVPREV
+								is_father = PREVPREV
+								is_married = PREVPREV
+							}
+						}
+					}
+				}
+				reverse_has_opinion_modifier = { who = FROM modifier = opinion_targeted_by_adventurer }
+				reverse_has_opinion_modifier = { who = FROM modifier = opinion_traitor }
+				reverse_has_opinion_modifier = { who = FROM modifier = declared_war }
+				reverse_has_opinion_modifier = { who = FROM modifier = opinion_dishonorable }
+				reverse_has_opinion_modifier = { who = FROM modifier = opinion_rebel_traitor }
+				reverse_has_opinion_modifier = { who = FROM modifier = attempted_murder_of_spouse }
+				reverse_has_opinion_modifier = { who = FROM modifier = attempted_murder_of_vassal }
+				reverse_has_opinion_modifier = { who = FROM modifier = attempted_murder }
+				reverse_has_opinion_modifier = { who = FROM modifier = attempted_murder_of_child }
+				reverse_has_opinion_modifier = { who = FROM modifier = opinion_spouse_slayer }
+				reverse_has_opinion_modifier = { who = FROM modifier = opinion_murder_attempt }
+				reverse_has_opinion_modifier = { who = FROM modifier = opinion_killed_close_kin }
+				reverse_has_opinion_modifier = { who = FROM modifier = opinion_witch }
+				reverse_has_opinion_modifier = { who = FROM modifier = opinion_takfir }
+				reverse_has_opinion_modifier = { who = FROM modifier = attempted_murder_of_close_kin }
+				reverse_has_opinion_modifier = { who = FROM modifier = killed_vassal }
+				reverse_has_opinion_modifier = { who = FROM modifier = opinion_civil_war_loser }
+				reverse_has_opinion_modifier = { who = FROM modifier = devious_plotter }
+				reverse_has_opinion_modifier = { who = FROM modifier = attempted_kidnapping }
+			}
+		}
+		modifier = {
+			factor = 1.5
+			FROM = { trait = cruel }
+		}
+		modifier = {
+			factor = 1.5
+			FROM = { trait = wroth }
+		}
+		modifier = {
+			factor = 1.5
+			FROM = { trait = brave }
+		}
+		modifier = {
+			factor = 1.5
+			FROM = { trait = deceitful }
+		}
+		modifier = {
+			factor = 0.5
+			FROM = { trait = honest }
+		}
+		modifier = {
+			factor = 0.5
+			FROM = { trait = humble }
+		}
+		modifier = {
+			factor = 0.5
+			FROM = { trait = patient }
+		}
+		modifier = {
+			factor = 0.5
+			FROM = { trait = just }
+			same_liege = FROM
+			liege = {
+				NOT = {
+					is_mother = ROOT
+					is_father = ROOT
+					is_child_of = ROOT
+					sibling = ROOT
+					is_married = ROOT
+				}
+			}
+			OR = {
+				any_vassal = {
+					lower_tier_than = FROM
+					OR = {
+						de_jure_liege = FROM
+						dejure_liege_title = { claimed_by = FROM }
+					}
+					war = no
+					is_patrician = no
+				}
+				any_demesne_title = {
+					lower_tier_than = DUKE
+					can_be_given_away = yes
+					is_primary_holder_title = no
+					location = { is_capital = no }
+					OR = {
+						claimed_by = FROM
+						dejure_liege_title = { claimed_by = FROM }
+						de_jure_liege_or_above = FROM
+					}
+				}
+			}
+		}
+		modifier = {
+			factor = 2.0
+			FROM = { trait = ambitious }
+			same_liege = FROM
+			liege = {
+				NOT = {
+					is_mother = ROOT
+					is_father = ROOT
+					is_child_of = ROOT
+					sibling = ROOT
+					is_married = ROOT
+				}
+			}
+			OR = {
+				any_vassal = {
+					lower_tier_than = FROM
+					OR = {
+						de_jure_liege = FROM
+						dejure_liege_title = { claimed_by = FROM }
+					}
+					war = no
+					is_patrician = no
+				}
+				any_demesne_title = {
+					lower_tier_than = DUKE
+					can_be_given_away = yes
+					is_primary_holder_title = no
+					location = { is_capital = no }
+					OR = {
+						claimed_by = FROM
+						dejure_liege_title = { claimed_by = FROM }
+						de_jure_liege_or_above = FROM
+					}
+				}
+			}
+		}
+		modifier = {
+			factor = 1.5
+			FROM = {
+				OR = {
+					trait = envious
+					trait = greedy
+				}
+			}
+			same_liege = FROM
+			liege = {
+				NOT = {
+					is_mother = ROOT
+					is_father = ROOT
+					is_child_of = ROOT
+					sibling = ROOT
+					is_married = ROOT
+				}
+			}
+			OR = {
+				any_vassal = {
+					lower_tier_than = FROM
+					OR = {
+						de_jure_liege = FROM
+						dejure_liege_title = { claimed_by = FROM }
+					}
+					war = no
+					is_patrician = no
+				}
+				any_demesne_title = {
+					lower_tier_than = DUKE
+					can_be_given_away = yes
+					is_primary_holder_title = no
+					location = { is_capital = no }
+					OR = {
+						claimed_by = FROM
+						dejure_liege_title = { claimed_by = FROM }
+						de_jure_liege_or_above = FROM
+					}
+				}
+			}
+		}
+		modifier = {
+			factor = 1.5
+			NOT = { reverse_opinion = { who = FROM value = -50 } }
+		}
+		modifier = {
+			factor = 1.5
+			NOT = { reverse_opinion = { who = FROM value = -75 } }
+		}
+		modifier = {
+			factor = 0.75
+			FROM = { NOT = { intrigue = 7 } }
+		}
+		modifier = {
+			factor = 0.75
+			FROM = { NOT = { intrigue = 9 } }
+		}
+		modifier = {
+			factor = 1.25
+			FROM = { intrigue = 12 }
+		}
+		modifier = {
+			factor = 1.25
+			FROM = { intrigue = 15 }
+		}
+		modifier = {
+			factor = 1.25
+			FROM = { intrigue = 18 }
+		}
 	}
 
 	success = {
@@ -852,7 +1301,90 @@ plot_kidnapping = {
 			FROM = { has_character_flag = abort_plot }
 			FROM = { prisoner = yes }
 			FROM = { trait = incapable }
-			is_alive = no
+			FROM = { is_ruler = no }
+			AND = {
+				FROM = { ai = yes }
+				NOT = {
+					# declared war on me
+					any_war = {
+						attacker = { character = ROOT }
+						defender = { character = FROM }
+					}
+					any_war = {
+						attacker = { character = FROM }
+						defender = { character = ROOT }
+					}
+					# holds a county claim of mine in a kingdom where inter-vassal fighting isn't allowed
+					AND = {
+						same_liege = FROM
+						FROM = {
+							crownlaw_title = {
+								OR = {
+									has_law = crown_authority_3
+									has_law = crown_authority_4
+								}
+							}
+						}
+						any_demesne_title = {
+							lower_tier_than = DUKE
+							can_be_given_away = yes
+							is_primary_holder_title = no
+							location = { is_capital = no }
+							OR = {
+								claimed_by = FROM
+								dejure_liege_title = { claimed_by = FROM }
+								de_jure_liege_or_above = FROM
+							}
+						}
+					}
+					# I need to stop their plot but can't arrest them
+					AND = {
+						NOT = { is_liege_or_above = FROM }
+						FROM = {
+							any_known_plotter = {
+								character = ROOT
+								plot_target_char = {
+									OR = {
+										character = PREVPREV
+										is_child_of = PREVPREV
+										is_mother = PREVPREV
+										is_father = PREVPREV
+										is_married = PREVPREV
+									}
+								}
+							}
+						}
+					}
+					# I want to execute them but can't arrest them
+					AND = {
+						NOT = { is_liege_or_above = FROM }
+						OR = {
+							reverse_has_opinion_modifier = { who = FROM modifier = opinion_targeted_by_adventurer }
+							reverse_has_opinion_modifier = { who = FROM modifier = opinion_traitor }
+							reverse_has_opinion_modifier = { who = FROM modifier = declared_war }
+							reverse_has_opinion_modifier = { who = FROM modifier = opinion_dishonorable }
+							reverse_has_opinion_modifier = { who = FROM modifier = opinion_rebel_traitor }
+							reverse_has_opinion_modifier = { who = FROM modifier = attempted_murder_of_spouse }
+							reverse_has_opinion_modifier = { who = FROM modifier = attempted_murder_of_vassal }
+							reverse_has_opinion_modifier = { who = FROM modifier = attempted_murder }
+							reverse_has_opinion_modifier = { who = FROM modifier = attempted_murder_of_child }
+							reverse_has_opinion_modifier = { who = FROM modifier = opinion_spouse_slayer }
+							reverse_has_opinion_modifier = { who = FROM modifier = opinion_murder_attempt }
+							reverse_has_opinion_modifier = { who = FROM modifier = opinion_killed_close_kin }
+							reverse_has_opinion_modifier = { who = FROM modifier = opinion_witch }
+							reverse_has_opinion_modifier = { who = FROM modifier = opinion_takfir }
+							reverse_has_opinion_modifier = { who = FROM modifier = attempted_murder_of_close_kin }
+							reverse_has_opinion_modifier = { who = FROM modifier = killed_vassal }
+							reverse_has_opinion_modifier = { who = FROM modifier = opinion_civil_war_loser }
+							reverse_has_opinion_modifier = { who = FROM modifier = devious_plotter }
+							reverse_has_opinion_modifier = { who = FROM modifier = attempted_kidnapping }
+							reverse_has_opinion_modifier = { who = FROM modifier = attempted_kidnapping_of_kin }
+							reverse_has_opinion_modifier = { who = FROM modifier = attempted_kidnapping_of_vassal }
+							reverse_has_opinion_modifier = { who = FROM modifier = opinion_kidnapped_kin }
+						}
+					}
+				}
+			}
 		}
 	}
 	
@@ -863,8 +1395,12 @@ plot_kidnapping = {
 				clr_character_flag = event7040
 				clr_character_flag = plot_check
 				clr_character_flag = allow_plotting
-				clr_character_flag = plot_in_action
+				clr_character_flag = kidnap_attempt
 				clr_character_flag = abort_plot
+				clr_character_flag = kidnap_in_transit
+				clr_character_flag = kidnap_in_bed
+				clr_character_flag = kidnap_while_hunting
+				clr_character_flag = kidnap_while_carousing
 				reverse_opinion = { who = ROOT modifier = opinion_recent_plot months = 60 }
 			}
 			if = {
@@ -892,8 +1428,12 @@ plot_kidnapping = {
 				clr_character_flag = event7040
 				clr_character_flag = plot_check
 				clr_character_flag = allow_plotting
-				clr_character_flag = plot_in_action
+				clr_character_flag = kidnap_attempt
 				clr_character_flag = abort_plot
+				clr_character_flag = kidnap_in_transit
+				clr_character_flag = kidnap_in_bed
+				clr_character_flag = kidnap_while_hunting
+				clr_character_flag = kidnap_while_carousing
 				reverse_opinion = { who = ROOT modifier = opinion_recent_plot months = 60 }
 				change_variable = { which = "lifestyle_intrigue" value = 1 }
 			}
@@ -1775,34 +2315,26 @@ plot_kidnap_liege = {
 		prisoner = no
 		is_ruler = no
 		is_adult = yes
-		OR = {
-			has_opinion_modifier = { who = liege modifier = opinion_denied_title }
-			has_opinion_modifier = { who = liege modifier = opinion_broken_title_promise }
-		}
 		NOT = { trait = incapable }
-		hidden_tooltip = {
-			OR = {
-				ai = no
-				has_character_flag = allow_plotting
-			}
-		}
+		has_character_flag = allow_plotting
 	}
 
 	# Target scope
 	allow = {
 		NOT = { has_opinion_modifier = { who = FROM modifier = opinion_recent_plot } }
-		NOT = { spouse = { character = FROM } }
-		is_liege_of = FROM
+		NOT = { has_opinion_modifier = { who = FROM modifier = kidnapped_me } }
+		NOT = { is_married = FROM }
+		is_vassal_or_below  = FROM
 		any_demesne_title = {
 			can_be_given_away = yes
-			NOT = { tier = duke }
-			NOT = { tier = king }
-			NOT = { tier = emperor }
-			NOT = {
-				AND = {
-					tier = count
-					location = { is_capital = yes }
-				}
+			tier = COUNT
+			location = { is_capital = no }
+			OR = {
+				claimed_by = FROM
+				FROM = { has_opinion_modifier = { who = ROOT modifier = opinion_denied_title } }
+				FROM = { has_opinion_modifier = { who = ROOT modifier = opinion_broken_title_promise } }
+				FROM = { has_opinion_modifier = { who = ROOT modifier = disinherited_me } }
+				FROM = { has_opinion_modifier = { who = ROOT modifier = succ_law_disinherit } }
 			}
 		}
 	}
@@ -1810,19 +2342,102 @@ plot_kidnap_liege = {
 	chance = {
 		factor = 1
 		modifier = {
-			factor = 0.0
+			factor = 0
+			FROM = {
+				is_female = yes
+				NOT = {
+					trait = ambitious
+					trait = lunatic
+					trait = possessed
+				}
+			}
+			NOT = {
+				any_demesne_title = {
+					can_be_given_away = yes
+					tier = COUNT
+					location = { is_capital = no }
+					NOT = {
+						has_law = agnatic_succession
+						has_law = cognatic_succession
+					}
+					OR = {
+						claimed_by = FROM
+						FROM = { has_opinion_modifier = { who = ROOT modifier = opinion_denied_title } }
+						FROM = { has_opinion_modifier = { who = ROOT modifier = opinion_broken_title_promise } }
+						FROM = { has_opinion_modifier = { who = ROOT modifier = disinherited_me } }
+						FROM = { has_opinion_modifier = { who = ROOT modifier = succ_law_disinherit } }
+					}
+				}
+			}
+		}
+		modifier = {
+			factor = 0
+			FROM = {
+				is_female = no
+				NOT = {
+					trait = ambitious
+					trait = lunatic
+					trait = possessed
+				}
+			}
+			NOT = {
+				any_demesne_title = {
+					can_be_given_away = yes
+					tier = COUNT
+					location = { is_capital = no }
+					NOT = {
+						has_law = enatic_succession
+						has_law = enatic_cognatic_succession
+					}
+					OR = {
+						claimed_by = FROM
+						FROM = { has_opinion_modifier = { who = ROOT modifier = opinion_denied_title } }
+						FROM = { has_opinion_modifier = { who = ROOT modifier = opinion_broken_title_promise } }
+						FROM = { has_opinion_modifier = { who = ROOT modifier = disinherited_me } }
+						FROM = { has_opinion_modifier = { who = ROOT modifier = succ_law_disinherit } }
+					}
+				}
+			}
+		}
+		modifier = {
+			factor = 0
+			FROM = {
+				any_heir_title = { always = yes }
+				NOT = {
+					has_opinion_modifier = { who = ROOT modifier = opinion_denied_title }
+					has_opinion_modifier = { who = ROOT modifier = opinion_broken_title_promise }
+				}
+			}
+		}
+		modifier = {
+			factor = 0.5
+			NOT = { is_liege_of = FROM }
+		}
+		modifier = {
+			factor = 0.5
+			NOT = {
+				any_demesne_title = {
+					can_be_given_away = yes
+					tier = COUNT
+					location = { is_capital = no }
+					OR = {
+						FROM = { has_strong_claim = PREV }
+						FROM = { has_opinion_modifier = { who = ROOT modifier = opinion_denied_title } }
+						FROM = { has_opinion_modifier = { who = ROOT modifier = opinion_broken_title_promise } }
+						FROM = { has_opinion_modifier = { who = ROOT modifier = disinherited_me } }
+						FROM = { has_opinion_modifier = { who = ROOT modifier = succ_law_disinherit } }
+					}
+				}
+			}
+		}
+		modifier = {
+			factor = 0
 			FROM = { war = yes }
 		}
 		modifier = {
 			factor = 0.5
 			FROM = {
-				NOT = {
-					liege = {
-						any_child = {
-							character = ROOT
-						}
-					}
-				}
+				NOT = { is_child_of = ROOT }
 				OR = {
 					has_character_modifier = estates_1
 					has_character_modifier = estates_2
@@ -1853,24 +2468,40 @@ plot_kidnap_liege = {
 			FROM = { has_character_modifier = estates_5 }
 		}
 		modifier = {
-			factor = 2
-			FROM = { religion_group = muslim is_ruler = no }
+			factor = 2.0
+			FROM = { religion_group = muslim }
 		}
 		modifier = {
-			factor = 2
-			FROM = { has_opinion_modifier = { who = liege modifier = opinion_broken_title_promise } }
+			factor = 3.0
+			OR = {
+				reverse_has_opinion_modifier = { who = FROM modifier = opinion_broken_title_promise }
+				reverse_has_opinion_modifier = { who = FROM modifier = disinherited_me }
+				reverse_has_opinion_modifier = { who = FROM modifier = succ_law_disinherit }
+			}
 		}
 		modifier = {
 			factor = 0
 			FROM = {
 				OR = {
+					trait = craven
+					trait = imbecile
 					trait = content
+				}
+			}
+		}
+		modifier = {
+			factor = 0
+			FROM = {
+				OR = {
 					trait = honest
+					trait = humble
 					trait = kind
 					trait = just
 				}
-				NOT = { trait = lunatic }
-				NOT = { trait = possessed }
+				NOT = {
+					trait = lunatic
+					trait = possessed
+				}
 			}
 		}
 		modifier = {
@@ -1879,45 +2510,38 @@ plot_kidnap_liege = {
 		}
 		modifier = {
 			factor = 0
-			FROM = { opinion = { who = liege value = 50 } }
-			NOT = {
-				OR = {
-					FROM = { trait = envious }
-					FROM = { trait = deceitful }
-					FROM = { trait = ambitious }
-				}
-			}
+			reverse_opinion = { who = FROM value = 50 }
 		}
 		modifier = {
 			factor = 0.25
-			FROM = { opinion = { who = liege value = 25 } }
-			NOT = {
-				OR = {
-					FROM = { trait = envious }
-					FROM = { trait = deceitful }
-					FROM = { trait = ambitious }
+			reverse_opinion = { who = FROM value = 25 }
+			FROM = {
+				NOT = {
+					trait = envious
+					trait = deceitful
+					trait = ambitious
 				}
 			}
 		}
 		modifier = {
 			factor = 0.5
-			FROM = { opinion = { who = liege value = 0 } }
+			reverse_opinion = { who = FROM value = 0 }
 		}
 		modifier = {
 			factor = 1.5
-			NOT = { FROM = { opinion = { who = liege value = -25 } } }
+			NOT = { reverse_opinion = { who = FROM value = -25 } }
 		}
 		modifier = {
 			factor = 1.5
-			NOT = { FROM = { opinion = { who = liege value = -50 } } }
+			NOT = { reverse_opinion = { who = FROM value = -50 } }
 		}
 		modifier = {
 			factor = 1.5
-			NOT = { FROM = { opinion = { who = liege value = -75 } } }
+			NOT = { reverse_opinion = { who = FROM value = -75 } }
 		}
 		modifier = {
-			factor = 0.25
-			FROM = { NOT = { intrigue = 5 } }
+			factor = 0
+			FROM = { NOT = { intrigue = 6 } }
 		}
 		modifier = {
 			factor = 1.5
@@ -1930,6 +2554,38 @@ plot_kidnap_liege = {
 		modifier = {
 			factor = 1.5
 			FROM = { intrigue = 20 }
+		}
+		modifier = {
+			factor = 0.5
+			FROM = { trait = charitable }
+		}
+		modifier = {
+			factor = 0.5
+			FROM = { trait = patient }
+		}
+		modifier = {
+			factor = 0.5
+			FROM = { trait = slothful }
+		}
+		modifier = {
+			factor = 1.5
+			FROM = { trait = wroth }
+		}
+		modifier = {
+			factor = 1.5
+			FROM = { trait = proud }
+		}
+		modifier = {
+			factor = 1.5
+			FROM = { trait = brave }
+		}
+		modifier = {
+			factor = 1.5
+			FROM = { trait = deceitful }
+		}
+		modifier = {
+			factor = 2.0
+			FROM = { trait = greedy }
 		}
 		modifier = {
 			factor = 2.0
@@ -1952,25 +2608,24 @@ plot_kidnap_liege = {
 		OR = {
 			FROM = { has_character_flag = abort_plot }
 			FROM = { prisoner = yes }
-			is_alive = no
 			FROM = { 
 				is_ruler = yes
 				NOT = { has_character_flag = kidnap_attempt }
 			}
-			spouse = { character = FROM }
+			is_married = FROM
 			FROM = { trait = incapable }
-			NOT = { is_liege_of = FROM }
+			NOT = { is_vassal_or_below = FROM }
 			NOT = {
 				any_demesne_title = {
 					can_be_given_away = yes
-					NOT = { tier = duke }
-					NOT = { tier = king }
-					NOT = { tier = emperor }
-					NOT = {
-						AND = {
-							tier = count
-							location = { is_capital = yes }
-						}
+					tier = COUNT
+					location = { is_capital = no }
+					OR = {
+						claimed_by = FROM
+						FROM = { has_opinion_modifier = { who = ROOT modifier = opinion_denied_title } }
+						FROM = { has_opinion_modifier = { who = ROOT modifier = opinion_broken_title_promise } }
+						FROM = { has_opinion_modifier = { who = ROOT modifier = disinherited_me } }
+						FROM = { has_opinion_modifier = { who = ROOT modifier = succ_law_disinherit } }
 					}
 				}
 			}
@@ -1987,6 +2642,10 @@ plot_kidnap_liege = {
 				clr_character_flag = plot_in_action
 				clr_character_flag = abort_plot
 				clr_character_flag = kidnap_attempt
+				clr_character_flag = kidnap_in_transit
+				clr_character_flag = kidnap_in_bed
+				clr_character_flag = kidnap_while_hunting
+				clr_character_flag = kidnap_while_carousing
 				reverse_opinion = { who = ROOT modifier = opinion_recent_plot months = 60 }
 				set_character_flag = obj_landed_title
 			}
@@ -2018,6 +2677,10 @@ plot_kidnap_liege = {
 				clr_character_flag = plot_in_action
 				clr_character_flag = abort_plot
 				clr_character_flag = kidnap_attempt
+				clr_character_flag = kidnap_in_transit
+				clr_character_flag = kidnap_in_bed
+				clr_character_flag = kidnap_while_hunting
+				clr_character_flag = kidnap_while_carousing
 				reverse_opinion = { who = ROOT modifier = opinion_recent_plot months = 60 }
 				change_variable = { which = "lifestyle_intrigue" value = 1 }
 				set_character_flag = obj_landed_title
