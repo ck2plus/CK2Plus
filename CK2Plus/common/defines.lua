@@ -638,11 +638,11 @@ NTitle = {
 	EMPEROR_REVOKE_PRESTIGE_COST = 1000, -- Unused, impossible
 	
 -- Title Grant Decadence Reduction (Multiplied with current decadence)
-	BARON_GRANT_DECADENCE_RED = 0,
-	COUNT_GRANT_DECADENCE_RED = 0,
-	DUKE_GRANT_DECADENCE_RED = 0,
-	KING_GRANT_DECADENCE_RED = 0,
-	EMPEROR_GRANT_DECADENCE_RED = 0,
+	BARON_GRANT_DECADENCE_RED = 0.0025,
+	COUNT_GRANT_DECADENCE_RED = 0.01,
+	DUKE_GRANT_DECADENCE_RED = 0.02,
+	KING_GRANT_DECADENCE_RED = 0.05,
+	EMPEROR_GRANT_DECADENCE_RED = 0.1,
 	
 	CLAIM_VASSAL_TITLE_COST_MOD = 0.75,
 	CLAIM_DE_JURE_TITLE_COST_MOD = 0.5,
@@ -717,8 +717,8 @@ NEconomy = {
 	BISHOP_TAX_TO_POPE_FACTOR = 0.1,				-- Bishops only pay half the tax to the Pope if they are loyal to him
 	BISHOP_TAX_TO_ANTI_POPE_FACTOR = 0.05,			-- Bishops only pay a quarter taxes to an Anti-Pope if they are loyal to him	
 	DECADENCE_MODIFIER = 0.1,						-- Maximum effect of decadence, positive for low dec, negative for high
-	DECADENCE_PER_WEEK_OF_COMBAT = 0,				-- Decadence lost per 7 days of combat, for each participant in the combat
-	DECADENCE_PER_WEEK_OF_SIEGE = 0,				-- Decadence lost per 7 days of siege, for each participant in the siege
+	DECADENCE_PER_WEEK_OF_COMBAT = -0.01,				-- Decadence lost per 7 days of combat, for each participant in the combat
+	DECADENCE_PER_WEEK_OF_SIEGE = -0.0016,				-- Decadence lost per 7 days of siege, for each participant in the siege
 	MUSLIM_MUSLIM_PROVINCE_TAX_MOD = -0.1,			-- Muslims get less tax from muslim provinces
 	MUSLIM_NONMUSLIM_PROVINCE_TAX_MOD = 0.25,		-- Muslims get more tax from non-muslim provinces
 	MAX_TRIBAL_LIEGE_TAX = 0.2,						-- Default max tribal liege tax income if any
