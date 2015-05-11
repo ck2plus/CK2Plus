@@ -1,0 +1,1773 @@
+namespace = Plus
+
+#reserved: Plus.1850 to Plus.1899
+
+#######################################
+# IMPERIAL EVENTS
+# Written by Rylock
+#######################################
+
+### MAINTENANCE EVENTS
+
+# Main decadence event upon an imperial title being inherited/usurped
+character_event = {
+	id = Plus.1850
+	
+	hide_window = yes
+	is_triggered_only = yes
+	
+	trigger = {
+		FROM = {
+			tier = EMPEROR
+			temporary = no
+			is_tribal = no
+			is_primary_holder_title = yes
+		}
+		NOT = { religion_group = muslim }
+	}
+	
+	immediate = {
+		character_event = { id = Plus.1851 days = 1 }
+		
+		# remove the decadence modifier from the former owner, if alive
+		FROMFROM = {
+			if = {
+				limit = {
+					is_alive = yes
+					lower_tier_than = EMPEROR
+				}
+				remove_character_modifier = imperial_decadence_1
+				remove_character_modifier = imperial_decadence_2
+				remove_character_modifier = imperial_decadence_3
+				remove_character_modifier = imperial_decadence_4
+				remove_character_modifier = imperial_decadence_5
+				remove_character_modifier = imperial_decadence_6
+				remove_character_modifier = imperial_decadence_7
+				remove_character_modifier = imperial_decadence_8
+			}
+		}
+	}
+}
+
+character_event = {
+	id = Plus.1851
+	
+	hide_window = yes
+	is_triggered_only = yes
+	
+	trigger = {
+		has_landed_title = FROMFROM
+	}
+	
+	immediate = {
+		# first look for other held imperial titles which have higher decadence, and copy their value over
+		any_demesne_title = {
+			limit = {
+				tier = EMPEROR
+				is_primary_holder_title = no
+				check_variable = { which = "imperial_decadence" which = FROMFROM }
+			}
+			FROMFROM = { set_variable = { which = "imperial_decadence" which = PREV } }
+		}
+		
+		FROMFROM = {
+			# then reset the decadence value to 0, in case it's negative
+			if = {
+				limit = { NOT = { check_variable = { which = "imperial_decadence" value = 0.5 } } }
+				set_variable = { which = "imperial_decadence" value = 0 }
+			}
+			
+			# then increase the variable by 1 (the base minimum)
+			change_variable = { which = "imperial_decadence" value = 1 }
+			
+			# increase by one if this is a continuing dynasty
+			if = {
+				limit = { ROOT = { dynasty = FROMFROMFROM } }
+				change_variable = { which = "imperial_decadence" value = 1 }
+			}
+			
+			# increase more if this is an usurpation
+			if = {
+				limit = {
+					FROMFROMFROM = {
+						is_alive = yes
+						has_claim = FROMFROM
+					}
+				}
+				change_variable = { which = "imperial_decadence" value = 2 }
+			}
+			
+			# Byzantium/Roman Empire/HRE gets an additional +1
+			if = {
+				limit = {
+					FROMFROM = {
+						OR = {
+							title = e_byzantium
+							title = e_roman_empire
+							title = e_hre
+						}
+					}
+				}
+				change_variable = { which = "imperial_decadence" value = 1 }
+			}
+			
+			# then determine how much the realm size should change it
+			set_variable = { which = "imperial_realm_size" value = 0 }
+			if = {
+				limit = { ROOT = { has_horde_culture = yes } }
+				change_variable = { which = "imperial_realm_size" value = -2 }
+			}
+			if = {
+				limit = { ROOT = { NOT = { realm_size = 100 } } }
+				change_variable = { which = "imperial_realm_size" value = -1 }
+			}
+			if = {
+				limit = { ROOT = { realm_size = 150 } }
+				change_variable = { which = "imperial_realm_size" value = 1 }
+			}
+			if = {
+				limit = { ROOT = { realm_size = 200 } }
+				change_variable = { which = "imperial_realm_size" value = 1 }
+			}
+			if = {
+				limit = { ROOT = { realm_size = 250 } }
+				change_variable = { which = "imperial_realm_size" value = 1 }
+			}
+			if = {
+				limit = { ROOT = { realm_size = 300 } }
+				change_variable = { which = "imperial_realm_size" value = 1 }
+			}
+			if = {
+				limit = { ROOT = { realm_size = 350 } }
+				change_variable = { which = "imperial_realm_size" value = 1 }
+			}
+			if = {
+				limit = { ROOT = { realm_size = 400 } }
+				change_variable = { which = "imperial_realm_size" value = 1 }
+			}
+			if = {
+				limit = { ROOT = { realm_size = 450 } }
+				change_variable = { which = "imperial_realm_size" value = 1 }
+			}
+			if = {
+				limit = { ROOT = { realm_size = 500 } }
+				change_variable = { which = "imperial_realm_size" value = 1 }
+			}
+			if = {
+				limit = { has_law = crown_authority_1 }
+				change_variable = { which = "imperial_realm_size" value = 1 }
+			}
+			if = {
+				limit = { has_law = crown_authority_2 }
+				change_variable = { which = "imperial_realm_size" value = 2 }
+			}
+			if = {
+				limit = { has_law = crown_authority_3 }
+				change_variable = { which = "imperial_realm_size" value = 3 }
+			}
+			if = {
+				limit = { has_law = crown_authority_4 }
+				change_variable = { which = "imperial_realm_size" value = 4 }
+			}
+			change_variable = { which = "imperial_decadence" which = "imperial_realm_size" }
+			set_variable = { which = "imperial_realm_size" value = 0 }
+		}
+		
+		# change the decadence modifier
+		character_event = { id = Plus.1852 }
+	}
+}
+
+# Notification of decadence change and adding the proper decadence modifier
+character_event = {
+	id = Plus.1852
+	desc = EVTDESC_Plus_1852
+	picture = GFX_evt_council
+	
+	is_triggered_only = yes
+	notification = yes
+	
+	immediate = {
+		# reset the decadence value to 0, in case it's negative
+		if = {
+			limit = { primary_title = { NOT = { check_variable = { which = "imperial_decadence" value = 0.5 } } } }
+			primary_title = { set_variable = { which = "imperial_decadence" value = 0 } }
+		}
+		
+		# remove old decadence modifier and add the new one
+		remove_character_modifier = imperial_decadence_1
+		remove_character_modifier = imperial_decadence_2
+		remove_character_modifier = imperial_decadence_3
+		remove_character_modifier = imperial_decadence_4
+		remove_character_modifier = imperial_decadence_5
+		remove_character_modifier = imperial_decadence_6
+		remove_character_modifier = imperial_decadence_7
+		remove_character_modifier = imperial_decadence_8
+		
+		if = {
+			limit = {
+				primary_title = {
+					check_variable = { which = "imperial_decadence" value = 10 }
+					NOT = { check_variable = { which = "imperial_decadence" value = 21 } }
+				}
+			}
+			add_character_modifier = {
+				name = imperial_decadence_1
+				duration = -1
+			}
+		} 
+		if = {
+			limit = {
+				primary_title = {
+					check_variable = { which = "imperial_decadence" value = 21 }
+					NOT = { check_variable = { which = "imperial_decadence" value = 31 } }
+				}
+			}
+			add_character_modifier = {
+				name = imperial_decadence_2
+				duration = -1
+			}
+		}
+		if = {
+			limit = {
+				primary_title = {
+					check_variable = { which = "imperial_decadence" value = 31 }
+					NOT = { check_variable = { which = "imperial_decadence" value = 41 } }
+				}
+			}
+			add_character_modifier = {
+				name = imperial_decadence_3
+				duration = -1
+			}
+		}   
+		if = {
+			limit = {
+				primary_title = {
+					check_variable = { which = "imperial_decadence" value = 41 }
+					NOT = { check_variable = { which = "imperial_decadence" value = 51 } }
+				}
+			}
+			add_character_modifier = {
+				name = imperial_decadence_4
+				duration = -1
+			}
+		}  
+		if = {
+			limit = {
+				primary_title = {
+					check_variable = { which = "imperial_decadence" value = 51 }
+					NOT = { check_variable = { which = "imperial_decadence" value = 61 } }
+				}
+			}
+			add_character_modifier = {
+				name = imperial_decadence_5
+				duration = -1
+			}
+		}   
+		if = {
+			limit = {
+				primary_title = {
+					check_variable = { which = "imperial_decadence" value = 61 }
+					NOT = { check_variable = { which = "imperial_decadence" value = 71 } }
+				}
+			}
+			add_character_modifier = {
+				name = imperial_decadence_6
+				duration = -1
+			}
+		}    
+		if = {
+			limit = {
+				primary_title = {
+					check_variable = { which = "imperial_decadence" value = 71 }
+					NOT = { check_variable = { which = "imperial_decadence" value = 81 } }
+				}
+			}
+			add_character_modifier = {
+				name = imperial_decadence_7
+				duration = -1
+			}
+		}     
+		if = {
+			limit = {
+				primary_title = {
+					check_variable = { which = "imperial_decadence" value = 81 }
+				}             
+			}
+			add_character_modifier = {
+				name = imperial_decadence_8
+				duration = -1
+			}
+		}
+	}
+	
+	option = {
+		name = "OK"
+	}
+}
+
+# The emperor inherits another imperial title -- but can only keep one
+character_event = {
+	id = Plus.1853
+	
+	hide_window = yes
+	is_triggered_only = yes
+	
+	trigger = {
+		FROM = {
+			tier = EMPEROR
+			temporary = no
+		}
+		any_demesne_title = {
+			tier = EMPEROR
+			temporary = no
+			NOT = { title = FROM }
+		}
+	}
+	
+	immediate = {
+		random_demesne_title = {
+			limit = {
+				tier = EMPEROR
+				temporary = no
+				NOT = { title = FROM }
+			}
+			save_event_target_as = current_title
+		}
+		character_event = { id = Plus.1854 days = 7 }
+	}
+}
+
+character_event = {
+	id = Plus.1854
+	desc = EVTDESC_Plus_1854
+	picture = GFX_evt_coronation
+	
+	is_triggered_only = yes
+	
+	trigger = {
+		has_landed_title = FROMFROM
+		has_landed_title = event_target:current_title
+	}
+	
+	option = {
+		name = EVTOPTA_Plus_1854 # I will keep my current title
+		ai_chance = {
+			factor = 50
+			modifier = {
+				factor = 0
+				FROMFROM = { culture = ROOT }
+			}
+			modifier = {
+				factor = 0.1
+				FROMFROM = {
+					capital_scope = { culture = ROOT }
+				}
+			}
+		}
+		hidden_tooltip = {
+			any_vassal = { set_defacto_liege = ROOT }
+		}
+		if = {
+			limit = { event_target:current_title = { is_landless_type_title = no } }
+			event_target:current_title = { destroy_landed_title = THIS }
+		}
+		if = {
+			limit = { event_target:current_title = { is_landless_type_title = yes } }
+			event_target:current_title = { unsafe_destroy_landed_title = THIS }
+		}
+	}
+	option = {
+		name = EVTOPTB_Plus_1854 # I will assume the new title
+		ai_chance = {
+			factor = 20
+			modifier = {
+				factor = 0
+				event_target:current_title = { culture = ROOT }
+			}
+			modifier = {
+				factor = 0.1
+				event_target:current_title = {
+					capital_scope = { culture = ROOT }
+				}
+			}
+		}
+		hidden_tooltip = {
+			any_vassal = { set_defacto_liege = ROOT }
+		}
+		if = {
+			limit = { FROMFROM = { is_landless_type_title = no } }
+			FROMFROM = { destroy_landed_title = THIS }
+		}
+		if = {
+			limit = { FROMFROM = { is_landless_type_title = yes } }
+			FROMFROM = { unsafe_destroy_landed_title = THIS }
+		}
+	}
+}
+
+### RANDOM EVENTS
+
+# Emperor/Regent is Just
+character_event = {
+	id = Plus.1855
+	picture = GFX_evt_throne_room
+	
+	desc = {
+		text = EVTDESC_Plus_1855A
+		trigger = { ROOT = { has_regent = no } }
+	}
+	desc = {
+		text = EVTDESC_Plus_1855B
+		trigger = { ROOT = { has_regent = yes } }
+	}
+	
+	is_triggered_only = yes
+	major = yes
+	
+	major_trigger = {
+		OR = {
+			character = ROOT
+			same_realm = ROOT
+		}
+	}
+	
+	trigger = {
+		is_tribal = no
+		higher_real_tier_than = KING
+		primary_title = { check_variable = { which = "imperial_decadence" value = 1 } }
+		OR = {
+			AND = {
+				has_regent = no
+				trait = just
+			}
+			AND = {
+				has_regent = yes
+				NOT = { trait = arbitrary }
+				regent = { trait = just }
+			}
+		}
+		NOT = {
+			religion_group = muslim
+			has_character_modifier = decadence_event_timer
+		}
+	}
+	
+	weight_multiplier = {
+		days = 1
+		modifier = {
+			factor = 0.5
+			NOT = { primary_title = { check_variable = { which = "imperial_decadence" value = 10 } } }
+		}
+		modifier = {
+			factor = 2.0
+			primary_title = { check_variable = { which = "imperial_decadence" value = 30 } }
+		}
+		modifier = {
+			factor = 2.0
+			primary_title = { check_variable = { which = "imperial_decadence" value = 60 } }
+		}
+	}
+	
+	option = {
+		name = OK
+		ROOT = { custom_tooltip = { text = IMPERIAL_DECADENCE_MINUS_1 } }
+		if = {
+			limit = { character = ROOT }
+			hidden_tooltip = {
+				primary_title = { change_variable = { which = "imperial_decadence" value = -1 } }
+				character_event = { id = Plus.1852 } # change the decadence modifier
+				add_character_modifier = {
+					name = decadence_event_timer
+					hidden = yes
+					duration = 1825
+				}
+			}
+		}
+	}
+}
+
+# Emperor/Regent is Arbitrary
+character_event = {
+	id = Plus.1856
+	picture = GFX_evt_throne_room
+	
+	desc = {
+		text = EVTDESC_Plus_1856A
+		trigger = { ROOT = { has_regent = no } }
+	}
+	desc = {
+		text = EVTDESC_Plus_1856B
+		trigger = { ROOT = { has_regent = yes } }
+	}
+	
+	is_triggered_only = yes
+	major = yes
+	
+	major_trigger = {
+		OR = {
+			character = ROOT
+			same_realm = ROOT
+		}
+	}
+	
+	trigger = {
+		is_tribal = no
+		higher_real_tier_than = KING
+		primary_title = { NOT = { check_variable = { which = "imperial_decadence" value = 100 } } }
+		OR = {
+			AND = {
+				has_regent = no
+				trait = arbitrary
+			}
+			AND = {
+				has_regent = yes
+				NOT = { trait = just }
+				regent = { trait = arbitrary }
+			}
+		}
+		NOT = {
+			religion_group = muslim
+			has_character_modifier = decadence_event_timer
+		}
+	}
+	
+	weight_multiplier = {
+		days = 1
+		modifier = {
+			factor = 2.0
+			has_regent = yes
+		}
+		modifier = {
+			factor = 2.0
+			NOT = { primary_title = { check_variable = { which = "imperial_decadence" value = 10 } } }
+		}
+		modifier = {
+			factor = 0.75
+			primary_title = { check_variable = { which = "imperial_decadence" value = 30 } }
+		}
+		modifier = {
+			factor = 0.75
+			primary_title = { check_variable = { which = "imperial_decadence" value = 60 } }
+		}
+		modifier = {
+			factor = 0.5
+			primary_title = { check_variable = { which = "imperial_decadence" value = 90 } }
+		}
+	}
+	
+	option = {
+		name = OK
+		ROOT = { custom_tooltip = { text = IMPERIAL_DECADENCE_PLUS_1 } }
+		if = {
+			limit = { character = ROOT }
+			hidden_tooltip = {
+				primary_title = { change_variable = { which = "imperial_decadence" value = 1 } }
+				character_event = { id = Plus.1852 } # change the decadence modifier
+				add_character_modifier = {
+					name = decadence_event_timer
+					hidden = yes
+					duration = 1825
+				}
+			}
+		}
+	}
+}
+
+# Emperor/Regent is Diligent
+character_event = {
+	id = Plus.1857
+	picture = GFX_evt_throne_room
+	
+	desc = {
+		text = EVTDESC_Plus_1857A
+		trigger = { ROOT = { has_regent = no } }
+	}
+	desc = {
+		text = EVTDESC_Plus_1857B
+		trigger = { ROOT = { has_regent = yes } }
+	}
+	
+	is_triggered_only = yes
+	major = yes
+	
+	major_trigger = {
+		OR = {
+			character = ROOT
+			same_realm = ROOT
+		}
+	}
+	
+	trigger = {
+		is_tribal = no
+		higher_real_tier_than = KING
+		primary_title = { check_variable = { which = "imperial_decadence" value = 1 } }
+		OR = {
+			AND = {
+				has_regent = no
+				trait = diligent
+			}
+			AND = {
+				has_regent = yes
+				NOT = { trait = slothful }
+				regent = { trait = diligent }
+			}
+		}
+		NOT = {
+			religion_group = muslim
+			has_character_modifier = decadence_event_timer
+		}
+	}
+	
+	weight_multiplier = {
+		days = 1
+		modifier = {
+			factor = 0.5
+			NOT = { primary_title = { check_variable = { which = "imperial_decadence" value = 10 } } }
+		}
+		modifier = {
+			factor = 2.0
+			primary_title = { check_variable = { which = "imperial_decadence" value = 30 } }
+		}
+		modifier = {
+			factor = 2.0
+			primary_title = { check_variable = { which = "imperial_decadence" value = 60 } }
+		}
+	}
+	
+	option = {
+		name = OK
+		ROOT = { custom_tooltip = { text = IMPERIAL_DECADENCE_MINUS_1 } }
+		if = {
+			limit = { character = ROOT }
+			hidden_tooltip = {
+				primary_title = { change_variable = { which = "imperial_decadence" value = -1 } }
+				character_event = { id = Plus.1852 } # change the decadence modifier
+				add_character_modifier = {
+					name = decadence_event_timer
+					hidden = yes
+					duration = 1825
+				}
+			}
+		}
+	}
+}
+
+# Emperor/Regent is Slothful
+character_event = {
+	id = Plus.1858
+	picture = GFX_evt_throne_room
+	
+	desc = {
+		text = EVTDESC_Plus_1858A
+		trigger = { ROOT = { has_regent = no } }
+	}
+	desc = {
+		text = EVTDESC_Plus_1858B
+		trigger = { ROOT = { has_regent = yes } }
+	}
+	
+	is_triggered_only = yes
+	major = yes
+	
+	major_trigger = {
+		OR = {
+			character = ROOT
+			same_realm = ROOT
+		}
+	}
+	
+	trigger = {
+		is_tribal = no
+		higher_real_tier_than = KING
+		primary_title = { NOT = { check_variable = { which = "imperial_decadence" value = 100 } } }
+		OR = {
+			AND = {
+				has_regent = no
+				trait = slothful
+			}
+			AND = {
+				has_regent = yes
+				NOT = { trait = diligent }
+				regent = { trait = slothful }
+			}
+		}
+		NOT = {
+			religion_group = muslim
+			has_character_modifier = decadence_event_timer
+		}
+	}
+	
+	weight_multiplier = {
+		days = 1
+		modifier = {
+			factor = 2.0
+			has_regent = yes
+		}
+		modifier = {
+			factor = 2.0
+			NOT = { primary_title = { check_variable = { which = "imperial_decadence" value = 10 } } }
+		}
+		modifier = {
+			factor = 0.75
+			primary_title = { check_variable = { which = "imperial_decadence" value = 30 } }
+		}
+		modifier = {
+			factor = 0.75
+			primary_title = { check_variable = { which = "imperial_decadence" value = 60 } }
+		}
+		modifier = {
+			factor = 0.5
+			primary_title = { check_variable = { which = "imperial_decadence" value = 90 } }
+		}
+	}
+	
+	option = {
+		name = OK
+		ROOT = { custom_tooltip = { text = IMPERIAL_DECADENCE_PLUS_1 } }
+		if = {
+			limit = { character = ROOT }
+			hidden_tooltip = {
+				primary_title = { change_variable = { which = "imperial_decadence" value = 1 } }
+				character_event = { id = Plus.1852 } # change the decadence modifier
+				add_character_modifier = {
+					name = decadence_event_timer
+					hidden = yes
+					duration = 1825
+				}
+			}
+		}
+	}
+}
+
+# Emperor/Regent is Hedonist
+character_event = {
+	id = Plus.1859
+	picture = GFX_evt_brothel
+	
+	desc = {
+		text = EVTDESC_Plus_1859A
+		trigger = { ROOT = { has_regent = no } }
+	}
+	desc = {
+		text = EVTDESC_Plus_1859B
+		trigger = { ROOT = { has_regent = yes } }
+	}
+	
+	is_triggered_only = yes
+	major = yes
+	
+	major_trigger = {
+		OR = {
+			character = ROOT
+			same_realm = ROOT
+		}
+	}
+	
+	trigger = {
+		is_tribal = no
+		higher_real_tier_than = KING
+		primary_title = { NOT = { check_variable = { which = "imperial_decadence" value = 100 } } }
+		OR = {
+			AND = {
+				has_regent = no
+				trait = hedonist
+			}
+			AND = {
+				has_regent = yes
+				regent = { trait = hedonist }
+			}
+		}
+		NOT = {
+			religion_group = muslim
+			has_character_modifier = decadence_event_timer
+		}
+	}
+	
+	weight_multiplier = {
+		days = 1
+		modifier = {
+			factor = 2.0
+			has_regent = yes
+		}
+		modifier = {
+			factor = 2.0
+			NOT = { primary_title = { check_variable = { which = "imperial_decadence" value = 10 } } }
+		}
+		modifier = {
+			factor = 0.75
+			primary_title = { check_variable = { which = "imperial_decadence" value = 30 } }
+		}
+		modifier = {
+			factor = 0.75
+			primary_title = { check_variable = { which = "imperial_decadence" value = 60 } }
+		}
+		modifier = {
+			factor = 0.5
+			primary_title = { check_variable = { which = "imperial_decadence" value = 90 } }
+		}
+	}
+	
+	option = {
+		name = OK
+		ROOT = { custom_tooltip = { text = IMPERIAL_DECADENCE_PLUS_1 } }
+		if = {
+			limit = { character = ROOT }
+			hidden_tooltip = {
+				primary_title = { change_variable = { which = "imperial_decadence" value = 1 } }
+				character_event = { id = Plus.1852 } # change the decadence modifier
+				add_character_modifier = {
+					name = decadence_event_timer
+					hidden = yes
+					duration = 1825
+				}
+			}
+		}
+	}
+}
+
+# Emperor/Regent is Cruel/Impaler
+character_event = {
+	id = Plus.1860
+	picture = GFX_evt_brothel
+	
+	desc = {
+		text = EVTDESC_Plus_1860A
+		trigger = { ROOT = { has_regent = no } }
+	}
+	desc = {
+		text = EVTDESC_Plus_1860B
+		trigger = { ROOT = { has_regent = yes } }
+	}
+	
+	is_triggered_only = yes
+	major = yes
+	
+	major_trigger = {
+		OR = {
+			character = ROOT
+			same_realm = ROOT
+		}
+	}
+	
+	trigger = {
+		is_tribal = no
+		higher_real_tier_than = KING
+		primary_title = { NOT = { check_variable = { which = "imperial_decadence" value = 100 } } }
+		OR = {
+			AND = {
+				has_regent = no
+				OR = {
+					trait = cruel
+					trait = impaler
+				}
+			}
+			AND = {
+				has_regent = yes
+				NOT = { trait = kind }
+				regent = {
+					OR = {
+						trait = cruel
+						trait = impaler
+					}
+				}
+			}
+		}
+		NOT = {
+			religion_group = muslim
+			has_character_modifier = decadence_event_timer
+		}
+	}
+	
+	weight_multiplier = {
+		days = 1
+		modifier = {
+			factor = 2.0
+			has_regent = yes
+		}
+		modifier = {
+			factor = 2.0
+			NOT = { primary_title = { check_variable = { which = "imperial_decadence" value = 10 } } }
+		}
+		modifier = {
+			factor = 0.75
+			primary_title = { check_variable = { which = "imperial_decadence" value = 30 } }
+		}
+		modifier = {
+			factor = 0.75
+			primary_title = { check_variable = { which = "imperial_decadence" value = 60 } }
+		}
+		modifier = {
+			factor = 0.5
+			primary_title = { check_variable = { which = "imperial_decadence" value = 90 } }
+		}
+	}
+	
+	option = {
+		name = OK
+		ROOT = { custom_tooltip = { text = IMPERIAL_DECADENCE_PLUS_1 } }
+		if = {
+			limit = { character = ROOT }
+			hidden_tooltip = {
+				primary_title = { change_variable = { which = "imperial_decadence" value = 1 } }
+				character_event = { id = Plus.1852 } # change the decadence modifier
+				add_character_modifier = {
+					name = decadence_event_timer
+					hidden = yes
+					duration = 1825
+				}
+			}
+		}
+	}
+}
+
+# Emperor/Regent is Quick/Genius
+character_event = {
+	id = Plus.1861
+	picture = GFX_evt_throne_room
+	
+	desc = {
+		text = EVTDESC_Plus_1861A
+		trigger = { ROOT = { has_regent = no } }
+	}
+	desc = {
+		text = EVTDESC_Plus_1861B
+		trigger = { ROOT = { has_regent = yes } }
+	}
+	
+	is_triggered_only = yes
+	major = yes
+	
+	major_trigger = {
+		OR = {
+			character = ROOT
+			same_realm = ROOT
+		}
+	}
+	
+	trigger = {
+		is_tribal = no
+		higher_real_tier_than = KING
+		primary_title = { check_variable = { which = "imperial_decadence" value = 1 } }
+		OR = {
+			AND = {
+				has_regent = no
+				OR = {
+					trait = quick
+					trait = genius
+				}
+			}
+			AND = {
+				has_regent = yes
+				regent = {
+					OR = {
+						trait = quick
+						trait = genius
+					}
+				}
+			}
+		}
+		NOT = {
+			religion_group = muslim
+			has_character_modifier = decadence_event_timer
+		}
+	}
+	
+	weight_multiplier = {
+		days = 1
+		modifier = {
+			factor = 2.0
+			has_regent = no
+			trait = genius
+		}
+		modifier = {
+			factor = 2.0
+			has_regent = yes
+			regent = { trait = genius }
+		}
+		modifier = {
+			factor = 0.5
+			NOT = { primary_title = { check_variable = { which = "imperial_decadence" value = 10 } } }
+		}
+		modifier = {
+			factor = 2.0
+			primary_title = { check_variable = { which = "imperial_decadence" value = 30 } }
+		}
+		modifier = {
+			factor = 2.0
+			primary_title = { check_variable = { which = "imperial_decadence" value = 60 } }
+		}
+	}
+	
+	option = {
+		name = OK
+		ROOT = { custom_tooltip = { text = IMPERIAL_DECADENCE_MINUS_1 } }
+		if = {
+			limit = { character = ROOT }
+			hidden_tooltip = {
+				primary_title = { change_variable = { which = "imperial_decadence" value = -1 } }
+				character_event = { id = Plus.1852 } # change the decadence modifier
+				add_character_modifier = {
+					name = decadence_event_timer
+					hidden = yes
+					duration = 1825
+				}
+			}
+		}
+	}
+}
+
+# Emperor/Regent is Inbred/Imbecile/Slow
+character_event = {
+	id = Plus.1862
+	picture = GFX_evt_throne_room
+	
+	desc = {
+		text = EVTDESC_Plus_1862A
+		trigger = { ROOT = { has_regent = no } }
+	}
+	desc = {
+		text = EVTDESC_Plus_1862B
+		trigger = { ROOT = { has_regent = yes } }
+	}
+	
+	is_triggered_only = yes
+	major = yes
+	
+	major_trigger = {
+		OR = {
+			character = ROOT
+			same_realm = ROOT
+		}
+	}
+	
+	trigger = {
+		is_tribal = no
+		higher_real_tier_than = KING
+		primary_title = { NOT = { check_variable = { which = "imperial_decadence" value = 100 } } }
+		OR = {
+			AND = {
+				has_regent = no
+				OR = {
+					trait = slow
+					trait = imbecile
+					trait = inbred
+				}
+			}
+			AND = {
+				has_regent = yes
+				regent = {
+					OR = {
+						trait = slow
+						trait = imbecile
+						trait = inbred
+					}
+				}
+			}
+		}
+		NOT = {
+			religion_group = muslim
+			has_character_modifier = decadence_event_timer
+		}
+	}
+	
+	weight_multiplier = {
+		days = 1
+		modifier = {
+			factor = 2.0
+			has_regent = no
+			trait = imbecile
+		}
+		modifier = {
+			factor = 2.0
+			has_regent = yes
+			regent = { trait = imbecile }
+		}
+		modifier = {
+			factor = 1.5
+			has_regent = no
+			trait = inbred
+		}
+		modifier = {
+			factor = 1.5
+			has_regent = yes
+			regent = { trait = inbred }
+		}
+		modifier = {
+			factor = 2.0
+			has_regent = yes
+		}
+		modifier = {
+			factor = 2.0
+			NOT = { primary_title = { check_variable = { which = "imperial_decadence" value = 10 } } }
+		}
+		modifier = {
+			factor = 0.75
+			primary_title = { check_variable = { which = "imperial_decadence" value = 30 } }
+		}
+		modifier = {
+			factor = 0.75
+			primary_title = { check_variable = { which = "imperial_decadence" value = 60 } }
+		}
+		modifier = {
+			factor = 0.5
+			primary_title = { check_variable = { which = "imperial_decadence" value = 90 } }
+		}
+	}
+	
+	option = {
+		name = OK
+		ROOT = { custom_tooltip = { text = IMPERIAL_DECADENCE_PLUS_1 } }
+		if = {
+			limit = { character = ROOT }
+			hidden_tooltip = {
+				primary_title = { change_variable = { which = "imperial_decadence" value = 1 } }
+				character_event = { id = Plus.1852 } # change the decadence modifier
+				add_character_modifier = {
+					name = decadence_event_timer
+					hidden = yes
+					duration = 1825
+				}
+			}
+		}
+	}
+}
+
+# Emperor is Incapable
+character_event = {
+	id = Plus.1863
+	picture = GFX_evt_throne_room
+	desc = EVTDESC_Plus_1863
+	
+	is_triggered_only = yes
+	major = yes
+	
+	major_trigger = {
+		OR = {
+			character = ROOT
+			same_realm = ROOT
+		}
+	}
+	
+	trigger = {
+		is_tribal = no
+		higher_real_tier_than = KING
+		primary_title = { NOT = { check_variable = { which = "imperial_decadence" value = 100 } } }
+		trait = incapable
+		NOT = {
+			religion_group = muslim
+			has_character_modifier = decadence_event_timer
+		}
+	}
+	
+	weight_multiplier = {
+		days = 1
+		modifier = {
+			factor = 2.0
+			NOT = { primary_title = { check_variable = { which = "imperial_decadence" value = 10 } } }
+		}
+		modifier = {
+			factor = 0.75
+			primary_title = { check_variable = { which = "imperial_decadence" value = 30 } }
+		}
+		modifier = {
+			factor = 0.75
+			primary_title = { check_variable = { which = "imperial_decadence" value = 60 } }
+		}
+		modifier = {
+			factor = 0.5
+			primary_title = { check_variable = { which = "imperial_decadence" value = 90 } }
+		}
+	}
+	
+	option = {
+		name = OK
+		ROOT = { custom_tooltip = { text = IMPERIAL_DECADENCE_PLUS_1 } }
+		if = {
+			limit = { character = ROOT }
+			hidden_tooltip = {
+				primary_title = { change_variable = { which = "imperial_decadence" value = 1 } }
+				character_event = { id = Plus.1852 } # change the decadence modifier
+				add_character_modifier = {
+					name = decadence_event_timer
+					hidden = yes
+					duration = 1825
+				}
+			}
+		}
+	}
+}
+
+# Emperor/Regent is Drunkard
+character_event = {
+	id = Plus.1864
+	picture = GFX_evt_dancing
+	
+	desc = {
+		text = EVTDESC_Plus_1864A
+		trigger = { ROOT = { has_regent = no } }
+	}
+	desc = {
+		text = EVTDESC_Plus_1864B
+		trigger = { ROOT = { has_regent = yes } }
+	}
+	
+	is_triggered_only = yes
+	major = yes
+	
+	major_trigger = {
+		OR = {
+			character = ROOT
+			same_realm = ROOT
+		}
+	}
+	
+	trigger = {
+		is_tribal = no
+		higher_real_tier_than = KING
+		primary_title = { NOT = { check_variable = { which = "imperial_decadence" value = 100 } } }
+		OR = {
+			AND = {
+				has_regent = no
+				trait = drunkard
+			}
+			AND = {
+				has_regent = yes
+				regent = { trait = drunkard }
+			}
+		}
+		NOT = {
+			religion_group = muslim
+			has_character_modifier = decadence_event_timer
+		}
+	}
+	
+	weight_multiplier = {
+		days = 1
+		modifier = {
+			factor = 2.0
+			has_regent = yes
+		}
+		modifier = {
+			factor = 2.0
+			NOT = { primary_title = { check_variable = { which = "imperial_decadence" value = 10 } } }
+		}
+		modifier = {
+			factor = 0.75
+			primary_title = { check_variable = { which = "imperial_decadence" value = 30 } }
+		}
+		modifier = {
+			factor = 0.75
+			primary_title = { check_variable = { which = "imperial_decadence" value = 60 } }
+		}
+		modifier = {
+			factor = 0.5
+			primary_title = { check_variable = { which = "imperial_decadence" value = 90 } }
+		}
+	}
+	
+	option = {
+		name = OK
+		ROOT = { custom_tooltip = { text = IMPERIAL_DECADENCE_PLUS_1 } }
+		if = {
+			limit = { character = ROOT }
+			hidden_tooltip = {
+				primary_title = { change_variable = { which = "imperial_decadence" value = 1 } }
+				character_event = { id = Plus.1852 } # change the decadence modifier
+				add_character_modifier = {
+					name = decadence_event_timer
+					hidden = yes
+					duration = 1825
+				}
+			}
+		}
+	}
+}
+
+# Emperor/Regent is Lunatic
+character_event = {
+	id = Plus.1865
+	picture = GFX_evt_lunatic
+	
+	desc = {
+		text = EVTDESC_Plus_1865A
+		trigger = { ROOT = { has_regent = no } }
+	}
+	desc = {
+		text = EVTDESC_Plus_1865B
+		trigger = { ROOT = { has_regent = yes } }
+	}
+	
+	is_triggered_only = yes
+	major = yes
+	
+	major_trigger = {
+		OR = {
+			character = ROOT
+			same_realm = ROOT
+		}
+	}
+	
+	trigger = {
+		is_tribal = no
+		higher_real_tier_than = KING
+		primary_title = { NOT = { check_variable = { which = "imperial_decadence" value = 100 } } }
+		OR = {
+			AND = {
+				has_regent = no
+				trait = lunatic
+			}
+			AND = {
+				has_regent = yes
+				regent = { trait = lunatic }
+			}
+		}
+		NOT = {
+			religion_group = muslim
+			has_character_modifier = decadence_event_timer
+		}
+	}
+	
+	weight_multiplier = {
+		days = 1
+		modifier = {
+			factor = 2.0
+			has_regent = yes
+		}
+		modifier = {
+			factor = 2.0
+			NOT = { primary_title = { check_variable = { which = "imperial_decadence" value = 10 } } }
+		}
+		modifier = {
+			factor = 0.75
+			primary_title = { check_variable = { which = "imperial_decadence" value = 30 } }
+		}
+		modifier = {
+			factor = 0.75
+			primary_title = { check_variable = { which = "imperial_decadence" value = 60 } }
+		}
+		modifier = {
+			factor = 0.5
+			primary_title = { check_variable = { which = "imperial_decadence" value = 90 } }
+		}
+	}
+	
+	option = {
+		name = OK
+		ROOT = { custom_tooltip = { text = IMPERIAL_DECADENCE_PLUS_1 } }
+		if = {
+			limit = { character = ROOT }
+			hidden_tooltip = {
+				primary_title = { change_variable = { which = "imperial_decadence" value = 1 } }
+				character_event = { id = Plus.1852 } # change the decadence modifier
+				add_character_modifier = {
+					name = decadence_event_timer
+					hidden = yes
+					duration = 1825
+				}
+			}
+		}
+	}
+}
+
+# Emperor/Regent is Possessed
+character_event = {
+	id = Plus.1866
+	picture = GFX_evt_lunatic
+	
+	desc = {
+		text = EVTDESC_Plus_1866A
+		trigger = { ROOT = { has_regent = no } }
+	}
+	desc = {
+		text = EVTDESC_Plus_1866B
+		trigger = { ROOT = { has_regent = yes } }
+	}
+	
+	is_triggered_only = yes
+	major = yes
+	
+	major_trigger = {
+		OR = {
+			character = ROOT
+			same_realm = ROOT
+		}
+	}
+	
+	trigger = {
+		is_tribal = no
+		higher_real_tier_than = KING
+		primary_title = { NOT = { check_variable = { which = "imperial_decadence" value = 100 } } }
+		OR = {
+			AND = {
+				has_regent = no
+				trait = possessed
+			}
+			AND = {
+				has_regent = yes
+				regent = { trait = possessed }
+			}
+		}
+		NOT = {
+			religion_group = muslim
+			has_character_modifier = decadence_event_timer
+		}
+	}
+	
+	weight_multiplier = {
+		days = 1
+		modifier = {
+			factor = 1.5
+			has_regent = no
+			has_character_modifier = voice_of_jesus
+		}
+		modifier = {
+			factor = 1.5
+			has_regent = yes
+			regent = { has_character_modifier = voice_of_jesus }
+		}
+		modifier = {
+			factor = 2.0
+			has_regent = no
+			has_character_modifier = voice_of_satan
+		}
+		modifier = {
+			factor = 2.0
+			has_regent = yes
+			regent = { has_character_modifier = voice_of_satan }
+		}
+		modifier = {
+			factor = 2.0
+			has_regent = yes
+		}
+		modifier = {
+			factor = 2.0
+			NOT = { primary_title = { check_variable = { which = "imperial_decadence" value = 10 } } }
+		}
+		modifier = {
+			factor = 0.75
+			primary_title = { check_variable = { which = "imperial_decadence" value = 30 } }
+		}
+		modifier = {
+			factor = 0.75
+			primary_title = { check_variable = { which = "imperial_decadence" value = 60 } }
+		}
+		modifier = {
+			factor = 0.5
+			primary_title = { check_variable = { which = "imperial_decadence" value = 90 } }
+		}
+	}
+	
+	option = {
+		name = OK
+		ROOT = { custom_tooltip = { text = IMPERIAL_DECADENCE_PLUS_1 } }
+		if = {
+			limit = { character = ROOT }
+			hidden_tooltip = {
+				primary_title = { change_variable = { which = "imperial_decadence" value = 1 } }
+				character_event = { id = Plus.1852 } # change the decadence modifier
+				add_character_modifier = {
+					name = decadence_event_timer
+					hidden = yes
+					duration = 1825
+				}
+			}
+		}
+	}
+}
+
+# Emperor/Regent is Depressed
+character_event = {
+	id = Plus.1867
+	picture = GFX_evt_bad_news
+	
+	desc = {
+		text = EVTDESC_Plus_1867A
+		trigger = { ROOT = { has_regent = no } }
+	}
+	desc = {
+		text = EVTDESC_Plus_1867B
+		trigger = { ROOT = { has_regent = yes } }
+	}
+	
+	is_triggered_only = yes
+	major = yes
+	
+	major_trigger = {
+		OR = {
+			character = ROOT
+			same_realm = ROOT
+		}
+	}
+	
+	trigger = {
+		is_tribal = no
+		higher_real_tier_than = KING
+		primary_title = { NOT = { check_variable = { which = "imperial_decadence" value = 100 } } }
+		OR = {
+			AND = {
+				has_regent = no
+				trait = depressed
+			}
+			AND = {
+				has_regent = yes
+				regent = { trait = depressed }
+			}
+		}
+		NOT = {
+			religion_group = muslim
+			has_character_modifier = decadence_event_timer
+		}
+	}
+	
+	weight_multiplier = {
+		days = 1
+		modifier = {
+			factor = 2.0
+			has_regent = yes
+		}
+		modifier = {
+			factor = 2.0
+			NOT = { primary_title = { check_variable = { which = "imperial_decadence" value = 10 } } }
+		}
+		modifier = {
+			factor = 0.75
+			primary_title = { check_variable = { which = "imperial_decadence" value = 30 } }
+		}
+		modifier = {
+			factor = 0.75
+			primary_title = { check_variable = { which = "imperial_decadence" value = 60 } }
+		}
+		modifier = {
+			factor = 0.5
+			primary_title = { check_variable = { which = "imperial_decadence" value = 90 } }
+		}
+	}
+	
+	option = {
+		name = OK
+		ROOT = { custom_tooltip = { text = IMPERIAL_DECADENCE_PLUS_1 } }
+		if = {
+			limit = { character = ROOT }
+			hidden_tooltip = {
+				primary_title = { change_variable = { which = "imperial_decadence" value = 1 } }
+				character_event = { id = Plus.1852 } # change the decadence modifier
+				add_character_modifier = {
+					name = decadence_event_timer
+					hidden = yes
+					duration = 1825
+				}
+			}
+		}
+	}
+}
+
+# Emperor is a prisoner
+character_event = {
+	id = Plus.1868
+	picture = GFX_evt_into_the_dungeon
+	desc = EVTDESC_Plus_1868
+	
+	is_triggered_only = yes
+	major = yes
+	
+	major_trigger = {
+		OR = {
+			character = ROOT
+			same_realm = ROOT
+		}
+	}
+	
+	trigger = {
+		is_tribal = no
+		higher_real_tier_than = KING
+		primary_title = { NOT = { check_variable = { which = "imperial_decadence" value = 100 } } }
+		prisoner = yes
+		NOT = {
+			religion_group = muslim
+			has_character_modifier = decadence_event_timer
+		}
+	}
+	
+	weight_multiplier = {
+		days = 1
+		modifier = {
+			factor = 2.0
+			NOT = { primary_title = { check_variable = { which = "imperial_decadence" value = 10 } } }
+		}
+		modifier = {
+			factor = 0.75
+			primary_title = { check_variable = { which = "imperial_decadence" value = 30 } }
+		}
+		modifier = {
+			factor = 0.75
+			primary_title = { check_variable = { which = "imperial_decadence" value = 60 } }
+		}
+		modifier = {
+			factor = 0.5
+			primary_title = { check_variable = { which = "imperial_decadence" value = 90 } }
+		}
+	}
+	
+	option = {
+		name = OK
+		ROOT = { custom_tooltip = { text = IMPERIAL_DECADENCE_PLUS_1 } }
+		if = {
+			limit = { character = ROOT }
+			hidden_tooltip = {
+				primary_title = { change_variable = { which = "imperial_decadence" value = 1 } }
+				character_event = { id = Plus.1852 } # change the decadence modifier
+				add_character_modifier = {
+					name = decadence_event_timer
+					hidden = yes
+					duration = 1825
+				}
+			}
+		}
+	}
+}
+
+# Emperor has a capable Steward
+character_event = {
+	id = Plus.1869
+	desc = EVTDESC_Plus_1869
+	picture = GFX_evt_throne_room
+	
+	is_triggered_only = yes
+	major = yes
+	
+	major_trigger = {
+		OR = {
+			character = ROOT
+			same_realm = ROOT
+		}
+	}
+	
+	trigger = {
+		is_tribal = no
+		higher_real_tier_than = KING
+		primary_title = { check_variable = { which = "imperial_decadence" value = 1 } }
+		job_treasurer = { stewardship = 15 }
+		realm_stewardship = 30
+		NOT = {
+			religion_group = muslim
+			has_character_modifier = decadence_event_timer
+		}
+	}
+	
+	weight_multiplier = {
+		days = 1
+		modifier = {
+			factor = 1.5
+			job_treasurer = { stewardship = 20 }
+		}
+		modifier = {
+			factor = 1.5
+			job_treasurer = { stewardship = 25 }
+		}
+		modifier = {
+			factor = 0.5
+			NOT = { primary_title = { check_variable = { which = "imperial_decadence" value = 10 } } }
+		}
+		modifier = {
+			factor = 2.0
+			primary_title = { check_variable = { which = "imperial_decadence" value = 30 } }
+		}
+		modifier = {
+			factor = 2.0
+			primary_title = { check_variable = { which = "imperial_decadence" value = 60 } }
+		}
+	}
+	
+	option = {
+		name = OK
+		ROOT = { custom_tooltip = { text = IMPERIAL_DECADENCE_MINUS_1 } }
+		if = {
+			limit = { character = ROOT }
+			hidden_tooltip = {
+				primary_title = { change_variable = { which = "imperial_decadence" value = -1 } }
+				character_event = { id = Plus.1852 } # change the decadence modifier
+				add_character_modifier = {
+					name = decadence_event_timer
+					hidden = yes
+					duration = 1825
+				}
+			}
+		}
+	}
+}
+
+# Emperor has a lousy Steward
+character_event = {
+	id = Plus.1870
+	desc = EVTDESC_Plus_1870
+	picture = GFX_evt_throne_room
+	
+	is_triggered_only = yes
+	major = yes
+	
+	major_trigger = {
+		OR = {
+			character = ROOT
+			same_realm = ROOT
+		}
+	}
+	
+	trigger = {
+		is_tribal = no
+		higher_real_tier_than = KING
+		primary_title = { NOT = { check_variable = { which = "imperial_decadence" value = 100 } } }
+		any_courtier = { has_job_title = job_treasurer }
+		job_treasurer = { NOT = { stewardship = 10 } }
+		NOT = {
+			religion_group = muslim
+			has_character_modifier = decadence_event_timer
+		}
+	}
+	
+	weight_multiplier = {
+		days = 1
+		modifier = {
+			factor = 1.5
+			job_treasurer = { NOT = { stewardship = 8 } }
+		}
+		modifier = {
+			factor = 1.5
+			job_treasurer = { NOT = { stewardship = 5 } }
+		}
+		modifier = {
+			factor = 2.0
+			NOT = { primary_title = { check_variable = { which = "imperial_decadence" value = 10 } } }
+		}
+		modifier = {
+			factor = 0.75
+			primary_title = { check_variable = { which = "imperial_decadence" value = 30 } }
+		}
+		modifier = {
+			factor = 0.75
+			primary_title = { check_variable = { which = "imperial_decadence" value = 60 } }
+		}
+		modifier = {
+			factor = 0.5
+			primary_title = { check_variable = { which = "imperial_decadence" value = 90 } }
+		}
+	}
+	
+	option = {
+		name = OK
+		ROOT = { custom_tooltip = { text = IMPERIAL_DECADENCE_PLUS_1 } }
+		if = {
+			limit = { character = ROOT }
+			hidden_tooltip = {
+				primary_title = { change_variable = { which = "imperial_decadence" value = 1 } }
+				character_event = { id = Plus.1852 } # change the decadence modifier
+				add_character_modifier = {
+					name = decadence_event_timer
+					hidden = yes
+					duration = 1825
+				}
+			}
+		}
+	}
+}
+
