@@ -3905,11 +3905,13 @@ character_event = {
 				has_law = crown_authority_0
 				has_law = crown_authority_1
 			}
-			#only applies to non-voting successions
+			#only applies to certain succession laws
 			OR = {
 				has_law = succ_seniority
 				has_law = succ_primogeniture
 				has_law = succ_ultimogeniture
+				has_law = succ_feudal_elective
+				has_law = succ_tanistry
 			}
 			#current heir is female or unsuitable
 			OR = {
@@ -3998,54 +4000,16 @@ character_event = {
 		set_variable = { which = "succ_candidates" value = 0 }
 		current_heir = { save_event_target_as = next_in_line }
 		
-		#save current laws
-		primary_title = {
-			if = {
-				limit = { has_law = succ_seniority }
-				set_title_flag = revert_seniority
-			}
-			if = {
-				limit = { has_law = succ_primogeniture }
-				set_title_flag = revert_primogeniture
-			}
-			if = {
-				limit = { has_law = succ_ultimogeniture }
-				set_title_flag = revert_ultimogeniture
-			}
-			if = {
-				limit = { has_law = cognatic_succession }
-				set_title_flag = revert_cognatic
-			}
-			if = {
-				limit = { has_law = true_cognatic_succession }
-				set_title_flag = revert_true_cognatic
-			}
-			if = {
-				limit = { has_law = agnatic_succession }
-				set_title_flag = revert_agnatic
-			}
-			if = {
-				limit = { has_law = enatic_succession }
-				set_title_flag = revert_enatic
-			}
-			if = {
-				limit = { has_law = enatic_cognatic_succession }
-				set_title_flag = revert_enatic_cognatic
-			}
-		}
-		
 		#check whether we should be accepting female candidates
 		if = {
 			limit = {
-				AND = {
-					is_female = no
-					NOT = {						
-						religion = cathar
-						religion = bogomilist
-						religion = messalian
-						religion = egyptian_pagan
-						religion = buddhist
-					}
+				is_female = no
+				NOT = {
+					religion = cathar
+					religion = bogomilist
+					religion = messalian
+					religion = egyptian_pagan
+					religion = buddhist
 				}
 				current_heir = {
 					is_female = yes
@@ -4061,10 +4025,173 @@ character_event = {
 			set_character_flag = no_female_candidates
 		}
 		
-		#first the actual pretender
-		current_heir = { 
-			add_trait = disinherited 
-			ROOT = {
+		#find candidates for non-voting succession laws
+		if = {
+			limit = {
+				primary_title = {
+					OR = {
+						has_law = succ_seniority
+						has_law = succ_primogeniture
+						has_law = succ_ultimogeniture
+					}
+				}
+			}
+			#save current laws
+			primary_title = {
+				if = {
+					limit = { has_law = succ_seniority }
+					set_title_flag = revert_seniority
+				}
+				if = {
+					limit = { has_law = succ_primogeniture }
+					set_title_flag = revert_primogeniture
+				}
+				if = {
+					limit = { has_law = succ_ultimogeniture }
+					set_title_flag = revert_ultimogeniture
+				}
+				if = {
+					limit = { has_law = cognatic_succession }
+					set_title_flag = revert_cognatic
+				}
+				if = {
+					limit = { has_law = true_cognatic_succession }
+					set_title_flag = revert_true_cognatic
+				}
+				if = {
+					limit = { has_law = agnatic_succession }
+					set_title_flag = revert_agnatic
+				}
+				if = {
+					limit = { has_law = enatic_succession }
+					set_title_flag = revert_enatic
+				}
+				if = {
+					limit = { has_law = enatic_cognatic_succession }
+					set_title_flag = revert_enatic_cognatic
+				}
+			}
+			
+			#first the actual pretender
+			current_heir = { 
+				add_trait = disinherited 
+				ROOT = {
+					recalc_succession = yes
+					current_heir = { 
+						if = {
+							limit = {
+								OR = {
+									is_female = no
+									ROOT = { NOT = { has_character_flag = no_female_candidates } }
+								}
+								age = 13
+								NOT = {
+									character = event_target:next_in_line
+									trait = incapable
+									trait = imbecile
+									trait = inbred
+									trait = lunatic
+								}
+							}
+							save_event_target_as = candidate_second_heir
+							ROOT = { change_variable = { which = "succ_candidates" value = 1 } }
+						}
+					}
+				}
+				remove_trait = disinherited 
+			}
+			recalc_succession = yes
+			
+			#then the male candidate
+			if = {
+				limit = {
+					current_heir = { is_female = yes }
+				}
+				primary_title = { gender_succ = agnatic }
+				recalc_succession = yes
+				current_heir = { 
+					if = {
+						limit = {
+							age = 13
+							NOT = {
+								character = event_target:next_in_line
+								character = event_target:candidate_second_heir
+								trait = incapable
+								trait = imbecile
+								trait = inbred
+								trait = lunatic
+							}
+						}
+						save_event_target_as = candidate_male
+						ROOT = { change_variable = { which = "succ_candidates" value = 1 } }
+					}	
+				}
+			}
+			
+			#then an older female candidate
+			if = {
+				limit = {
+					current_heir = { is_female = no }
+					ROOT = { NOT = { has_character_flag = no_female_candidates } }
+				}
+				primary_title = { gender_succ = true_cognatic }
+				recalc_succession = yes
+				current_heir = { 
+					if = {
+						limit = {
+							age = 13
+							NOT = {
+								character = event_target:next_in_line
+								character = event_target:candidate_second_heir
+								character = event_target:candidate_male
+								trait = incapable
+								trait = imbecile
+								trait = inbred
+								trait = lunatic
+							}
+						}
+						save_event_target_as = candidate_female
+						ROOT = { change_variable = { which = "succ_candidates" value = 1 } }
+					}	
+				}
+			}
+			
+			#restore gender law
+			primary_title = {
+				if = {
+					limit = { has_title_flag = revert_agnatic }
+					clr_title_flag = revert_agnatic
+					gender_succ = agnatic
+				}
+				if = {
+					limit = { has_title_flag = revert_cognatic }
+					clr_title_flag = revert_cognatic
+					gender_succ = cognatic
+				}
+				if = {
+					limit = { has_title_flag = revert_true_cognatic }
+					clr_title_flag = revert_true_cognatic
+					gender_succ = true_cognatic
+				}
+				if = {
+					limit = { has_title_flag = revert_enatic }
+					clr_title_flag = revert_enatic
+					gender_succ = enatic
+				}
+				if = {
+					limit = { has_title_flag = revert_enatic_cognatic }
+					clr_title_flag = revert_enatic_cognatic
+					gender_succ = enatic_cognatic
+				}
+			}
+			
+			#then the primogeniture candidate
+			if = {
+				limit = {
+					primary_title = { NOT = { has_title_flag = revert_primogeniture } }
+					NOT = { check_variable = { which = "succ_candidates" value = 2.5 } }
+				}
+				primary_title = { succession = primogeniture }
 				recalc_succession = yes
 				current_heir = { 
 					if = {
@@ -4076,115 +4203,117 @@ character_event = {
 							age = 13
 							NOT = {
 								character = event_target:next_in_line
+								character = event_target:candidate_second_heir
+								character = event_target:candidate_male
+								character = event_target:candidate_female
 								trait = incapable
 								trait = imbecile
 								trait = inbred
 								trait = lunatic
 							}
 						}
-						save_event_target_as = candidate_second_heir
+						save_event_target_as = candidate_primo
+						ROOT = { change_variable = { which = "succ_candidates" value = 1 } }
+					}	
+				}
+			}
+			
+			#then the seniority candidate
+			if = {
+				limit = {
+					primary_title = { NOT = { has_title_flag = revert_seniority } }
+					NOT = { check_variable = { which = "succ_candidates" value = 2.5 } }
+				}
+				primary_title = { succession = seniority }
+				recalc_succession = yes
+				current_heir = { 
+					if = {
+						limit = {
+							OR = {
+								is_female = no
+								ROOT = { NOT = { has_character_flag = no_female_candidates } }
+							}
+							age = 13
+							NOT = {
+								character = event_target:next_in_line
+								character = event_target:candidate_second_heir
+								character = event_target:candidate_male
+								character = event_target:candidate_female
+								character = event_target:candidate_primo
+								trait = incapable
+								trait = imbecile
+								trait = inbred
+								trait = lunatic
+							}
+						}
+						save_event_target_as = candidate_senior
 						ROOT = { change_variable = { which = "succ_candidates" value = 1 } }
 					}
 				}
 			}
-			remove_trait = disinherited 
+			
+			#restore succession law
+			primary_title = {
+				if = {
+					limit = { has_title_flag = revert_primogeniture }
+					clr_title_flag = revert_primogeniture
+					succession = primogeniture
+				}
+				if = {
+					limit = { has_title_flag = revert_seniority }
+					clr_title_flag = revert_seniority
+					succession = seniority
+				}
+				if = {
+					limit = { has_title_flag = revert_ultimogeniture }
+					clr_title_flag = revert_ultimogeniture
+					succession = ultimogeniture
+				}
+			}
+			recalc_succession = yes
+			clear_event_target = next_in_line
 		}
-		recalc_succession = yes
 		
-		#then the male candidate
+		#find candidates for voting succession laws
 		if = {
 			limit = {
-				current_heir = { is_female = yes }
+				primary_title = {
+					OR = {
+						has_law = succ_feudal_elective
+						has_law = succ_tanistry
+					}
+				}
 			}
-			primary_title = { gender_succ = agnatic }
-			recalc_succession = yes
-			current_heir = { 
-				if = {
+			#first find the actual pretenders
+			top_liege = {
+				random_realm_character = {
 					limit = {
+						any_pretender_title = {
+							is_primary_holder_title = yes
+							holder_scope = { character = ROOT }
+						}
+						OR = {
+							is_female = no
+							ROOT = { NOT = { has_character_flag = no_female_candidates } }
+						}
 						age = 13
 						NOT = {
 							character = event_target:next_in_line
-							character = event_target:candidate_second_heir
 							trait = incapable
 							trait = imbecile
 							trait = inbred
 							trait = lunatic
 						}
 					}
-					save_event_target_as = candidate_male
+					save_event_target_as = candidate_second_heir
 					ROOT = { change_variable = { which = "succ_candidates" value = 1 } }
-				}	
-			}
-		}
-		
-		#then an older female candidate
-		if = {
-			limit = {
-				current_heir = { is_female = no }
-				ROOT = { NOT = { has_character_flag = no_female_candidates } }
-			}
-			primary_title = { gender_succ = true_cognatic }
-			recalc_succession = yes
-			current_heir = { 
-				if = {
+				}
+				random_realm_character = {
 					limit = {
-						age = 13
-						NOT = {
-							character = event_target:next_in_line
-							character = event_target:candidate_second_heir
-							character = event_target:candidate_male
-							trait = incapable
-							trait = imbecile
-							trait = inbred
-							trait = lunatic
+						any_pretender_title = {
+							is_primary_holder_title = yes
+							holder_scope = { character = ROOT }
 						}
-					}
-					save_event_target_as = candidate_female
-					ROOT = { change_variable = { which = "succ_candidates" value = 1 } }
-				}	
-			}
-		}
-		
-		#restore gender law
-		primary_title = {
-			if = {
-				limit = { has_title_flag = revert_agnatic }
-				clr_title_flag = revert_agnatic
-				gender_succ = agnatic
-			}
-			if = {
-				limit = { has_title_flag = revert_cognatic }
-				clr_title_flag = revert_cognatic
-				gender_succ = cognatic
-			}
-			if = {
-				limit = { has_title_flag = revert_true_cognatic }
-				clr_title_flag = revert_true_cognatic
-				gender_succ = true_cognatic
-			}
-			if = {
-				limit = { has_title_flag = revert_enatic }
-				clr_title_flag = revert_enatic
-				gender_succ = enatic
-			}
-			if = {
-				limit = { has_title_flag = revert_enatic_cognatic }
-				clr_title_flag = revert_enatic_cognatic
-				gender_succ = enatic_cognatic
-			}
-		}
-		
-		#then the primogeniture candidate
-		if = {
-			limit = {
-				primary_title = { NOT = { has_title_flag = revert_primogeniture } }
-				NOT = { check_variable = { which = "succ_candidates" value = 2.5 } }
-			}
-			primary_title = { succession = primogeniture }
-			recalc_succession = yes
-			current_heir = { 
-				if = {
-					limit = {
 						OR = {
 							is_female = no
 							ROOT = { NOT = { has_character_flag = no_female_candidates } }
@@ -4193,8 +4322,6 @@ character_event = {
 						NOT = {
 							character = event_target:next_in_line
 							character = event_target:candidate_second_heir
-							character = event_target:candidate_male
-							character = event_target:candidate_female
 							trait = incapable
 							trait = imbecile
 							trait = inbred
@@ -4203,64 +4330,98 @@ character_event = {
 					}
 					save_event_target_as = candidate_primo
 					ROOT = { change_variable = { which = "succ_candidates" value = 1 } }
-				}	
-			}
-		}
-		
-		#then the seniority candidate
-		if = {
-			limit = {
-				primary_title = { NOT = { has_title_flag = revert_seniority } }
-				NOT = { check_variable = { which = "succ_candidates" value = 2.5 } }
-			}
-			primary_title = { succession = seniority }
-			recalc_succession = yes
-			current_heir = { 
-				if = {
-					limit = {
-						OR = {
-							is_female = no
-							ROOT = { NOT = { has_character_flag = no_female_candidates } }
-						}
-						age = 13
-						NOT = {
-							character = event_target:next_in_line
-							character = event_target:candidate_second_heir
-							character = event_target:candidate_male
-							character = event_target:candidate_female
-							character = event_target:candidate_primo
-							trait = incapable
-							trait = imbecile
-							trait = inbred
-							trait = lunatic
-						}
-					}
-					save_event_target_as = candidate_senior
-					ROOT = { change_variable = { which = "succ_candidates" value = 1 } }
 				}
 			}
+			#then pick the eldest valid child
+			random_child = {
+				limit = {
+					is_alive = yes
+					OR = {
+						dynasty = ROOT
+						calc_true_if = {
+							amount = 2
+							diplomacy = 15
+							diplomacy = 21
+							martial = 15
+							stewardship = 15
+							trait = genius
+							higher_tier_than = COUNT
+						}
+					}
+					OR = {
+						is_female = no
+						ROOT = { NOT = { has_character_flag = no_female_candidates } }
+					}
+					age = 13
+					NOT = {
+						character = event_target:next_in_line
+						character = event_target:candidate_second_heir
+						character = event_target:candidate_male
+						trait = incapable
+						trait = imbecile
+						trait = inbred
+						trait = lunatic
+						trait = eunuch
+						trait = monk
+						trait = nun
+						trait = abdicated
+						trait = disinherited
+						trait = druid
+						trait = bad_druid
+						trait = retired_vestalis
+						trait = vestalis
+						any_liege = {
+							OR = {
+								holy_order = yes
+								mercenary = yes
+							}
+						}
+						any_sibling = {
+							is_older_than = PREV
+							OR = {
+								dynasty = ROOT
+								calc_true_if = {
+									amount = 2
+									diplomacy = 15
+									diplomacy = 21
+									martial = 15
+									stewardship = 15
+									trait = genius
+									higher_tier_than = COUNT
+								}
+							}
+							OR = {
+								is_female = no
+								ROOT = { NOT = { has_character_flag = no_female_candidates } }
+							}
+							NOT = {
+								trait = incapable
+								trait = imbecile
+								trait = inbred
+								trait = lunatic
+								trait = eunuch
+								trait = monk
+								trait = nun
+								trait = abdicated
+								trait = disinherited
+								trait = druid
+								trait = bad_druid
+								trait = retired_vestalis
+								trait = vestalis
+								any_liege = {
+									OR = {
+										holy_order = yes
+										mercenary = yes
+									}
+								}
+							}
+						}
+					}
+				}
+				save_event_target_as = candidate_primo
+				ROOT = { change_variable = { which = "succ_candidates" value = 1 } }
+			}
 		}
-		
-		#restore succession law
-		primary_title = {
-			if = {
-				limit = { has_title_flag = revert_primogeniture }
-				clr_title_flag = revert_primogeniture
-				succession = primogeniture
-			}
-			if = {
-				limit = { has_title_flag = revert_seniority }
-				clr_title_flag = revert_seniority
-				succession = seniority
-			}
-			if = {
-				limit = { has_title_flag = revert_ultimogeniture }
-				clr_title_flag = revert_ultimogeniture
-				succession = ultimogeniture
-			}
-		}
-		recalc_succession = yes
-		clear_event_target = next_in_line
 		
 		#then the ability candidate, if there is one
 		if = {
@@ -4498,15 +4659,13 @@ narrative_event = {
 			}
 			modifier = {
 				factor = 0.75
-				AND = {
-					is_female = no
-					NOT = {						
-						religion = cathar
-						religion = bogomilist
-						religion = messalian
-						religion = egyptian_pagan
-						religion = buddhist
-					}
+				is_female = no
+				NOT = {
+					religion = cathar
+					religion = bogomilist
+					religion = messalian
+					religion = egyptian_pagan
+					religion = buddhist
 				}
 				FROM = {
 					is_female = yes
@@ -4520,15 +4679,13 @@ narrative_event = {
 			}
 			modifier = {
 				factor = 0.5
-				AND = {
-					is_female = no
-					NOT = {
-						religion = cathar
-						religion = bogomilist
-						religion = messalian
-						religion = egyptian_pagan
-						religion = buddhist
-					}
+				is_female = no
+				NOT = {
+					religion = cathar
+					religion = bogomilist
+					religion = messalian
+					religion = egyptian_pagan
+					religion = buddhist
 				}
 				FROM = {
 					is_female = yes
@@ -4648,15 +4805,13 @@ narrative_event = {
 			}
 			modifier = {
 				factor = 0.75
-				AND = {
-					is_female = no
-					NOT = {
-						religion = cathar
-						religion = bogomilist
-						religion = messalian
-						religion = egyptian_pagan
-						religion = buddhist
-					}
+				is_female = no
+				NOT = {
+					religion = cathar
+					religion = bogomilist
+					religion = messalian
+					religion = egyptian_pagan
+					religion = buddhist
 				}
 				event_target:candidate_second_heir = {
 					is_female = yes
@@ -4672,15 +4827,13 @@ narrative_event = {
 			}
 			modifier = {
 				factor = 0.5
-				AND = {
-					is_female = no
-					NOT = {
-						religion = cathar
-						religion = bogomilist
-						religion = messalian
-						religion = egyptian_pagan
-						religion = buddhist
-					}
+				is_female = no
+				NOT = {
+					religion = cathar
+					religion = bogomilist
+					religion = messalian
+					religion = egyptian_pagan
+					religion = buddhist
 				}
 				event_target:candidate_second_heir = {
 					is_female = yes
@@ -4978,15 +5131,13 @@ narrative_event = {
 			}
 			modifier = {
 				factor = 0.75
-				AND = {
-					is_female = no
-					NOT = {
-						religion = cathar
-						religion = bogomilist
-						religion = messalian
-						religion = egyptian_pagan
-						religion = buddhist
-					}
+				is_female = no
+				NOT = {
+					religion = cathar
+					religion = bogomilist
+					religion = messalian
+					religion = egyptian_pagan
+					religion = buddhist
 				}
 				event_target:candidate_male = {
 					is_female = yes
@@ -5002,15 +5153,13 @@ narrative_event = {
 			}
 			modifier = {
 				factor = 0.5
-				AND = {
-					is_female = no
-					NOT = {
-						religion = cathar
-						religion = bogomilist
-						religion = messalian
-						religion = egyptian_pagan
-						religion = buddhist
-					}
+				is_female = no
+				NOT = {
+					religion = cathar
+					religion = bogomilist
+					religion = messalian
+					religion = egyptian_pagan
+					religion = buddhist
 				}
 				event_target:candidate_male = {
 					is_female = yes
@@ -5308,15 +5457,13 @@ narrative_event = {
 			}
 			modifier = {
 				factor = 0.75
-				AND = {
-					is_female = no
-					NOT = {
-						religion = cathar
-						religion = bogomilist
-						religion = messalian
-						religion = egyptian_pagan
-						religion = buddhist
-					}
+				is_female = no
+				NOT = {
+					religion = cathar
+					religion = bogomilist
+					religion = messalian
+					religion = egyptian_pagan
+					religion = buddhist
 				}
 				event_target:candidate_female = {
 					is_female = yes
@@ -5332,15 +5479,13 @@ narrative_event = {
 			}
 			modifier = {
 				factor = 0.5
-				AND = {
-					is_female = no
-					NOT = {
-						religion = cathar
-						religion = bogomilist
-						religion = messalian
-						religion = egyptian_pagan
-						religion = buddhist
-					}
+				is_female = no
+				NOT = {
+					religion = cathar
+					religion = bogomilist
+					religion = messalian
+					religion = egyptian_pagan
+					religion = buddhist
 				}
 				event_target:candidate_female = {
 					is_female = yes
@@ -5638,15 +5783,13 @@ narrative_event = {
 			}
 			modifier = {
 				factor = 0.75
-				AND = {
-					is_female = no
-					NOT = {
-						religion = cathar
-						religion = bogomilist
-						religion = messalian
-						religion = egyptian_pagan
-						religion = buddhist
-					}
+				is_female = no
+				NOT = {
+					religion = cathar
+					religion = bogomilist
+					religion = messalian
+					religion = egyptian_pagan
+					religion = buddhist
 				}
 				event_target:candidate_primo = {
 					is_female = yes
@@ -5662,15 +5805,13 @@ narrative_event = {
 			}
 			modifier = {
 				factor = 0.5
-				AND = {
-					is_female = no
-					NOT = {
-						religion = cathar
-						religion = bogomilist
-						religion = messalian
-						religion = egyptian_pagan
-						religion = buddhist
-					}
+				is_female = no
+				NOT = {
+					religion = cathar
+					religion = bogomilist
+					religion = messalian
+					religion = egyptian_pagan
+					religion = buddhist
 				}
 				event_target:candidate_primo = {
 					is_female = yes
@@ -5968,15 +6109,13 @@ narrative_event = {
 			}
 			modifier = {
 				factor = 0.75
-				AND = {
-					is_female = no
-					NOT = {
-						religion = cathar
-						religion = bogomilist
-						religion = messalian
-						religion = egyptian_pagan
-						religion = buddhist
-					}
+				is_female = no
+				NOT = {
+					religion = cathar
+					religion = bogomilist
+					religion = messalian
+					religion = egyptian_pagan
+					religion = buddhist
 				}
 				event_target:candidate_senior = {
 					is_female = yes
@@ -5992,15 +6131,13 @@ narrative_event = {
 			}
 			modifier = {
 				factor = 0.5
-				AND = {
-					is_female = no
-					NOT = {
-						religion = cathar
-						religion = bogomilist
-						religion = messalian
-						religion = egyptian_pagan
-						religion = buddhist
-					}
+				is_female = no
+				NOT = {
+					religion = cathar
+					religion = bogomilist
+					religion = messalian
+					religion = egyptian_pagan
+					religion = buddhist
 				}
 				event_target:candidate_senior = {
 					is_female = yes
@@ -6298,15 +6435,13 @@ narrative_event = {
 			}
 			modifier = {
 				factor = 0.75
-				AND = {
-					is_female = no
-					NOT = {
-						religion = cathar
-						religion = bogomilist
-						religion = messalian
-						religion = egyptian_pagan
-						religion = buddhist
-					}
+				is_female = no
+				NOT = {
+					religion = cathar
+					religion = bogomilist
+					religion = messalian
+					religion = egyptian_pagan
+					religion = buddhist
 				}
 				event_target:candidate_ability = {
 					is_female = yes
@@ -6322,15 +6457,13 @@ narrative_event = {
 			}
 			modifier = {
 				factor = 0.5
-				AND = {
-					is_female = no
-					NOT = {
-						religion = cathar
-						religion = bogomilist
-						religion = messalian
-						religion = egyptian_pagan
-						religion = buddhist
-					}
+				is_female = no
+				NOT = {
+					religion = cathar
+					religion = bogomilist
+					religion = messalian
+					religion = egyptian_pagan
+					religion = buddhist
 				}
 				event_target:candidate_ability = {
 					is_female = yes
@@ -7148,10 +7281,46 @@ narrative_event = {
 					duration = 730
 				}
 				ROOT = {
-					any_demesne_title = {
-						limit = { has_title_flag = will_be_inherited }
-						clr_title_flag = will_be_inherited
-						usurp_title_plus_barony_if_unlanded = { target = PREVPREV type = faction_demand }
+					if = {
+						limit = {
+							event_target:succession_winner = { is_ruler = yes }
+							any_demesne_title = {
+								has_title_flag = will_be_inherited
+								higher_tier_than = DUKE
+								has_law = succ_feudal_elective
+							}
+						}
+						any_demesne_title = {
+							limit = {
+								has_title_flag = will_be_inherited
+								higher_tier_than = DUKE
+							}
+							clr_title_flag = will_be_inherited
+							usurp_title_plus_barony_if_unlanded = { target = PREVPREV type = faction_demand }
+						}
+						any_demesne_title = {
+							limit = { has_title_flag = will_be_inherited }
+							clr_title_flag = will_be_inherited
+						}
+					}
+					if = {
+						limit = {
+							OR = {
+								event_target:succession_winner = { is_ruler = no }
+								NOT = {
+									any_demesne_title = {
+										has_title_flag = will_be_inherited
+										higher_tier_than = DUKE
+										has_law = succ_feudal_elective
+									}
+								}
+							}
+						}
+						any_demesne_title = {
+							limit = { has_title_flag = will_be_inherited }
+							clr_title_flag = will_be_inherited
+							usurp_title_plus_barony_if_unlanded = { target = PREVPREV type = faction_demand }
+						}
 					}
 					set_defacto_liege = PREV
 					any_vassal = {
