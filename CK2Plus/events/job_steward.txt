@@ -2019,6 +2019,7 @@ character_event = {
 					attrition = 1.0
 					earmark = tribal_build_legend
 					disband_on_peace = yes
+					can_toggle_looting = no
 				}
 				spawn_unit = {
 					province = PREV
@@ -2031,6 +2032,7 @@ character_event = {
 					attrition = 1.0
 					earmark = tribal_build_legend
 					disband_on_peace = yes
+					can_toggle_looting = no
 				}
 				spawn_unit = {
 					province = PREV
@@ -2043,6 +2045,7 @@ character_event = {
 					attrition = 1.0
 					earmark = tribal_build_legend
 					disband_on_peace = yes
+					can_toggle_looting = no
 				}
 			}
 		}
@@ -2082,6 +2085,351 @@ character_event = {
 		prestige = -50
 		clr_character_flag = tribal_build_legend_troops
 		disband_event_forces = tribal_build_legend
+	}
+}
+
+##############################
+# STEWARD
+# JOB: action_collect_tribute
+##############################
+
+# 20225: The Steward demands extra funds from the ruler
+character_event = {
+	id = 20225
+	title = EVTNAME20225
+	desc = EVTDESC20225
+	picture = GFX_evt_carriage
+	border = GFX_event_normal_frame_economy
+
+	capable_only = yes
+	prisoner = no
+	
+	trigger = {
+		has_job_action = action_collect_tribute
+		liege = {
+			ROOT = {
+				location = {
+					county = {
+						is_occupied = no
+					}
+					any_province_lord = {
+						NOT = { character = ROOT }
+						NOT = { character = PREVPREVPREV }
+						OR = {
+							vassal_of = PREVPREVPREV
+							pays_tribute_to = PREVPREVPREV
+						}
+						capital_scope = {
+							province = PREVPREV
+						}
+						NOT = { has_character_modifier = hidden_extra_tribute }
+					}
+				}
+			}
+		}
+	}
+	
+	mean_time_to_happen = {
+		months = 60
+		
+		modifier = {
+			factor = 1.25
+			NOT = { stewardship = 2 }
+		}
+		modifier = {
+			factor = 1.25
+			NOT = { stewardship = 3 }
+		}
+		modifier = {
+			factor = 1.25
+			NOT = { stewardship = 4 }
+		}
+		modifier = {
+			factor = 1.25
+			NOT = { stewardship = 5 }
+		}
+		modifier = {
+			factor = 0.75
+			stewardship = 9
+		}
+		modifier = {
+			factor = 0.75
+			stewardship = 10
+		}
+		modifier = {
+			factor = 0.75
+			stewardship = 11
+		}
+		modifier = {
+			factor = 0.75
+			stewardship = 12
+		}
+		modifier = {
+			factor = 0.75
+			stewardship = 13
+		}
+	}
+	
+	immediate = {
+		liege = {
+			save_event_target_as = tribute_asker
+			ROOT = {
+				location = {
+					random_province_lord = {
+						limit = {
+							NOT = { character = PREVPREVPREV }
+							OR = {
+								vassal_of = PREVPREVPREV
+								pays_tribute_to = PREVPREVPREV
+							}
+							capital_scope = {
+								province = PREVPREV
+							}
+							NOT = { has_character_modifier = hidden_extra_tribute }
+						}
+						save_event_target_as = tribute_giver
+					}
+				}
+			}
+		}
+	}
+	
+	option = {
+		name = EVTOPTA20225 # Demand more tribute
+		
+		ai_chance = { factor = 100 }
+		
+		event_target:tribute_giver = {
+			character_event = { id = 20226 days = 3 tooltip = EVTTOOLTIP_20226 }
+		}
+	}
+	
+	option = {
+		name = EVTOPTB20225 # I don't dare ask
+		ai_chance = { factor = 0 }
+	}
+}
+
+# 20226: The Steward demands extra funds from the ruler. Ruler response event.
+character_event = {
+	id = 20226
+	title = EVTNAME20225
+	desc = EVTDESC20226
+	picture = GFX_evt_carriage
+	border = GFX_event_normal_frame_economy
+	
+	is_triggered_only = yes
+	
+	immediate = {
+		add_character_modifier = {
+			name = hidden_extra_tribute
+			hidden = yes
+			days = 1825 # 5 years
+		}
+	}
+	
+	option = {
+		name = EVTOPTA20226 # Accept demand
+		ai_chance = {
+			factor = 100
+			modifier = {
+				factor = 3.0
+				trait = charitable
+			}
+			modifier = {
+				factor = 3.0
+				trait = content
+			}
+			modifier = {
+				factor = 5.0
+				trait = craven
+			}
+			modifier = {
+				factor = 2.0
+				opinion = {
+					who = event_target:tribute_asker
+					value = 25
+				}
+			}
+			modifier = {
+				factor = 2.0
+				opinion = {
+					who = event_target:tribute_asker
+					value = 50
+				}
+			}
+			modifier = {
+				factor = 2.0
+				opinion = {
+					who = event_target:tribute_asker
+					value = 75
+				}
+			}
+		}
+		
+		tooltip = {
+			transfer_scaled_wealth = {
+				to = event_target:tribute_asker
+				min = 5
+				value = 1.0 # One year's income
+			}
+		}
+		
+		opinion = {
+			who = event_target:tribute_asker
+			modifier = squeezed_for_extra_tribute
+			years = 10
+		}
+		
+		opinion = {
+			who = FROM
+			modifier = squeezed_for_extra_tribute
+			years = 10
+		}
+		
+		hidden_tooltip = {
+			FROM = { character_event = { id = 20227 } } # Notifications
+		}
+	}
+	
+	option = {
+		name = EVTOPTB20226 # Refuse
+		ai_chance = {
+			factor = 100
+			modifier = {
+				factor = 5.0
+				trait = greedy
+			}
+			modifier = {
+				factor = 2.0
+				NOT = {
+					opinion = {
+						who = event_target:tribute_asker
+						value = -24
+					}
+				}
+			}
+			modifier = {
+				factor = 2.0
+				NOT = {
+					opinion = {
+						who = event_target:tribute_asker
+						value = -49
+					}
+				}
+			}
+			modifier = {
+				factor = 2.0
+				NOT = {
+					opinion = {
+						who = event_target:tribute_asker
+						value = -74
+					}
+				}
+			}
+		}
+		
+		opinion = {
+			who = event_target:tribute_asker
+			modifier = squeezed_for_extra_tribute
+			years = 5
+		}
+		
+		hidden_tooltip = {
+			FROM = { character_event = { id = 20229 } } # Notifications
+		}
+	}
+}
+
+# 20227: The target accepts to pay extra tribute. Steward notified.
+character_event = {
+	id = 20227
+	title = EVTNAME20225
+	desc = EVTDESC20227
+	picture = GFX_evt_carriage
+	border = GFX_event_normal_frame_economy
+	
+	is_triggered_only = yes
+	
+	immediate = {
+		liege = {
+			 character_event = { id = 20228 } # Liege notified
+		}
+	}
+	
+	option = {
+		name = EXCELLENT
+	}
+}
+
+# 20228: The target accepts to pay extra tribute. Liege notified.
+character_event = {
+	id = 20228
+	title = EVTNAME20225
+	desc = EVTDESC20228
+	picture = GFX_evt_carriage
+	border = GFX_event_normal_frame_economy
+	
+	is_triggered_only = yes
+	
+	option = {
+		name = EXCELLENT
+		
+		transfer_scaled_wealth = {
+			from = FROMFROM
+			min = 5
+			value = 1.0 # One year's income
+		}
+		
+		tooltip = {
+			reverse_opinion = {
+				who = FROMFROM
+				modifier = squeezed_for_extra_tribute
+				years = 10
+			}
+		}
+	}
+}
+
+# 20229: The target refuses to pay extra tribute. Steward notified.
+character_event = {
+	id = 20229
+	title = EVTNAME20225
+	desc = EVTDESC20229
+	picture = GFX_evt_emissary
+	border = GFX_event_normal_frame_economy
+	
+	is_triggered_only = yes
+	
+	immediate = {
+		liege = {
+			 character_event = { id = 20231 } # Liege notified
+		}
+	}
+	
+	option = {
+		name = EVTOPTA20229
+	}
+}
+
+# 20231: The target refuses to pay extra tribute. Liege notified.
+character_event = {
+	id = 20231
+	title = EVTNAME20225
+	desc = EVTDESC20231
+	picture = GFX_evt_emissary
+	border = GFX_event_normal_frame_economy
+	
+	is_triggered_only = yes
+	
+	option = {
+		name = EVTOPTA20231
+		
+		opinion = {
+			who = FROMFROM
+			modifier = refused_extra_tribute
+			years = 5
+		}
 	}
 }
 
