@@ -482,13 +482,11 @@ magyar_invasion = {
 	hostile_against_others = yes
 	is_permanent = yes
 	can_ask_to_join_war = no
-	is_holy_war = yes
 	check_de_jure_tier = KING # this scans all de jure kingdoms for the counties which are held by or vassals(or below) of selected character. Only valid if is_permanent = yes
 
 	can_use = {
 		ROOT = {
 			culture = hungarian
-			has_landed_title = k_magyar
 			NOT = { any_realm_province = { region = custom_carpathia } }
 			has_global_flag = magyar_1066_invasion
 		}
@@ -499,23 +497,37 @@ magyar_invasion = {
 	}
 
 	on_success = {
-		ROOT = {
-			add_character_modifier = { name = victory_timer duration = 1 hidden = yes }
-			if = {
-				limit = { any_vassal = { leads_faction = faction_glory } }
-				custom_tooltip = { text = GLORYFACTIONMOODPLUS_NONAME }
-				hidden_tooltip = { character_event = { id = PlusFaction.460 days = 1 } }
+		if = {
+			limit = { FROM = { real_tier = EMPEROR } }
+			FROM = {
+				custom_tooltip = { text = IMPERIAL_DECADENCE_PLUS_1 }
+				hidden_tooltip = {
+					primary_title = { change_variable = { which = "imperial_decadence" value = 1 } }
+					character_event = { id = Plus.1852 }
+				}
 			}
 		}
 		ROOT = {
-			prestige = 1000
-			wealth = 1000
+			add_character_modifier = { name = victory_timer duration = 1 hidden = yes }
+			prestige = 500
+			wealth = 500
+		}
+		any_attacker = {
+			limit = { NOT = { character = ROOT } }
+			hidden_tooltip = { participation_scaled_prestige = 200 }
 		}
 		FROM = {
 			if = {
 				limit = { any_vassal = { leads_faction = faction_glory } }
 				custom_tooltip = { text = GLORYFACTIONMOODMINUS }
 				hidden_tooltip = { character_event = { id = PlusFaction.461 days = 1 } }
+			}
+		}
+		hidden_tooltip = {
+			ROOT = {
+				disband_event_forces = magyar_forces
+				occupy_minors_of_occupied_settlements = FROM
+				gain_all_occupied_titles = { who = FROM type = invasion }
 			}
 		}
 	}
@@ -526,109 +538,16 @@ magyar_invasion = {
 			text = tribal_invasion_succ_tip
 			hidden_tooltip = {
 				ROOT = {
-					gain_settlements_under_title = {
+					vassalize_or_take_under_title_destroy_duchies = {
 						title = PREV
 						enemy = FROM
+						is_crusade = yes # Even if the title holder is not participating in the war, gain holdings occupied by all Crusade participants
+						type = invasion
 					}
 					if = {
 						limit = { has_nickname = no }
 						give_nickname = nick_the_great
-					}		
-					if = {
-						limit = { has_landed_title = c_pest }
-						c_pest = {
-							location = {
-								culture = hungarian
-								religion = ROOT
-								ROOT = { capital = PREV }
-							}
-						}
 					}
-					# The Hungarian culture in the Ukraine is lost
-					any_realm_province = {
-						limit = {
-							culture = hungarian
-							kingdom = {
-								NOR = {
-									title = k_hungary
-									title = k_carpathia
-								}
-							}
-							any_neighbor_province = {
-								NOT = { culture = hungarian }
-							}
-						}
-						random_neighbor_province = {
-							limit = {
-								NOT = { culture = hungarian }
-							}
-							reverse_culture = PREV
-							reverse_religion = PREV
-						}
-					}
-					# Lose control of the Ukraininan lands
-					any_realm_province = {
-						limit = {
-							OR = {
-								kingdom = {
-									NOR = {
-										title = k_hungary
-										title = k_carpathia
-									}
-								}
-								duchy = { title = d_moldau }
-							}
-							owner = {
-								# Human vassals get to keep their stuff
-								OR = {
-									ai = yes
-									character = ROOT
-								}
-							}
-						}
-						county = {
-							create_character = {
-								random_traits = yes
-								dynasty = RANDOM
-								religion = PREV
-								culture = PREV
-								female = no
-								age = 25
-								trait = peasant_leader
-							}
-							new_character = {
-								usurp_title_plus_barony_if_unlanded = { target = PREV type = invasion }
-								set_defacto_liege = THIS
-							}
-						}
-					}
-					d_pecs = {
-						de_jure_liege = k_magyar
-					}
-					d_esztergom = {
-						de_jure_liege = k_magyar
-					}	
-					d_nyitra = {
-						de_jure_liege = k_magyar
-					}	
-					d_ungvar = {
-						de_jure_liege = k_magyar
-					}	
-					d_pest = {
-						de_jure_liege = k_magyar
-					}	
-					d_transylvania = {
-						de_jure_liege = k_magyar
-					}	
-					d_temes = {
-						de_jure_liege = k_magyar
-					}			
-					k_carpathia = {
-						destroy_landed_title = yes 
-					}
-					any_claim = {
-						remove_claim = ROOT
-					}		
 					set_global_flag = magyar_victory
 				}
 			}
@@ -639,12 +558,33 @@ magyar_invasion = {
 		ROOT = {
 			prestige = -100
 			clr_global_flag = magyar_1066_invasion
-			set_global_flag = magyar_defeat
 			disband_event_forces = magyar_forces
+		}
+		FROM = {
+			prestige = 100
+		}
+		any_defender = {
+			limit = { character = FROM }
+			participation_scaled_prestige = 100
+		}
+		any_defender = {
+			limit = { NOT = { character = FROM } }
+			hidden_tooltip = { participation_scaled_prestige = 100 }
 		}
 	}
 
 	on_reverse_demand = {
+		#change imperial decadence
+		if = {
+			limit = { FROM = { real_tier = EMPEROR } }
+			FROM = {
+				custom_tooltip = { text = IMPERIAL_DECADENCE_MINUS_1 }
+				hidden_tooltip = {
+					primary_title = { change_variable = { which = "imperial_decadence" value = -1 } }
+					character_event = { id = Plus.1852 }
+				}
+			}
+		}
 		FROM = {
 			add_character_modifier = { name = victory_timer duration = 1 hidden = yes }
 			if = {
@@ -655,17 +595,11 @@ magyar_invasion = {
 		}
 		ROOT = {
 			clr_global_flag = magyar_1066_invasion
-			set_global_flag = magyar_defeat
 			disband_event_forces = magyar_forces
 			prestige = -200
 			transfer_scaled_wealth = {
 				to = FROM
 				value = 4.0
-			}
-			if = {
-				limit = { any_vassal = { leads_faction = faction_glory } }
-				custom_tooltip = { text = GLORYFACTIONMOODMINUS }
-				hidden_tooltip = { character_event = { id = PlusFaction.461 days = 1 } }
 			}
 		}
 		any_defender = {
