@@ -128,10 +128,10 @@ NDefines.NEconomy.LOOT_PRESTIGE_MULT = 0.5						-- Whenever you gain loot you al
 NDefines.NEconomy.LOOT_EVERY_X_DAYS = 8							-- Loot every this many days
 NDefines.NEconomy.BUILDING_COST_MULT = 0.5						-- Increases build cost of all buildings
 
-NDefines.NDecadence.BASE_EMPEROR_GAIN = 0.40
-NDefines.NDecadence.BASE_KING_GAIN = 0.30
-NDefines.NDecadence.BASE_DUKE_GAIN = 0.20
-NDefines.NDecadence.BASE_COUNT_GAIN = 0.12
+NDefines.NDecadence.BASE_EMPEROR_GAIN = 0.25
+NDefines.NDecadence.BASE_KING_GAIN = 0.18
+NDefines.NDecadence.BASE_DUKE_GAIN = 0.12
+NDefines.NDecadence.BASE_COUNT_GAIN = 0.10
 NDefines.NDecadence.BASE_BARON_GAIN = 0.08
 NDefines.NDecadence.BASE_UNLANDED_GAIN = 0.05
 NDefines.NDecadence.REALM_SIZE_MULTIPLIER = 0
