@@ -35,28 +35,29 @@ character_event = {
 		}
 		liege = {
 			war = no
-			is_tribal = yes
+			OR = {
+				is_tribal = yes
+				any_demesne_province = {
+					has_province_modifier = new_buildings_timer
+				}
+			}
 			religion = ROOT
 			culture = ROOT
 			any_demesne_province = {
 				religion = ROOT
 				culture = ROOT
 				num_of_empty_holdings = 1
-				NOT = { has_province_modifier = building_new_temple }
-				ROOT = {
-					liege = {
-						NOT = {
-							any_realm_title = {
-								is_theocracy = yes
-								location = { province_id = PREVPREVPREVPREV }
-							}
-						}
-					}
+				OR = {
+					has_province_modifier = new_buildings_timer
+					owner = { is_tribal = yes }
+				}
+				NOR = {
+					has_province_modifier = building_new_temple
+					any_province_holding = { holding_type = temple }
 				}
 			}
 			NOR = {
 				has_character_modifier = temple_build_timer
-				trait = cynical
 				any_courtier = {
 					is_ruler = no
 					has_character_modifier = planning_new_temple
@@ -74,11 +75,28 @@ character_event = {
 			has_character_modifier = planning_claimant_adventure
 			has_character_modifier = planning_duchy_adventure
 			has_character_flag = claimant_adventurer
+			has_character_flag = new_temple_builder
 		}
 	}
 	
 	mean_time_to_happen = {
 		years = 40
+		modifier = {
+			factor = 0.25
+			liege = {
+				is_feudal = yes
+				any_demesne_province = {
+					religion = ROOT
+					culture = ROOT
+					num_of_empty_holdings = 1
+					has_province_modifier = new_buildings_timer
+					NOR = {
+						has_province_modifier = building_new_temple
+						any_province_holding = { holding_type = temple }
+					}
+				}
+			}
+		}
 		modifier = {
 			factor = 1.5
 			NOT = { year = 800 }
@@ -105,6 +123,10 @@ character_event = {
 		}
 		modifier = {
 			factor = 0.75
+			is_reformed_religion = yes
+		}
+		modifier = {
+			factor = 0.75
 			liege = { tier = DUKE }
 		}
 		modifier = {
@@ -114,6 +136,10 @@ character_event = {
 		modifier = {
 			factor = 0.5
 			liege = { has_character_flag = build_temple_tried_once }
+		}
+		modifier = {
+			factor = 1.5
+			liege = { trait = cynical }
 		}
 		modifier = {
 			factor = 0.9
@@ -195,9 +221,9 @@ character_event = {
 	}
 	
 	immediate = {
+		set_character_flag = new_temple_builder
 		add_character_modifier = {
 			name = planning_new_temple
-			hidden = yes
 			duration = -1
 		}
 		if = {
@@ -232,16 +258,13 @@ character_event = {
 					religion = ROOT
 					culture = ROOT
 					num_of_empty_holdings = 1
-					NOT = { has_province_modifier = building_new_temple }
-					ROOT = {
-						liege = {
-							NOT = {
-								any_realm_title = {
-									is_theocracy = yes
-									location = { province_id = PREVPREVPREVPREV }
-								}
-							}
-						}
+					OR = {
+						has_province_modifier = new_buildings_timer
+						owner = { is_tribal = yes }
+					}
+					NOR = {
+						has_province_modifier = building_new_temple
+						any_province_holding = { holding_type = temple }
 					}
 				}
 				province_event = { id = Plus.1401 }
@@ -252,16 +275,13 @@ character_event = {
 					religion = ROOT
 					culture = ROOT
 					num_of_empty_holdings = 1
-					NOT = { has_province_modifier = building_new_temple }
-					ROOT = {
-						liege = {
-							NOT = {
-								any_realm_title = {
-									is_theocracy = yes
-									location = { province_id = PREVPREVPREVPREV }
-								}
-							}
-						}
+					OR = {
+						has_province_modifier = new_buildings_timer
+						owner = { is_tribal = yes }
+					}
+					NOR = {
+						has_province_modifier = building_new_temple
+						any_province_holding = { holding_type = temple }
 					}
 				}
 				province_event = { id = Plus.1401 }
@@ -285,12 +305,16 @@ province_event = {
 		}
 		FROM = {
 			liege = {
+				clr_character_flag = build_temple_tried_once
 				character_event = { id = Plus.1402 }
-				add_character_modifier = {
-					name = temple_build_timer
-					hidden = yes
-					inherit = yes
-					duration = 7300
+				if = {
+					limit = { is_tribal = yes }
+					add_character_modifier = {
+						name = temple_build_timer
+						hidden = yes
+						inherit = yes
+						duration = 7300
+					}
 				}
 			}
 		}
@@ -307,15 +331,23 @@ character_event = {
 	show_from_from = yes
 	
 	option = {
-		name = EVTOPTA_Plus_1402 # Help him out
+		name = EVTOPTA_Plus_1402 # Help him with cash
 		trigger = {
-			wealth = 50
+			OR = {
+				wealth = 50
+				is_feudal = yes
+			}
 		}
 		ai_chance = {
 			factor = 50
 			modifier = {
 				factor = 0.1
 				has_character_modifier = ai_austerity
+				is_tribal = yes
+			}
+			modifier = {
+				factor = 0.25
+				NOT = { wealth = 50 }
 			}
 			modifier = {
 				factor = 2
@@ -345,40 +377,157 @@ character_event = {
 			wealth = -100
 			FROMFROM = { wealth = 100 }
 		}
-		piety = 20
+		piety = 25
 		reverse_opinion = { who = FROMFROM modifier = opinion_helped_temple years = 50 }
 	}
-	
 	option = {
-		name = EVTOPTB_Plus_1402 # Don't help him
+		name = EVTOPTB_Plus_1402 # Help him with piety
 		trigger = {
-			wealth = 50
+			piety = 100
+		}
+		ai_chance = {
+			factor = 50
+			modifier = {
+				factor = 2
+				trait = ambitious
+			}
+			modifier = {
+				factor = 2
+				trait = charitable
+			}
+			modifier = {
+				factor = 3
+				trait = zealous
+			}
+		}
+		piety = -100
+		FROMFROM = { wealth = 50 }
+		reverse_opinion = { who = FROMFROM modifier = opinion_helped_temple years = 50 }
+	}
+	option = {
+		name = EVTOPTC_Plus_1402 # Help him with prestige
+		trigger = {
+			prestige = 250
+		}
+		ai_chance = {
+			factor = 50
+			modifier = {
+				factor = 2
+				trait = ambitious
+			}
+			modifier = {
+				factor = 2
+				trait = charitable
+			}
+			modifier = {
+				factor = 3
+				trait = zealous
+			}
+		}
+		prestige = -250
+		FROMFROM = { wealth = 50 }
+		reverse_opinion = { who = FROMFROM modifier = opinion_helped_temple years = 50 }
+	}
+	option = {
+		name = EVTOPTD_Plus_1402 # Don't help him
+		trigger = {
+			OR = {
+				wealth = 50
+				is_feudal = yes
+				piety = 100
+				prestige = 250
+			}
 		}
 		ai_chance = {
 			factor = 50
 			modifier = {
 				factor = 3
+				trait = cynical
+			}
+			modifier = {
+				factor = 2
 				trait = greedy
 			}
 			modifier = {
-				factor = 3
+				factor = 2
 				trait = slothful
 			}
 			modifier = {
 				factor = 2
 				trait = content
 			}
+			modifier = {
+				factor = 0.1
+				is_feudal = yes
+			}
 		}
-		piety = -20
+		piety = -50
 		reverse_opinion = { who = FROMFROM modifier = opinion_refused_temple years = 50 }
-	}
-	
-	option = {
-		name = EVTOPTC_Plus_1402 # I can't afford it
-		trigger = {
-			NOT = { wealth = 50 }
+		if = {
+			limit = {
+				FROMFROM = { wealth = 50 }
+			}
+			custom_tooltip = {
+				text = TEMPLE_CONSTRUCTION_CONTINUES
+			}
 		}
-		prestige = -20
+		if = {
+			limit = {
+				FROMFROM = { NOT = { wealth = 50 } }
+			}
+			custom_tooltip = {
+				text = TEMPLE_CONSTRUCTION_HALTS
+				hidden_tooltip = {
+					FROMFROM = {
+						add_trait = depressed
+						clr_character_flag = new_temple_builder
+						remove_character_modifier = planning_new_temple
+					}
+					FROM = {
+						clr_province_flag = building_new_temple_check
+						remove_province_modifier = building_new_temple
+					}
+				}
+			}
+		}
+	}
+	option = {
+		name = EVTOPTE_Plus_1402 # I can't afford it
+		trigger = {
+			NOR = {
+				wealth = 50
+				is_feudal = yes
+				piety = 100
+				prestige = 250
+			}
+		}
+		prestige = -25
+		if = {
+			limit = {
+				FROMFROM = { wealth = 50 }
+			}
+			custom_tooltip = {
+				text = TEMPLE_CONSTRUCTION_CONTINUES
+			}
+		}
+		if = {
+			limit = {
+				FROMFROM = { NOT = { wealth = 50 } }
+			}
+			custom_tooltip = {
+				text = TEMPLE_CONSTRUCTION_HALTS
+				hidden_tooltip = {
+					FROMFROM = {
+						clr_character_flag = new_temple_builder
+						remove_character_modifier = planning_new_temple
+					}
+					FROM = {
+						clr_province_flag = building_new_temple_check
+						remove_province_modifier = building_new_temple
+					}
+				}
+			}
+		}
 	}
 }
 
@@ -410,7 +559,7 @@ character_event = {
 					}
 				}
 			}
-			liege = { character_event = { id = Plus.1406 } }
+			liege = { character_event = { id = Plus.1406 days = 1 } }
 		}
 	}
 }
@@ -422,25 +571,20 @@ character_event = {
 	picture = GFX_evt_death
 	
 	is_triggered_only = yes
-
+	
 	option = {
 		name = EVTOPTA_Plus_1414 # Find someone else to continue construction
 		trigger = {
-			wealth = 50
-			is_tribal = yes
 			any_demesne_province = {
 				religion = ROOT
 				culture = ROOT
 				num_of_empty_holdings = 1
 				has_province_modifier = building_new_temple
-				ROOT = {
-					NOT = {
-						any_realm_title = {
-							is_theocracy = yes
-							location = { province_id = PREVPREVPREV }
-						}
-					}
+				OR = {
+					has_province_modifier = new_buildings_timer
+					ROOT = { is_tribal = yes }
 				}
+				NOT = { any_province_holding = { holding_type = temple } }
 			}
 			NOT = {
 				any_courtier = {
@@ -456,9 +600,14 @@ character_event = {
 				is_ruler = no
 				health = 4
 				OR = {
+					trait = detached_priest
 					trait = martial_cleric
 					trait = scholarly_theologian
 					trait = mastermind_theologian
+					AND = {
+						learning = 8
+						trait = zealous
+					}
 				}
 				OR = {
 					is_female = no
@@ -467,9 +616,9 @@ character_event = {
 				OR = {
 					NOT = { dynasty = 0 }
 					trait = ambitious
+					trait = zealous
 				}
 				NOR = {
-					character = FROM
 					trait = incapable
 					trait = cynical
 					trait = content
@@ -482,12 +631,12 @@ character_event = {
 					has_character_modifier = planning_duchy_adventure
 					has_character_flag = claimant_adventurer
 				}
-			}			
+			}
 		}
 		ai_chance = {
 			factor = 70
 			modifier = {
-				factor = 0.1
+				factor = 0.5
 				trait = cynical
 			}
 			modifier = {
@@ -495,11 +644,15 @@ character_event = {
 				trait = greedy
 			}
 			modifier = {
+				factor = 0.5
+				NOT = { wealth = 25 }
+			}
+			modifier = {
 				factor = 0.75
 				trait = slothful
 			}
 		}
-		wealth = -50
+		wealth = -25
 		random_courtier = {
 			limit = {
 				is_adult = yes
@@ -509,9 +662,14 @@ character_event = {
 				is_ruler = no
 				health = 4
 				OR = {
+					trait = detached_priest
 					trait = martial_cleric
 					trait = scholarly_theologian
 					trait = mastermind_theologian
+					AND = {
+						learning = 8
+						trait = zealous
+					}
 				}
 				OR = {
 					is_female = no
@@ -520,9 +678,9 @@ character_event = {
 				OR = {
 					NOT = { dynasty = 0 }
 					trait = ambitious
+					trait = zealous
 				}
 				NOR = {
-					character = FROM
 					trait = incapable
 					trait = cynical
 					trait = content
@@ -536,10 +694,9 @@ character_event = {
 					has_character_flag = claimant_adventurer
 				}
 			}
-			wealth = 50
+			set_character_flag = new_temple_builder
 			add_character_modifier = {
 				name = planning_new_temple
-				hidden = yes
 				duration = -1
 			}
 			hidden_tooltip = {
@@ -578,21 +735,31 @@ character_event = {
 			factor = 30
 			modifier = {
 				factor = 0.1
-				wealth = 200
+				wealth = 100
 			}
 			modifier = {
 				factor = 0.5
 				trait = ambitious
 			}
 			modifier = {
-				factor = 5
+				factor = 3
 				has_character_modifier = ai_austerity
 			}
 		}
 		set_character_flag = build_temple_tried_once
 		hidden_tooltip = { remove_character_modifier = temple_build_timer }
 		random_demesne_province = {
-			limit = { has_province_modifier = building_new_temple }
+			limit = {
+				religion = ROOT
+				culture = ROOT
+				num_of_empty_holdings = 1
+				has_province_modifier = building_new_temple
+				OR = {
+					has_province_modifier = new_buildings_timer
+					ROOT = { is_tribal = yes }
+				}
+				NOT = { any_province_holding = { holding_type = temple } }
+			}
 			clr_province_flag = building_new_temple_check
 			remove_province_modifier = building_new_temple
 		}
@@ -606,6 +773,7 @@ character_event = {
 	hide_window = yes
 	
 	min_age = 16
+	has_character_flag = new_temple_builder
 	
 	trigger = {
 		has_character_modifier = planning_new_temple
@@ -624,6 +792,7 @@ character_event = {
 	}
 	
 	immediate = {
+		clr_character_flag = new_temple_builder
 		remove_character_modifier = planning_new_temple
 		if = {
 			limit = {
@@ -637,33 +806,9 @@ character_event = {
 					}
 				}
 			}
-			if = {
-				limit = { is_ruler = yes }
-				piety = -50
-				prestige = -50
-				liege = { letter_event = { id = Plus.1408 } }
-			}
-			if = {
-				limit = {
-					is_ruler = no
-					trait = incapable
-				}
-				piety = -50
-				prestige = -50
-				clear_wealth = yes
-				liege = { character_event = { id = Plus.1409 } }
-			}
-			if = {
-				limit = {
-					is_ruler = no
-					NOT = { trait = incapable }
-					prisoner = yes
-				}
-				piety = -50
-				prestige = -50
-				clear_wealth = yes
-				liege = { character_event = { id = Plus.1410 } }
-			}
+			piety = -50
+			prestige = -50
+			liege = { letter_event = { id = Plus.1408 } }
 		}
 	}
 }
@@ -671,396 +816,44 @@ character_event = {
 # Liege notified that temple building stopped because builder became a ruler
 letter_event = {
 	id = Plus.1408
-	desc = EVTDESC_Plus_1408
 	
-	is_triggered_only = yes
-
-	option = {
-		name = EVTOPTA_Plus_1414 # Find someone else to continue construction
+	desc = {
+		text = EVTDESC_Plus_1408_ruler
 		trigger = {
-			wealth = 50
-			is_tribal = yes
-			any_demesne_province = {
-				religion = ROOT
-				culture = ROOT
-				num_of_empty_holdings = 1
-				has_province_modifier = building_new_temple
-				ROOT = {
-					NOT = {
-						any_realm_title = {
-							is_theocracy = yes
-							location = { province_id = PREVPREVPREV }
-						}
-					}
-				}
-			}
-			NOT = {
-				any_courtier = {
-					is_ruler = no
-					has_character_modifier = planning_new_temple
-				}
-			}
-			any_courtier = {
-				is_adult = yes
-				prisoner = no
-				religion = ROOT
-				culture = ROOT
-				is_ruler = no
-				health = 4
-				OR = {
-					trait = martial_cleric
-					trait = scholarly_theologian
-					trait = mastermind_theologian
-				}
-				OR = {
-					is_female = no
-					religion_allows_female_temple_holders = yes
-				}
-				OR = {
-					NOT = { dynasty = 0 }
-					trait = ambitious
-				}
-				NOR = {
-					character = FROM
-					trait = incapable
-					trait = cynical
-					trait = content
-					trait = stressed
-					trait = depressed
-					trait = imbecile
-					any_heir_title = { always = yes }
-					has_character_modifier = planning_new_temple
-					has_character_modifier = planning_claimant_adventure
-					has_character_modifier = planning_duchy_adventure
-					has_character_flag = claimant_adventurer
-				}
-			}			
-		}
-		ai_chance = {
-			factor = 70
-			modifier = {
-				factor = 0.1
-				trait = cynical
-			}
-			modifier = {
-				factor = 0.5
-				trait = greedy
-			}
-			modifier = {
-				factor = 0.75
-				trait = slothful
-			}
-		}
-		wealth = -50
-		random_courtier = {
-			limit = {
-				is_adult = yes
-				prisoner = no
-				religion = ROOT
-				culture = ROOT
-				is_ruler = no
-				health = 4
-				OR = {
-					trait = martial_cleric
-					trait = scholarly_theologian
-					trait = mastermind_theologian
-				}
-				OR = {
-					is_female = no
-					religion_allows_female_temple_holders = yes
-				}
-				OR = {
-					NOT = { dynasty = 0 }
-					trait = ambitious
-				}
-				NOR = {
-					character = FROM
-					trait = incapable
-					trait = cynical
-					trait = content
-					trait = stressed
-					trait = depressed
-					trait = imbecile
-					any_heir_title = { always = yes }
-					has_character_modifier = planning_new_temple
-					has_character_modifier = planning_claimant_adventure
-					has_character_modifier = planning_duchy_adventure
-					has_character_flag = claimant_adventurer
-				}
-			}
-			wealth = 50
-			add_character_modifier = {
-				name = planning_new_temple
-				hidden = yes
-				duration = -1
-			}
-			hidden_tooltip = {
-				opinion = { who = ROOT modifier = opinion_helped_temple years = 50 }
-				if = {
-					limit = { has_character_modifier = estates_1 }
-					remove_character_modifier = estates_1
-					wealth = 40
-				}
-				if = {
-					limit = { has_character_modifier = estates_2 }
-					remove_character_modifier = estates_2
-					wealth = 80
-				}
-				if = {
-					limit = { has_character_modifier = estates_3 }
-					remove_character_modifier = estates_3
-					wealth = 120
-				}
-				if = {
-					limit = { has_character_modifier = estates_4 }
-					remove_character_modifier = estates_4
-					wealth = 160
-				}
-				if = {
-					limit = { has_character_modifier = estates_5 }
-					remove_character_modifier = estates_5
-					wealth = 200
-				}
-			}
-		}
-	}	
-	option = {
-		name = EVTOPTB_Plus_1414 # There is nothing to be done
-		ai_chance = {
-			factor = 30
-			modifier = {
-				factor = 0.1
-				wealth = 200
-			}
-			modifier = {
-				factor = 0.5
-				trait = ambitious
-			}
-			modifier = {
-				factor = 5
-				has_character_modifier = ai_austerity
-			}
-		}
-		set_character_flag = build_temple_tried_once
-		hidden_tooltip = { remove_character_modifier = temple_build_timer }
-		random_demesne_province = {
-			limit = { has_province_modifier = building_new_temple }
-			clr_province_flag = building_new_temple_check
-			remove_province_modifier = building_new_temple
+			FROM = { is_ruler = yes }
 		}
 	}
-}
-
-# Liege notified that temple building stopped because builder became incapable
-character_event = {
-	id = Plus.1409
-	desc = EVTDESC_Plus_1409
-	picture = GFX_evt_temple
-	
-	is_triggered_only = yes
-
-	option = {
-		name = EVTOPTA_Plus_1414 # Find someone else to continue construction
+	desc = {
+		text = EVTDESC_Plus_1408_incapable
 		trigger = {
-			wealth = 50
-			is_tribal = yes
-			any_demesne_province = {
-				religion = ROOT
-				culture = ROOT
-				num_of_empty_holdings = 1
-				has_province_modifier = building_new_temple
-				ROOT = {
-					NOT = {
-						any_realm_title = {
-							is_theocracy = yes
-							location = { province_id = PREVPREVPREV }
-						}
-					}
-				}
-			}
-			NOT = {
-				any_courtier = {
-					is_ruler = no
-					has_character_modifier = planning_new_temple
-				}
-			}
-			any_courtier = {
-				is_adult = yes
-				prisoner = no
-				religion = ROOT
-				culture = ROOT
-				is_ruler = no
-				health = 4
-				OR = {
-					trait = martial_cleric
-					trait = scholarly_theologian
-					trait = mastermind_theologian
-				}
-				OR = {
-					is_female = no
-					religion_allows_female_temple_holders = yes
-				}
-				OR = {
-					NOT = { dynasty = 0 }
-					trait = ambitious
-				}
-				NOR = {
-					character = FROM
-					trait = incapable
-					trait = cynical
-					trait = content
-					trait = stressed
-					trait = depressed
-					trait = imbecile
-					any_heir_title = { always = yes }
-					has_character_modifier = planning_new_temple
-					has_character_modifier = planning_claimant_adventure
-					has_character_modifier = planning_duchy_adventure
-					has_character_flag = claimant_adventurer
-				}
-			}			
-		}
-		ai_chance = {
-			factor = 70
-			modifier = {
-				factor = 0.1
-				trait = cynical
-			}
-			modifier = {
-				factor = 0.5
-				trait = greedy
-			}
-			modifier = {
-				factor = 0.75
-				trait = slothful
-			}
-		}
-		wealth = 50
-		random_courtier = {
-			limit = {
-				is_adult = yes
-				prisoner = no
-				religion = ROOT
-				culture = ROOT
-				is_ruler = no
-				health = 4
-				OR = {
-					trait = martial_cleric
-					trait = scholarly_theologian
-					trait = mastermind_theologian
-				}
-				OR = {
-					is_female = no
-					religion_allows_female_temple_holders = yes
-				}
-				OR = {
-					NOT = { dynasty = 0 }
-					trait = ambitious
-				}
-				NOR = {
-					character = FROM
-					trait = incapable
-					trait = cynical
-					trait = content
-					trait = stressed
-					trait = depressed
-					trait = imbecile
-					any_heir_title = { always = yes }
-					has_character_modifier = planning_new_temple
-					has_character_modifier = planning_claimant_adventure
-					has_character_modifier = planning_duchy_adventure
-					has_character_flag = claimant_adventurer
-				}
-			}
-			wealth = 50
-			add_character_modifier = {
-				name = planning_new_temple
-				hidden = yes
-				duration = -1
-			}
-			hidden_tooltip = {
-				opinion = { who = ROOT modifier = opinion_helped_temple years = 50 }
-				if = {
-					limit = { has_character_modifier = estates_1 }
-					remove_character_modifier = estates_1
-					wealth = 40
-				}
-				if = {
-					limit = { has_character_modifier = estates_2 }
-					remove_character_modifier = estates_2
-					wealth = 80
-				}
-				if = {
-					limit = { has_character_modifier = estates_3 }
-					remove_character_modifier = estates_3
-					wealth = 120
-				}
-				if = {
-					limit = { has_character_modifier = estates_4 }
-					remove_character_modifier = estates_4
-					wealth = 160
-				}
-				if = {
-					limit = { has_character_modifier = estates_5 }
-					remove_character_modifier = estates_5
-					wealth = 200
-				}
-			}
-		}
-	}	
-	option = {
-		name = EVTOPTB_Plus_1414 # There is nothing to be done
-		ai_chance = {
-			factor = 30
-			modifier = {
-				factor = 0.1
-				wealth = 200
-			}
-			modifier = {
-				factor = 0.5
-				trait = ambitious
-			}
-			modifier = {
-				factor = 5
-				has_character_modifier = ai_austerity
-			}
-		}
-		set_character_flag = build_temple_tried_once
-		hidden_tooltip = { remove_character_modifier = temple_build_timer }
-		random_demesne_province = {
-			limit = { has_province_modifier = building_new_temple }
-			clr_province_flag = building_new_temple_check
-			remove_province_modifier = building_new_temple
+			FROM = { trait = incapable }
 		}
 	}
-}
-
-# Liege notified that temple building stopped because builder is imprisoned
-character_event = {
-	id = Plus.1410
-	desc = EVTDESC_Plus_1410
-	picture = GFX_evt_temple
+	desc = {
+		text = EVTDESC_Plus_1408_prison
+		trigger = {
+			FROM = {
+				prisoner = yes
+				imprisoned_days = 30
+			}
+		}
+	}
 	
 	is_triggered_only = yes
 
 	option = {
 		name = EVTOPTA_Plus_1414 # Find someone else to continue construction
 		trigger = {
-			wealth = 50
-			is_tribal = yes
 			any_demesne_province = {
 				religion = ROOT
 				culture = ROOT
 				num_of_empty_holdings = 1
 				has_province_modifier = building_new_temple
-				ROOT = {
-					NOT = {
-						any_realm_title = {
-							is_theocracy = yes
-							location = { province_id = PREVPREVPREV }
-						}
-					}
+				OR = {
+					has_province_modifier = new_buildings_timer
+					ROOT = { is_tribal = yes }
 				}
+				NOT = { any_province_holding = { holding_type = temple } }
 			}
 			NOT = {
 				any_courtier = {
@@ -1076,9 +869,14 @@ character_event = {
 				is_ruler = no
 				health = 4
 				OR = {
+					trait = detached_priest
 					trait = martial_cleric
 					trait = scholarly_theologian
 					trait = mastermind_theologian
+					AND = {
+						learning = 8
+						trait = zealous
+					}
 				}
 				OR = {
 					is_female = no
@@ -1087,9 +885,9 @@ character_event = {
 				OR = {
 					NOT = { dynasty = 0 }
 					trait = ambitious
+					trait = zealous
 				}
 				NOR = {
-					character = FROM
 					trait = incapable
 					trait = cynical
 					trait = content
@@ -1102,12 +900,12 @@ character_event = {
 					has_character_modifier = planning_duchy_adventure
 					has_character_flag = claimant_adventurer
 				}
-			}			
+			}
 		}
 		ai_chance = {
 			factor = 70
 			modifier = {
-				factor = 0.1
+				factor = 0.5
 				trait = cynical
 			}
 			modifier = {
@@ -1115,11 +913,15 @@ character_event = {
 				trait = greedy
 			}
 			modifier = {
+				factor = 0.5
+				NOT = { wealth = 25 }
+			}
+			modifier = {
 				factor = 0.75
 				trait = slothful
 			}
 		}
-		wealth = -50
+		wealth = -25
 		random_courtier = {
 			limit = {
 				is_adult = yes
@@ -1129,9 +931,14 @@ character_event = {
 				is_ruler = no
 				health = 4
 				OR = {
+					trait = detached_priest
 					trait = martial_cleric
 					trait = scholarly_theologian
 					trait = mastermind_theologian
+					AND = {
+						learning = 8
+						trait = zealous
+					}
 				}
 				OR = {
 					is_female = no
@@ -1140,9 +947,9 @@ character_event = {
 				OR = {
 					NOT = { dynasty = 0 }
 					trait = ambitious
+					trait = zealous
 				}
 				NOR = {
-					character = FROM
 					trait = incapable
 					trait = cynical
 					trait = content
@@ -1156,10 +963,9 @@ character_event = {
 					has_character_flag = claimant_adventurer
 				}
 			}
-			wealth = 50
+			set_character_flag = new_temple_builder
 			add_character_modifier = {
 				name = planning_new_temple
-				hidden = yes
 				duration = -1
 			}
 			hidden_tooltip = {
@@ -1198,21 +1004,31 @@ character_event = {
 			factor = 30
 			modifier = {
 				factor = 0.1
-				wealth = 200
+				wealth = 100
 			}
 			modifier = {
 				factor = 0.5
 				trait = ambitious
 			}
 			modifier = {
-				factor = 5
+				factor = 3
 				has_character_modifier = ai_austerity
 			}
 		}
 		set_character_flag = build_temple_tried_once
 		hidden_tooltip = { remove_character_modifier = temple_build_timer }
 		random_demesne_province = {
-			limit = { has_province_modifier = building_new_temple }
+			limit = {
+				religion = ROOT
+				culture = ROOT
+				num_of_empty_holdings = 1
+				has_province_modifier = building_new_temple
+				OR = {
+					has_province_modifier = new_buildings_timer
+					ROOT = { is_tribal = yes }
+				}
+				NOT = { any_province_holding = { holding_type = temple } }
+			}
 			clr_province_flag = building_new_temple_check
 			remove_province_modifier = building_new_temple
 		}
@@ -1228,12 +1044,12 @@ character_event = {
 	min_age = 16
 	capable_only = yes
 	prisoner = no
+	has_character_flag = new_temple_builder
 	
 	trigger = {
 		has_character_modifier = planning_new_temple
 		liege = {
 			OR = {
-				is_tribal = no
 				NOT = { religion = ROOT }
 				NOT = { culture = ROOT }
 				NOT = {
@@ -1242,16 +1058,7 @@ character_event = {
 						culture = ROOT
 						num_of_empty_holdings = 1
 						has_province_modifier = building_new_temple
-						ROOT = {
-							liege = {
-								NOT = {
-									any_realm_title = {
-										is_theocracy = yes
-										location = { province_id = PREVPREVPREVPREV }
-									}
-								}
-							}
-						}
+						NOT = { any_province_holding = { holding_type = temple } }
 					}
 				}
 			}
@@ -1263,7 +1070,10 @@ character_event = {
 	}
 	
 	immediate = {
+		clr_character_flag = new_temple_builder
 		remove_character_modifier = planning_new_temple
+		piety = -50
+		prestige = -50
 		if = {
 			limit = {
 				liege = {
@@ -1279,44 +1089,21 @@ character_event = {
 			if = {
 				limit = {
 					liege = {
-						OR = {
-							is_tribal = no
-							NOT = { religion = ROOT }
-							NOT = { culture = ROOT }
-						}
-					}
-				}
-				piety = -50
-				prestige = -50
-				clear_wealth = yes
-				liege = { character_event = { id = Plus.1412 } }
-			}
-			if = {
-				limit = {
-					liege = {
-						is_tribal = yes
-						religion = ROOT
-						culture = ROOT
-						any_demesne_province = {
-							has_province_modifier = building_new_temple
-							OR = {
-								NOT = { religion = ROOT }
-								NOT = { culture = ROOT }
-								NOT = { num_of_empty_holdings = 1 }
-								ROOT = {
-									liege = {
-										any_realm_title = {
-											is_theocracy = yes
-											location = { province_id = PREVPREVPREVPREV }
-										}
-									}
-								}
+						NOT = {
+							any_demesne_province = {
+								religion = ROOT
+								culture = ROOT
+								num_of_empty_holdings = 1
+								has_province_modifier = building_new_temple
+								NOT = { any_province_holding = { holding_type = temple } }
 							}
 						}
 					}
 				}
 				liege = { letter_event = { id = Plus.1413 } }
+				break = yes
 			}
+			liege = { character_event = { id = Plus.1412 } }
 		}
 	}
 }
@@ -1332,21 +1119,12 @@ character_event = {
 	option = {
 		name = EVTOPTA_Plus_1414 # Find someone else to continue construction
 		trigger = {
-			wealth = 50
-			is_tribal = yes
 			any_demesne_province = {
 				religion = ROOT
 				culture = ROOT
 				num_of_empty_holdings = 1
 				has_province_modifier = building_new_temple
-				ROOT = {
-					NOT = {
-						any_realm_title = {
-							is_theocracy = yes
-							location = { province_id = PREVPREVPREV }
-						}
-					}
-				}
+				NOT = { any_province_holding = { holding_type = temple } }
 			}
 			NOT = {
 				any_courtier = {
@@ -1362,9 +1140,14 @@ character_event = {
 				is_ruler = no
 				health = 4
 				OR = {
+					trait = detached_priest
 					trait = martial_cleric
 					trait = scholarly_theologian
 					trait = mastermind_theologian
+					AND = {
+						learning = 8
+						trait = zealous
+					}
 				}
 				OR = {
 					is_female = no
@@ -1373,9 +1156,9 @@ character_event = {
 				OR = {
 					NOT = { dynasty = 0 }
 					trait = ambitious
+					trait = zealous
 				}
 				NOR = {
-					character = FROM
 					trait = incapable
 					trait = cynical
 					trait = content
@@ -1388,12 +1171,12 @@ character_event = {
 					has_character_modifier = planning_duchy_adventure
 					has_character_flag = claimant_adventurer
 				}
-			}			
+			}
 		}
 		ai_chance = {
 			factor = 70
 			modifier = {
-				factor = 0.1
+				factor = 0.5
 				trait = cynical
 			}
 			modifier = {
@@ -1401,11 +1184,15 @@ character_event = {
 				trait = greedy
 			}
 			modifier = {
+				factor = 0.5
+				NOT = { wealth = 25 }
+			}
+			modifier = {
 				factor = 0.75
 				trait = slothful
 			}
 		}
-		wealth = -50
+		wealth = -25
 		random_courtier = {
 			limit = {
 				is_adult = yes
@@ -1415,9 +1202,14 @@ character_event = {
 				is_ruler = no
 				health = 4
 				OR = {
+					trait = detached_priest
 					trait = martial_cleric
 					trait = scholarly_theologian
 					trait = mastermind_theologian
+					AND = {
+						learning = 8
+						trait = zealous
+					}
 				}
 				OR = {
 					is_female = no
@@ -1426,9 +1218,9 @@ character_event = {
 				OR = {
 					NOT = { dynasty = 0 }
 					trait = ambitious
+					trait = zealous
 				}
 				NOR = {
-					character = FROM
 					trait = incapable
 					trait = cynical
 					trait = content
@@ -1442,10 +1234,9 @@ character_event = {
 					has_character_flag = claimant_adventurer
 				}
 			}
-			wealth = 50
+			set_character_flag = new_temple_builder
 			add_character_modifier = {
 				name = planning_new_temple
-				hidden = yes
 				duration = -1
 			}
 			hidden_tooltip = {
@@ -1484,21 +1275,27 @@ character_event = {
 			factor = 30
 			modifier = {
 				factor = 0.1
-				wealth = 200
+				wealth = 100
 			}
 			modifier = {
 				factor = 0.5
 				trait = ambitious
 			}
 			modifier = {
-				factor = 5
+				factor = 3
 				has_character_modifier = ai_austerity
 			}
 		}
 		set_character_flag = build_temple_tried_once
 		hidden_tooltip = { remove_character_modifier = temple_build_timer }
 		random_demesne_province = {
-			limit = { has_province_modifier = building_new_temple }
+			limit = {
+				religion = ROOT
+				culture = ROOT
+				num_of_empty_holdings = 1
+				has_province_modifier = building_new_temple
+				NOT = { any_province_holding = { holding_type = temple } }
+			}
 			clr_province_flag = building_new_temple_check
 			remove_province_modifier = building_new_temple
 		}
@@ -1515,29 +1312,25 @@ letter_event = {
 	option = {
 		name = EVTOPTA_Plus_1413 # What about another site?
 		trigger = {
-			wealth = 50
-			is_tribal = yes
+			wealth = 25
 			religion = FROM
 			culture = FROM
 			any_demesne_province = {
 				religion = ROOT
 				culture = ROOT
 				num_of_empty_holdings = 1
-				NOT = { has_province_modifier = building_new_temple }
-				ROOT = {
-					NOT = {
-						any_realm_title = {
-							is_theocracy = yes
-							location = { province_id = PREVPREVPREV }
-						}
-					}
+				has_province_modifier = building_new_temple
+				OR = {
+					has_province_modifier = new_buildings_timer
+					ROOT = { is_tribal = yes }
 				}
+				NOT = { any_province_holding = { holding_type = temple } }
 			}
 		}
 		ai_chance = {
 			factor = 70
 			modifier = {
-				factor = 0.1
+				factor = 0.5
 				trait = cynical
 			}
 			modifier = {
@@ -1545,13 +1338,25 @@ letter_event = {
 				trait = greedy
 			}
 			modifier = {
+				factor = 0.5
+				NOT = { wealth = 25 }
+			}
+			modifier = {
 				factor = 0.75
 				trait = slothful
 			}
 		}
-		wealth = -50
+		wealth = -25
 		random_demesne_province = {
-			limit = { has_province_modifier = building_new_temple }
+			limit = {
+				has_province_modifier = building_new_temple
+				OR = {
+					NOT = { religion = ROOT }
+					NOT = { culture = ROOT }
+					NOT = { num_of_empty_holdings = 1 }
+					any_province_holding = { holding_type = temple }
+				}
+			}
 			clr_province_flag = building_new_temple_check
 			remove_province_modifier = building_new_temple
 		}
@@ -1560,15 +1365,12 @@ letter_event = {
 				religion = ROOT
 				culture = ROOT
 				num_of_empty_holdings = 1
-				NOT = { has_province_modifier = building_new_temple }
-				ROOT = {
-					NOT = {
-						any_realm_title = {
-							is_theocracy = yes
-							location = { province_id = PREVPREVPREV }
-						}
-					}
+				OR = {
+					has_province_modifier = new_buildings_timer
+					ROOT = { is_tribal = yes }
 				}
+				NOT = { has_province_modifier = building_new_temple }
+				NOT = { any_province_holding = { holding_type = temple } }
 			}
 			set_province_flag = building_new_temple_check
 			add_province_modifier = {
@@ -1578,13 +1380,8 @@ letter_event = {
 		}
 		hidden_tooltip = {
 			FROM = {
-				wealth = 50
+				wealth = 25
 				opinion = { who = ROOT modifier = opinion_helped_temple years = 50 }
-				add_character_modifier = {
-					name = planning_new_temple
-					hidden = yes
-					duration = -1
-				}
 			}
 		}
 	}
@@ -1594,28 +1391,31 @@ letter_event = {
 			factor = 30
 			modifier = {
 				factor = 0.1
-				wealth = 200
+				wealth = 100
 			}
 			modifier = {
 				factor = 0.5
 				trait = ambitious
 			}
 			modifier = {
-				factor = 5
+				factor = 3
 				has_character_modifier = ai_austerity
 			}
 		}
 		set_character_flag = build_temple_tried_once
 		hidden_tooltip = { remove_character_modifier = temple_build_timer }
 		random_demesne_province = {
-			limit = { has_province_modifier = building_new_temple }
+			limit = {
+				has_province_modifier = building_new_temple
+				OR = {
+					NOT = { religion = ROOT }
+					NOT = { culture = ROOT }
+					NOT = { num_of_empty_holdings = 1 }
+					any_province_holding = { holding_type = temple }
+				}
+			}
 			clr_province_flag = building_new_temple_check
 			remove_province_modifier = building_new_temple
-			FROM = {
-				piety = -50
-				prestige = -50
-				clear_wealth = yes
-			}
 		}
 	}
 }
@@ -1646,17 +1446,10 @@ province_event = {
 		name = EVTOPTA_Plus_1414 # Find someone else to continue construction
 		trigger = {
 			num_of_empty_holdings = 1
+			NOT = { any_province_holding = { holding_type = temple } }
 			owner = {
-				wealth = 50
-				is_tribal = yes
 				religion = ROOT
 				culture = ROOT
-				NOT = {
-					any_realm_title = {
-						is_theocracy = yes
-						location = { province_id = ROOT }
-					}
-				}
 				any_courtier = {
 					is_adult = yes
 					prisoner = no
@@ -1665,9 +1458,14 @@ province_event = {
 					is_ruler = no
 					health = 4
 					OR = {
+						trait = detached_priest
 						trait = martial_cleric
 						trait = scholarly_theologian
 						trait = mastermind_theologian
+						AND = {
+							learning = 8
+							trait = zealous
+						}
 					}
 					OR = {
 						is_female = no
@@ -1676,6 +1474,7 @@ province_event = {
 					OR = {
 						NOT = { dynasty = 0 }
 						trait = ambitious
+						trait = zealous
 					}
 					NOR = {
 						trait = incapable
@@ -1696,7 +1495,7 @@ province_event = {
 		ai_chance = {
 			factor = 70
 			modifier = {
-				factor = 0.1
+				factor = 0.5
 				owner = { trait = cynical }
 			}
 			modifier = {
@@ -1704,13 +1503,17 @@ province_event = {
 				owner = { trait = greedy }
 			}
 			modifier = {
+				factor = 0.5
+				owner = { NOT = { wealth = 25 } }
+			}
+			modifier = {
 				factor = 0.75
 				owner = { trait = slothful }
 			}
 		}
 		owner = {
-			piety = 20
-			wealth = -50
+			piety = 25
+			wealth = -25
 			random_courtier = {
 				limit = {
 					is_adult = yes
@@ -1720,9 +1523,14 @@ province_event = {
 					is_ruler = no
 					health = 4
 					OR = {
+						trait = detached_priest
 						trait = martial_cleric
 						trait = scholarly_theologian
 						trait = mastermind_theologian
+						AND = {
+							learning = 8
+							trait = zealous
+						}
 					}
 					OR = {
 						is_female = no
@@ -1731,6 +1539,7 @@ province_event = {
 					OR = {
 						NOT = { dynasty = 0 }
 						trait = ambitious
+						trait = zealous
 					}
 					NOR = {
 						trait = incapable
@@ -1749,10 +1558,10 @@ province_event = {
 				custom_tooltip = {
 					text = WILL_CONTINUE_BUILDING_TEMPLE
 					hidden_tooltip = {
-						wealth = 50
+						wealth = 25
+						set_character_flag = new_temple_builder
 						add_character_modifier = {
 							name = planning_new_temple
-							hidden = yes
 							duration = -1
 						}
 						opinion = { who = ROOT modifier = opinion_helped_temple years = 50 }
@@ -1792,22 +1601,20 @@ province_event = {
 			factor = 30
 			modifier = {
 				factor = 0.1
-				owner = { wealth = 200 }
+				owner = { wealth = 100 }
 			}
 			modifier = {
 				factor = 0.5
 				owner = { trait = ambitious }
 			}
 			modifier = {
-				factor = 5
+				factor = 3
 				owner = { has_character_modifier = ai_austerity }
 			}
 		}
 		clr_province_flag = building_new_temple_check
 		remove_province_modifier = building_new_temple
-		hidden_tooltip = {
-			owner = { set_character_flag = build_temple_tried_once }
-		}
+		owner = { set_character_flag = build_temple_tried_once }
 	}
 }
 
@@ -1820,12 +1627,12 @@ character_event = {
 	min_age = 16
 	capable_only = yes
 	prisoner = no
+	has_character_flag = new_temple_builder
 	
 	trigger = {
 		has_character_modifier = planning_new_temple
 		is_ruler = no
 		liege = {
-			is_tribal = yes
 			religion = ROOT
 			culture = ROOT
 			any_demesne_province = {
@@ -1834,19 +1641,10 @@ character_event = {
 				num_of_empty_holdings = 1
 				has_province_modifier = building_new_temple
 				had_province_flag = { flag = building_new_temple_check days = 365 }
-				ROOT = {
-					liege = {
-						NOT = {
-							any_realm_title = {
-								is_theocracy = yes
-								location = { province_id = PREVPREVPREVPREV }
-							}
-						}
-					}
-				}
+				NOT = { any_province_holding = { holding_type = temple } }
 			}
 		}
-		NOT = {
+		NOR = {
 			trait = genius
 			learning = 16
 		}
@@ -2012,7 +1810,7 @@ letter_event = {
 				trait = slothful
 			}
 		}
-		piety = 10
+		piety = 25
 		wealth = -50
 		reverse_opinion = { who = FROM modifier = opinion_helped_temple years = 50 }
 	}
@@ -2036,21 +1834,309 @@ letter_event = {
 		set_character_flag = build_temple_tried_once
 		if = {
 			limit = { wealth = 50 }
-			piety = -10
+			piety = -25
 		}
-		prestige = -20
+		prestige = -25
 		reverse_opinion = { who = FROM modifier = opinion_refused_temple years = 50 }
 		random_demesne_province = {
-			limit = { has_province_modifier = building_new_temple }
+			limit = {
+				religion = ROOT
+				culture = ROOT
+				num_of_empty_holdings = 1
+				has_province_modifier = building_new_temple
+				had_province_flag = { flag = building_new_temple_check days = 365 }
+				NOT = { any_province_holding = { holding_type = temple } }
+			}
 			clr_province_flag = building_new_temple_check
 			remove_province_modifier = building_new_temple
 		}
 		hidden_tooltip = {
 			remove_character_modifier = temple_build_timer
-			FROM = { remove_character_modifier = planning_new_temple }
+			FROM = {
+				remove_character_modifier = planning_new_temple
+				clr_character_flag = new_temple_builder
+			}
 		}
 	}
 }
+
+# Feudal liege asks for character to build temple
+character_event = {
+	id = Plus.1422
+	desc = EVTDESC_Plus_1422
+	picture = GFX_evt_temple
+	
+	is_triggered_only = yes
+	
+	immediate = {
+		#first choice
+		random_courtier = {
+			limit = {
+				is_adult = yes
+				prisoner = no
+				religion = ROOT
+				culture = ROOT
+				is_ruler = no
+				health = 4
+				OR = {
+					trait = detached_priest
+					trait = martial_cleric
+					trait = scholarly_theologian
+					trait = mastermind_theologian
+					AND = {
+						learning = 8
+						trait = zealous
+					}
+				}
+				OR = {
+					is_female = no
+					religion_allows_female_temple_holders = yes
+				}
+				OR = {
+					NOT = { dynasty = 0 }
+					trait = ambitious
+					trait = zealous
+				}
+				NOR = {
+					trait = incapable
+					trait = cynical
+					trait = content
+					trait = stressed
+					trait = depressed
+					trait = imbecile
+					any_heir_title = { always = yes }
+					has_character_modifier = planning_new_temple
+					has_character_modifier = planning_claimant_adventure
+					has_character_modifier = planning_duchy_adventure
+					has_character_flag = claimant_adventurer
+				}
+			}
+			save_event_target_as = first_temple_choice
+		}
+		#second choice
+		random_courtier = {
+			limit = {
+				event_target:first_temple_choice = {
+					NOT = { character = PREV }
+				}
+				is_adult = yes
+				prisoner = no
+				religion = ROOT
+				culture = ROOT
+				is_ruler = no
+				health = 4
+				OR = {
+					trait = detached_priest
+					trait = martial_cleric
+					trait = scholarly_theologian
+					trait = mastermind_theologian
+					AND = {
+						learning = 8
+						trait = zealous
+					}
+				}
+				OR = {
+					is_female = no
+					religion_allows_female_temple_holders = yes
+				}
+				OR = {
+					NOT = { dynasty = 0 }
+					trait = ambitious
+					trait = zealous
+				}
+				NOR = {
+					trait = incapable
+					trait = cynical
+					trait = content
+					trait = stressed
+					trait = depressed
+					trait = imbecile
+					any_heir_title = { always = yes }
+					has_character_modifier = planning_new_temple
+					has_character_modifier = planning_claimant_adventure
+					has_character_modifier = planning_duchy_adventure
+					has_character_flag = claimant_adventurer
+				}
+			}
+			save_event_target_as = second_temple_choice
+		}
+		#third choice
+		random_courtier = {
+			limit = {
+				event_target:first_temple_choice = {
+					NOT = { character = PREV }
+				}
+				event_target:second_temple_choice = {
+					NOT = { character = PREV }
+				}
+				is_adult = yes
+				prisoner = no
+				religion = ROOT
+				culture = ROOT
+				is_ruler = no
+				health = 4
+				OR = {
+					trait = detached_priest
+					trait = martial_cleric
+					trait = scholarly_theologian
+					trait = mastermind_theologian
+					AND = {
+						learning = 8
+						trait = zealous
+					}
+				}
+				OR = {
+					is_female = no
+					religion_allows_female_temple_holders = yes
+				}
+				OR = {
+					NOT = { dynasty = 0 }
+					trait = ambitious
+					trait = zealous
+				}
+				NOR = {
+					trait = incapable
+					trait = cynical
+					trait = content
+					trait = stressed
+					trait = depressed
+					trait = imbecile
+					any_heir_title = { always = yes }
+					has_character_modifier = planning_new_temple
+					has_character_modifier = planning_claimant_adventure
+					has_character_modifier = planning_duchy_adventure
+					has_character_flag = claimant_adventurer
+				}
+			}
+			save_event_target_as = third_temple_choice
+		}
+	}
+	
+	option = {
+		name = EVTOPTA_Plus_1422 #First choice
+		trigger = { event_target:first_temple_choice = { is_alive = yes } }
+		event_target:first_temple_choice = {
+			wealth = 100
+			set_character_flag = new_temple_builder
+			add_character_modifier = {
+				name = planning_new_temple
+				duration = -1
+			}
+			if = {
+				limit = { has_character_modifier = estates_1 }
+				remove_character_modifier = estates_1
+				wealth = 40
+			}
+			if = {
+				limit = { has_character_modifier = estates_2 }
+				remove_character_modifier = estates_2
+				wealth = 80
+			}
+			if = {
+				limit = { has_character_modifier = estates_3 }
+				remove_character_modifier = estates_3
+				wealth = 120
+			}
+			if = {
+				limit = { has_character_modifier = estates_4 }
+				remove_character_modifier = estates_4
+				wealth = 160
+			}
+			if = {
+				limit = { has_character_modifier = estates_5 }
+				remove_character_modifier = estates_5
+				wealth = 200
+			}
+		}	
+	}
+	option = {
+		name = EVTOPTB_Plus_1422 #Second choice
+		trigger = { event_target:second_temple_choice = { is_alive = yes } }
+		event_target:second_temple_choice = {
+			wealth = 100
+			set_character_flag = new_temple_builder
+			add_character_modifier = {
+				name = planning_new_temple
+				duration = -1
+			}
+			if = {
+				limit = { has_character_modifier = estates_1 }
+				remove_character_modifier = estates_1
+				wealth = 40
+			}
+			if = {
+				limit = { has_character_modifier = estates_2 }
+				remove_character_modifier = estates_2
+				wealth = 80
+			}
+			if = {
+				limit = { has_character_modifier = estates_3 }
+				remove_character_modifier = estates_3
+				wealth = 120
+			}
+			if = {
+				limit = { has_character_modifier = estates_4 }
+				remove_character_modifier = estates_4
+				wealth = 160
+			}
+			if = {
+				limit = { has_character_modifier = estates_5 }
+				remove_character_modifier = estates_5
+				wealth = 200
+			}
+		}
+	}
+	option = {
+		name = EVTOPTC_Plus_1422 #Third choice
+		trigger = { event_target:third_temple_choice = { is_alive = yes } }
+		event_target:third_temple_choice = {
+			wealth = 100
+			set_character_flag = new_temple_builder
+			add_character_modifier = {
+				name = planning_new_temple
+				duration = -1
+			}
+			if = {
+				limit = { has_character_modifier = estates_1 }
+				remove_character_modifier = estates_1
+				wealth = 40
+			}
+			if = {
+				limit = { has_character_modifier = estates_2 }
+				remove_character_modifier = estates_2
+				wealth = 80
+			}
+			if = {
+				limit = { has_character_modifier = estates_3 }
+				remove_character_modifier = estates_3
+				wealth = 120
+			}
+			if = {
+				limit = { has_character_modifier = estates_4 }
+				remove_character_modifier = estates_4
+				wealth = 160
+			}
+			if = {
+				limit = { has_character_modifier = estates_5 }
+				remove_character_modifier = estates_5
+				wealth = 200
+			}
+		}
+	}
+	option = {
+		name = EVTOPTD_Plus_1422 #Maybe not
+		trigger = { ai = no }
+		wealth = 100
+		piety = -25
+		FROM = {
+			location = {
+				clr_province_flag = building_new_temple_check
+				remove_province_modifier = building_new_temple
+			}
+		}
+	}
+}
+
 
 ### TEMPLE CONSTRUCTION COMPLETE
 
@@ -2062,13 +2148,13 @@ character_event = {
 	min_age = 16
 	capable_only = yes
 	prisoner = no
+	has_character_flag = new_temple_builder
 	
 	trigger = {
 		has_character_modifier = planning_new_temple
 		is_ruler = no
 		liege = {
 			war = no
-			is_tribal = yes
 			religion = ROOT
 			culture = ROOT
 			any_demesne_province = {
@@ -2076,11 +2162,10 @@ character_event = {
 				culture = ROOT
 				num_of_empty_holdings = 1
 				has_province_modifier = building_new_temple
+				NOT = { any_province_holding = { holding_type = temple } }
 				OR = {
 					AND = {
-						ROOT = {
-							NOT = { wealth = 50 }
-						}
+						ROOT = { NOT = { wealth = 50 } }
 						had_province_flag = { flag = building_new_temple_check days = 3650 random = 1825 }
 					}
 					AND = {
@@ -2091,20 +2176,12 @@ character_event = {
 						had_province_flag = { flag = building_new_temple_check days = 2750 random = 1825 }
 					}
 					AND = {
-						ROOT = {
-							wealth = 100
-						}
+						ROOT = { wealth = 100 }
 						had_province_flag = { flag = building_new_temple_check days = 1825 random = 1825 }
 					}
-				}
-				ROOT = {
-					liege = {
-						NOT = {
-							any_realm_title = {
-								is_theocracy = yes
-								location = { province_id = PREVPREVPREVPREV }
-							}
-						}
+					AND = {
+						owner = { is_feudal = yes }
+						had_province_flag = { flag = building_new_temple_check days = 1095 random = 1095 }
 					}
 				}
 			}
@@ -2116,6 +2193,9 @@ character_event = {
 	}
 	
 	immediate = {
+		clr_character_flag = building_temple_delayed
+		clr_character_flag = new_temple_builder
+		remove_character_modifier = planning_new_temple
 		liege = {
 			random_demesne_province = {
 				limit = {
@@ -2123,6 +2203,7 @@ character_event = {
 					culture = PREV
 					num_of_empty_holdings = 1
 					has_province_modifier = building_new_temple
+					NOT = { any_province_holding = { holding_type = temple } }
 				}
 				remove_province_modifier = building_new_temple
 				clr_province_flag = building_new_temple_check
@@ -2131,9 +2212,6 @@ character_event = {
 					holder = ROOT
 				}
 				ROOT = {
-					clr_character_flag = building_temple_delayed
-					remove_character_modifier = planning_new_temple
-					clear_wealth = yes
 					set_defacto_liege = PREVPREV
 					piety = 50
 				}
@@ -2180,17 +2258,12 @@ character_event = {
 		location = {
 			num_of_empty_holdings = 1
 			NOT = { has_province_modifier = building_new_city }
+			NOT = { any_province_holding = { holding_type = city } }
 			county = { is_occupied = no }
 			owner = {
 				is_tribal = yes
 				job_treasurer = { character = ROOT }
 				culture = PREV
-				NOT = {
-					any_realm_title = {
-						is_republic = yes
-						location = { province_id = PREVPREVPREV }
-					}
-				}
 			}
 		}
 	}
@@ -2389,6 +2462,9 @@ character_event = {
 	
 	option = {
 		name = EVTOPTA_Plus_1430 # Tell my liege
+		location = {
+			save_event_target_as = new_city_location
+		}
 		liege = {
 			character_event = { id = Plus.1431 tooltip = INFORM_LIEGE_BUILD_CITY }
 		}
@@ -2415,13 +2491,11 @@ character_event = {
 			}
 		}
 		wealth = -75
-		FROM = {
-			location = {
-				set_province_flag = tribal_build_city
-				add_province_modifier = {
-					name = building_new_city
-					duration = -1
-				}
+		event_target:new_city_location = {
+			set_province_flag = tribal_build_city
+			add_province_modifier = {
+				name = building_new_city
+				duration = -1
 			}
 		}
 	}
@@ -2436,13 +2510,11 @@ character_event = {
 			}
 		}
 		prestige = -250
-		FROM = {
-			location = {
-				set_province_flag = tribal_build_city
-				add_province_modifier = {
-					name = building_new_city
-					duration = -1
-				}
+		event_target:new_city_location = {
+			set_province_flag = tribal_build_city
+			add_province_modifier = {
+				name = building_new_city
+				duration = -1
 			}
 		}
 	}
@@ -2454,6 +2526,10 @@ character_event = {
 				factor = 10
 				NOT = { wealth = 75 }
 				NOT = { prestige = 250 }
+			}
+			modifier = {
+				factor = 0.5
+				is_feudal = yes
 			}
 		}
 	}
@@ -2470,13 +2546,11 @@ province_event = {
 		OR = {
 			NOT = { num_of_empty_holdings = 1 }
 			owner = { NOT = { culture = ROOT } }
-			owner = { is_tribal = no }
+			any_province_holding = { holding_type = city }
 			owner = {
-				any_realm_title = {
-					is_republic = yes
-					location = { province_id = ROOT }
-				}
-			}
+				is_tribal = no
+				is_feudal = no
+			}	
 		}
 	}
 	
@@ -2789,9 +2863,21 @@ province_event = {
 # Site has dispute with merchants
 province_event = {
 	id = Plus.1436
-	desc = EVTDESC_Plus_1436
 	picture = GFX_evt_stone_church
 	border = GFX_event_normal_frame_economy
+	
+	desc = {
+		text = EVTDESC_Plus_1436_tribal
+		trigger = {
+			owner = { is_tribal = yes }
+		}
+	}
+	desc = {
+		text = EVTDESC_Plus_1436_feudal
+		trigger = {
+			owner = { is_tribal = no }
+		}
+	}
 
 	trigger = {
 		has_province_modifier = building_new_city
@@ -3256,18 +3342,22 @@ province_event = {
 	
 	trigger = {
 		has_province_modifier = building_new_city
-		had_province_flag = { flag = tribal_build_city days = 2920 }
+		OR = {
+			had_province_flag = { flag = tribal_build_city days = 2920 random = 730 }
+			AND = {
+				owner = { is_feudal = yes }
+				had_province_flag = { flag = tribal_build_city days = 1825 random = 365 }
+			}
+		}
 		num_of_empty_holdings = 1
 		county = { is_occupied = no }
+		NOT = { any_province_holding = { holding_type = city } }
 		owner = {
-			is_tribal = yes
-			culture = ROOT
-			NOT = {
-				any_realm_title = {
-					is_republic = yes
-					location = { province_id = ROOT }
-				}
+			OR = {
+				is_tribal = yes
+				is_feudal = yes
 			}
+			culture = ROOT
 		}
 	}
 	
@@ -3314,36 +3404,44 @@ character_event = {
 	
 	hide_window = yes
 	
-	only_rulers = yes
+	only_playable = yes
 	min_age = 16
 	capable_only = yes
 	prisoner = no
 	
 	trigger = {
+		ai = yes
 		year = 800
-		is_tribal = yes
-		higher_tier_than = BARON
+		num_of_count_titles = 1
 		prestige = 0
 		wealth = 0
+		OR = {
+			is_tribal = yes
+			AND = {
+				is_feudal = yes
+				any_demesne_province = { has_province_modifier = new_buildings_timer }
+			}
+		}
 		NOT = { any_demesne_province = { has_province_modifier = building_new_city } }
 		any_courtier = { has_job_title = job_treasurer }
 		any_demesne_province = {
 			num_of_empty_holdings = 1
 			county = { is_occupied = no }
 			culture = ROOT
-			ROOT = {
-				NOT = {
-					any_realm_title = {
-						is_republic = yes
-						location = { province_id = PREVPREVPREV }
-					}
-				}
+			NOT = { any_province_holding = { holding_type = city } }
+			OR = {
+				has_province_modifier = new_buildings_timer
+				owner = { is_tribal = yes }
 			}
 		}
 	}
 	
 	mean_time_to_happen = {
 		months = 1000
+		modifier = {
+			factor = 0.25
+			is_feudal = yes
+		}
 		modifier = {
 			factor = 0.75
 			year = 900
@@ -3374,6 +3472,7 @@ character_event = {
 		}
 		modifier = {
 			factor = 1.25
+			is_tribal = yes
 			any_realm_title = {
 				is_republic = yes
 				count = 2
@@ -3381,6 +3480,7 @@ character_event = {
 		}
 		modifier = {
 			factor = 1.25
+			is_tribal = yes
 			any_realm_title = {
 				is_republic = yes
 				count = 3
@@ -3388,6 +3488,7 @@ character_event = {
 		}
 		modifier = {
 			factor = 1.5
+			is_tribal = yes
 			any_realm_title = {
 				is_republic = yes
 				count = 4
@@ -3439,13 +3540,10 @@ character_event = {
 				num_of_empty_holdings = 1
 				county = { is_occupied = no }
 				culture = ROOT
-				ROOT = {
-					NOT = {
-						any_realm_title = {
-							is_republic = yes
-							location = { province_id = PREVPREVPREV }
-						}
-					}
+				NOT = { any_province_holding = { holding_type = city } }
+				OR = {
+					has_province_modifier = new_buildings_timer
+					owner = { is_tribal = yes }
 				}
 			}
 			set_province_flag = tribal_build_city
@@ -3465,13 +3563,10 @@ character_event = {
 				num_of_empty_holdings = 1
 				county = { is_occupied = no }
 				culture = ROOT
-				ROOT = {
-					NOT = {
-						any_realm_title = {
-							is_republic = yes
-							location = { province_id = PREVPREVPREV }
-						}
-					}
+				NOT = { any_province_holding = { holding_type = city } }
+				OR = {
+					has_province_modifier = new_buildings_timer
+					owner = { is_tribal = yes }
 				}
 			}
 			set_province_flag = tribal_build_city
@@ -3490,13 +3585,10 @@ character_event = {
 				num_of_empty_holdings = 1
 				county = { is_occupied = no }
 				culture = ROOT
-				ROOT = {
-					NOT = {
-						any_realm_title = {
-							is_republic = yes
-							location = { province_id = PREVPREVPREV }
-						}
-					}
+				NOT = { any_province_holding = { holding_type = city } }
+				OR = {
+					has_province_modifier = new_buildings_timer
+					owner = { is_tribal = yes }
 				}
 			}
 			set_province_flag = tribal_build_city
@@ -3518,13 +3610,10 @@ character_event = {
 				num_of_empty_holdings = 1
 				county = { is_occupied = no }
 				culture = ROOT
-				ROOT = {
-					NOT = {
-						any_realm_title = {
-							is_republic = yes
-							location = { province_id = PREVPREVPREV }
-						}
-					}
+				NOT = { any_province_holding = { holding_type = city } }
+				OR = {
+					has_province_modifier = new_buildings_timer
+					owner = { is_tribal = yes }
 				}
 			}
 			set_province_flag = tribal_build_city
@@ -3541,13 +3630,10 @@ character_event = {
 				num_of_empty_holdings = 1
 				county = { is_occupied = no }
 				culture = ROOT
-				ROOT = {
-					NOT = {
-						any_realm_title = {
-							is_republic = yes
-							location = { province_id = PREVPREVPREV }
-						}
-					}
+				NOT = { any_province_holding = { holding_type = city } }
+				OR = {
+					has_province_modifier = new_buildings_timer
+					owner = { is_tribal = yes }
 				}
 			}
 			set_province_flag = tribal_build_city
@@ -3563,13 +3649,10 @@ character_event = {
 				num_of_empty_holdings = 1
 				county = { is_occupied = no }
 				culture = ROOT
-				ROOT = {
-					NOT = {
-						any_realm_title = {
-							is_republic = yes
-							location = { province_id = PREVPREVPREV }
-						}
-					}
+				NOT = { any_province_holding = { holding_type = city } }
+				OR = {
+					has_province_modifier = new_buildings_timer
+					owner = { is_tribal = yes }
 				}
 			}
 			set_province_flag = tribal_build_city
@@ -3580,5 +3663,200 @@ character_event = {
 			break = yes
 		}
 	}
+}
+
+# For feudal player realms
+character_event = {
+	id = Plus.1439
+	
+	hide_window = yes
+	
+	ai = no
+	only_playable = yes
+	
+	trigger = {
+		ai = no
+		is_feudal = yes
+		any_courtier = { has_job_title = job_treasurer }
+		any_demesne_province = { has_province_modifier = new_buildings_timer }
+		NOT = { any_demesne_province = { has_province_modifier = building_new_city } }
+		any_demesne_province = {
+			num_of_empty_holdings = 1
+			county = { is_occupied = no }
+			culture = ROOT
+			has_province_modifier = new_buildings_timer
+			NOT = { any_province_holding = { holding_type = city } }
+		}
+		OR = {
+			NOT = { has_character_flag = new_feudal_city_timer }
+			had_character_flag = { flag = new_feudal_city_timer days = 730 }
+		}
+	}
+	
+	mean_time_to_happen = {
+		months = 250
+		modifier = {
+			factor = 0.75
+			year = 900
+		}
+		modifier = {
+			factor = 0.75
+			year = 1000
+		}
+		modifier = {
+			factor = 0.5
+			year = 1100
+		}
+		modifier = {
+			factor = 1.5
+			lower_tier_than = DUKE
+		}
+		modifier = {
+			factor = 0.75
+			tier = KING
+		}
+		modifier = {
+			factor = 0.5
+			tier = EMPEROR
+		}
+		modifier = {
+			factor = 0.5
+			NOT = { any_realm_title = { is_republic = yes } }
+		}
+		modifier = {
+			factor = 0.9
+			stewardship = 12
+		}
+		modifier = {
+			factor = 0.9
+			stewardship = 13
+		}
+		modifier = {
+			factor = 0.9
+			stewardship = 14
+		}
+		modifier = {
+			factor = 0.9
+			stewardship = 15
+		}
+		modifier = {
+			factor = 0.9
+			stewardship = 16
+		}
+		modifier = {
+			factor = 0.9
+			stewardship = 17
+		}
+		modifier = {
+			factor = 0.9
+			stewardship = 18
+		}
+		modifier = {
+			factor = 0.9
+			stewardship = 19
+		}
+		modifier = {
+			factor = 0.9
+			stewardship = 20
+		}
+	}
+	
+	immediate = {
+		set_character_flag = new_feudal_city_timer
+		#first select the capital
+		random_demesne_province = {
+			limit = {
+				is_capital = yes
+				num_of_empty_holdings = 1
+				county = { is_occupied = no }
+				culture = ROOT
+				NOT = { any_province_holding = { holding_type = city } }
+				has_province_modifier = new_buildings_timer
+			}
+			save_event_target_as = new_city_location
+			ROOT = { character_event = { id = Plus.1431 } }
+			break = yes
+		}
+		#then select a province with a market upgrade
+		random_demesne_province = {
+			limit = {
+				OR = {
+					has_building = tb_market_town_3
+					has_building = tb_market_town_4
+				}
+				num_of_empty_holdings = 1
+				county = { is_occupied = no }
+				culture = ROOT
+				NOT = { any_province_holding = { holding_type = city } }
+				has_province_modifier = new_buildings_timer
+			}
+			save_event_target_as = new_city_location
+			ROOT = { character_event = { id = Plus.1431 } }
+			break = yes
+		}
+		random_demesne_province = {
+			limit = {
+				OR = {
+					has_building = tb_market_town_1
+					has_building = tb_market_town_2
+				}
+				num_of_empty_holdings = 1
+				county = { is_occupied = no }
+				culture = ROOT
+				NOT = { any_province_holding = { holding_type = city } }
+				has_province_modifier = new_buildings_timer
+			}
+			save_event_target_as = new_city_location
+			ROOT = { character_event = { id = Plus.1431 } }
+			break = yes
+		}
+		#then select a province with a shipyard
+		random_demesne_province = {
+			limit = {
+				OR = {
+					has_building = tb_shipyard_1
+					has_building = tb_shipyard_2
+					has_building = tb_shipyard_3
+					has_building = tb_shipyard_4
+				}
+				num_of_empty_holdings = 1
+				county = { is_occupied = no }
+				culture = ROOT
+				NOT = { any_province_holding = { holding_type = city } }
+				has_province_modifier = new_buildings_timer
+			}
+			save_event_target_as = new_city_location
+			ROOT = { character_event = { id = Plus.1431 } }
+			break = yes
+		}
+		#then select a port
+		random_demesne_province = {
+			limit = {
+				port = yes
+				num_of_empty_holdings = 1
+				county = { is_occupied = no }
+				culture = ROOT
+				NOT = { any_province_holding = { holding_type = city } }
+				has_province_modifier = new_buildings_timer
+			}
+			save_event_target_as = new_city_location
+			ROOT = { character_event = { id = Plus.1431 } }
+			break = yes
+		}
+		#then select anything
+		random_demesne_province = {
+			limit = {
+				num_of_empty_holdings = 1
+				county = { is_occupied = no }
+				culture = ROOT
+				NOT = { any_province_holding = { holding_type = city } }
+				has_province_modifier = new_buildings_timer
+			}
+			save_event_target_as = new_city_location
+			ROOT = { character_event = { id = Plus.1431 } }
+			break = yes
+		}
+	}
+
 }
 
