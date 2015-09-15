@@ -48,7 +48,6 @@ NDefines.NDiplomacy.ASK_FOR_CLAIM_INTERACTION_THRESHOLD_FOR_YES = 175
 NDefines.NCharacter.WRONG_GOV_FORM_TAX_MOD = -0.5
 NDefines.NCharacter.WRONG_GOV_FORM_LEVY_MOD = -0.5
 NDefines.NCharacter.ASSIGN_ACTION_DAYS = 0 						-- Days before a Councillor can be assigned a new job in a county
-NDefines.NCharacter.MARRIAGE_TIER_DIFF_PRESTIGE_MULT = 200		-- Prestige multiplier from marrying below or above your rank.
 NDefines.NCharacter.RAISED_TROOPS_VASSAL_OPINION_DAYS = 73		-- After 73 days of having their troops raised vassals will get -1 opinion more of you
 NDefines.NCharacter.MAX_GENERATED_TRAITS_FOR_HISTORICAL = 3		-- Generate random traits up this number for adult historical characters
 NDefines.NCharacter.PORTRAIT_ADULT_MALE_AGE_THRESHOLD = 16		-- Male child to adult age portrait switch
