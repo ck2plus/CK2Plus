@@ -1000,10 +1000,10 @@ character_event = {
 		b_roma = { grant_title_no_opinion = ROOT }
 		if = {
 			limit = { 
-				NOT = { has_landed_title = b_pentarch_rome }
+				NOT = { has_landed_title = d_pentarch_rome }
 				religion = chalcedonian
 			}
-			b_pentarch_rome = { grant_title_no_opinion = ROOT }
+			d_pentarch_rome = { grant_title_no_opinion = ROOT }
 		}
 	}
 }
@@ -5960,6 +5960,16 @@ character_event = {
 			has_landed_title = d_pentarch_antioch
 			has_landed_title = d_pentarch_alexandria
 		}
+		OR = {
+			NOT = { has_landed_title = k_papal_chalcedon }
+			NOT = {
+				chalc_cardinal = {
+					is_alive = yes
+					prisoner = no
+					NOT = { trait = incapable }
+				}
+			}
+		}
 		current_heir = {
 			ai = yes
 			NOT = { religion = ROOT }
@@ -5972,5 +5982,179 @@ character_event = {
 		}
 	}
 }
+
+### CHALCEDONIAN CARDINALS
+
+# Notification that a vassal has been appointed Cardinal
+character_event = {
+	id = Plus.2291
+	desc = EVTDESC_Plus_2291
+	picture = GFX_evt_bishop
 	
+	is_triggered_only = yes
+	notification = yes
+
+	option = {
+		name = OK
+	}
+}
+
+# Notification that a Cardinal has been appointed
+character_event = {
+	id = Plus.2292
+	desc = EVTDESC_Plus_2292
+	picture = GFX_evt_bishop
 	
+	is_triggered_only = yes
+	notification = yes
+
+	option = {
+		name = OK
+	}
+}
+
+# Cardinal loses title
+character_event = {
+	id = Plus.2293
+	
+	hide_window = yes
+	has_character_flag = is_chalcedonian_cardinal
+	
+	trigger = {
+		OR = {
+			NOT = { trait = chalc_cardinal }
+			NOT = { religion = chalcedonian }
+			is_theocracy = no
+			is_ruler = no
+			trait = incapable
+			k_chalcedonian = { has_holder = yes }
+			AND = {
+				k_papal_chalcedon = { has_holder = yes }
+				NOT = { rightful_religious_head_scope = { has_landed_title = k_papal_chalcedon } }
+			}
+		}
+	}
+	
+	mean_time_to_happen = {
+		days = 1
+	}
+	
+	immediate = {
+		clr_character_flag = is_chalcedonian_cardinal
+		remove_special_character_title = CHALCEDONIAN_CARDINAL
+		remove_trait = chalc_cardinal
+	}
+}
+
+# Pope dies
+character_event = {
+	id = Plus.2294
+	
+	hide_window = yes
+	is_triggered_only = yes
+	
+	trigger = {
+		has_landed_title = k_papal_chalcedon
+		chalc_cardinal = {
+			is_alive = yes
+			prisoner = no
+			NOT = { trait = incapable }
+		}
+	}
+	
+	immediate = {
+		#save titles to be taken by the new pope
+		any_demesne_title = { set_title_flag = to_new_pope }
+		
+		#pick successor randomly
+		chalc_cardinal = {
+			limit = {
+				is_alive = yes
+				prisoner = no
+				NOT = { trait = incapable }
+			}
+			save_event_target_as = new_pope
+		}
+		current_heir = { save_event_target_as = interim_pope }
+		
+		#notify the player
+		any_playable_ruler = {
+			limit = {
+				ai = no
+				religion = chalcedonian
+				rightful_religious_head = ROOT
+			}
+			character_event = { id = Plus.2296 days = 1 }
+		}
+		
+		#fire the succession event
+		event_target:new_pope = {
+			character_event = { id = Plus.2295 days = 1 }
+		}
+	}
+}
+
+# Bounce event for new Pope
+character_event = {
+	id = Plus.2295
+	
+	hide_window = yes
+	is_triggered_only = yes
+	
+	immediate = {
+		#step down from old position
+		any_demesne_title = { set_title_flag = former_pope_titles }
+		abdicate = yes
+		
+		#remove cardinal status
+		clr_character_flag = is_chalcedonian_cardinal
+		remove_special_character_title = CHALCEDONIAN_CARDINAL
+		remove_trait = chalc_cardinal
+
+		#usurp the former pope's titles
+		any_title = {
+			limit = { has_title_flag = to_new_pope }
+			clr_title_flag = to_new_pope
+			grant_title_no_opinion = ROOT
+		}
+		set_government_type = government_theocracy
+		
+		#remove claims to old titles
+		any_title = {
+			limit = { has_title_flag = former_pope_titles }
+			clr_title_flag = former_pope_titles
+			remove_claim = ROOT
+		}
+		
+		#take the "interim" pope back
+		event_target:interim_pope = { move_character = ROOT }
+		
+		#give the proper pope title
+		if = {
+			limit = { has_landed_title = d_pentarch_rome }
+			set_special_character_title = POPE
+			set_character_flag = has_title_pope
+		}
+		
+		#give the pope the papal dynasty, if they have none
+		if = {
+			limit = { dynasty = none }
+			dynasty = 1000037003
+		}
+	}
+}
+	
+# Notification that a new Pope has risen
+character_event = {
+	id = Plus.2296
+	desc = EVTDESC_Plus_2296
+	picture = GFX_evt_bishop
+	
+	is_triggered_only = yes
+	notification = yes
+
+	option = {
+		name = OK
+	}
+}
+
