@@ -203,8 +203,10 @@ NDefines.NMilitary.MAX_RIVER_MOVEMENT_FORT_LEVEL = 15.0
 NDefines.NMilitary.OUTSIDE_LIEGE_LEVY_MULT = 0.35				-- Multiplier to liege levies outside all capital regions
 NDefines.NMilitary.MAJOR_BATTLE_WARSCORE = 5.0					-- The minium warscore gain needed for a battle to be considered major
 
-NDefines.NTechnology.IDEAL_YEAR_AHEAD_PENALTY_INVEST = 0.4		-- Percent increase in cost pre level ahead of ideal date
-NDefines.NEngine.EVENT_PROCESS_OFFSET = 20  -- Events are checked every X day per character or province (1 is ideal but CPU heavy)
+NDefines.NTechnology.IDEAL_YEAR_AHEAD_PENALTY_INVEST = 0.4			-- Percent increase in cost pre level ahead of ideal date
+NDefines.NEngine.EVENT_PROCESS_OFFSET = 20  						-- Events are checked every X day per character or province (1 is ideal but CPU heavy)
+NDefines.NAI.INTERACTION_THRESHOLD_FOR_YES = 50						-- Interactions with chance above this will always be accepted
+NDefines.NAI.DOW_AGGRESSION_FACTOR = 0.75							-- General aggressiveness declarations of war
 NDefines.NAI.REVOLT_DISTANCE_FACTOR = 0								-- Multiplier for how much distance from capital affects independence minded revolters
 NDefines.NAI.REVOLT_OTHER_INDEP_RISK = 0							-- Each ongoing other independence revolt increases revolt risk by this amount for all independence-minded revolters
 NDefines.NAI.REVOLT_OTHER_INDEP_RISK_CAP = 0						-- Cap to the total risk from the above	
@@ -214,6 +216,7 @@ NDefines.NAI.AI_EMPEROR_CREATES_KINGDOMS = 1						-- If set to 1 AI Emperors wil
 NDefines.NAI.AI_ALWAYS_CREATES_DUCHIES = 1							-- If set to 1 AI will always create Duchy titles even if it has Gavelkind etc	
 NDefines.NAI.AI_ASSAULT_RATIO = 12									-- AI will launch assaults at this ratio of attackers to defenders
 NDefines.NAI.DESIRED_CONSORTS = 3									-- AI will always want at least this many concubines if they lack sons
+NDefines.NAI.RAID_AGGRESSION = 24									-- General frequency of raids. A LOWER number means more often!
 
 NDefines.NEndGame.DYN1_SCORE = 50000
 NDefines.NEndGame.DYN2_SCORE = 45000
