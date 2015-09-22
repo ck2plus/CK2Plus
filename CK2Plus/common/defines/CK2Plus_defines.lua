@@ -138,6 +138,9 @@ NDefines.NDecadence.REALM_SIZE_MULTIPLIER = 0
 NDefines.NDecadence.DEMESNE_FRACTION_MULT_POS = 0
 NDefines.NDecadence.DEMESNE_FRACTION_MULT_NEG = 0
 
+NDefines.NNomad.POPULATION_TAX_MULTIPLIER = 0.0005				-- Montly tax income determined by the current population
+NDefines.NNomad.MAX_POPULATION_EMPTY_HOLDING_MULTIPLIER = 750	-- Max population increase for each empty holding in provinces where the capital is also an empty holding
+
 NDefines.NMilitary.MIN_COMBAT_DAYS = 10							-- Minimum number of days in combat
 NDefines.NMilitary.NUMBER_OF_RETREAT_DAYS = 3						-- Number of days before you retreat successfully
 NDefines.NMilitary.MERCENARY_MAINTENANCE_FACTOR = 3.0				-- Maintenance factor for NORMAL mercenary units	
