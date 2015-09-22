@@ -1904,39 +1904,75 @@ character_event = {
 
 ### PAPAL EVENTS
 
-# Excommunicated for declaring war on the rightful religion head
+# Rightful religion head is declared war upon by a member of their own religion
 character_event = {
 	id = Plus.548
-	desc = EVTDESC_Plus_548
-	picture = GFX_evt_pope
-	border = GFX_event_normal_frame_war
+	
+	hide_window = yes
 	
 	only_playable = yes
 	religion_group = christian
 	
 	trigger = {
+		OR = {
+			controls_religion = yes
+			rightful_religious_head = ROOT
+		}
+		is_theocracy = yes
 		can_excommunicate_trigger = yes
-		is_primary_war_attacker = yes
+		is_primary_war_defender = yes
 		any_current_enemy = {
 			religion = ROOT
-			is_primary_war_defender = yes
-			ROOT = { rightful_religious_head = PREV }
+			is_primary_war_attacker = yes
+			rightful_religious_head = ROOT
+			NOT = { trait = excommunicated }
 		}
-		NOT = { trait = excommunicated }
 	}
-
+	
 	mean_time_to_happen = {
 		days = 7
 	}
 	
-	option = {
-		name = EVTOPTA_Plus_548
-		if = {
-			limit = { NOT = { trait = excommunicated } }
+	immediate = {
+		random_current_enemy = {
+			limit = {
+				religion = ROOT
+				is_primary_war_attacker = yes
+				rightful_religious_head = ROOT
+				NOT = { trait = excommunicated }
+			}
 			add_trait = excommunicated
+			character_event = { id = Plus.549 }
 		}
-		rightful_religious_head_scope = {
-			add_rival = ROOT
+	}
+}
+
+# Ruler attacking religious head is excommunicated
+character_event = {
+	id = Plus.549
+	desc = EVTDESC_Plus_549
+	picture = GFX_evt_pope
+	border = GFX_event_normal_frame_war
+
+	is_triggered_only = yes
+	
+	option = {
+		name = EVTOPTA_Plus_549
+		tooltip = { add_trait = excommunicated }
+		add_rival = FROM
+		any_vassal = {
+			limit = {
+				religion = FROM
+				rightful_religious_head = FROM
+				is_adult = yes
+				NOT = { trait = cynical }
+				NOT = { trait = incapable }
+				OR = {
+					trait = zealous
+					opinion_diff = { first = FROM second = ROOT value = 25 }
+				}
+			}
+			opinion = { who = ROOT modifier = opinion_outraged years = 5 }
 		}
 	}
 }
@@ -1956,51 +1992,201 @@ character_event = {
 	
 	trigger = {
 		war = no
-		mercenary = no
-		OR = {
-			is_landed = yes
-			holy_order = yes
-		}
+		demesne_size = 1
 		OR = {
 			independent = yes
 			liege = { war = no }
 		}
 		rightful_religious_head_scope = {
+			war = yes
+			is_primary_war_defender = yes	
 			OR = {
 				controls_religion = yes
 				ROOT = { NOT = { religion_head = { always = yes } } }
 			}
-			is_primary_war_defender = yes
-			any_current_enemy = {
-				NOT = { is_vassal_or_below = ROOT }
-				is_primary_war_attacker = yes
-				has_character_flag = attacking_fhm
-				higher_tier_than = BARON
-				religion = ROOT
+			NOR = {
+				is_liege_of = ROOT
+				has_opinion_modifier = { who = ROOT modifier = opinion_disappointed }
+				character = ROOT
+				reverse_has_truce = ROOT
+				is_foe = ROOT
 			}
-		}
-		OR = {
-			NOT = { has_character_flag = declined_guelf_ghibelline }
-			had_character_flag = { flag = declined_guelf_ghibelline days = 1825 }
+			any_war = {
+				war_score = 0
+				defender = { character = PREVPREV }
+				attacker = {
+					NOR = {
+						is_liege_or_above = ROOT
+						is_allied_with = ROOT
+						is_friend = ROOT
+						reverse_has_truce = ROOT
+					}
+				}
+				OR = {
+					using_cb = claim_all
+					using_cb = claim
+					using_cb = other_claim
+					using_cb = tribal_invasion
+					using_cb = overthrow_ruler
+					using_cb = coastal_republic
+					using_cb = coastal_county_republic
+					using_cb = viking_invasion
+					using_cb = peasant_revolt
+					using_cb = heretic_revolt
+					using_cb = religious_revolt
+					using_cb = liberation_revolt
+					using_cb = duchy_adventure
+					using_cb = pagan_county_conquest
+					using_cb = dejure_county_claim
+					using_cb = dejure_barony_claim
+					using_cb = other_dejure_county_claim
+					using_cb = tributary_cb
+					using_cb = dejure_duchy_claim
+					using_cb = coastal_city_republic
+					using_cb = cb_faction_overthrow_ruler
+					attacker = { rightful_religious_head = PREVPREV }
+				}
+			}
 		}
 		NOR = {
 			controls_religion = yes
 			rightful_religious_head = ROOT
+			trait = cynical
+			trait = in_hiding
+		}
+		OR = {
+			NOT = { has_character_flag = helped_religious_head }
+			had_character_flag = { flag = helped_religious_head days = 1825 }
 		}
 	}
 	
 	mean_time_to_happen = {
-		months = 1
+		months = 3
+		modifier = {
+			factor = 0.5
+			trait = zealous
+		}
+		modifier = {
+			factor = 0.5
+			trait = excommunicated
+		}
+		modifier = {
+			factor = 1.5
+			trait = slothful
+		}
+		modifier = {
+			factor = 1.5
+			trait = greedy
+		}
+		modifier = {
+			factor = 0.5
+			rightful_religious_head_scope = {
+				any_war = {
+					defender = { character = PREVPREV }
+					war_score = 15
+				}
+			}
+		}
+		modifier = {
+			factor = 2.0
+			NOT = {
+				rightful_religious_head_scope = {
+					any_war = {
+						defender = { character = PREVPREV }
+						war_score = 1
+					}
+				}
+			}
+		}
+		modifier = {
+			factor = 0.5
+			rightful_religious_head_scope = {
+				OR = {
+					is_allied_with = ROOT
+					is_friend = ROOT
+				}
+			}
+		}
+		modifier = {
+			factor = 0.5
+			event_target:relhead_enemy = { is_foe = ROOT }
+		}
+		modifier = {
+			factor = 0.5
+			rightful_religious_head_scope = {
+				capital_scope = {
+					ROOT = { capital_scope = { NOT = { distance = { where = PREVPREV value = 75 } } } }
+				}
+			}
+		}
+		modifier = {
+			factor = 2
+			rightful_religious_head_scope = {
+				capital_scope = {
+					ROOT = { capital_scope = { distance = { where = PREVPREV value = 200 } } }
+				}
+			}
+		}
+		modifier = {
+			factor = 2
+			rightful_religious_head_scope = {
+				capital_scope = {
+					ROOT = { capital_scope = { distance = { where = PREVPREV value = 300 } } }
+				}
+			}
+		}
+		modifier = {
+			factor = 2
+			rightful_religious_head_scope = {
+				capital_scope = {
+					ROOT = { capital_scope = { distance = { where = PREVPREV value = 400 } } }
+				}
+			}
+		}
 	}
 	
 	immediate = {
+		set_character_flag = helped_religious_head
 		rightful_religious_head_scope = {
 			save_event_target_as = rightful_relhead
 			random_current_enemy = {
 				limit = {
 					is_primary_war_attacker = yes
-					higher_tier_than = BARON
-					religion = ROOT
+					NOR = {
+						is_liege_or_above = ROOT
+						is_allied_with = ROOT
+						is_friend = ROOT
+						reverse_has_truce = ROOT
+					}
+					any_war = {
+						war_score = 0
+						defender = { character = PREVPREVPREV }
+						attacker = { character = PREVPREV }
+						OR = {
+							using_cb = claim_all
+							using_cb = claim
+							using_cb = other_claim
+							using_cb = tribal_invasion
+							using_cb = overthrow_ruler
+							using_cb = coastal_republic
+							using_cb = coastal_county_republic
+							using_cb = viking_invasion
+							using_cb = peasant_revolt
+							using_cb = heretic_revolt
+							using_cb = religious_revolt
+							using_cb = liberation_revolt
+							using_cb = duchy_adventure
+							using_cb = pagan_county_conquest
+							using_cb = dejure_county_claim
+							using_cb = dejure_barony_claim
+							using_cb = other_dejure_county_claim
+							using_cb = tributary_cb
+							using_cb = dejure_duchy_claim
+							using_cb = coastal_city_republic
+							using_cb = cb_faction_overthrow_ruler
+							attacker = { rightful_religious_head = PREVPREVPREV }
+						}
+					}
 				}
 				save_event_target_as = relhead_enemy
 			}
@@ -2009,6 +2195,14 @@ character_event = {
 	
 	option = {
 		name = EVTOPTA_Plus_550 #We will defend the Pope
+		trigger = {
+			event_target:relhead_enemy = {
+				NOR	= {
+					is_liege_or_above = ROOT
+					is_vassal_or_below = ROOT
+				}
+			}
+		}
 		ai_chance = {
 			factor = 20
 			modifier = {
@@ -2069,15 +2263,15 @@ character_event = {
 				}
 			}
 			modifier = {
-				factor = 0.1
+				factor = 0
 				event_target:relhead_enemy = {
 					capital_scope = {
-						ROOT = { capital_scope = { distance = { where = PREVPREV value = 300 } } }
+						ROOT = { capital_scope = { distance = { where = PREVPREV value = 200 } } }
 					}
 				}
 				rightful_religious_head_scope = {
 					capital_scope = {
-						ROOT = { capital_scope = { distance = { where = PREVPREV value = 300 } } }
+						ROOT = { capital_scope = { distance = { where = PREVPREV value = 200 } } }
 					}
 				}
 			}
@@ -2085,12 +2279,12 @@ character_event = {
 				factor = 0.5
 				event_target:relhead_enemy = {
 					capital_scope = {
-						ROOT = { capital_scope = { distance = { where = PREVPREV value = 200 } } }
+						ROOT = { capital_scope = { distance = { where = PREVPREV value = 150 } } }
 					}
 				}
 				rightful_religious_head_scope = {
 					capital_scope = {
-						ROOT = { capital_scope = { distance = { where = PREVPREV value = 200 } } }
+						ROOT = { capital_scope = { distance = { where = PREVPREV value = 150 } } }
 					}
 				}
 			}
@@ -2109,6 +2303,8 @@ character_event = {
 			}
 			modifier = {
 				factor = 0
+				NOT = { trait = excommunicated }
+				NOT = { trait = zealous }
 				NOT = { rightful_religious_head_scope = { reverse_opinion = { who = ROOT value = 0 } } }
 			}
 			modifier = {
@@ -2124,6 +2320,14 @@ character_event = {
 				rightful_religious_head_scope = { reverse_opinion = { who = ROOT value = 75 } }
 			}
 			modifier = {
+				factor = 1.25
+				NOT = { event_target:relhead_enemy = { reverse_opinion = { who = ROOT value = -50 } } }
+			}
+			modifier = {
+				factor = 1.25
+				NOT = { event_target:relhead_enemy = { reverse_opinion = { who = ROOT value = -75 } } }
+			}
+			modifier = {
 				factor = 0.66
 				event_target:relhead_enemy = { reverse_opinion = { who = ROOT value = 25 } }
 			}
@@ -2136,21 +2340,48 @@ character_event = {
 				event_target:relhead_enemy = { reverse_opinion = { who = ROOT value = 75 } }
 			}
 		}
-		rightful_religious_head_scope = {
-			ROOT = { join_defender_wars = PREV }
-			opinion = {
-				modifier = opinion_grateful
-				who = ROOT
-				years = 20
-			}
-		}
 		if = {
 			limit = { trait = excommunicated }
-			excommunicate = no
+			remove_trait = excommunicated
+		}
+		piety = 50
+		event_target:rightful_relhead = {
+			ROOT = { join_defender_wars = PREV }
+		}
+		event_target:rightful_relhead = {
+			if = {
+				limit = { is_friend = ROOT }
+				opinion = { who = ROOT modifier = opinion_grateful years = 20 }
+			}
+			if = {
+				limit = { NOT = { is_friend = ROOT } }
+				add_friend = ROOT
+			}
+		}
+		event_target:relhead_enemy = {
+			opinion = { who = ROOT modifier = opinion_outraged years = 10 }
 		}
 	}
 	option = {
-		name = EVTOPTB_Plus_550 #We will send volunteers
+		name = EVTOPTB_Plus_550 #We will send volunteers and donations
+		trigger = {
+			OR = {
+				NOT = {
+					event_target:relhead_enemy = {
+						capital_scope = {
+							ROOT = { capital_scope = { distance = { where = PREVPREV value = 250 } } }
+						}
+					}
+				}
+				NOT = {
+					rightful_religious_head_scope = {
+						capital_scope = {
+							ROOT = { capital_scope = { distance = { where = PREVPREV value = 250 } } }
+						}
+					}
+				}
+			}
+		}
 		ai_chance = {
 			factor = 30
 			modifier = {
@@ -2194,6 +2425,13 @@ character_event = {
 				piety = 250
 			}
 			modifier = {
+				factor = 0.5
+				OR = {
+					NOT = { scaled_wealth = 0.5 }
+					has_character_modifier = ai_austerity
+				}
+			}
+			modifier = {
 				factor = 1.25
 				is_merchant_republic = yes
 			}
@@ -2207,7 +2445,9 @@ character_event = {
 				}
 			}
 			modifier = {
-				factor = 0
+				factor = 0.1
+				NOT = { trait = excommunicated }
+				NOT = { trait = zealous }
 				NOT = { rightful_religious_head_scope = { reverse_opinion = { who = ROOT value = -25 } } }
 			}
 			modifier = {
@@ -2239,21 +2479,158 @@ character_event = {
 				event_target:relhead_enemy = { reverse_opinion = { who = ROOT value = 75 } }
 			}
 		}
-		set_character_flag = declined_guelf_ghibelline
-		religion_head = { 
+		piety = 25
+		event_target:rightful_relhead = {
+			opinion = { who = ROOT modifier = opinion_grateful years = 10 }
+			ROOT = { transfer_scaled_wealth = { to = PREV value = 0.5 } }
+		}
+		hidden_tooltip = {
 			capital_scope = {
 				ROOT = {
-					spawn_unit =  {
-						province = PREV
-						home = PREV
-						owner = PREVPREV
-						match_character = THIS
-						match_mult = 0.2
-						disband_on_peace = yes
-						maintenance_multiplier = 0
+					rightful_religious_head_scope = {
+						spawn_unit =  {
+							province = PREVPREV
+							home = PREVPREV
+							owner = THIS
+							match_character = PREV
+							match_mult = 0.1
+							match_max = 2000
+							disband_on_peace = yes
+							maintenance_multiplier = 0
+						}
 					}
 				}
 			}
+		}
+		any_realm_province = {
+			limit = { owner = { character = ROOT } }
+			add_province_modifier = {
+				name = adventurer_recruited
+				duration = 1000
+			}
+		}
+		event_target:relhead_enemy = {
+			opinion = { who = ROOT modifier = opinion_furious years = 5 }
+		}
+	}
+	option = {
+		name = EVTOPTD_Plus_550 #We will send donations
+		trigger = {
+			event_target:relhead_enemy = {
+				capital_scope = {
+					ROOT = { capital_scope = { distance = { where = PREVPREV value = 250 } } }
+				}
+			}
+			rightful_religious_head_scope = {
+				capital_scope = {
+					ROOT = { capital_scope = { distance = { where = PREVPREV value = 250 } } }
+				}
+			}
+		}
+		ai_chance = {
+			factor = 30
+			modifier = {
+				factor = 0.25
+				trait = zealous
+			}
+			modifier = {
+				factor = 1.5
+				trait = craven
+			}
+			modifier = {
+				factor = 1.25
+				trait = just
+			}
+			modifier = {
+				factor = 1.25
+				trait = content
+			}
+			modifier = {
+				factor = 1.25
+				trait = deceitful
+			}
+			modifier = {
+				factor = 1.1
+				trait = chaste
+			}
+			modifier = {
+				factor = 1.1
+				trait = humble
+			}
+			modifier = {
+				factor = 1.1
+				trait = temperate
+			}
+			modifier = {
+				factor = 1.1
+				trait = charitable
+			}
+			modifier = {
+				factor = 1.25
+				piety = 250
+			}
+			modifier = {
+				factor = 0.5
+				OR = {
+					NOT = { scaled_wealth = 0.5 }
+					has_character_modifier = ai_austerity
+				}
+			}
+			modifier = {
+				factor = 1.25
+				is_merchant_republic = yes
+			}
+			modifier = {
+				factor = 0.75
+				rightful_religious_head_scope = {
+					NOR = {
+						has_landed_title = k_papal_state
+						has_landed_title = k_papal_chalcedon
+					}
+				}
+			}
+			modifier = {
+				factor = 0.1
+				NOT = { trait = excommunicated }
+				NOT = { trait = zealous }
+				NOT = { rightful_religious_head_scope = { reverse_opinion = { who = ROOT value = -25 } } }
+			}
+			modifier = {
+				factor = 1.25
+				rightful_religious_head_scope = { reverse_opinion = { who = ROOT value = 0 } }
+			}
+			modifier = {
+				factor = 1.25
+				rightful_religious_head_scope = { reverse_opinion = { who = ROOT value = 25 } }
+			}
+			modifier = {
+				factor = 1.25
+				rightful_religious_head_scope = { reverse_opinion = { who = ROOT value = 50 } }
+			}
+			modifier = {
+				factor = 0.5
+				rightful_religious_head_scope = { reverse_opinion = { who = ROOT value = 75 } }
+			}
+			modifier = {
+				factor = 0.75
+				event_target:relhead_enemy = { reverse_opinion = { who = ROOT value = 25 } }
+			}
+			modifier = {
+				factor = 0.75
+				event_target:relhead_enemy = { reverse_opinion = { who = ROOT value = 50 } }
+			}
+			modifier = {
+				factor = 0.75
+				event_target:relhead_enemy = { reverse_opinion = { who = ROOT value = 75 } }
+			}
+		}
+		piety = 25
+		event_target:rightful_relhead = {
+			opinion = { who = ROOT modifier = opinion_grateful years = 10 }
+			ROOT = { transfer_scaled_wealth = { to = PREV value = 0.5 } }
+		}
+		event_target:relhead_enemy = {
+			opinion = { who = ROOT modifier = opinion_furious years = 5 }
 		}
 	}
 	option = {
@@ -2263,6 +2640,10 @@ character_event = {
 			modifier = {
 				factor = 0.5
 				trait = zealous
+			}
+			modifier = {
+				factor = 0.5
+				trait = excommunicated
 			}
 			modifier = {
 				factor = 1.5
@@ -2293,36 +2674,42 @@ character_event = {
 				trait = slothful
 			}
 			modifier = {
-				factor = 1.25
-				is_feudal = yes
+				factor = 0.25
+				is_theocracy = yes
 			}
 			modifier = {
 				factor = 2
 				is_tribal = yes
 			}
 			modifier = {
-				factor = 0
-				NOT = { rightful_religious_head_scope = { reverse_opinion = { who = ROOT value = -100 } } }
+				factor = 1.25
+				NOT = { rightful_religious_head_scope = { reverse_opinion = { who = ROOT value = -25 } } }
 			}
 			modifier = {
-				factor = 0.9
-				rightful_religious_head_scope = { reverse_opinion = { who = ROOT value = 0 } }
+				factor = 1.25
+				NOT = { rightful_religious_head_scope = { reverse_opinion = { who = ROOT value = -50 } } }
 			}
 			modifier = {
-				factor = 0.8
-				rightful_religious_head_scope = { reverse_opinion = { who = ROOT value = 25 } }
+				factor = 1.25
+				NOT = { rightful_religious_head_scope = { reverse_opinion = { who = ROOT value = -75 } } }
 			}
 			modifier = {
-				factor = 0.8
-				rightful_religious_head_scope = { reverse_opinion = { who = ROOT value = 50 } }
+				factor = 0.75
+				NOT = { event_target:relhead_enemy = { reverse_opinion = { who = ROOT value = -25 } } }
 			}
 			modifier = {
-				factor = 0.5
-				rightful_religious_head_scope = { reverse_opinion = { who = ROOT value = 75 } }
-			}				
+				factor = 0.75
+				NOT = { event_target:relhead_enemy = { reverse_opinion = { who = ROOT value = -50 } } }
+			}
+			modifier = {
+				factor = 0.75
+				NOT = { event_target:relhead_enemy = { reverse_opinion = { who = ROOT value = -75 } } }
+			}		
 		}
-		set_character_flag = declined_guelf_ghibelline
-		piety = -50
+		piety = -25
+		event_target:rightful_relhead = {
+			opinion = { modifier = opinion_disappointed who = ROOT multiplier = 2 years = 10 }
+		}
 	}
 }
 
