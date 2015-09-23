@@ -1936,7 +1936,37 @@ character_event = { # AI Spouse finder
 			is_primary_type_title = no
 			temporary = no
 		}
-		NOT = {
+		OR = {
+			higher_tier_than = BARON
+			is_feudal = yes
+			is_tribal = yes
+		}
+	}
+
+	weight_multiplier = {
+		months = 1
+		modifier = {
+			factor = 1.5
+			NOT = { age = 25 }
+		}
+		modifier = {
+			factor = 1.5
+			NOT = {
+				any_child = {
+					is_alive = yes
+					is_female = no
+					dynasty = ROOT
+					NOR = {
+						trait = bastard
+						trait = incapable
+						trait = inbred
+						trait = imbecile
+					}
+				}
+			}
+		}
+		modifier = {
+			factor = 0.5
 			any_child = {
 				is_alive = yes
 				is_female = no
@@ -1949,22 +1979,35 @@ character_event = { # AI Spouse finder
 				}
 			}
 		}
-		OR = {
-			higher_tier_than = BARON
-			is_feudal = yes
-			is_tribal = yes
-		}
-	}
-
-	weight_multiplier = {
-		months = 1
 		modifier = {
 			factor = 0.5
-			num_of_children = 2
+			any_child = {
+				count = 2
+				is_alive = yes
+				is_female = no
+				dynasty = ROOT
+				NOR = {
+					trait = bastard
+					trait = incapable
+					trait = inbred
+					trait = imbecile
+				}
+			}
 		}
 		modifier = {
 			factor = 0.1
-			num_of_children = 3
+			any_child = {
+				count = 3
+				is_alive = yes
+				is_female = no
+				dynasty = ROOT
+				NOR = {
+					trait = bastard
+					trait = incapable
+					trait = inbred
+					trait = imbecile
+				}
+			}
 		}
 		modifier = {
 			factor = 10
@@ -1975,8 +2018,54 @@ character_event = { # AI Spouse finder
 	immediate = {
 		if = {
 			limit = { is_female = no }
-			# first find someone of good stats
 			top_liege = {
+				# first find someone with a claim I want
+				random_realm_character = {
+					limit = {
+						ROOT = {
+							NOT = { trait = content }
+							NOT = { trait = humble }
+						}
+						is_adult = yes
+						prisoner = no
+						is_married = no
+						is_betrothed = no
+						is_consort = no
+						can_marry = ROOT
+						is_female = yes
+						is_ruler = no
+						religion = ROOT
+						fertility = 0.35
+						any_claim = {
+							NOT = { claimed_by = ROOT }
+							OR = {
+								AND = {
+									NOT = { lower_tier_than = ROOT }
+									holder_scope = { same_realm = ROOT }
+								}
+								holder_scope = { is_vassal_or_below = ROOT }
+								location = { ROOT = { capital_scope = { NOT = { distance = { where = PREVPREV value = 100 } } } } }
+								capital_scope = { ROOT = { capital_scope = { NOT = { distance = { where = PREVPREV value = 100 } } } } }
+							}
+						}				
+						NOR = {
+							trait = eunuch
+							trait = celibate
+							trait = infirm
+							trait = incapable
+							is_close_relative = ROOT
+							liege = { ai = no }
+							any_liege = { is_close_relative = PREV }
+							any_liege = { is_lover = PREV }
+							any_heir_title = { always = yes }
+							any_pretender_title = { always = yes }
+						}
+					}
+					log = "[This.GetTitledName] marries [Root.GetTitledName] (Spouse Finder - has claim)"
+					add_spouse = ROOT
+					break = yes
+				}
+				# then find someone of good stats
 				random_realm_character = {
 					limit = {
 						is_adult = yes
@@ -2286,6 +2375,44 @@ character_event = { # AI Spouse finder
 					add_spouse = ROOT
 					break = yes
 				}
+				# then look for someone attractive
+				random_realm_character = {
+					limit = {
+						is_adult = yes
+						prisoner = no
+						is_married = no
+						is_betrothed = no
+						is_consort = no
+						can_marry = ROOT
+						is_female = yes
+						is_ruler = no
+						religion = ROOT
+						fertility = 0.33
+						OR = {
+							trait = fair
+							trait = fertile
+							trait = melodious_voice
+							trait = beauty
+						}
+						NOR = {
+							age = 25
+							dynasty = none
+							trait = eunuch
+							trait = celibate
+							trait = infirm
+							trait = incapable
+							is_close_relative = ROOT
+							liege = { ai = no }
+							any_liege = { is_close_relative = PREV }
+							any_liege = { is_lover = PREV }
+							any_heir_title = { always = yes }
+							any_pretender_title = { always = yes }
+						}
+					}
+					log = "[This.GetTitledName] marries [Root.GetTitledName] (Spouse Finder - attractive)"
+					add_spouse = ROOT
+					break = yes
+				}				
 				# then settle for someone available
 				random_realm_character = {
 					limit = {
@@ -2374,7 +2501,7 @@ character_event = { # AI Spouse finder
 		if = {
 			limit = { is_female = yes }
 			top_liege = {
-			# first find someone of good stats
+				# first find someone of good stats
 				random_realm_character = {
 					limit = {
 						is_adult = yes
