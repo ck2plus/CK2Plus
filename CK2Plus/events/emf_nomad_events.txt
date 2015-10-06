@@ -627,22 +627,67 @@ character_event = {
  		FROMFROM = { is_alive = yes }
  	}
 
- 	immediate = {
- 		FROM = {
- 			location = {
- 				build_holding = { type = tribal }
- 				random_province_holding = {
- 					limit = {
- 						holding_type = tribal
- 						ROOT = { is_nomadic = no }
- 					}
- 					make_capital_holding = yes
- 				}
- 				religion = FROMFROM
- 				culture = FROMFROM
- 			}
- 		}
- 	}
- }
+	immediate = {
+		FROMFROM = { save_event_target_as = emf_prior_holder }
+		FROM = {
+			location = {
+				save_event_target_as = emf_empty_province
 
+				if = {
+					limit = { has_empty_holding = yes }
+					ROOT = { character_event = { id = emf_nomad.21 } }
+					break = yes
+				}
+
+				# If we get here, that means there was no empty holding slot
+				# available for the tribal holding (nomadic holding must be
+				# occupying the only holding slot, by current game constraints),
+				# so try to build it on the next game day.
+
+				if = {
+					limit = {
+						NOT = { any_province_holding = { holding_type = nomad } }
+					}
+					log = "emf_nomad.20: SERIOUS: conquered empty province '[This.GetName]' seems to have 0 holding slots, or else game constraints have changed"
+				}
+				
+				ROOT = { character_event = { id = emf_nomad.21 days = 1 } }
+			}
+		}
+	}
+}
+
+
+# emf_nomad.21 [New Empty County Holder]
+#
+# Actually build a tribal holding in event_target:emf_empty_province, which was
+# previously held by event_target:emf_prior_holder.
+character_event = {
+	id = emf_nomad.21
+	hide_window = yes
+	is_triggered_only = yes
+
+	trigger = {
+		event_target:emf_empty_province = {
+			has_empty_holding = yes
+		}
+	}
+
+	immediate = {
+		event_target:emf_empty_province = {
+			build_holding = { type = tribal }
+
+			random_province_holding = {
+				limit = {
+					holding_type = tribal
+					ROOT = { is_nomadic = no }
+				}
+				make_capital_holding = yes
+			}
+
+			religion = event_target:emf_prior_holder
+			culture = event_target:emf_prior_holder
+		}
+	}
+}
  
