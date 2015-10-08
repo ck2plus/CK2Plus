@@ -1909,42 +1909,96 @@ character_event = { # AI Spouse finder
 	max_age = 60
 	capable_only = yes
 	prisoner = no
-	only_rulers = yes
 
 	trigger = {
-		ai = yes
-		is_married = no
-		is_betrothed = no
-		is_patrician = no
-		mercenary = no
+		OR = {
+			is_married = no
+			AND = {
+				has_polygamy = yes
+				NOT = { num_of_spouses = 2 }
+				real_tier = COUNT
+			}
+			AND = {
+				has_polygamy = yes
+				NOT = { num_of_spouses = 3 }
+				OR = {
+					real_tier = DUKE
+					has_minor_title = title_prince
+				}
+			}
+			AND = {
+				has_polygamy = yes
+				NOT = { num_of_spouses = 4 }
+				higher_real_tier_than = DUKE
+			}
+		}
 		is_ill = no
+		mercenary = no
+		is_betrothed = no
+		is_pregnant = no
 		can_marry = yes
-		ruled_years = 1
+		fertility = 0.01
+		OR = {
+			NOT = { age = 40 }
+			is_female = no
+		}
 		OR = {
 			is_female = no
-			NOT = { age = 40 }
-		}
-		NOR = {
-			trait = eunuch
-			trait = celibate
-			trait = infirm
-			trait = in_hiding
-			religion = paulician
-		}
-		primary_title = {
-			holy_order = no
-			is_primary_type_title = no
-			temporary = no
+			is_ruler = yes
+			any_heir_title = { always = yes }
+			any_pretender_title = { always = yes }
+			AND = {
+				is_councillor = yes
+				liege = { ai = no }
+			}
 		}
 		OR = {
+			is_ruler = yes
+			father_even_if_dead = { higher_tier_than = BARON }
+			mother_even_if_dead = { higher_tier_than = BARON }
+			any_close_relative = { higher_tier_than = COUNT }
+			AND = {
+				is_councillor = yes
+				liege = { ai = no }
+			}
+		}
+		OR = {
+			is_ruler = yes
+			liege = { ai = yes }
+			liege = {
+				NOT = { is_close_relative = ROOT }
+				NOT = { dynasty = ROOT }
+			}
+		}
+		OR = {
+			is_ruler = no
+			primary_title = {
+				holy_order = no
+				is_primary_type_title = no
+				temporary = no
+			}
+		}
+		OR = {
+			is_ruler = no
 			higher_tier_than = BARON
 			is_feudal = yes
 			is_tribal = yes
 		}
+		NOR = {
+			trait = infirm
+			trait = in_hiding
+			has_character_modifier = do_not_disturb
+			has_character_flag = ai_spouse_finder
+		}
 	}
 
 	weight_multiplier = {
-		months = 1
+		factor = 1
+		modifier = {
+			factor = 0
+			is_ruler = yes
+			NOT = { ruled_years = 1 }
+		}
 		modifier = {
 			factor = 1.5
 			NOT = { age = 25 }
@@ -2016,1095 +2070,64 @@ character_event = { # AI Spouse finder
 	}
 
 	immediate = {
-		if = {
-			limit = { is_female = no }
-			top_liege = {
-				# first find someone with a claim I want
-				random_realm_character = {
-					limit = {
-						ROOT = {
-							NOT = { trait = content }
-							NOT = { trait = humble }
-						}
-						is_adult = yes
-						prisoner = no
-						is_married = no
-						is_betrothed = no
-						is_consort = no
-						can_marry = ROOT
-						is_female = yes
-						is_ruler = no
-						religion = ROOT
-						fertility = 0.35
-						any_claim = {
-							NOT = { claimed_by = ROOT }
-							OR = {
-								AND = {
-									NOT = { lower_tier_than = ROOT }
-									holder_scope = { same_realm = ROOT }
-								}
-								holder_scope = { is_vassal_or_below = ROOT }
-								location = { ROOT = { capital_scope = { NOT = { distance = { where = PREVPREV value = 100 } } } } }
-								capital_scope = { ROOT = { capital_scope = { NOT = { distance = { where = PREVPREV value = 100 } } } } }
-							}
-						}				
-						NOR = {
-							trait = eunuch
-							trait = celibate
-							trait = infirm
-							trait = incapable
-							is_close_relative = ROOT
-							liege = { ai = no }
-							any_liege = { is_close_relative = PREV }
-							any_liege = { is_lover = PREV }
-							any_heir_title = { always = yes }
-							any_pretender_title = { always = yes }
-						}
-					}
-					log = "[This.GetTitledName] marries [Root.GetTitledName] (Spouse Finder - has claim)"
-					add_spouse = ROOT
-					break = yes
-				}
-				# then find someone of good stats
-				random_realm_character = {
-					limit = {
-						is_adult = yes
-						prisoner = no
-						is_married = no
-						is_betrothed = no
-						is_consort = no
-						can_marry = ROOT
-						is_female = yes
-						is_ruler = no
-						religion = ROOT
-						culture_group = ROOT
-						fertility = 0.33
-						OR = {
-							diplomacy = 12
-							stewardship = 12
-						}
-						NOR = {
-							age = 20
-							dynasty = none
-							trait = eunuch
-							trait = celibate
-							trait = infirm
-							trait = incapable
-							is_close_relative = ROOT
-							liege = { ai = no }
-							any_liege = { is_close_relative = PREV }
-							any_liege = { is_lover = PREV }
-							any_heir_title = { always = yes }
-							any_pretender_title = { always = yes }
-						}
-					}
-					log = "[This.GetTitledName] marries [Root.GetTitledName] (Spouse Finder - good stats)"
-					add_spouse = ROOT
-					break = yes
-				}
-				random_realm_character = {
-					limit = {
-						is_adult = yes
-						prisoner = no
-						is_married = no
-						is_betrothed = no
-						is_consort = no
-						can_marry = ROOT
-						is_female = yes
-						is_ruler = no
-						religion = ROOT
-						fertility = 0.33
-						OR = {
-							diplomacy = 12
-							stewardship = 12
-						}
-						NOR = {
-							age = 20
-							dynasty = none
-							trait = eunuch
-							trait = celibate
-							trait = infirm
-							trait = incapable
-							is_close_relative = ROOT
-							liege = { ai = no }
-							any_liege = { is_close_relative = PREV }
-							any_liege = { is_lover = PREV }
-							any_heir_title = { always = yes }
-							any_pretender_title = { always = yes }
-						}
-					}
-					log = "[This.GetTitledName] marries [Root.GetTitledName] (Spouse Finder - good stats)"
-					add_spouse = ROOT
-					break = yes
-				}
-				random_realm_character = {
-					limit = {
-						is_adult = yes
-						prisoner = no
-						is_married = no
-						is_betrothed = no
-						is_consort = no
-						can_marry = ROOT
-						is_female = yes
-						is_ruler = no
-						religion = ROOT
-						culture_group = ROOT
-						fertility = 0.33
-						OR = {
-							diplomacy = 12
-							stewardship = 12
-						}
-						NOR = {
-							age = 30
-							dynasty = none
-							trait = eunuch
-							trait = celibate
-							trait = infirm
-							trait = incapable
-							is_close_relative = ROOT
-							is_older_than = ROOT
-							liege = { ai = no }
-							any_liege = { is_close_relative = PREV }
-							any_liege = { is_lover = PREV }
-							any_heir_title = { always = yes }
-							any_pretender_title = { always = yes }
-						}
-					}
-					log = "[This.GetTitledName] marries [Root.GetTitledName] (Spouse Finder - good stats)"
-					add_spouse = ROOT
-					break = yes
-				}
-				random_realm_character = {
-					limit = {
-						is_adult = yes
-						prisoner = no
-						is_married = no
-						is_betrothed = no
-						is_consort = no
-						can_marry = ROOT
-						is_female = yes
-						is_ruler = no
-						religion = ROOT
-						fertility = 0.33
-						OR = {
-							diplomacy = 12
-							stewardship = 12
-						}
-						NOR = {
-							age = 30
-							dynasty = none
-							trait = eunuch
-							trait = celibate
-							trait = infirm
-							trait = incapable
-							is_close_relative = ROOT
-							is_older_than = ROOT
-							liege = { ai = no }
-							any_liege = { is_close_relative = PREV }
-							any_liege = { is_lover = PREV }
-							any_heir_title = { always = yes }
-							any_pretender_title = { always = yes }
-						}
-					}
-					log = "[This.GetTitledName] marries [Root.GetTitledName] (Spouse Finder - good stats)"
-					add_spouse = ROOT
-					break = yes
-				}
-				# then look for someone at least decent
-				random_realm_character = {
-					limit = {
-						is_adult = yes
-						prisoner = no
-						is_married = no
-						is_betrothed = no
-						is_consort = no
-						can_marry = ROOT
-						is_female = yes
-						is_ruler = no
-						religion = ROOT
-						culture_group = ROOT
-						fertility = 0.33
-						OR = {
-							diplomacy = 8
-							stewardship = 8
-							martial = 8
-							trait = fair
-							trait = quick
-							trait = genius
-							trait = strong
-						}
-						NOR = {
-							age = 20
-							dynasty = none
-							trait = eunuch
-							trait = celibate
-							trait = infirm
-							trait = incapable
-							is_close_relative = ROOT
-							liege = { ai = no }
-							any_liege = { is_close_relative = PREV }
-							any_liege = { is_lover = PREV }
-							any_heir_title = { always = yes }
-							any_pretender_title = { always = yes }
-						}
-					}
-					log = "[This.GetTitledName] marries [Root.GetTitledName] (Spouse Finder - decent stats)"
-					add_spouse = ROOT
-					break = yes
-				}
-				random_realm_character = {
-					limit = {
-						is_adult = yes
-						prisoner = no
-						is_married = no
-						is_betrothed = no
-						is_consort = no
-						can_marry = ROOT
-						is_female = yes
-						is_ruler = no
-						religion = ROOT
-						fertility = 0.33
-						OR = {
-							diplomacy = 8
-							stewardship = 8
-							martial = 8
-							trait = fair
-							trait = quick
-							trait = genius
-							trait = strong
-						}
-						NOR = {
-							age = 20
-							dynasty = none
-							trait = eunuch
-							trait = celibate
-							trait = infirm
-							trait = incapable
-							is_close_relative = ROOT
-							liege = { ai = no }
-							any_liege = { is_close_relative = PREV }
-							any_liege = { is_lover = PREV }
-							any_heir_title = { always = yes }
-							any_pretender_title = { always = yes }
-						}
-					}
-					log = "[This.GetTitledName] marries [Root.GetTitledName] (Spouse Finder - decent stats)"
-					add_spouse = ROOT
-					break = yes
-				}
-				random_realm_character = {
-					limit = {
-						is_adult = yes
-						prisoner = no
-						is_married = no
-						is_betrothed = no
-						is_consort = no
-						can_marry = ROOT
-						is_female = yes
-						is_ruler = no
-						religion = ROOT
-						culture_group = ROOT
-						fertility = 0.33
-						OR = {
-							diplomacy = 8
-							stewardship = 8
-							martial = 8
-							trait = fair
-							trait = quick
-							trait = genius
-							trait = strong
-						}
-						NOR = {
-							age = 30
-							dynasty = none
-							trait = eunuch
-							trait = celibate
-							trait = infirm
-							trait = incapable
-							is_close_relative = ROOT
-							is_older_than = ROOT
-							liege = { ai = no }
-							any_liege = { is_close_relative = PREV }
-							any_liege = { is_lover = PREV }
-							any_heir_title = { always = yes }
-							any_pretender_title = { always = yes }
-						}
-					}
-					log = "[This.GetTitledName] marries [Root.GetTitledName] (Spouse Finder - decent stats)"
-					add_spouse = ROOT
-					break = yes
-				}
-				random_realm_character = {
-					limit = {
-						is_adult = yes
-						prisoner = no
-						is_married = no
-						is_betrothed = no
-						is_consort = no
-						can_marry = ROOT
-						is_female = yes
-						is_ruler = no
-						religion = ROOT
-						fertility = 0.33
-						OR = {
-							diplomacy = 8
-							stewardship = 8
-							martial = 8
-							trait = fair
-							trait = quick
-							trait = genius
-							trait = strong
-						}
-						NOR = {
-							age = 30
-							dynasty = none
-							trait = eunuch
-							trait = celibate
-							trait = infirm
-							trait = incapable
-							is_close_relative = ROOT
-							is_older_than = ROOT
-							liege = { ai = no }
-							any_liege = { is_close_relative = PREV }
-							any_liege = { is_lover = PREV }
-							any_heir_title = { always = yes }
-							any_pretender_title = { always = yes }
-						}
-					}
-					log = "[This.GetTitledName] marries [Root.GetTitledName] (Spouse Finder - decent stats)"
-					add_spouse = ROOT
-					break = yes
-				}
-				# then look for someone attractive
-				random_realm_character = {
-					limit = {
-						is_adult = yes
-						prisoner = no
-						is_married = no
-						is_betrothed = no
-						is_consort = no
-						can_marry = ROOT
-						is_female = yes
-						is_ruler = no
-						religion = ROOT
-						fertility = 0.33
-						OR = {
-							trait = fair
-							trait = fertile
-							trait = melodious_voice
-							trait = beauty
-						}
-						NOR = {
-							age = 25
-							dynasty = none
-							trait = eunuch
-							trait = celibate
-							trait = infirm
-							trait = incapable
-							is_close_relative = ROOT
-							liege = { ai = no }
-							any_liege = { is_close_relative = PREV }
-							any_liege = { is_lover = PREV }
-							any_heir_title = { always = yes }
-							any_pretender_title = { always = yes }
-						}
-					}
-					log = "[This.GetTitledName] marries [Root.GetTitledName] (Spouse Finder - attractive)"
-					add_spouse = ROOT
-					break = yes
-				}				
-				# then settle for someone available
-				random_realm_character = {
-					limit = {
-						is_adult = yes
-						prisoner = no
-						is_married = no
-						is_betrothed = no
-						is_consort = no
-						can_marry = ROOT
-						is_female = yes
-						is_ruler = no
-						religion = ROOT
-						culture_group = ROOT
-						fertility = 0.33
-						NOR = {
-							age = 20
-							dynasty = none
-							trait = eunuch
-							trait = celibate
-							trait = infirm
-							trait = incapable
-							is_close_relative = ROOT
-							liege = { ai = no }
-							any_liege = { is_close_relative = PREV }
-							any_liege = { is_lover = PREV }
-							any_heir_title = { always = yes }
-							any_pretender_title = { always = yes }
-						}
-					}
-					log = "[This.GetTitledName] marries [Root.GetTitledName] (Spouse Finder - available)"
-					add_spouse = ROOT
-					break = yes
-				}
-				random_realm_character = {
-					limit = {
-						is_adult = yes
-						prisoner = no
-						is_married = no
-						is_betrothed = no
-						is_consort = no
-						can_marry = ROOT
-						is_female = yes
-						is_ruler = no
-						religion = ROOT
-						fertility = 0.33
-						NOR = {
-							age = 20
-							dynasty = none
-							trait = eunuch
-							trait = celibate
-							trait = infirm
-							trait = incapable
-							is_close_relative = ROOT
-							liege = { ai = no }
-							any_liege = { is_close_relative = PREV }
-							any_liege = { is_lover = PREV }
-							any_heir_title = { always = yes }
-							any_pretender_title = { always = yes }
-						}
-					}
-					log = "[This.GetTitledName] marries [Root.GetTitledName] (Spouse Finder - available)"
-					add_spouse = ROOT
-					break = yes
-				}
-			}
-			# failing that, a new character will do
-			create_character = {
-				random_traits = yes
-				dynasty = random
-				female = yes
-				age = 17
-				culture = ROOT
-				religion = ROOT
-			}
-			new_character = {
-				log = "[This.GetTitledName] marries [Root.GetTitledName] (Spouse Finder - new character)"
-				add_spouse = ROOT
-				if = {
-					limit = { religion_group = indian_group }
-					add_trait = kshatriya
-					character_event = { id = RoI.30121 }
-				}
-			}
-			break = yes
-		}
-		if = {
-			limit = { is_female = yes }
-			top_liege = {
-				# first find someone of good stats
-				random_realm_character = {
-					limit = {
-						is_adult = yes
-						prisoner = no
-						is_married = no
-						is_betrothed = no
-						is_consort = no
-						can_marry = ROOT
-						is_female = yes
-						is_ruler = no
-						religion = ROOT
-						culture_group = ROOT
-						fertility = 0.33
-						OR = {
-							diplomacy = 12
-							stewardship = 12
-							martial = 12
-						}
-						NOR = {
-							age = 50
-							dynasty = none
-							trait = eunuch
-							trait = celibate
-							trait = infirm
-							trait = incapable
-							is_close_relative = ROOT
-							liege = { ai = no }
-							any_liege = { is_close_relative = PREV }
-							any_liege = { is_lover = PREV }
-							any_heir_title = { always = yes }
-							any_pretender_title = { always = yes }
-						}
-					}
-					log = "[This.GetTitledName] marries [Root.GetTitledName] (Spouse Finder - good stats)"
-					if = {
-						limit = {
-							NOR = {
-								father_even_if_dead = { higher_tier_than = ROOT }
-								mother_even_if_dead = { higher_tier_than = ROOT }
-							}
-							ROOT = {
-								NOR = {
-									religion_group = muslim
-									religion = yazidi
-									trait = slow
-									trait = imbecile
-									trait = humble
-									trait = content
-								}
-								OR = {
-									trait = ambitious
-									trait = proud
-									trait = brave
-									stewardship = 10
-									trait = quick
-									trait = genius
-									trait = greedy
-								}
-							}
-						}
-						add_spouse_matrilineal = ROOT
-					}
-					if = {
-						limit = {
-							OR = {
-								father_even_if_dead = { higher_tier_than = ROOT }
-								mother_even_if_dead = { higher_tier_than = ROOT }
-								ROOT = {
-									OR = {
-										religion_group = muslim
-										religion = yazidi
-										trait = slow
-										trait = imbecile
-										trait = humble
-										trait = content
-										NOR = {
-											trait = ambitious
-											trait = proud
-											trait = brave
-											stewardship = 10
-											trait = quick
-											trait = genius
-											trait = greedy
-										}
-									}
-								}
-							}
-						}
-						add_spouse = ROOT
-					}
-					break = yes
-				}
-				random_realm_character = {
-					limit = {
-						is_adult = yes
-						prisoner = no
-						is_married = no
-						is_betrothed = no
-						is_consort = no
-						can_marry = ROOT
-						is_female = yes
-						is_ruler = no
-						religion = ROOT
-						fertility = 0.33
-						OR = {
-							diplomacy = 12
-							stewardship = 12
-							martial = 12
-						}
-						NOR = {
-							age = 50
-							dynasty = none
-							trait = eunuch
-							trait = celibate
-							trait = infirm
-							trait = incapable
-							is_close_relative = ROOT
-							liege = { ai = no }
-							any_liege = { is_close_relative = PREV }
-							any_liege = { is_lover = PREV }
-							any_heir_title = { always = yes }
-							any_pretender_title = { always = yes }
-						}
-					}
-					log = "[This.GetTitledName] marries [Root.GetTitledName] (Spouse Finder - good stats)"
-					if = {
-						limit = {
-							NOR = {
-								father_even_if_dead = { higher_tier_than = ROOT }
-								mother_even_if_dead = { higher_tier_than = ROOT }
-							}
-							ROOT = {
-								NOR = {
-									religion_group = muslim
-									religion = yazidi
-									trait = slow
-									trait = imbecile
-									trait = humble
-									trait = content
-								}
-								OR = {
-									trait = ambitious
-									trait = proud
-									trait = brave
-									stewardship = 10
-									trait = quick
-									trait = genius
-									trait = greedy
-								}
-							}
-						}
-						add_spouse_matrilineal = ROOT
-					}
-					if = {
-						limit = {
-							OR = {
-								father_even_if_dead = { higher_tier_than = ROOT }
-								mother_even_if_dead = { higher_tier_than = ROOT }
-								ROOT = {
-									OR = {
-										religion_group = muslim
-										religion = yazidi
-										trait = slow
-										trait = imbecile
-										trait = humble
-										trait = content
-										NOR = {
-											trait = ambitious
-											trait = proud
-											trait = brave
-											stewardship = 10
-											trait = quick
-											trait = genius
-											trait = greedy
-										}
-									}
-								}
-							}
-						}
-						add_spouse = ROOT
-					}
-					break = yes
-				}
-				# then look for someone at least decent
-				random_realm_character = {
-					limit = {
-						is_adult = yes
-						prisoner = no
-						is_married = no
-						is_betrothed = no
-						is_consort = no
-						can_marry = ROOT
-						is_female = yes
-						is_ruler = no
-						religion = ROOT
-						culture_group = ROOT
-						fertility = 0.33
-						OR = {
-							diplomacy = 8
-							stewardship = 8
-							martial = 8
-							trait = fair
-							trait = quick
-							trait = genius
-							trait = strong
-						}
-						NOR = {
-							age = 50
-							dynasty = none
-							trait = eunuch
-							trait = celibate
-							trait = infirm
-							trait = incapable
-							is_close_relative = ROOT
-							liege = { ai = no }
-							any_liege = { is_close_relative = PREV }
-							any_liege = { is_lover = PREV }
-							any_heir_title = { always = yes }
-							any_pretender_title = { always = yes }
-						}
-					}
-					log = "[This.GetTitledName] marries [Root.GetTitledName] (Spouse Finder - decent stats)"
-					if = {
-						limit = {
-							NOR = {
-								father_even_if_dead = { higher_tier_than = ROOT }
-								mother_even_if_dead = { higher_tier_than = ROOT }
-							}
-							ROOT = {
-								NOR = {
-									religion_group = muslim
-									religion = yazidi
-									trait = slow
-									trait = imbecile
-									trait = humble
-									trait = content
-								}
-								OR = {
-									trait = ambitious
-									trait = proud
-									trait = brave
-									stewardship = 10
-									trait = quick
-									trait = genius
-									trait = greedy
-								}
-							}
-						}
-						add_spouse_matrilineal = ROOT
-					}
-					if = {
-						limit = {
-							OR = {
-								father_even_if_dead = { higher_tier_than = ROOT }
-								mother_even_if_dead = { higher_tier_than = ROOT }
-								ROOT = {
-									OR = {
-										religion_group = muslim
-										religion = yazidi
-										trait = slow
-										trait = imbecile
-										trait = humble
-										trait = content
-										NOR = {
-											trait = ambitious
-											trait = proud
-											trait = brave
-											stewardship = 10
-											trait = quick
-											trait = genius
-											trait = greedy
-										}
-									}
-								}
-							}
-						}
-						add_spouse = ROOT
-					}
-					break = yes
-				}
-				random_realm_character = {
-					limit = {
-						is_adult = yes
-						prisoner = no
-						is_married = no
-						is_betrothed = no
-						is_consort = no
-						can_marry = ROOT
-						is_female = yes
-						is_ruler = no
-						religion = ROOT
-						fertility = 0.33
-						OR = {
-							diplomacy = 8
-							stewardship = 8
-							martial = 8
-							trait = fair
-							trait = quick
-							trait = genius
-							trait = strong
-						}
-						NOR = {
-							age = 50
-							dynasty = none
-							trait = eunuch
-							trait = celibate
-							trait = infirm
-							trait = incapable
-							is_close_relative = ROOT
-							liege = { ai = no }
-							any_liege = { is_close_relative = PREV }
-							any_liege = { is_lover = PREV }
-							any_heir_title = { always = yes }
-							any_pretender_title = { always = yes }
-						}
-					}
-					log = "[This.GetTitledName] marries [Root.GetTitledName] (Spouse Finder - decent stats)"
-					if = {
-						limit = {
-							NOR = {
-								father_even_if_dead = { higher_tier_than = ROOT }
-								mother_even_if_dead = { higher_tier_than = ROOT }
-							}
-							ROOT = {
-								NOR = {
-									religion_group = muslim
-									religion = yazidi
-									trait = slow
-									trait = imbecile
-									trait = humble
-									trait = content
-								}
-								OR = {
-									trait = ambitious
-									trait = proud
-									trait = brave
-									stewardship = 10
-									trait = quick
-									trait = genius
-									trait = greedy
-								}
-							}
-						}
-						add_spouse_matrilineal = ROOT
-					}
-					if = {
-						limit = {
-							OR = {
-								father_even_if_dead = { higher_tier_than = ROOT }
-								mother_even_if_dead = { higher_tier_than = ROOT }
-								ROOT = {
-									OR = {
-										religion_group = muslim
-										religion = yazidi
-										trait = slow
-										trait = imbecile
-										trait = humble
-										trait = content
-										NOR = {
-											trait = ambitious
-											trait = proud
-											trait = brave
-											stewardship = 10
-											trait = quick
-											trait = genius
-											trait = greedy
-										}
-									}
-								}
-							}
-						}
-						add_spouse = ROOT
-					}
-					break = yes
-				}	
-			}
-			# failing that, a new character will do
-			create_character = {
-				random_traits = yes
-				dynasty = random
-				female = no
-				age = 20
-				culture = ROOT
-				religion = ROOT
-			}
-			new_character = {
-				log = "[This.GetTitledName] marries [Root.GetTitledName] (Spouse Finder - new character)"
-				if = {
-					limit = {
-						NOR = {
-							father_even_if_dead = { higher_tier_than = ROOT }
-							mother_even_if_dead = { higher_tier_than = ROOT }
-						}
-						ROOT = {
-							NOR = {
-								religion_group = muslim
-								religion = yazidi
-								trait = slow
-								trait = imbecile
-								trait = humble
-								trait = content
-							}
-							OR = {
-								trait = ambitious
-								trait = proud
-								trait = brave
-								stewardship = 10
-								trait = quick
-								trait = genius
-								trait = greedy
-							}
-						}
-					}
-					add_spouse_matrilineal = ROOT
-				}
-				if = {
-					limit = {
-						OR = {
-							father_even_if_dead = { higher_tier_than = ROOT }
-							mother_even_if_dead = { higher_tier_than = ROOT }
-							ROOT = {
-								OR = {
-									religion_group = muslim
-									religion = yazidi
-									trait = slow
-									trait = imbecile
-									trait = humble
-									trait = content
-									NOR = {
-										trait = ambitious
-										trait = proud
-										trait = brave
-										stewardship = 10
-										trait = quick
-										trait = genius
-										trait = greedy
-									}
-								}
-							}
-						}
-					}
-					add_spouse = ROOT
-				}
-				if = {
-					limit = { religion_group = indian_group }
-					add_trait = kshatriya
-					character_event = { id = RoI.30121 }
-				}
-			}
-			break = yes
-		}
+		set_character_flag = ai_spouse_finder
+		clr_character_flag = checked_avuncular1
+		clr_character_flag = checked_avuncular2
+		clr_character_flag = checked_cousin
+		clr_character_flag = checked_paternal_cousin
+		clr_character_flag = checked_close_marriage
 	}
 }
 
-character_event = { # Player Councillors Spouse Finder
+character_event = { # Clear spouse finder flag
 	id = Plus.313
 	
-	is_triggered_only = yes
 	hide_window = yes
-	
-	ai = no
+	has_character_flag = ai_spouse_finder
 	
 	trigger = {
-		ai = no
-		any_courtier = {
-			ai = yes
-			wealth = 10
-			is_ruler = no
-			is_adult = yes
-			religion = ROOT
-			is_married = no
-			is_female = no
-			is_betrothed = no
-			is_patrician = no
-			mercenary = no
-			is_ill = no
-			can_marry = yes
-			is_consort = no
+		OR = {
+			ai = no
+			age = 60
+			is_ill = yes
+			prisoner = yes
+			is_betrothed = yes
+			is_pregnant = yes
+			can_marry = no
+			trait = incapable
+			trait = infirm
+			trait = in_hiding
+			has_character_modifier = do_not_disturb
 			NOR = {
-				age = 60
-				dynasty = ROOT
-				dynasty = none
-				is_close_relative = ROOT
-				trait = eunuch
-				trait = celibate
-				trait = infirm
-				trait = in_hiding
-				religion = paulician
+				is_married = no
+				AND = {
+					has_polygamy = yes
+					NOT = { num_of_spouses = 2 }
+					real_tier = COUNT
+				}
+				AND = {
+					has_polygamy = yes
+					NOT = { num_of_spouses = 3 }
+					OR = {
+						real_tier = DUKE
+						has_minor_title = title_prince
+					}
+				}
+				AND = {
+					has_polygamy = yes
+					NOT = { num_of_spouses = 4 }
+					higher_real_tier_than = DUKE
+				}
 			}
 		}
 	}
 	
-	weight_multiplier = {
-		months = 1
+	mean_time_to_happen = {
+		days = 1
 	}
 	
 	immediate = {
-		random_courtier = {
-			limit = {
-				ai = yes
-				wealth = 10
-				is_ruler = no
-				is_adult = yes
-				religion = ROOT
-				is_married = no
-				is_female = no
-				is_betrothed = no
-				is_patrician = no
-				mercenary = no
-				is_ill = no
-				can_marry = yes
-				is_consort = no
-				NOR = {
-					age = 60
-					dynasty = ROOT
-					dynasty = none
-					is_close_relative = ROOT
-					trait = eunuch
-					trait = celibate
-					trait = infirm
-					trait = in_hiding
-					religion = paulician
-				}
-			}
-			ROOT = {
-				#go for younger women first (want to have kids)
-				random_courtier = {
-					limit = {
-						is_adult = yes
-						prisoner = no
-						is_married = no
-						is_betrothed = no
-						is_consort = no
-						can_marry = PREVPREV
-						religion = PREVPREV
-						is_female = yes
-						is_ruler = no
-						fertility = 0.33
-						NOR = {
-							age = 20
-							trait = eunuch
-							trait = celibate
-							trait = infirm
-							trait = incapable
-							is_close_relative = PREVPREV
-							any_liege = { dynasty = PREV }
-							any_liege = { is_close_relative = PREV }
-							any_liege = { is_lover = PREV }
-							any_heir_title = { always = yes }
-							any_pretender_title = { always = yes }
-						}
-					}
-					add_spouse = PREVPREV
-					break = yes
-				}
-				random_courtier = {
-					limit = {
-						is_adult = yes
-						prisoner = no
-						is_married = no
-						is_betrothed = no
-						is_consort = no
-						can_marry = PREVPREV
-						religion = PREVPREV
-						is_female = yes
-						is_ruler = no
-						fertility = 0.33
-						NOR = {
-							age = 30
-							trait = eunuch
-							trait = celibate
-							trait = infirm
-							trait = incapable
-							is_older_than = PREVPREV
-							is_close_relative = PREVPREV
-							any_liege = { dynasty = PREV }
-							any_liege = { is_close_relative = PREV }
-							any_liege = { is_lover = PREV }
-							any_heir_title = { always = yes }
-							any_pretender_title = { always = yes }
-						}
-					}
-					add_spouse = PREVPREV
-					break = yes
-				}
-				create_character = {
-					random_traits = yes
-					dynasty = random
-					female = yes
-					age = 17
-					culture = THIS
-					religion = THIS
-				}
-				new_character = {
-					add_spouse = PREVPREV
-					if = {
-						limit = { religion_group = indian_group }
-						add_trait = kshatriya
-						character_event = { id = RoI.30121 }
-					}
-				}
-			}
-		}
+		clr_character_flag = ai_spouse_finder
 	}
 }
 
@@ -3932,7 +2955,7 @@ character_event = { # Initial Startup event
 			}
 			621 = {
 				build_holding = { type = tribal }
-				religion = tengri
+				religion = tengri_pagan
 				owner = { character_event = { id = Plus.976 } }
 			}
 			622 = {
