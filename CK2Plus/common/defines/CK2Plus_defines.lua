@@ -140,7 +140,7 @@ NDefines.NDecadence.DEMESNE_FRACTION_MULT_NEG = 0
 
 NDefines.NNomad.POPULATION_TAX_MULTIPLIER = 0.0005				-- Montly tax income determined by the current population
 NDefines.NNomad.MAX_POPULATION_EMPTY_HOLDING_MULTIPLIER = 750	-- Max population increase for each empty holding in provinces where the capital is also an empty holding
-NDefines.NNomad.UNITS_FOR_OCCUPATION = 0						-- Number of hostile units needing to stand on settlement-less nomad provinces to be considered occupied
+NDefines.NNomad.UNITS_FOR_OCCUPATION = 50						-- Number of hostile units needing to stand on settlement-less nomad provinces to be considered occupied
 NDefines.NNomad.CLAN_PRESTIGE_SCALE = 0.01						-- How fast the scale of the prestige opinion bonus/malus grows
 NDefines.NNomad.CLANS_WANT_MORE_LAND = 25						-- Opinion malus per province too many held
 
