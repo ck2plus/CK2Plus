@@ -65,6 +65,7 @@ NDefines.NCharacter.NATURAL_DEATH_CHANCE_AGE_90 = 4000			-- Natural deaths per d
 NDefines.NCharacter.NATURAL_DEATH_CHANCE_AGE_100 = 8160			-- Natural deaths per decade out of 10000 people: Age 100+
 NDefines.NCharacter.NOT_SPOUSE_FERTILITY_MULT = 0.25			-- Applied to fertility when the two characters are not married
 NDefines.NCharacter.INFANT_DEATH_CHANCE = 0.03					-- Chance of stillbirth / death at birth
+NDefines.NCharacter.TRIBAL_EMPTY_HOLDING_TAX_MULTIPLIER = 0.7
 
 NDefines.NTitle.BARON_AS_VASSAL_PRESTIGE = 0.005
 NDefines.NTitle.COUNT_AS_VASSAL_PRESTIGE = 0.025
@@ -142,6 +143,9 @@ NDefines.NNomad.POPULATION_TAX_MULTIPLIER = 0.0005				-- Montly tax income deter
 NDefines.NNomad.MAX_POPULATION_EMPTY_HOLDING_MULTIPLIER = 750	-- Max population increase for each empty holding in provinces where the capital is also an empty holding
 NDefines.NNomad.UNITS_FOR_OCCUPATION = 50						-- Number of hostile units needing to stand on settlement-less nomad provinces to be considered occupied
 NDefines.NNomad.CLAN_PRESTIGE_SCALE = 0.01						-- How fast the scale of the prestige opinion bonus/malus grows
+NDefines.NNomad.PROVINCES_PER_CLAN = 4							-- Used to calculate if you have too many clans
+NDefines.NNomad.MAX_CLANS = 12									-- The maximum amount of clans, regardless of realm size
+NDefines.NNomad.TOO_MUCH_COMPETITION = 10						-- Opinion malus if you have too many clans
 NDefines.NNomad.CLANS_WANT_MORE_LAND = 25						-- Opinion malus per province too many held
 
 NDefines.NMilitary.MIN_COMBAT_DAYS = 10							-- Minimum number of days in combat
@@ -212,7 +216,7 @@ NDefines.NMilitary.MAJOR_BATTLE_WARSCORE = 5.0					-- The minium warscore gain n
 NDefines.NTechnology.IDEAL_YEAR_AHEAD_PENALTY_INVEST = 0.4			-- Percent increase in cost pre level ahead of ideal date
 NDefines.NEngine.EVENT_PROCESS_OFFSET = 20  						-- Events are checked every X day per character or province (1 is ideal but CPU heavy)
 NDefines.NAI.INTERACTION_THRESHOLD_FOR_YES = 50						-- Interactions with chance above this will always be accepted
-NDefines.NAI.DOW_AGGRESSION_FACTOR = 0.75							-- General aggressiveness declarations of war
+NDefines.NAI.DOW_AGGRESSION_FACTOR = 1.0							-- General aggressiveness declarations of war
 NDefines.NAI.REVOLT_DISTANCE_FACTOR = 0								-- Multiplier for how much distance from capital affects independence minded revolters
 NDefines.NAI.REVOLT_OTHER_INDEP_RISK = 0							-- Each ongoing other independence revolt increases revolt risk by this amount for all independence-minded revolters
 NDefines.NAI.REVOLT_OTHER_INDEP_RISK_CAP = 0						-- Cap to the total risk from the above	

@@ -6,6 +6,8 @@ namespace = Plus
 # NOMAD EVENTS
 ###########################################
 
+### NEW RULER IS OF A DIFFERENT DYNASTY
+
 # New nomad leader is not the same dynasty as the previous one
 character_event = {
 	id = Plus.2650
@@ -230,4 +232,1423 @@ character_event = {
 		}
 	}
 }
+
+### RULER OF LARGE REALM DIES WITH MULTIPLE SONS
+
+# Nomadic ruler of a large realm dies with multiple sons
+character_event = {
+	id = Plus.2655
+	title = EVTNAME_Plus_2655
+	picture = GFX_evt_death
+	
+	desc = {
+		text = EVTDESC_Plus_2655_two
+		trigger = {
+			NOT = { event_target:nomadic_third_heir = { is_alive = yes } }
+			NOT = { event_target:nomadic_fourth_heir = { is_alive = yes } }
+		}
+	}
+	desc = {
+		text = EVTDESC_Plus_2655_three
+		trigger = {
+			event_target:nomadic_third_heir = { is_alive = yes }
+			NOT = { event_target:nomadic_fourth_heir = { is_alive = yes } }
+		}
+	}
+	desc = {
+		text = EVTDESC_Plus_2655_four
+		trigger = {
+			event_target:nomadic_third_heir = { is_alive = yes }
+			event_target:nomadic_fourth_heir = { is_alive = yes }
+		}
+	}
+	
+	is_triggered_only = yes
+	major = yes
+	
+	trigger = {
+		is_nomadic = yes
+		independent = yes
 		
+		#at least twenty-five provinces in the realm
+		any_realm_province = { count = 25 }
+		
+		#at least four provinces in demesne
+		any_demesne_province = { count = 4 }
+		
+		#at least two legitimate, able, adult sons
+		any_child = {
+			count = 2
+			is_female = no
+			is_adult = yes
+			prisoner = no
+			dynasty = ROOT
+			NOR = {
+				trait = incapable
+				trait = content
+				trait = humble
+				trait = weak
+			}
+		}
+	}
+	
+	major_trigger = {
+		OR = {
+			same_realm = ROOT
+			character = event_target:nomadic_first_heir
+			character = event_target:nomadic_second_heir
+			character = event_target:nomadic_third_heir
+			character = event_target:nomadic_fourth_heir
+			capital_scope = {
+				ROOT = {
+					capital_scope = {
+						NOT = {
+							distance = {
+								where = PREVPREV
+								value = 400	# Same part of the world
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	immediate = {
+		#invalidate current rebellions
+		any_war = {
+			limit = {
+				defender = { character = ROOT }
+				OR = {
+					using_cb = cb_minor_clan_revolt
+					using_cb = peasant_revolt
+					using_cb = heretic_revolt
+					using_cb = religious_revolt
+					using_cb = liberation_revolt
+					using_cb = cb_install_khan
+					using_cb = cb_faction_overthrow_ruler
+					using_cb = religious_overthrow_ruler
+					using_cb = claim_on_liege_plot
+					using_cb = other_claim_on_liege_plot
+				}
+			}
+			end_war = invalid
+		}
+		
+		#invalidate current offensive wars
+		any_war = {
+			limit = { attacker = { character = ROOT } }
+			end_war = invalid
+		}
+
+		#remember who the primary heir is
+		current_heir = {
+			save_event_target_as = nomadic_first_heir
+			add_trait = disinherited
+		}
+		
+		#switch all nomadic titles to gavelkind
+		any_demesne_title = {
+			limit = { has_law = succ_nomad_succession }
+			add_law = succ_gavelkind
+		}
+		
+		#disinherit all children who don't meet the qualifications
+		any_child = {
+			limit = {
+				NOT = { trait = disinherited }
+				NAND = {
+					is_female = no
+					is_adult = yes
+					prisoner = no
+					dynasty = ROOT
+					NOR = {
+						trait = incapable
+						trait = content
+						trait = humble
+						trait = weak
+					}
+				}
+			}
+			add_trait = disinherited
+			character_event = { id = Plus.2656 days = 1 } #remove disinherited trait
+		}
+		
+		#now see who the second heir is
+		recalc_succession = yes
+		current_heir = {
+			save_event_target_as = nomadic_second_heir
+			add_trait = disinherited
+		}
+		
+		#is there a third heir? only valid in larger realms
+		recalc_succession = yes
+		current_heir = {
+			if = {
+				limit = {
+					is_child_of = ROOT
+					ROOT = { any_realm_province = { count = 30 } }
+				}
+				save_event_target_as = nomadic_third_heir
+				add_trait = disinherited
+			}
+		}
+		
+		#is there a fourth heir? only valid in larger realms
+		recalc_succession = yes
+		current_heir = {
+			if = {
+				limit = {
+					is_child_of = ROOT
+					ROOT = { any_realm_province = { count = 35 } }
+				}
+				save_event_target_as = nomadic_fourth_heir
+				add_trait = disinherited
+			}
+		}
+		
+		#now disinherit the remaining children
+		any_child = {
+			limit = { NOT = { trait = disinherited } }
+			add_trait = disinherited
+			character_event = { id = Plus.2656 days = 1 } #remove disinherited trait
+		}
+		
+		#remove disinherited trait from chosen successors
+		event_target:nomadic_first_heir = {
+			remove_trait = disinherited
+		}
+		event_target:nomadic_second_heir = {
+			dynasty = father_bastard
+			remove_trait = disinherited
+		}
+		event_target:nomadic_third_heir = {
+			dynasty = father_bastard
+			remove_trait = disinherited
+		}
+		event_target:nomadic_fourth_heir = {
+			dynasty = father_bastard
+			remove_trait = disinherited
+		}
+		recalc_succession = yes
+		
+		#continue as normal if the original heir is also the current heir
+		if = {
+			limit = {
+				current_heir = {
+					event_target:nomadic_first_heir = {
+						character = PREV
+					}
+				}
+			}
+			capital_scope = { county = { grant_title_no_opinion = event_target:nomadic_first_heir } }
+			clan_title = { grant_title_no_opinion = event_target:nomadic_first_heir }
+			current_heir = {
+				character_event = { id = Plus.2658 days = 1 }
+			}
+		}
+		
+		#otherwise simulate gavelkind by handing out some county titles
+		if = {
+			limit = {
+				current_heir = {
+					event_target:nomadic_first_heir = {
+						NOT = { character = PREV }
+					}
+				}
+			}
+			#first switch titles back to nomad succession
+			any_demesne_title = {
+				limit = { has_law = succ_gavelkind }
+				add_law = succ_nomad_succession
+			}
+			recalc_succession = yes
+			
+			#then give the other sons a random capital
+			random_demesne_province = {
+				limit = { is_capital = no }
+				county = { grant_title_no_opinion = event_target:nomadic_second_heir }
+				event_target:nomadic_second_heir = { set_government_type = nomadic_government }
+			}
+			random_demesne_province = {
+				limit = { is_capital = no }
+				county = { grant_title_no_opinion = event_target:nomadic_third_heir }
+				event_target:nomadic_third_heir = { set_government_type = nomadic_government }
+			}
+			random_demesne_province = {
+				limit = { is_capital = no }
+				county = { grant_title_no_opinion = event_target:nomadic_fourth_heir }
+				event_target:nomadic_fourth_heir = { set_government_type = nomadic_government }
+			}
+			
+			#give the second heir a second province if I have at least three left
+			if = {
+				limit = { num_of_count_titles = 3 }
+				#first try a neighboring province
+				random_demesne_province = {
+					limit = {
+						is_capital = no
+						any_neighbor_province = { owner = { character = event_target:nomadic_second_heir } }
+					}
+					county = { grant_title_no_opinion = event_target:nomadic_second_heir }
+				}
+				#then try a province nearby
+				if = {
+					limit = { event_target:nomadic_second_heir = { NOT = { num_of_count_titles = 2 } } }
+					random_demesne_province = {
+						limit = {
+							is_capital = no
+							any_neighbor_province = { any_neighbor_province = { owner = { character = event_target:nomadic_second_heir } } }
+						}
+						county = { grant_title_no_opinion = event_target:nomadic_second_heir }
+					}
+				}
+				#then give any province
+				if = {
+					limit = { event_target:nomadic_second_heir = { NOT = { num_of_count_titles = 2 } } }
+					random_demesne_province = {
+						limit = { is_capital = no }
+						county = { grant_title_no_opinion = event_target:nomadic_second_heir }
+					}
+				}
+			}
+
+			#give the third heir a second province if I have at least three left
+			if = {
+				limit = { num_of_count_titles = 3 }
+				#first try a neighboring province
+				random_demesne_province = {
+					limit = {
+						is_capital = no
+						any_neighbor_province = { owner = { character = event_target:nomadic_third_heir } }
+					}
+					county = { grant_title_no_opinion = event_target:nomadic_third_heir }
+				}
+				#then try a province nearby
+				if = {
+					limit = { event_target:nomadic_third_heir = { NOT = { num_of_count_titles = 2 } } }
+					random_demesne_province = {
+						limit = {
+							is_capital = no
+							any_neighbor_province = { any_neighbor_province = { owner = { character = event_target:nomadic_third_heir } } }
+						}
+						county = { grant_title_no_opinion = event_target:nomadic_third_heir }
+					}
+				}
+				#then give any province
+				if = {
+					limit = { event_target:nomadic_third_heir = { NOT = { num_of_count_titles = 2 } } }
+					random_demesne_province = {
+						limit = { is_capital = no }
+						county = { grant_title_no_opinion = event_target:nomadic_third_heir }
+					}
+				}
+			}
+			
+			#give the fourth heir a second province if I have at least four left
+			if = {
+				limit = { num_of_count_titles = 4 }
+				#first try a neighboring province
+				random_demesne_province = {
+					limit = {
+						is_capital = no
+						any_neighbor_province = { owner = { character = event_target:nomadic_fourth_heir } }
+					}
+					county = { grant_title_no_opinion = event_target:nomadic_fourth_heir }
+				}
+				#then try a province nearby
+				if = {
+					limit = { event_target:nomadic_fourth_heir = { NOT = { num_of_count_titles = 2 } } }
+					random_demesne_province = {
+						limit = {
+							is_capital = no
+							any_neighbor_province = { any_neighbor_province = { owner = { character = event_target:nomadic_fourth_heir } } }
+						}
+						county = { grant_title_no_opinion = event_target:nomadic_fourth_heir }
+					}
+				}
+				#then give any province
+				if = {
+					limit = { event_target:nomadic_fourth_heir = { NOT = { num_of_count_titles = 2 } } }
+					random_demesne_province = {
+						limit = { is_capital = no }
+						county = { grant_title_no_opinion = event_target:nomadic_fourth_heir }
+					}
+				}
+			}
+			
+			#give the second heir a third province if I have at least four left
+			if = {
+				limit = { num_of_count_titles = 4 }
+				#first try a neighboring province
+				random_demesne_province = {
+					limit = {
+						is_capital = no
+						any_neighbor_province = { owner = { character = event_target:nomadic_second_heir } }
+					}
+					county = { grant_title_no_opinion = event_target:nomadic_second_heir }
+				}
+				#then try a province nearby
+				if = {
+					limit = { event_target:nomadic_second_heir = { NOT = { num_of_count_titles = 3 } } }
+					random_demesne_province = {
+						limit = {
+							is_capital = no
+							any_neighbor_province = { any_neighbor_province = { owner = { character = event_target:nomadic_second_heir } } }
+						}
+						county = { grant_title_no_opinion = event_target:nomadic_second_heir }
+					}
+				}
+				#then give any province
+				if = {
+					limit = { event_target:nomadic_second_heir = { NOT = { num_of_count_titles = 3 } } }
+					random_demesne_province = {
+						limit = { is_capital = no }
+						county = { grant_title_no_opinion = event_target:nomadic_second_heir }
+					}
+				}
+			}
+			
+			#give the third heir a third province if I have at least four left
+			if = {
+				limit = { num_of_count_titles = 4 }
+				#first try a neighboring province
+				random_demesne_province = {
+					limit = {
+						is_capital = no
+						any_neighbor_province = { owner = { character = event_target:nomadic_third_heir } }
+					}
+					county = { grant_title_no_opinion = event_target:nomadic_third_heir }
+				}
+				#then try a province nearby
+				if = {
+					limit = { event_target:nomadic_third_heir = { NOT = { num_of_count_titles = 3 } } }
+					random_demesne_province = {
+						limit = {
+							is_capital = no
+							any_neighbor_province = { any_neighbor_province = { owner = { character = event_target:nomadic_third_heir } } }
+						}
+						county = { grant_title_no_opinion = event_target:nomadic_third_heir }
+					}
+				}
+				#then give any province
+				if = {
+					limit = { event_target:nomadic_third_heir = { NOT = { num_of_count_titles = 3 } } }
+					random_demesne_province = {
+						limit = { is_capital = no }
+						county = { grant_title_no_opinion = event_target:nomadic_third_heir }
+					}
+				}
+			}
+			
+			#give the second heir a fourth province if I have at least four left
+			if = {
+				limit = { num_of_count_titles = 4 }
+				#first try a neighboring province
+				random_demesne_province = {
+					limit = {
+						is_capital = no
+						any_neighbor_province = { owner = { character = event_target:nomadic_second_heir } }
+					}
+					county = { grant_title_no_opinion = event_target:nomadic_second_heir }
+				}
+				#then try a province nearby
+				if = {
+					limit = { event_target:nomadic_second_heir = { NOT = { num_of_count_titles = 4 } } }
+					random_demesne_province = {
+						limit = {
+							is_capital = no
+							any_neighbor_province = { any_neighbor_province = { owner = { character = event_target:nomadic_second_heir } } }
+						}
+						county = { grant_title_no_opinion = event_target:nomadic_second_heir }
+					}
+				}
+				#then give any province
+				if = {
+					limit = { event_target:nomadic_second_heir = { NOT = { num_of_count_titles = 4 } } }
+					random_demesne_province = {
+						limit = { is_capital = no }
+						county = { grant_title_no_opinion = event_target:nomadic_second_heir }
+					}
+				}
+			}
+			
+			#give the third heir a fourth province if I have at least five left
+			if = {
+				limit = { num_of_count_titles = 5 }
+				#first try a neighboring province
+				random_demesne_province = {
+					limit = {
+						is_capital = no
+						any_neighbor_province = { owner = { character = event_target:nomadic_third_heir } }
+					}
+					county = { grant_title_no_opinion = event_target:nomadic_third_heir }
+				}
+				#then try a province nearby
+				if = {
+					limit = { event_target:nomadic_third_heir = { NOT = { num_of_count_titles = 4 } } }
+					random_demesne_province = {
+						limit = {
+							is_capital = no
+							any_neighbor_province = { any_neighbor_province = { owner = { character = event_target:nomadic_third_heir } } }
+						}
+						county = { grant_title_no_opinion = event_target:nomadic_third_heir }
+					}
+				}
+				#then give any province
+				if = {
+					limit = { event_target:nomadic_third_heir = { NOT = { num_of_count_titles = 4 } } }
+					random_demesne_province = {
+						limit = { is_capital = no }
+						county = { grant_title_no_opinion = event_target:nomadic_third_heir }
+					}
+				}
+			}
+			
+			#give the second heir a fifth province if I have at least six left
+			if = {
+				limit = { num_of_count_titles = 6 }
+				#first try a neighboring province
+				random_demesne_province = {
+					limit = {
+						is_capital = no
+						any_neighbor_province = { owner = { character = event_target:nomadic_second_heir } }
+					}
+					county = { grant_title_no_opinion = event_target:nomadic_second_heir }
+				}
+				#then try a province nearby
+				if = {
+					limit = { event_target:nomadic_second_heir = { NOT = { num_of_count_titles = 5 } } }
+					random_demesne_province = {
+						limit = {
+							is_capital = no
+							any_neighbor_province = { any_neighbor_province = { owner = { character = event_target:nomadic_second_heir } } }
+						}
+						county = { grant_title_no_opinion = event_target:nomadic_second_heir }
+					}
+				}
+				#then give any province
+				if = {
+					limit = { event_target:nomadic_second_heir = { NOT = { num_of_count_titles = 5 } } }
+					random_demesne_province = {
+						limit = { is_capital = no }
+						county = { grant_title_no_opinion = event_target:nomadic_second_heir }
+					}
+				}
+			}
+			
+			#then continue once titles are handed out
+			current_heir = {
+				character_event = { id = Plus.2658 days = 1 }
+			}
+		}
+
+		#fire the event to kick off the 'anti-border gore' chain
+		event_target:nomadic_first_heir = { character_event = { id = Plus.2665 days = 5 } }
+		
+		#clean up flags
+		event_target:nomadic_first_heir = { character_event = { id = Plus.2673 days = 10 } }
+		event_target:nomadic_second_heir = { character_event = { id = Plus.2673 days = 10 } }
+		event_target:nomadic_third_heir = { character_event = { id = Plus.2673 days = 10 } }
+		event_target:nomadic_fourth_heir = { character_event = { id = Plus.2673 days = 10 } }
+	}
+	
+	option = {
+		name = EVTOPTA_Plus_2655
+		trigger = { character = event_target:nomadic_first_heir }
+	}
+	option = {
+		name = EVTOPTB_Plus_2655
+		trigger = {
+			OR = {
+				character = event_target:nomadic_second_heir
+				character = event_target:nomadic_third_heir
+				character = event_target:nomadic_fourth_heir
+			}
+		}
+	}
+	option = {
+		name = EVTOPTC_Plus_2655
+		trigger = {
+			same_realm = ROOT
+			NOR = {
+				character = event_target:nomadic_first_heir
+				character = event_target:nomadic_second_heir
+				character = event_target:nomadic_third_heir
+				character = event_target:nomadic_fourth_heir
+			}
+		}
+	}
+	option = {
+		name = EVTOPTD_Plus_2655
+		trigger = {
+			NOR = {
+				same_realm = ROOT
+				character = event_target:nomadic_first_heir
+				character = event_target:nomadic_second_heir
+				character = event_target:nomadic_third_heir
+				character = event_target:nomadic_fourth_heir
+			}
+		}
+	}
+}
+
+# Remove disinherited trait from remaining children
+character_event = {
+	id = Plus.2656
+	
+	hide_window = yes
+	is_triggered_only = yes
+	
+	immediate = {
+		remove_trait = disinherited
+	}
+}
+
+# Split up population/manpower and test if sons will want to leave the realm
+character_event = {
+	id = Plus.2658
+	
+	hide_window = yes
+	is_triggered_only = yes
+	
+	immediate = {
+		#split up population a bit
+		if = {
+			limit = { population = 4000 }
+			population = -1000
+			event_target:nomadic_second_heir = { population = 1000 }
+		}
+		if = {
+			limit = { population = 3000 }
+			population = -750
+			event_target:nomadic_second_heir = { population = 750 }
+		}
+		if = {
+			limit = {
+				population = 3000
+				event_target:nomadic_third_heir = { is_alive = yes }
+			}
+			population = -750
+			event_target:nomadic_third_heir = { population = 750 }
+		}
+		if = {
+			limit = { population = 2000 }
+			population = -500
+			event_target:nomadic_second_heir = { population = 500 }
+		}
+		if = {
+			limit = {
+				population = 2000
+				event_target:nomadic_third_heir = { is_alive = yes }
+			}
+			population = -500
+			event_target:nomadic_third_heir = { population = 500 }
+		}
+		if = {
+			limit = {
+				population = 2000
+				event_target:nomadic_fourth_heir = { is_alive = yes }
+			}
+			population = -500
+			event_target:nomadic_fourth_heir = { population = 500 }
+		}
+		
+		#split up manpower a bit
+		if = {
+			limit = { max_manpower = 2000 }
+			manpower = -750
+			event_target:nomadic_second_heir = { manpower = 750 }
+		}
+		if = {
+			limit = { max_manpower = 1500 }
+			manpower = -500
+			event_target:nomadic_second_heir = { manpower = 500 }
+		}
+		if = {
+			limit = {
+				max_manpower = 1500
+				event_target:nomadic_third_heir = { is_alive = yes }
+			}
+			manpower = -500
+			event_target:nomadic_third_heir = { manpower = 500 }
+		}
+		if = {
+			limit = { max_manpower = 1000 }
+			manpower = -250
+			event_target:nomadic_second_heir = { manpower = 250 }
+		}
+		if = {
+			limit = {
+				max_manpower = 1000
+				event_target:nomadic_third_heir = { is_alive = yes }
+			}
+			manpower = -250
+			event_target:nomadic_third_heir = { manpower = 250 }
+		}
+		if = {
+			limit = {
+				max_manpower = 1000
+				event_target:nomadic_fourth_heir = { is_alive = yes }
+			}
+			manpower = -250
+			event_target:nomadic_fourth_heir = { manpower = 250 }
+		}
+		if = {
+			limit = { max_manpower = 500 }
+			manpower = -150
+			event_target:nomadic_second_heir = { manpower = 150 }
+		}
+		if = {
+			limit = {
+				max_manpower = 500
+				event_target:nomadic_third_heir = { is_alive = yes }
+			}
+			manpower = -150
+			event_target:nomadic_third_heir = { manpower = 150 }
+		}
+		if = {
+			limit = {
+				max_manpower = 500
+				event_target:nomadic_fourth_heir = { is_alive = yes }
+			}
+			manpower = -150
+			event_target:nomadic_fourth_heir = { manpower = 150 }
+		}
+	
+		#ask brothers if they want to secede
+		event_target:nomadic_second_heir = { character_event = { id = Plus.2659 } }
+		event_target:nomadic_third_heir = { character_event = { id = Plus.2659 } }
+		event_target:nomadic_fourth_heir = { character_event = { id = Plus.2659 } }
+	}
+}
+
+# Brothers consider whether they want to secede from the main realm
+character_event = {
+	id = Plus.2659
+	desc = EVTDESC_Plus_2659
+	picture = GFX_evt_tengri_throneroom_oldgods
+	border = GFX_event_normal_frame_diplomacy
+	
+	is_triggered_only = yes	
+	
+	trigger = {
+		FROM = { is_liege_of = ROOT }
+		prisoner = no
+		NOT = { trait = incapable }
+	}
+
+	option = {
+		name = EVTOPTA_Plus_2659 # I will forge my own destiny
+		ai_chance = {
+			factor = 70
+			modifier = {
+				factor = 0.1
+				has_blood_oath_with = FROM
+			}
+			modifier = {
+				factor = 1.5
+				NOT = { opinion = { who = FROM value = -25 } }
+			}
+			modifier = {
+				factor = 1.5
+				NOT = { opinion = { who = FROM value = -50 } }
+			}
+			modifier = {
+				factor = 2
+				NOT = { opinion = { who = FROM value = -75 } }
+			}
+			modifier = {
+				factor = 1.5
+				trait = ambitious
+			}
+			modifier = {
+				factor = 1.5
+				trait = proud
+			}
+			modifier = {
+				factor = 1.2
+				trait = greedy
+			}
+			modifier = {
+				factor = 1.2
+				trait = brave
+			}
+			modifier = {
+				factor = 1.2
+				trait = paranoid
+			}
+		}
+		prestige = 100
+		set_defacto_liege = ROOT
+		FROM = { any_demesne_title = { remove_claim = ROOT } }
+		hidden_tooltip = {
+			any_demesne_title = { remove_claim = FROM }
+			FROM = {
+				#notify former liege
+				letter_event = { id = Plus.2660 }
+				
+				#invite neighboring clans to join
+				any_vassal = {
+					limit = {
+						is_nomadic = yes
+						any_demesne_province = { any_neighbor_province = { owner = { character = ROOT } } }
+						NOR = {
+							character = event_target:nomadic_second_heir
+							character = event_target:nomadic_third_heir
+							character = event_target:nomadic_fourth_heir
+						}
+					}
+					letter_event = { id = Plus.2661 days = 1 }
+				}
+			}
+		}
+	}
+	option = {
+		name = EVTOPTB_Plus_2659 # My brother is my liege
+		ai_chance = {
+			factor = 30
+			modifier = {
+				factor = 3
+				any_demesne_title = { is_occupied = yes }
+			}
+			modifier = {
+				factor = 2
+				FROM = {
+					any_war = {
+						defender = { character = PREV }
+						war_score = 15
+					}
+				}
+			}
+			modifier = {
+				factor = 0.1
+				is_foe = FROM
+			}
+			modifier = {
+				factor = 1.5
+				opinion = { who = FROM value = 25 }
+			}
+			modifier = {
+				factor = 1.5
+				opinion = { who = FROM value = 50 }
+			}
+			modifier = {
+				factor = 2
+				opinion = { who = FROM value = 75 }
+			}
+			modifier = {
+				factor = 0.5
+				character = event_target:nomadic_second_heir
+			}
+			modifier = {
+				factor = 1.5
+				character = event_target:nomadic_third_heir
+			}
+			modifier = {
+				factor = 2.5
+				character = event_target:nomadic_fourth_heir
+			}
+			modifier = {
+				factor = 1.5
+				trait = craven
+			}
+			modifier = {
+				factor = 1.2
+				trait = patient
+			}
+			modifier = {
+				factor = 1.2
+				trait = trusting
+			}
+		}
+	}
+}
+
+# First heir notified that brother plans to secede
+letter_event = {
+	id = Plus.2660
+	desc = EVTDESC_Plus_2660
+	border = GFX_event_letter_frame_diplomacy
+	
+	is_triggered_only = yes
+	
+	option = {
+		name = I_SEE
+		set_character_flag = brother_seceded
+	}
+}
+
+# Neighboring clan invited to join seceding brother
+letter_event = {
+	id = Plus.2661
+	desc = EVTDESC_Plus_2661
+	border = GFX_event_letter_frame_diplomacy
+	
+	is_triggered_only = yes
+	
+	option = {
+		name = EVTOPTA_Plus_2661 # Join him
+		trigger = {
+			event_target:nomadic_first_heir = { is_liege_of = ROOT }
+		}
+		ai_chance = {
+			factor = 50
+			modifier = {
+				factor = 0
+				has_feud_with = FROM
+			}
+			modifier = {
+				factor = 0.1
+				event_target:nomadic_first_heir = {
+					OR = {
+						has_blood_oath_with = ROOT
+						is_allied_with = ROOT
+						reverse_clan_opinion = { who = ROOT value = 50 }
+						reverse_opinion = { who = ROOT value = 50 }
+					}
+				}
+			}
+			modifier = {
+				factor = 0.5
+				capital_scope = {
+					FROM = {
+						NOT = {
+							any_realm_province = {
+								NOT = { distance = { where = PREVPREV value = 200 } }
+							}
+						}
+					}
+				}
+			}
+			modifier = {
+				factor = 0.5
+				capital_scope = {
+					FROM = {
+						NOT = {
+							any_realm_province = {
+								NOT = { distance = { where = PREVPREV value = 300 } }
+							}
+						}
+					}
+				}
+			}
+			modifier = {
+				factor = 0.5
+				capital_scope = {
+					FROM = {
+						NOT = {
+							any_realm_province = {
+								NOT = { distance = { where = PREVPREV value = 400 } }
+							}
+						}
+					}
+				}
+			}
+			modifier = {
+				factor = 0.5
+				event_target:nomadic_first_heir = {
+					reverse_clan_opinion = { who = ROOT value = 25 }
+				}
+			}
+			modifier = {
+				factor = 1.5
+				event_target:nomadic_first_heir = {
+					NOT = { reverse_clan_opinion = { who = ROOT value = -25 } }
+				}
+			}
+			modifier = {
+				factor = 1.5
+				event_target:nomadic_first_heir = {
+					NOT = { reverse_clan_opinion = { who = ROOT value = -50 } }
+				}
+			}
+			modifier = {
+				factor = 1.5
+				event_target:nomadic_first_heir = {
+					NOT = { reverse_clan_opinion = { who = ROOT value = -75 } }
+				}
+			}
+			modifier = {
+				factor = 1.5
+				event_target:nomadic_first_heir = {
+					NOT = { religion = ROOT }
+				}
+			}
+			modifier = {
+				factor = 1.5
+				event_target:nomadic_first_heir = {
+					NOT = { culture = ROOT }
+				}
+			}
+		}
+		tooltip = { set_defacto_liege = FROM }
+		hidden_tooltip = {
+			event_target:nomadic_first_heir = { letter_event = { id = Plus.2663 days = 1 } }
+			FROM = { letter_event = { id = Plus.2662 days = 1 } }
+		}
+	}
+	option = {
+		name = EVTOPTB_Plus_2661 # Refuse
+		ai_chance = {
+			factor = 50
+			modifier = {
+				factor = 0
+				OR = {
+					has_blood_oath_with = FROM
+					event_target:nomadic_first_heir = { has_feud_with = ROOT }
+				}
+			}
+			modifier = {
+				factor = 0.25
+				OR = {
+					is_allied_with = FROM
+					clan_opinion = { who = FROM value = 50 }
+					opinion = { who = FROM value = 50 }
+				}
+			}
+			modifier = {
+				factor = 0.5
+				clan_opinion = { who = FROM value = 25 }
+			}
+			modifier = {
+				factor = 1.5
+				NOT = { clan_opinion = { who = FROM value = -25 } }
+			}
+			modifier = {
+				factor = 1.5
+				NOT = { clan_opinion = { who = FROM value = -50 } }
+			}
+			modifier = {
+				factor = 1.5
+				NOT = { clan_opinion = { who = FROM value = -75 } }
+			}
+			modifier = {
+				factor = 1.5
+				NOT = { religion = FROM }
+			}
+			modifier = {
+				factor = 1.5
+				NOT = { culture = FROM }
+			}
+			modifier = {
+				factor = 1.5
+				trait = content
+			}
+			modifier = {
+				factor = 1.5
+				trait = craven
+			}
+			modifier = {
+				factor = 1.5
+				trait = humble
+			}
+			modifier = {
+				factor = 1.5
+				trait = weak
+			}
+		}
+		hidden_tooltip = {
+			FROM = { letter_event = { id = Plus.2664 days = 1 } }
+		}
+	}
+}
+
+# Neighboring clan agrees to join
+letter_event = {
+	id = Plus.2662
+	desc = EVTDESC_Plus_2662
+	border = GFX_event_letter_frame_diplomacy
+	
+	is_triggered_only = yes
+	
+	option = {
+		name = EXCELLENT
+		FROM = { set_defacto_vassal = ROOT }
+	}
+}
+
+# Neighboring clan notifies liege that they're joining the brother
+letter_event = {
+	id = Plus.2663
+	desc = EVTDESC_Plus_2663
+	border = GFX_event_letter_frame_diplomacy
+	
+	is_triggered_only = yes
+	
+	option = {
+		name = CURSES
+		tooltip = { FROM = { set_defacto_liege = FROMFROM } }
+		hidden_tooltip = {
+			FROM = { any_demesne_title = { remove_claim = ROOT } }
+			any_demesne_title = { remove_claim = FROM }
+		}
+	}
+}
+
+# Neighboring clan refuses to join
+letter_event = {
+	id = Plus.2664
+	desc = EVTDESC_Plus_2664
+	border = GFX_event_letter_frame_diplomacy
+	
+	is_triggered_only = yes
+	
+	option = {
+		name = CURSES
+		hidden_tooltip = {
+			FROM = { any_demesne_title = { remove_claim = ROOT } }
+			any_demesne_title = { remove_claim = FROM }
+		}	
+	}
+}
+
+# Once brothers have seceded, check for isolated provinces
+character_event = {
+	id = Plus.2665
+	
+	hide_window = yes
+	is_triggered_only = yes
+	
+	trigger = {
+		has_character_flag = brother_seceded
+	}
+	
+	immediate = {
+		clr_character_flag = brother_seceded
+		
+		#begin contiguous territory check
+		capital_scope = { set_province_flag = contingent_nomadic_territory }
+		character_event = { id = Plus.2666 }
+		any_vassal = {
+			limit = { is_nomadic = yes }
+			capital_scope = { set_province_flag = contingent_nomadic_territory }
+			character_event = { id = Plus.2666 }
+		}
+		#fire the event to exchange territories
+		character_event = { id = Plus.2667 days = 1 }
+		
+		#begin contiguous territory check for the other heirs
+		any_independent_ruler = {
+			limit = {
+				OR = {
+					character = event_target:nomadic_second_heir
+					character = event_target:nomadic_third_heir
+					character = event_target:nomadic_fourth_heir
+				}
+			}
+			capital_scope = { set_province_flag = contingent_nomadic_territory }
+			character_event = { id = Plus.2666 }
+			any_vassal = {
+				limit = { is_nomadic = yes }
+				capital_scope = { set_province_flag = contingent_nomadic_territory }
+				character_event = { id = Plus.2666 }
+			}
+			#fire the event to exchange territories
+			character_event = { id = Plus.2667 days = 2 }
+		}
+	}
+}
+
+character_event = {
+	id = Plus.2666
+	
+	hide_window = yes
+	is_triggered_only = yes
+	
+	immediate = {
+		#this looks for all contiguous provinces in the demesne
+		#stemming from either the realm capital or the capital of a vassal clan
+		#the flag can pass through a non-demesne province, but only if it is also contiguous
+		random_demesne_province = {
+			limit = {
+				has_province_flag = contingent_nomadic_territory
+				any_neighbor_province = {
+					NOT = { has_province_flag = contingent_nomadic_territory }
+					owner = { same_realm = ROOT }
+				}
+			}
+			any_neighbor_province = {
+				limit = {
+					NOT = { has_province_flag = contingent_nomadic_territory }
+					owner = { same_realm = ROOT }
+				}
+				set_province_flag = contingent_nomadic_territory
+			}
+		}
+		random_demesne_province = {
+			limit = {
+				NOT = { has_province_flag = contingent_nomadic_territory }
+				any_neighbor_province = {
+					has_province_flag = contingent_nomadic_territory
+					owner = { same_realm = ROOT }
+				}
+			}
+			set_province_flag = contingent_nomadic_territory
+		}
+		#refire the event if there are more provinces to flag
+		if = {
+			limit = {
+				any_demesne_province = {
+					OR = {
+						AND = {
+							has_province_flag = contingent_nomadic_territory
+							any_neighbor_province = {
+								NOT = { has_province_flag = contingent_nomadic_territory }
+								owner = { same_realm = ROOT }
+							}
+						}
+						AND = {
+							NOT = { has_province_flag = contingent_nomadic_territory }
+							any_neighbor_province = {
+								has_province_flag = contingent_nomadic_territory
+								owner = { same_realm = ROOT }
+							}
+						}
+					}
+				}
+			}
+			character_event = { id = Plus.2666 }
+		}
+	}
+}
+
+# Mark all provinces which should be given out
+character_event = {
+	id = Plus.2667
+	
+	hide_window = yes
+	is_triggered_only = yes
+	
+	immediate = {
+		any_realm_province = {
+			limit = { NOT = { has_province_flag = contingent_nomadic_territory } }
+			set_province_flag = nomad_surrender_province
+			ROOT = { set_character_flag = has_provinces_to_surrender }
+		}
+		character_event = { id = Plus.2668 days = 1 }
+	}
+}
+
+# Hand out the provinces
+character_event = {
+	id = Plus.2668
+	
+	hide_window = yes
+	is_triggered_only = yes
+	
+	trigger = {
+		has_character_flag = has_provinces_to_surrender
+		#must have more than five provinces
+		any_realm_province = { count = 6 }
+		#has province to give away
+		any_realm_province = {
+			has_province_flag = nomad_surrender_province
+			#bordering a brother's province that isn't being given away
+			any_neighbor_province = {
+				owner = {
+					NOT = { same_realm = ROOT }
+					OR = {
+						same_realm = event_target:nomadic_first_heir
+						same_realm = event_target:nomadic_second_heir
+						same_realm = event_target:nomadic_third_heir
+						same_realm = event_target:nomadic_fourth_heir
+					}
+				}
+			}
+		}
+	}
+	
+	immediate = {
+		random_realm_province = {
+			limit = {
+				#has province to give away
+				has_province_flag = nomad_surrender_province
+				#bordering a brother's province that isn't being given away
+				any_neighbor_province = {
+					NOT = { has_province_flag = nomad_surrender_province }
+					owner = {
+						NOT = { same_realm = ROOT }
+						OR = {
+							same_realm = event_target:nomadic_first_heir
+							same_realm = event_target:nomadic_second_heir
+							same_realm = event_target:nomadic_third_heir
+							same_realm = event_target:nomadic_fourth_heir
+						}
+					}
+				}
+			}
+			clr_province_flag = nomad_surrender_province
+			#usurp the province if it's owned by a nomadic clan (it's not connected to their capital)
+			if = {
+				limit = { owner = { is_nomadic = yes } }
+				county = { save_event_target_as = surrendered_county }
+				random_neighbor_province = {
+					limit = {
+						NOT = { has_province_flag = nomad_surrender_province }
+						owner = {
+							NOT = { same_realm = ROOT }
+							OR = {
+								same_realm = event_target:nomadic_first_heir
+								same_realm = event_target:nomadic_second_heir
+								same_realm = event_target:nomadic_third_heir
+								same_realm = event_target:nomadic_fourth_heir
+							}
+						}
+					}
+					owner = {
+						ROOT = { save_event_target_as = liege_losing }
+						top_liege = {
+							save_event_target_as = liege_gaining
+							event_target:surrendered_county = { usurp_title_plus_barony_if_unlanded = PREV }
+							character_event = { id = Plus.2670 } #notify
+						}
+						ROOT = { character_event = { id = Plus.2669 } } #notify
+					}
+				}
+			}
+			#vassalize any provinces owned by non-nomads
+			if = {
+				limit = { owner = { is_nomadic = no } }
+				owner = { save_event_target_as = surrendered_vassal }
+				random_neighbor_province = {
+					limit = {
+						NOT = { has_province_flag = nomad_surrender_province }
+						owner = {
+							NOT = { same_realm = ROOT }
+							OR = {
+								same_realm = event_target:nomadic_first_heir
+								same_realm = event_target:nomadic_second_heir
+								same_realm = event_target:nomadic_third_heir
+								same_realm = event_target:nomadic_fourth_heir
+							}
+						}
+					}
+					owner = {
+						ROOT = { save_event_target_as = liege_losing }
+						top_liege = {
+							save_event_target_as = liege_gaining
+							set_defacto_vassal = event_target:surrendered_vassal
+							character_event = { id = Plus.2672 } #notify
+						}
+						ROOT = { character_event = { id = Plus.2671 } } #notify
+					}
+				}
+			}
+		}
+		#refire the event to make sure we haven't dropped below 6 provinces
+		character_event = { id = Plus.2668 }
+	}
+}
+
+# Notify ruler that a province has been lost
+character_event = {
+	id = Plus.2669
+	desc = EVTDESC_Plus_2669
+	picture = GFX_evt_tribal_lands
+	border = GFX_event_normal_frame_war
+	
+	is_triggered_only = yes
+	
+	option = {
+		name = OK
+		tooltip = {
+			event_target:liege_gaining = {
+				event_target:surrendered_county = { usurp_title_plus_barony_if_unlanded = PREV }
+			}
+		}
+		hidden_tooltip = {
+			event_target:surrendered_county = { remove_claim = ROOT }
+			any_realm_lord = {
+				event_target:surrendered_county = { remove_claim = PREV }
+			}
+		}
+	}
+}
+
+# Notify ruler that a province has been gained
+character_event = {
+	id = Plus.2670
+	desc = EVTDESC_Plus_2670
+	picture = GFX_evt_tribal_lands
+	border = GFX_event_normal_frame_war
+	
+	is_triggered_only = yes
+	
+	option = {
+		name = OK
+		tooltip = {
+			event_target:liege_gaining = {
+				event_target:surrendered_county = { usurp_title_plus_barony_if_unlanded = PREV }
+			}
+		}
+	}
+}
+
+# Notify ruler that a vassal has been lost
+character_event = {
+	id = Plus.2671
+	desc = EVTDESC_Plus_2671
+	picture = GFX_evt_tribal_lands
+	border = GFX_event_normal_frame_war
+	
+	is_triggered_only = yes
+	
+	option = {
+		name = OK
+		tooltip = {
+			event_target:surrendered_vassal = {
+				set_defacto_liege = event_target:liege_gaining
+			}
+		}
+		hidden_tooltip = {
+			event_target:surrendered_vassal = {
+				any_demesne_title = {
+					remove_claim = ROOT
+					ROOT = { any_realm_lord = { remove_claim = PREVPREV } }
+				}
+				ROOT = {
+					any_demesne_title = { remove_claim = PREVPREV }
+					any_realm_lord = { any_demesne_title = { remove_claim = PREVPREVPREV } }
+				}
+			}
+		}
+	}
+}
+
+# Notify ruler that a vassal has been gained
+character_event = {
+	id = Plus.2672
+	desc = EVTDESC_Plus_2672
+	picture = GFX_evt_tribal_lands
+	border = GFX_event_normal_frame_war
+	
+	is_triggered_only = yes
+	
+	option = {
+		name = OK
+		tooltip = {
+			event_target:surrendered_vassal = {
+				set_defacto_liege = event_target:liege_gaining
+			}
+		}
+	}
+}
+
+# Clean up all remaining flags
+character_event = {
+	id = Plus.2673
+	
+	hide_window = yes
+	is_triggered_only = yes
+	
+	immediate = {
+		clr_character_flag = brother_seceded
+		clr_character_flag = has_provinces_to_surrender
+		any_realm_province = {
+			clr_province_flag = contingent_nomadic_territory
+			clr_province_flag = nomad_surrender_province
+		}
+	}
+}
+
