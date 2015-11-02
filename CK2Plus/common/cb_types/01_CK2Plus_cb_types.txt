@@ -2575,6 +2575,8 @@ cb_faction_overthrow_ruler = {
 
 	on_success = {
 		log = "[Root.GetBestName] succeeded with their cb_faction_overthrow_ruler against [From.GetBestName]"
+		
+		# the defender loses 10 Imperial Decadence ("out with the old, in with the new")
 		if = {
 			limit = { FROM = { uses_imperial_decadence_trigger = yes } }
 			FROM = {
@@ -2587,52 +2589,62 @@ cb_faction_overthrow_ruler = {
 				}
 			}
 		}
-		# mark who the attackers are, for later
-		hidden_tooltip = { 
+		
+		# add victory modifier for the 'Win a War' ambition
+		any_attacker = { add_character_modifier = { name = victory_timer duration = 1 hidden = yes } }
+
+		# apply immediate effects to the revolters
+		hidden_tooltip = {
+			
+			# error-check for attackers without revolting_against TOM
+			any_attacker = {
+				limit = { NOT = { has_opinion_modifier = { who = FROM modifier = revolting_against } } }
+				log = "cb_faction_overthrow_ruler: any_attacker w/o a revolting_against TOM: [This.GetTitledName] of the [This.PrimaryTitle.GetFullName] ([This.GetID])"
+			}
+			
 			any_attacker = {
 				limit = { has_opinion_modifier = { who = FROM modifier = revolting_against } }
-				set_character_flag = rebel_attacker
+				# the revolters remember who they overthrew
 				opinion = { modifier = overthrown_ruler who = FROM }
 				reverse_opinion = { modifier = overthrew_me who = FROM }
-			}
-		}
-		any_attacker = {
-			add_character_modifier = { name = victory_timer duration = 1 hidden = yes }
-		}
-		# weakly-held vassals of the defender may declare independence
-		if = {
-			limit = {
-				FROM = { independent = yes }
-			}
-			hidden_tooltip = {
+				
+				# and also are grateful to each other for their victory
 				FROM = {
-					any_vassal = {
-						character_event = { id = Plus.430 days = 3 }
+					any_opinion_modifier_target = {
+						limit = {
+							has_opinion_modifier = { who = PREV modifier = revolting_against }
+							NOT = { character = PREVPREV }
+						}
+						reverse_opinion = { modifier = opinion_very_grateful who = PREVPREV years = 10 }
 					}
 				}
+				# re-vassalize to the former liege
+				set_defacto_liege = FROM
 			}
 		}
-		# re-vassalize the rebels
-		pf_cb_revassalize_rebels_effect = yes
 		
+		# apply revolt effects to the defender
 		FROM = {
 			prestige = -500
+			
+			# existing vassals may declare independence
+			if = {
+				limit = { independent = yes }
+				hidden_tooltip = { any_vassal = { character_event = { id = Plus.430 days = 3 } } }
+			}			
+
+			# check whether title will be destroyed (CK2Plus only)
 			any_demesne_title = {
-				limit = {
-					is_primary_holder_title = yes
-					is_landless_type_title = no
-					temporary = no
-					higher_tier_than = duke
-					has_law = crown_authority_0
-					NOT = { has_title_flag = do_not_destroy }
-				}
+				limit = { can_destroy_title_trigger = yes }
 				custom_tooltip = { text = TITLE_ENDANGERED_NO_NAME }
+				log = "[This.GetFullName] should be destroyed as a result of the revolt"
 				set_title_flag = destroy_title
 			}
-			
+		
+			# always lower CA/TO, even if it wasn't a revolt demand
 			pf_lower_CA_effect = yes # lower Crown Authority
-			pf_lower_TO_effect = yes # lower Tribal Organization
-			
+			pf_lower_TO_effect = yes # lower Tribal Organization		
+		
 			# enforce any rebel demands that prompted the civil war
 			if = {
 				limit = { ROOT = { has_character_flag = demands_revert_succession } }
@@ -2690,229 +2702,400 @@ cb_faction_overthrow_ruler = {
 					succession_w_cooldown = feudal_elective
 				}
 			}
-			
-			# pass on any counties to claimant/de jure rebels
-			if = {
-				limit = { num_of_count_titles = 2 }
-				any_demesne_title = {
-					limit = {
-						can_be_given_away = yes
-						tier = count
-						location = { is_capital = no }
-					}
-					# give the province to de jure lieges if no rebels with claims exist
-					if = {
-						limit = {
-							any_playable_ruler = {
-								has_character_flag = rebel_attacker
-								any_demesne_title = {
-									tier = duke
-									de_jure_vassal_or_below = PREVPREV
-								}
-							}
-							NOT = {
-								any_playable_ruler = {
-									has_character_flag = rebel_attacker
-									has_claim = PREV
-								}
-							}
-						}
-						random_playable_ruler = {
-							limit = {
-								has_character_flag = rebel_attacker
-								any_demesne_title = {
-									tier = duke
-									de_jure_vassal_or_below = PREVPREV
-								}
-							}
-							usurp_title_plus_barony_if_unlanded = { target = PREV type = faction_demand }
-						}
-					}
-					# give the province to rebels with a weak claim if none have a strong claim
-					if = {
-						limit = {
-							any_playable_ruler = {
-								has_character_flag = rebel_attacker
-								has_weak_claim = PREV
-							}
-							NOT = {
-								any_playable_ruler = {
-									has_character_flag = rebel_attacker
-									has_strong_claim = PREV
-								}
-							}
-						}
-						random_playable_ruler = {
-							limit = {
-								has_character_flag = rebel_attacker
-								has_weak_claim = PREV
-							}
-							usurp_title_plus_barony_if_unlanded = { target = PREV type = faction_demand }
-						}
-					}					
-					# give the province to those with a strong claim
-					if = {
-						limit = {
-							any_playable_ruler = {
-								has_character_flag = rebel_attacker
-								has_strong_claim = PREV
-							}
-						}
-						random_playable_ruler = {
-							limit = {
-								has_character_flag = rebel_attacker
-								has_strong_claim = PREV
-							}
-							usurp_title_plus_barony_if_unlanded = { target = PREV type = faction_demand }
-						}
-					}
-				}
+		}
+		
+		# surrender any non-capital counties to rebels with claims
+		save_event_target_as = current_holder
+		any_demesne_title = {
+			limit = {
+				can_be_given_away = yes
+				tier = COUNT
+				location = { is_capital = no }
 			}
-
-			# transfer de jure vassals to rebel lords
-			any_vassal = {
-				limit = { has_character_flag = rebel_attacker }
-				any_demesne_title = {
-					any_de_jure_vassal = {
-						limit = {
-							NOT = { has_character_flag = rebel_attacker }
-							vassal_of = PREVPREVPREV
-							war = no
-							is_patrician = no
-						}
-						set_defacto_liege = PREVPREV
-					}
-				}
-			}
-
-			# when heir is either not an adult or not of the ruler's dynasty, find usurper for titles
-			hidden_tooltip = {
-				primary_title = { save_event_target_as = former_primary_title }
-			}
+			# give the county to de jure lieges if no rebels with claims exist
 			if = {
 				limit = {
-				    NOT = { current_heir = { is_adult = yes dynasty = PREV } }
+					event_target:current_holder = {
+						any_opinion_modifier_target = {
+							pf_part_of_this_revolt_trigger = yes
+							any_demesne_title = {
+								tier = DUKE
+								de_jure_vassal_or_below = PREVPREVPREV
+							}
+						}
+						NOT = {
+							any_opinion_modifier_target = {
+								pf_part_of_this_revolt_trigger = yes
+								has_claim = PREVPREV
+							}
+						}
+					}
 				}
-				custom_tooltip = { text = OVERTHROW_USURP_TITLES }
-				hidden_tooltip = {
-					# non-primary same-tier titles are given to rebels with claims
-					any_demesne_title = {
+				event_target:current_holder = {
+					random_opinion_modifier_target = {
 						limit = {
-							is_primary_holder_title_tier = yes
-							is_primary_holder_title = no
-							can_be_given_away = yes
-						}
-						if = {
-							limit = {
-								any_playable_ruler = {
-									has_character_flag = rebel_attacker
-									has_weak_claim = PREV
-								}
-								NOT = {
-									any_playable_ruler = {
-										has_character_flag = rebel_attacker
-										has_strong_claim = PREV
-									}
-								}
-							}
-							random_playable_ruler = {
-								limit = {
-									has_character_flag = rebel_attacker
-									has_weak_claim = PREV
-								}
-								usurp_title_plus_barony_if_unlanded = { target = PREV type = faction_demand }
+							pf_part_of_this_revolt_trigger = yes
+							any_demesne_title = {
+								tier = DUKE
+								de_jure_vassal_or_below = PREVPREVPREV
 							}
 						}
-						if = {
-							limit = {
-								any_playable_ruler = {
-									has_character_flag = rebel_attacker
-									has_strong_claim = PREV
-								}
-							}
-							random_playable_ruler = {
-								limit = {
-									has_character_flag = rebel_attacker
-									has_strong_claim = PREV
-								}
-								usurp_title_plus_barony_if_unlanded = { target = PREV type = faction_demand }
+						usurp_title_plus_barony_if_unlanded = { target = PREVPREV type = faction_demand }
+					}
+				}
+			}
+			# give the county to rebels with a weak claim if no rebels with strong claims exist
+			if = {
+				limit = {
+					event_target:current_holder = {
+						any_opinion_modifier_target = {
+							pf_part_of_this_revolt_trigger = yes
+							has_weak_claim = PREVPREV
+						}
+						NOT = {
+							any_opinion_modifier_target = {
+								pf_part_of_this_revolt_trigger = yes
+								has_strong_claim = PREVPREV
 							}
 						}
 					}
-					# abdicate to pretender most liked by the rebels if there is no rebel with a strong claim
-					if = {
+				}
+				event_target:current_holder = {
+					random_opinion_modifier_target = {
 						limit = {
-							primary_title = {
-								NOT = {
-									any_claimant = {
-										has_character_flag = rebel_attacker
-										has_strong_claim = PREV
-									}
+							pf_part_of_this_revolt_trigger = yes
+							has_weak_claim = PREVPREV
+						}
+						usurp_title_plus_barony_if_unlanded = { target = PREVPREV type = faction_demand }
+					}
+				}
+			}
+			# give the county to rebels with a strong claim
+			if = {
+				limit = {
+					event_target:current_holder = {
+						any_opinion_modifier_target = {
+							pf_part_of_this_revolt_trigger = yes
+							has_strong_claim = PREVPREV
+						}
+					}
+				}
+				event_target:current_holder = {
+					random_opinion_modifier_target = {
+						limit = {
+							pf_part_of_this_revolt_trigger = yes
+							has_strong_claim = PREVPREV
+						}
+						usurp_title_plus_barony_if_unlanded = { target = PREVPREV type = faction_demand }
+					}
+				}
+			}
+		}
+		
+		# transfer vassals to rebels who are their de jure lieges
+		any_vassal = {
+			limit = {
+				event_target:current_holder = {
+					any_opinion_modifier_target = {
+						pf_part_of_this_revolt_trigger = yes
+						de_jure_vassal_or_below = PREVPREV
+					}
+				}
+			}
+			event_target:current_holder = {
+				random_opinion_modifier_target = {
+					limit = {
+						pf_part_of_this_revolt_trigger = yes
+						de_jure_vassal_or_below = PREVPREV
+					}
+					set_defacto_vassal = PREVPREV
+				}
+			}
+		}
+		
+		# save event targets for primary title and current liege
+		primary_title = { save_event_target_as = former_primary_title }
+		if = {
+			limit = { independent = no }
+			liege = { save_event_target_as = current_liege }
+		}
+		
+		# check whether defender should have titles usurped
+		if = {
+			limit = {
+				# this is not a succession law revolt
+				NOT = { has_character_flag = faction_succession_war }
+				OR = {
+					# or the current ruler is not an adult
+					is_adult = no
+					# or this is the original liege and the current heir is not an adult
+					AND = {
+						ROOT = { has_character_flag = original_war_liege }
+						current_heir = { is_adult = no }
+					}
+				}
+			}
+			ROOT = { clr_character_flag = original_war_liege }
+			# grant non-primary same-tier titles to rebels with claims
+			any_demesne_title = {
+				limit = {
+					can_be_given_away = yes
+					is_primary_holder_title_tier = yes
+					is_primary_holder_title = no
+				}
+				# give the title to rebel with a weak claim if none with a strong claim exists
+				if = {
+					limit = {
+						event_target:current_holder = {
+							any_opinion_modifier_target = {
+								pf_part_of_this_revolt_trigger = yes
+								has_weak_claim = PREVPREV
+							}
+							NOT = {
+								any_opinion_modifier_target = {
+									pf_part_of_this_revolt_trigger = yes
+									has_strong_claim = PREVPREV
 								}
 							}
 						}
-						abdicate_to_most_liked_by = ROOT
 					}
-					# rebel with strong claim on the primary title usurps it instead
-					if = {
-						limit = {
-							primary_title = {
+					event_target:current_holder = {
+						random_opinion_modifier_target = {
+							limit = {
+								pf_part_of_this_revolt_trigger = yes
+								has_weak_claim = PREVPREV
+							}
+							usurp_title_plus_barony_if_unlanded = { target = PREVPREV type = faction_demand }
+						}
+						if = {
+							limit = { event_target:current_liege = { always = yes } }
+							set_defacto_liege = event_target:current_liege
+						}
+					}
+				}
+				# give the title to rebel with a strong claim
+				if = {
+					limit = {
+						event_target:current_holder = {
+							any_opinion_modifier_target = {
+								pf_part_of_this_revolt_trigger = yes
+								has_weak_claim = PREVPREV
+							}
+						}
+					}
+					event_target:current_holder = {
+						random_opinion_modifier_target = {
+							limit = {
+								pf_part_of_this_revolt_trigger = yes
+								has_strong_claim = PREVPREV
+							}
+							usurp_title_plus_barony_if_unlanded = { target = PREVPREV type = faction_demand }
+						}
+						if = {
+							limit = { event_target:current_liege = { always = yes } }
+							set_defacto_liege = event_target:current_liege
+						}
+					}
+				}
+			}
+			# give primary title to rebel with weak claim if none with a strong claim exists
+			if = {
+				limit = {
+					event_target:current_holder = {
+						any_opinion_modifier_target = {
+							pf_part_of_this_revolt_trigger = yes
+							any_claim = {
+								is_primary_holder_title = yes
+								holder = PREVPREV
 								any_claimant = {
-									has_character_flag = rebel_attacker
-									has_strong_claim = PREV
+									has_weak_claim = PREV
+									character = PREVPREV
 								}
 							}
 						}
-						random_playable_ruler = {
-							limit = {
-								has_character_flag = rebel_attacker
+						NOT = {
+							any_opinion_modifier_target = {
+								pf_part_of_this_revolt_trigger = yes
 								any_claim = {
-									holder = PREVPREV
 									is_primary_holder_title = yes
+									holder = PREVPREV
 									any_claimant = {
-										character = PREVPREV
 										has_strong_claim = PREV
+										character = PREVPREV
 									}
 								}
-							}
-							random_claim = {
-								limit = {
-									holder = PREVPREV
-									is_primary_holder_title = yes
-								}
-								usurp_title_plus_barony_if_unlanded = { target = PREV type = faction_demand }
 							}
 						}
 					}
 				}
+				event_target:current_holder = {
+					random_opinion_modifier_target = {
+						limit = {
+							pf_part_of_this_revolt_trigger = yes
+							any_claim = {
+								is_primary_holder_title = yes
+								holder = PREVPREV
+								any_claimant = {
+									has_weak_claim = PREV
+									character = PREVPREV
+								}
+							}
+						}
+						event_target:former_primary_title = {
+							usurp_title_plus_barony_if_unlanded = { target = PREVPREV type = faction_demand }
+						}
+						if = {
+							limit = { event_target:current_liege = { always = yes } }
+							set_defacto_liege = event_target:current_liege
+						}
+					}
+				}
 			}
-			
-			# pass on half of tyrant and dishonorable traits to the heir
+			# give primary title to rebel with a strong claim
 			if = {
-				limit = { current_heir = { dynasty = PREV is_adult = yes } }
-				hidden_tooltip = { character_event = { id = Plus.306 } }
+				limit = {
+					event_target:current_holder = {
+						any_opinion_modifier_target = {
+							pf_part_of_this_revolt_trigger = yes
+							any_claim = {
+								is_primary_holder_title = yes
+								holder = PREVPREV
+								any_claimant = {
+									has_strong_claim = PREV
+									character = PREVPREV
+								}
+							}
+						}
+					}
+				}
+				event_target:current_holder = {
+					random_opinion_modifier_target = {
+						limit = {
+							pf_part_of_this_revolt_trigger = yes
+							any_claim = {
+								is_primary_holder_title = yes
+								holder = PREVPREV
+								any_claimant = {
+									has_strong_claim = PREV
+									character = PREVPREV
+								}
+							}
+						}
+						event_target:former_primary_title = {
+							usurp_title_plus_barony_if_unlanded = { target = PREVPREV type = faction_demand }
+						}
+						if = {
+							limit = { event_target:current_liege = { always = yes } }
+							set_defacto_liege = event_target:current_liege
+						}
+					}
+				}
 			}
-			
-			# abdicate if heir is adult, of dynasty
+			# or just abdicate if there is no rebel with a claim
 			if = {
-				limit = { current_heir = { dynasty = PREV is_adult = yes } }
-				current_heir = { prestige = -500 }
+				limit = {
+					event_target:current_holder = {
+						NOT = {
+							any_opinion_modifier_target = {
+								pf_part_of_this_revolt_trigger = yes
+								any_claim = {
+									is_primary_holder_title = yes
+									holder = PREVPREV
+								}
+							}
+						}
+					}
+				}
 				abdicate = yes
 			}
-			
-			# check if title should be destroyed
-			if = {
-				limit = { event_target:former_primary_title = { has_title_flag = destroy_title } }
-				hidden_tooltip = {
-					# destroy primary title if it has been reduced too much
-					event_target:former_primary_title = {
-						holder_scope = {
-							character_event = { id = Plus.1620 days = 4 }
+		}
+		
+		# check whether defender should simply abdicate
+		if = {
+			limit = {
+				OR = {
+					# this was a succession revolt
+					has_character_flag = faction_succession_war
+					# or this was the original liege rebelled against and their current heir is an adult
+					AND = {
+						ROOT = { has_character_flag = original_war_liege }
+						current_heir = { is_adult = yes }
+					}
+				}
+			}
+			hidden_tooltip = { character_event = { id = Plus.306 } } #pass on tyrant/dishonorable traits
+			abdicate = yes
+		}
+		
+		# figure out who are the supporters, losers, and neutrals
+		if = {
+			# primary title has changed hands
+			limit = {
+				event_target:former_primary_title = {
+					holder_scope = {
+						NOT = { character = FROM }
+					}
+				}
+			}
+			hidden_tooltip = {
+				event_target:former_primary_title = {
+					holder_scope = {
+						# clear previous civil war opinions
+						pf_clear_previous_civil_war_opinions_effect = yes
+						
+						# mark rebels as supporters
+						event_target:current_holder = {
+							any_opinion_modifier_target = {
+								limit = {
+									pf_part_of_this_revolt_trigger = yes
+									NOT = { character = PREVPREV }
+								}
+								reverse_opinion = { who = PREVPREV modifier = opinion_civil_war_supporter months = 60 }
+							}
+						}
+						
+						# mark former liege and loyalists as losers
+						event_target:current_holder = {
+							reverse_opinion = { who = PREV modifier = opinion_civil_war_loser months = 60 }
+							any_opinion_modifier_target = {
+								limit = {
+									reverse_has_opinion_modifier = { who = PREV modifier = supported_civil_war }
+									vassal_of = PREVPREV
+								}
+								reverse_opinion = { who = PREVPREV modifier = opinion_civil_war_loser months = 60 }
+							}
+						}
+						
+						# remember those who chose to be neutral
+						event_target:current_holder = {
+							any_opinion_modifier_target = {
+								limit = {
+									reverse_has_opinion_modifier = { who = PREV modifier = neutral_civil_war }
+									vassal_of = PREVPREV
+								}
+								reverse_opinion = { who = PREVPREV modifier = opinion_civil_war_neutral months = 60 }
+							}
 						}
 					}
 				}
 			}
 		}
+
+		# check whether the primary title should be destroyed due to CA loss
+		if = {
+			limit = { event_target:former_primary_title = { has_title_flag = destroy_title } }
+			hidden_tooltip = {
+				event_target:former_primary_title = {
+					holder_scope = {
+						character_event = { id = Plus.1620 days = 4 } #destroy title
+					}
+				}
+			}
+		}
+
+		# clean up remaining TOMs
+		pf_civil_war_cleanup_effect = yes
+
 		any_attacker = {
 			limit = { character = ROOT }
 			participation_scaled_prestige = 250
@@ -2921,12 +3104,30 @@ cb_faction_overthrow_ruler = {
 			limit = { NOT = { character = ROOT } }
 			hidden_tooltip = { participation_scaled_prestige = 250 }
 		}
+		
+		# post-civil war event to reward allies (if title has changed hands)
+		if = {
+			limit = {
+				event_target:former_primary_title = {
+					holder_scope = {
+						NOT = { character = FROM }
+					}
+				}
+			}
+			event_target:former_primary_title = {
+				holder_scope = {
+					hidden_tooltip = { character_event = { id = PlusFaction.450 } }
+				}
+			}
+		}
+		
 		# change faction moods
 		FROM = { hidden_tooltip = { character_event = { id = PlusFaction.200 days = 1 } } }
-		ROOT = { hidden_tooltip = { character_event = { id = PlusFaction.200 days = 1 } } }	
-		hidden_tooltip = { 
-			any_attacker = { clr_character_flag = rebel_attacker }
+		ROOT = { hidden_tooltip = { character_event = { id = PlusFaction.200 days = 1 } } }
+		
+		hidden_tooltip = {
 			ROOT = {
+				clr_character_flag = original_war_liege
 				pf_clear_demands_flags_effect = yes
 			}
 			FROM = {
@@ -2940,7 +3141,15 @@ cb_faction_overthrow_ruler = {
 
 	on_fail = {
 		# re-vassalize the rebels
-		pf_cb_revassalize_rebels_effect = yes
+		hidden_tooltip = {
+			any_attacker = {
+				limit = { has_opinion_modifier = { who = FROM modifier = revolting_against } }
+				set_defacto_liege = FROM
+			}
+		}
+		
+		# clean up remaining TOMs 
+		pf_civil_war_cleanup_effect = yes
 		
 		ROOT = {
 			prestige = -100
@@ -2954,43 +3163,9 @@ cb_faction_overthrow_ruler = {
 			}
 		}
 		hidden_tooltip = {
-			if = {
-				limit = { ROOT = { has_character_flag = demands_seniority } }
-				FROM = {
-					random_demesne_title = {
-						limit = { has_title_flag = change_seniority }
-						clr_title_flag = change_seniority
-					}
-				}
-			}
-			if = {
-				limit = { ROOT = { has_character_flag = demands_primogeniture } }
-				FROM = {
-					random_demesne_title = {
-						limit = { has_title_flag = change_primogeniture }
-						clr_title_flag = change_primogeniture
-					}
-				}
-			}
-			if = {
-				limit = { ROOT = { has_character_flag = demands_gavelkind } }
-				FROM = {
-					random_demesne_title = {
-						limit = { has_title_flag = change_gavelkind }
-						clr_title_flag = change_gavelkind
-					}
-				}
-			}
-			if = {
-				limit = { ROOT = { has_character_flag = demands_feudal_elective } }
-				FROM = {
-					random_demesne_title = {
-						limit = { has_title_flag = change_feudal_elective }
-						clr_title_flag = change_feudal_elective
-					}
-				}
-			}
 			ROOT = {
+				clr_character_flag = original_war_liege
+				pf_clear_succession_flags_effect = yes
 				pf_clear_demands_flags_effect = yes
 			}
 			FROM = {
@@ -3003,39 +3178,45 @@ cb_faction_overthrow_ruler = {
 	}
 
 	on_reverse_demand = {
-		#change imperial decadence
-		if = {
-			limit = { FROM = { uses_imperial_decadence_trigger = yes } }
+		FROM = {
+			# the defender loses 1 Imperial Decadence
+			imperial_decadence_minus_1_effect = yes
+			# add victory modifier for the 'Win a War' ambition
+			add_character_modifier = { name = victory_timer duration = 1 hidden = yes }
+			# remove any previously-existing loser/supporter/neutral TOMs
+			pf_clear_previous_civil_war_opinions_effect = yes
+		}
+		
+		# apply immediate effects to the revolters
+		any_attacker = {
+			limit = { has_opinion_modifier = { who = FROM modifier = revolting_against } }
+			imprison = FROM
+			hidden_tooltip = {
+				set_defacto_liege = FROM
+				reverse_opinion = { who = FROM modifier = opinion_civil_war_loser months = 60 }
+				opinion = { who = FROM modifier = opinion_coerced_into_leaving_faction months = 60 }
+			}
+		}
+
+		# mark loyalists and neutrals for the reward event
+		hidden_tooltip = {
 			FROM = {
-				custom_tooltip = { text = IMPERIAL_DECADENCE_MINUS_1 }
-				hidden_tooltip = {
-					primary_title = { change_variable = { which = "imperial_decadence" value = -1 } }
-					character_event = { id = Plus.1852 }
+				any_vassal = {
+					limit = { reverse_has_opinion_modifier = { who = PREV modifier = supported_civil_war } }
+					reverse_opinion = { who = PREV modifier = opinion_civil_war_supporter months = 60 }
+				}
+				any_vassal = {
+					limit = { reverse_has_opinion_modifier = { who = PREV modifier = neutral_civil_war } }
+					reverse_opinion = { who = PREV modifier = opinion_civil_war_neutral months = 60 }
 				}
 			}
 		}
-		FROM = {
-			add_character_modifier = { name = victory_timer duration = 1 hidden = yes }
-		}
-		hidden_tooltip = {
-			# re-vassalize the rebels and mark them as civil war losers
-			any_attacker = {
-				limit = { has_opinion_modifier = { who = FROM modifier = revolting_against } }
-				imprison = FROM
-				
-				any_opinion_modifier_target = {
-					limit = { reverse_has_opinion_modifier = { who = PREV modifier = revolting_against } }
-					opinion = { who = PREV modifier = opinion_civil_war_loser months = 60 }
-					reverse_opinion = { who = PREV modifier = opinion_coerced_into_leaving_faction months = 60 }
-				}
-			}		
-		}
-		# re-vassalize the rebels
-		pf_cb_revassalize_rebels_effect = yes
+		
+		# clean up remaining TOMs
+		pf_civil_war_cleanup_effect = yes
 		
 		ROOT = {
 			prestige = -250
-			tooltip = { prisoner = FROM }
 		}
 		any_defender = {
 			limit = { character = FROM }
@@ -3045,61 +3226,21 @@ cb_faction_overthrow_ruler = {
 			limit = { NOT = { character = FROM } }
 			hidden_tooltip = { participation_scaled_prestige = 100 }
 		}
-		# mark loyalists as supporters for the reward event
-		hidden_tooltip = {
-			FROM = {
-				any_vassal = {
-					limit = { trait = loyalist }
-					reverse_opinion = { who = PREV modifier = opinion_civil_war_supporter months = 60 }
-					reverse_remove_opinion = { who = PREV modifier = supported_civil_war }
-				}
-			}
+		
+		# post-civil war event to reward allies
+		FROM = {
+			hidden_tooltip = { character_event = { id = PlusFaction.450 } }
 		}
-		hidden_tooltip = {
-			# post-civil war event to reward allies
-			FROM = { character_event = { id = PlusFaction.450 } }
-		}
+		
 		# change faction moods
-		FROM = { hidden_tooltip = { character_event = { id = PlusFaction.200 days = 1 } } }
-		ROOT = { hidden_tooltip = { character_event = { id = PlusFaction.200 days = 1 } } }
 		hidden_tooltip = {
-			if = {
-				limit = { ROOT = { has_character_flag = demands_seniority } }
-				FROM = {
-					random_demesne_title = {
-						limit = { has_title_flag = change_seniority }
-						clr_title_flag = change_seniority
-					}
-				}
-			}
-			if = {
-				limit = { ROOT = { has_character_flag = demands_primogeniture } }
-				FROM = {
-					random_demesne_title = {
-						limit = { has_title_flag = change_primogeniture }
-						clr_title_flag = change_primogeniture
-					}
-				}
-			}
-			if = {
-				limit = { ROOT = { has_character_flag = demands_gavelkind } }
-				FROM = {
-					random_demesne_title = {
-						limit = { has_title_flag = change_gavelkind }
-						clr_title_flag = change_gavelkind
-					}
-				}
-			}
-			if = {
-				limit = { ROOT = { has_character_flag = demands_feudal_elective } }
-				FROM = {
-					random_demesne_title = {
-						limit = { has_title_flag = change_feudal_elective }
-						clr_title_flag = change_feudal_elective
-					}
-				}
-			}
+			FROM = { character_event = { id = PlusFaction.200 days = 1 } }
+			ROOT = { character_event = { id = PlusFaction.200 days = 1 } }
+		}
+		
+		hidden_tooltip = {
 			ROOT = {
+				clr_character_flag = original_war_liege
 				pf_clear_succession_flags_effect = yes
 				pf_clear_demands_flags_effect = yes
 			}
@@ -3114,9 +3255,19 @@ cb_faction_overthrow_ruler = {
 
 	on_invalidation = {
 		# re-vassalize the rebels
-		pf_cb_revassalize_rebels_effect = yes
+		hidden_tooltip = {
+			any_attacker = {
+				limit = { has_opinion_modifier = { who = FROM modifier = revolting_against } }
+				set_defacto_liege = FROM
+			}
+		}
+		
+		# clean up remaining TOMs 
+		pf_civil_war_cleanup_effect = yes
+		
 		hidden_tooltip = {
 			ROOT = {
+				clr_character_flag = original_war_liege
 				pf_clear_succession_flags_effect = yes
 				pf_clear_demands_flags_effect = yes
 			}

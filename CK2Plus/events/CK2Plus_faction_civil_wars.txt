@@ -769,16 +769,7 @@ character_event = {
 		}
 		liege = {
 			ai = yes
-			NOR = {
-				has_character_flag = faction_court_war
-				has_character_flag = faction_prosperity_war
-				has_character_flag = faction_glory_war
-				has_character_flag = faction_tradition_war
-				has_character_flag = faction_separatist_war
-				has_character_flag = faction_pretender_war
-				has_character_flag = faction_religious_war
-				has_character_flag = faction_succession_war
-			}
+			pf_war_trigger = no
 		}
 		NOR = {
 			has_character_modifier = do_not_disturb
@@ -901,18 +892,7 @@ character_event = {
 			faction = faction_separatist
 			power = 0.75
 		}
-		liege = {
-			NOR = {
-				has_character_flag = faction_court_war
-				has_character_flag = faction_prosperity_war
-				has_character_flag = faction_glory_war
-				has_character_flag = faction_tradition_war
-				has_character_flag = faction_separatist_war
-				has_character_flag = faction_pretender_war
-				has_character_flag = faction_religious_war
-				has_character_flag = faction_succession_war
-			}
-		}
+		liege = { pf_war_trigger = no }
 		NOT = { has_character_modifier = do_not_disturb }
 		NOT = { has_character_modifier = faction_independence_ultimatum_timer }
 		e_placeholder = { had_title_flag = { flag = startup days = 730 } }
@@ -963,12 +943,10 @@ character_event = {
 		name = EVTOPTA_PlusFaction_411 #We go to war!
 		log = "[Root.GetTitledName] has taken the Independence faction into war"
 		hidden_tooltip = {
-			add_trait = rebel
-			liege = { reverse_opinion = { who = ROOT modifier = revolting_against years = 100 } }
+			pf_setup_rebel_effect = yes
 			any_faction_backer = {
 				faction = faction_separatist
-				add_trait = rebel
-				liege = { reverse_opinion = { who = PREV modifier = revolting_against years = 100 } }
+				pf_setup_rebel_effect = yes
 			}
 		}
 		liege = {
@@ -1279,6 +1257,9 @@ character_event = {
 		}
 		add_trait = neutral
 		hidden_tooltip = {
+			liege = {
+				opinion = { who = ROOT modifier = neutral_civil_war years = 100 }
+			}
 			any_faction_backer = {
 				limit = {
 					pf_war_trait_trigger = no
@@ -1555,6 +1536,9 @@ letter_event = {
 			}
 		}
 		add_trait = neutral
+		hidden_tooltip = {
+			liege = { opinion = { who = ROOT modifier = neutral_civil_war years = 100 } }
+		}
 	}
 }
 
@@ -1742,6 +1726,9 @@ character_event = {
 			}
 		}
 		add_trait = neutral
+		hidden_tooltip = {
+			liege = { opinion = { who = ROOT modifier = neutral_civil_war years = 100 } }
+		}
 	}
 	option = {
 		name = EVTOPTD_PlusFaction_421 #I am imprisoned
@@ -1768,17 +1755,9 @@ character_event = {
 	is_triggered_only = yes
 
 	trigger = {
-		OR = {
-			higher_tier_than = baron
-			num_of_baron_titles = 2
-			is_feudal = yes
-			is_tribal = yes
-		}
-		NOR = {
-			trait = rebel
-			trait = loyalist
-			trait = neutral
-		}
+		is_playable = yes
+		num_of_baron_titles = 1
+		pf_war_trait_trigger = no
 	}
 	
 	option = {
@@ -1901,36 +1880,8 @@ character_event = {
 				NOT = { opinion = { who = liege value = -75 } }
 			}
 		}
-		add_trait = rebel
-		hidden_tooltip = {
-			liege = { reverse_opinion = { who = ROOT modifier = revolting_against years = 100 } }
-			if = {
-				limit = {
-					liege = {
-						OR = {
-							independent = yes
-							liege = { character = PREV }
-						}
-					}
-				}
-				set_defacto_liege = ROOT
-			}
-			if = {
-				limit = {
-					liege = {
-						independent = no
-						liege = { NOT = { character = PREV } }
-					}
-				}
-				liege = {
-					liege = {
-						ROOT = {
-							set_defacto_liege = PREV
-						}
-					}
-				}
-			}
-		}
+		pf_setup_rebel_effect = yes
+		pf_rebel_independence_effect = yes
 		join_attacker_wars = FROM
 	}
 	option = {
@@ -2040,6 +1991,9 @@ character_event = {
 			}
 		}
 		add_trait = neutral
+		hidden_tooltip = {
+			liege = { opinion = { who = ROOT modifier = neutral_civil_war years = 100 } }
+		}
 	}
 	option = {
 		name = EVTOPTD_PlusFaction_421 #I am imprisoned
@@ -2239,7 +2193,7 @@ character_event = {
 			}
 			attacker = { clr_character_flag = original_war_liege }
 		}
-
+		
 		# Note that demands flags need no manual transfer. However, it's perhaps possible
 		# for faction_succession_war that ROOT simply does/will not have the demesne title
 		# to which the succession demand refers. If that can happen, it'd probably be a
@@ -2329,39 +2283,22 @@ character_event = {
 # The victorious side rewards their supporters & punishes opponents
 character_event = {
 	id = PlusFaction.450
+	desc = EVTDESC_PlusFaction_450A
 	picture = GFX_evt_council
 	border = GFX_event_normal_frame_war
 	
-	desc = {
-		text = EVTDESC_PlusFaction_450A
-		trigger = {
-			any_vassal = {
-				reverse_has_opinion_modifier = { who = ROOT modifier = opinion_civil_war_supporter }
-			}
-		}
-	}
-	desc = {
-		text = EVTDESC_PlusFaction_450B
-		trigger = {
-			NOT = {
-				any_vassal = {
-					reverse_has_opinion_modifier = { who = ROOT modifier = opinion_civil_war_supporter }
-				}
-			}
-		}
-	}
-	
 	is_triggered_only = yes
 	hide_from = yes
+	
+	trigger = {
+		has_any_opinion_modifier = opinion_civil_war_supporter
+	}
 
 	immediate = {
-		# Release all vassals who helped you
-		any_vassal = {
+		# Release all supporters who are prisoners
+		any_opinion_modifier_target = {
 			limit = {
-				OR = {
-					trait = loyalist
-					trait = rebel
-				}
+				reverse_has_opinion_modifier = { who = ROOT modifier = opinion_civil_war_supporter }
 				prisoner = yes
 				host = {
 					OR = {
@@ -2375,12 +2312,7 @@ character_event = {
 	}
 
 	option = {
-		name = EVTOPTA_PlusFaction_450 #They will be granted tax privileges
-		trigger = {
-			any_vassal = {
-				reverse_has_opinion_modifier = { who = ROOT modifier = opinion_civil_war_supporter }
-			}
-		}			
+		name = EVTOPTA_PlusFaction_450 #They will be granted tax privileges			
 		ai_chance = {
 			factor = 100
 			modifier = {
@@ -2392,9 +2324,10 @@ character_event = {
 				trait = charitable
 			}
 		}
+		
 		# Tax penalty applied to the ruler's provinces
 		any_demesne_title = {
-			limit = { tier = count }
+			limit = { tier = COUNT }
 			hidden_tooltip = {
 				location = {
 					remove_province_modifier = tax_privileges
@@ -2408,26 +2341,21 @@ character_event = {
 				}
 			}
 		}
-		# Tax penalty applied to any vassals who opposed ruler
+
+		# Tax penalty applied to any vassals who opposed ruler or who chose to be neutral
 		hidden_tooltip = {
 			any_vassal = {
 				limit = {
 					num_of_count_titles = 1
-					reverse_has_opinion_modifier = { who = ROOT modifier = opinion_civil_war_loser }
+					OR = {
+						reverse_has_opinion_modifier = { who = ROOT modifier = opinion_civil_war_loser }
+						reverse_has_opinion_modifier = { who = ROOT modifier = opinion_civil_war_neutral }
+					}
 				}
 				character_event = { id = PlusFaction.451 } #notify
 			}
 		}
-		# Tax penalty applied to any vassals who were neutral
-		hidden_tooltip = {
-			any_vassal = {
-				limit = {
-					num_of_count_titles = 1
-					trait = neutral
-				}
-				character_event = { id = PlusFaction.451 } #notify
-			}
-		}
+		
 		# Tax reward applied to any vassals who supported ruler
 		any_vassal = {
 			limit = {
@@ -2437,21 +2365,17 @@ character_event = {
 			custom_tooltip = {
 				text = CUSTOMTOOLTIP39
 				hidden_tooltip = {
-					opinion = { who = ROOT modifier = opinion_pleased months = 120 }
+					if = {
+						limit = { NOT = { has_opinion_modifier = { who = ROOT modifier = opinion_very_grateful } } }
+						opinion = { who = ROOT modifier = opinion_pleased months = 120 }
+					}
 					character_event = { id = PlusFaction.452 } #notify
 				}
 			}
 		}
-		# ensure all remaining rebellion traits are removed
-		pf_civil_war_cleanup_effect = yes
 	}
 	option = {
-		name = "EVTOPTB_PlusFaction_450" #Glory and Honor
-		trigger = {
-			any_vassal = {
-				reverse_has_opinion_modifier = { who = ROOT modifier = opinion_civil_war_supporter }
-			}
-		}
+		name = EVTOPTB_PlusFaction_450 #Glory and Honor
 		ai_chance = {
 			factor = 100
 			modifier = {
@@ -2505,28 +2429,20 @@ character_event = {
 			limit = { real_tier = EMPEROR }
 			prestige = -1000
 		}
+		
 		# All opponents receive a prestige penalty
 		hidden_tooltip = {
 			any_vassal = {
 				limit = {
-					reverse_has_opinion_modifier = { who = ROOT modifier = opinion_civil_war_loser }
-				}
-				character_event = { id = PlusFaction.453 } #notify
-			}
-		}
-		# All neutral rulers receive a prestige penalty
-		hidden_tooltip = {
-			any_vassal = {
-				limit = {
-					trait = neutral
-					NOR = {
+					OR = {
 						reverse_has_opinion_modifier = { who = ROOT modifier = opinion_civil_war_loser }
-						reverse_has_opinion_modifier = { who = ROOT modifier = opinion_civil_war_supporter }
+						reverse_has_opinion_modifier = { who = ROOT modifier = opinion_civil_war_neutral }
 					}
 				}
 				character_event = { id = PlusFaction.453 } #notify
 			}
 		}
+		
 		# All supporters receive a prestige bonus
 		any_vassal = {
 			limit = {
@@ -2535,21 +2451,17 @@ character_event = {
 			custom_tooltip = {
 				text = CUSTOMTOOLTIP40
 				hidden_tooltip = {
-					opinion = { who = ROOT modifier = opinion_pleased months = 120 }
+					if = {
+						limit = { NOT = { has_opinion_modifier = { who = ROOT modifier = opinion_very_grateful } } }
+						opinion = { who = ROOT modifier = opinion_pleased months = 120 }
+					}
 					character_event = { id = PlusFaction.454 } #notify
 				}
 			}
 		}
-		# ensure all remaining rebellion traits are removed
-		pf_civil_war_cleanup_effect = yes
 	}
 	option = {
-		name = "EVTOPTC_PlusFaction_450" #Nothing
-		trigger = {
-			any_vassal = {
-				reverse_has_opinion_modifier = { who = ROOT modifier = opinion_civil_war_supporter }
-			}
-		}
+		name = EVTOPTC_PlusFaction_450 #Nothing
 		ai_chance = {
 			factor = 10
 			modifier = {
@@ -2589,24 +2501,14 @@ character_event = {
 					limit = {
 						reverse_has_opinion_modifier = { who = ROOT modifier = opinion_civil_war_supporter }
 					}
+					if = {
+						limit = { NOT = { has_opinion_modifier = { who = ROOT modifier = opinion_very_grateful } } }
+						remove_opinion = { who = ROOT modifier = opinion_very_grateful }
+					}
 					character_event = { id = PlusFaction.455 } #notify
 				}
 			}
 		}
-		# ensure all remaining rebellion traits are removed
-		pf_civil_war_cleanup_effect = yes
-	}
-	option = {
-		name = EVTOPTD_PlusFaction_450 #Victory is mine!
-		trigger = {
-			NOT = {
-				any_vassal = {
-					reverse_has_opinion_modifier = { who = ROOT modifier = opinion_civil_war_supporter }
-				}
-			}
-		}
-		# ensure all remaining rebellion traits are removed
-		pf_civil_war_cleanup_effect = yes
 	}
 }
 
@@ -2633,7 +2535,7 @@ character_event = {
 
 	immediate = {
 		any_demesne_title = {
-			limit = { tier = count }
+			limit = { tier = COUNT }
 			location = {
 				remove_province_modifier = tax_privileges
 				remove_province_modifier = tax_reduction
@@ -2646,7 +2548,7 @@ character_event = {
 		if = {
 			limit = { reverse_has_opinion_modifier = { who = FROM modifier = opinion_civil_war_loser } }
 			any_demesne_title = {
-				limit = { tier = count }
+				limit = { tier = COUNT }
 				location = {
 					add_province_modifier = {
 						name = "tax_reduction"
@@ -2658,7 +2560,7 @@ character_event = {
 		if = {
 			limit = { NOT = { reverse_has_opinion_modifier = { who = FROM modifier = opinion_civil_war_loser } } }
 			any_demesne_title = {
-				limit = { tier = count }
+				limit = { tier = COUNT }
 				location = {
 					add_province_modifier = {
 						name = "tax_reduction"
@@ -3291,16 +3193,14 @@ letter_event = {
 				hidden_tooltip = {
 					set_character_flag = faction_succession_war
 					ROOT = {
-						add_trait = rebel
-						liege = { reverse_opinion = { who = ROOT modifier = revolting_against years = 100 } }
+						pf_setup_rebel_effect = yes
 						any_faction_backer = {
 							faction = faction_succ_seniority
-							add_trait = rebel
-							liege = { reverse_opinion = { who = PREV modifier = revolting_against years = 100 } }
+							pf_setup_rebel_effect = yes
 						}
 					}
 					any_vassal = {
-						limit = { NOT = { trait = rebel } }
+						limit = { pf_war_trait_trigger = no }
 						character_event = { id = PlusFaction.475 days = 1 } #invite other vassals to join
 					}
 				}
@@ -3318,16 +3218,14 @@ letter_event = {
 				hidden_tooltip = {
 					set_character_flag = faction_succession_war
 					ROOT = {
-						add_trait = rebel
-						liege = { reverse_opinion = { who = ROOT modifier = revolting_against years = 100 } }
+						pf_setup_rebel_effect = yes
 						any_faction_backer = {
 							faction = faction_succ_primogeniture
-							add_trait = rebel
-							liege = { reverse_opinion = { who = PREV modifier = revolting_against years = 100 } }
+							pf_setup_rebel_effect = yes
 						}
 					}
 					any_vassal = {
-						limit = { NOT = { trait = rebel } }
+						limit = { pf_war_trait_trigger = no }
 						character_event = { id = PlusFaction.475 days = 1 } #invite other vassals to join
 					}
 				}
@@ -3345,16 +3243,14 @@ letter_event = {
 				hidden_tooltip = {
 					set_character_flag = faction_succession_war
 					ROOT = {
-						add_trait = rebel
-						liege = { reverse_opinion = { who = ROOT modifier = revolting_against years = 100 } }
+						pf_setup_rebel_effect = yes
 						any_faction_backer = {
 							faction = faction_succ_gavelkind
-							add_trait = rebel
-							liege = { reverse_opinion = { who = PREV modifier = revolting_against years = 100 } }
+							pf_setup_rebel_effect = yes
 						}
 					}
 					any_vassal = {
-						limit = { NOT = { trait = rebel } }
+						limit = { pf_war_trait_trigger = no }
 						character_event = { id = PlusFaction.475 days = 1 } #invite other vassals to join
 					}
 				}
@@ -3372,16 +3268,14 @@ letter_event = {
 				hidden_tooltip = {
 					set_character_flag = faction_succession_war
 					ROOT = {
-						add_trait = rebel
-						liege = { reverse_opinion = { who = ROOT modifier = revolting_against years = 100 } }
+						pf_setup_rebel_effect = yes
 						any_faction_backer = {
 							faction = faction_succ_feudal_elective
-							add_trait = rebel
-							liege = { reverse_opinion = { who = PREV modifier = revolting_against years = 100 } }
+							pf_setup_rebel_effect = yes
 						}
 					}
 					any_vassal = {
-						limit = { NOT = { trait = rebel } }
+						limit = { pf_war_trait_trigger = no }
 						character_event = { id = PlusFaction.475 days = 1 } #invite other vassals to join
 					}
 				}
@@ -3422,11 +3316,8 @@ character_event = {
 
 	trigger = {
 		is_playable = yes
-		NOR = {
-			trait = rebel
-			trait = loyalist
-			trait = neutral
-		}
+		num_of_baron_titles = 1
+		pf_war_trait_trigger = no
 	}
 	
 	option = {
@@ -3527,36 +3418,8 @@ character_event = {
 				NOT = { opinion = { who = liege value = -75 } }
 			}
 		}
-		add_trait = rebel
-		hidden_tooltip = {
-			liege = { reverse_opinion = { who = ROOT modifier = revolting_against years = 100 } }
-			if = {
-				limit = {
-					liege = {
-						OR = {
-							independent = yes
-							liege = { character = PREV }
-						}
-					}
-				}
-				set_defacto_liege = ROOT
-			}
-			if = {
-				limit = {
-					liege = {
-						independent = no
-						liege = { NOT = { character = PREV } }
-					}
-				}
-				liege = {
-					liege = {
-						ROOT = {
-							set_defacto_liege = PREV
-						}
-					}
-				}
-			}
-		}
+		pf_setup_rebel_effect = yes
+		pf_rebel_independence_effect = yes
 		join_attacker_wars = FROM
 	}
 	option = {
@@ -3637,6 +3500,9 @@ character_event = {
 			}
 		}
 		add_trait = neutral
+		hidden_tooltip = {
+			liege = { opinion = { who = ROOT modifier = neutral_civil_war years = 100 } }
+		}
 	}
 	option = {
 		name = EVTOPTD_PlusFaction_421 #I am imprisoned

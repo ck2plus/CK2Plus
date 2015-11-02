@@ -760,41 +760,30 @@ pf_setup_rebel_effect = {
 		liege = {
 			if = {
 				limit = {
+					has_opinion_modifier = { who = PREV modifier = neutral_civil_war }
+				}
+				remove_opinion = { who = PREV modifier = neutral_civil_war }
+			}
+			if = {
+				limit = {
+					has_opinion_modifier = { who = PREV modifier = supported_civil_war }
+				}
+				remove_opinion = { who = PREV modifier = supported_civil_war }
+			}
+			if = {
+				limit = {
+					NOT = { has_opinion_modifier = { who = PREV modifier = revolting_against_me } }
+				}
+				opinion = { who = PREV modifier = revolting_against_me years = 100 }
+			}
+			if = {
+				limit = {
 					NOT = { reverse_has_opinion_modifier = { who = PREV modifier = revolting_against } }
 				}
 				reverse_opinion = { who = PREV modifier = revolting_against years = 100 }
 			}
 		}
 	}
-}
-
-pf_teardown_rebel_effect = {
-	remove_trait = rebel
-	random_opinion_modifier_target = {
-		limit = {
-			reverse_has_opinion_modifier = { who = PREV modifier = revolting_against }
-		}
-		reverse_remove_opinion = { who = PREV modifier = revolting_against }
-		save_event_target_as = pf_was_revolting_against
-	}
-
-	# Fail early, fail often... better to fix the system if it's broken than to
-	# simply cleanup after it sometimes. (why I chose to not clear all
-	# revolting_against TOMs and instead log the failure, for now-- while we
-	# work on the CB code)
-
-	if = {
-		limit = { has_any_opinion_modifier = revolting_against }
-
-		log = "pf_teardown_rebel_effect: SERIOUS: multiple revolting_against TOMs on [This.GetTitledFirstName] of the [This.PrimaryTitle.GetFullBaseName] ([This.GetID])! Remaining targets after removing TOM against [pf_was_revolting_against.GetTitledFirstName] of the [pf_was_revolting_against.PrimaryTitle.GetFullBaseName] (ID: [pf_was_revolting_against.GetID]):"
-
-		any_opinion_modifier_target = {
-			limit = { reverse_has_opinion_modifier = { who = PREV modifier = revolting_against } }
-			log = "pf_teardown_rebel_effect: --> [This.GetTitledFirstName] of the [This.PrimaryTitle.GetFullBaseName] (ID: [This.GetID])"
-		}
-	}
-
-	clear_event_target = pf_was_revolting_against
 }
 
 pf_rebel_independence_effect = {
@@ -826,29 +815,19 @@ pf_rebel_independence_effect = {
 	}
 }
 
-pf_cb_revassalize_rebels_effect = {
+pf_clear_previous_civil_war_opinions_effect = {
 	hidden_tooltip = {
-		any_attacker = {
-			limit = { NOT = { has_opinion_modifier = { who = FROM modifier = revolting_against } } }
-			log = "cb_faction_overthrow_ruler: any_attacker w/o a revolting_against TOM: [This.GetTitledName] of the [This.PrimaryTitle.GetFullName] ([This.GetID])"
+		any_opinion_modifier_target = {
+			limit = { reverse_has_opinion_modifier = { who = PREV modifier = opinion_civil_war_loser } }
+			reverse_remove_opinion = { who = PREV modifier = opinion_civil_war_loser }
 		}
-		any_attacker = {
-			limit = { has_opinion_modifier = { who = FROM modifier = revolting_against } }
-			set_defacto_liege = FROM
-			pf_teardown_rebel_effect = yes
+		any_opinion_modifier_target = {
+			limit = { reverse_has_opinion_modifier = { who = PREV modifier = supported_civil_war } }
+			reverse_remove_opinion = { who = PREV modifier = supported_civil_war }
 		}
-		FROM = {
-			remove_opinion = { who = ROOT modifier = declared_war }
-			# remove loyalist and neutral traits
-			any_vassal = {
-				limit = { trait = loyalist }
-				remove_trait = loyalist
-				reverse_remove_opinion = { who = PREV modifier = supported_civil_war }
-			}
-			any_vassal = {
-				limit = { trait = neutral }
-				remove_trait = neutral
-			}
+		any_opinion_modifier_target = {
+			limit = { reverse_has_opinion_modifier = { who = PREV modifier = neutral_civil_war } }
+			reverse_remove_opinion = { who = PREV modifier = neutral_civil_war }
 		}
 	}
 }
@@ -856,23 +835,62 @@ pf_cb_revassalize_rebels_effect = {
 # ROOT=THIS is the victorious side after a civil war
 pf_civil_war_cleanup_effect = {
 	hidden_tooltip = {
-		any_vassal = {
-			limit = { trait = neutral }
-			remove_trait = neutral
-		}
-		any_vassal = {
-			limit = {
-				trait = loyalist
-				reverse_has_opinion_modifier = { who = ROOT modifier = opinion_civil_war_supporter }
+		FROM = {
+			any_opinion_modifier_target = {
+				limit = { pf_part_of_this_revolt_trigger = yes }
+				remove_trait = rebel
+				random_opinion_modifier_target = {
+					limit = { reverse_has_opinion_modifier = { who = PREV modifier = revolting_against } }
+					remove_opinion = { who = PREV modifier = revolting_against_me }
+					reverse_remove_opinion = { who = PREV modifier = revolting_against }
+					save_event_target_as = pf_was_revolting_against
+				}
+
+				# Fail early, fail often... better to fix the system if it's broken than to
+				# simply cleanup after it sometimes. (why I chose to not clear all
+				# revolting_against TOMs and instead log the failure, for now-- while we
+				# work on the CB code)
+
+				if = {
+					limit = { has_any_opinion_modifier = revolting_against }
+
+					log = "pf_civil_war_cleanup_effect: SERIOUS: multiple revolting_against TOMs on [This.GetTitledFirstName] of the [This.PrimaryTitle.GetFullBaseName] ([This.GetID])! Remaining targets after removing TOM against [pf_was_revolting_against.GetTitledFirstName] of the [pf_was_revolting_against.PrimaryTitle.GetFullBaseName] (ID: [pf_was_revolting_against.GetID]):"
+
+					any_opinion_modifier_target = {
+						limit = { reverse_has_opinion_modifier = { who = PREV modifier = revolting_against } }
+						log = "pf_civil_war_cleanup_effect: --> [This.GetTitledFirstName] of the [This.PrimaryTitle.GetFullBaseName] (ID: [This.GetID])"
+					}
+				}
+
+				clear_event_target = pf_was_revolting_against			
 			}
-			remove_trait = loyalist
-		}
-		any_vassal = {
-			limit = {
-				trait = rebel
-				reverse_has_opinion_modifier = { who = ROOT modifier = opinion_civil_war_supporter }
+			
+			# Check to see if there are any leftover revolting_against_me TOMs (there shouldn't be)
+			if = {
+				limit = { has_any_opinion_modifier = revolting_against_me }
+				
+				log = "pf_civil_war_cleanup_effect: SERIOUS: [This.GetTitledFirstName] of the [This.PrimaryTitle.GetFullBaseName] ([This.GetID]) has revolting_against_me targets remaining after clean-up:"
+				
+				any_opinion_modifier_target = {
+					limit = { reverse_has_opinion_modifier = revolting_against_me }
+					log = "pf_civil_war_cleanup_effect: --> [This.GetTitledFirstName] of the [This.PrimaryTitle.GetFullBaseName] (ID: [This.GetID])"
+				}
 			}
-			pf_teardown_rebel_effect = yes
+				
+			# Clear neutral/loyalist TOM's
+			any_opinion_modifier_target = {
+				if = {
+					limit = { reverse_has_opinion_modifier = { who = PREV modifier = supported_civil_war } }
+					remove_trait = loyalist
+					reverse_remove_opinion = { who = PREV modifier = supported_civil_war }
+				}
+				if = {
+					limit = { reverse_has_opinion_modifier = { who = PREV modifier = neutral_civil_war } }
+					remove_trait = neutral
+					reverse_remove_opinion = { who = PREV modifier = neutral_civil_war }
+				}
+			}
 		}
 	}
 }
+
