@@ -8,6 +8,7 @@ namespace = PlusFaction
 # Re-Written by Rylock
 ##################################
 
+# PlusFaction.200 [Liege]
 # On-demand faction maintenance event
 character_event = {
 	id = PlusFaction.200
@@ -47,6 +48,7 @@ character_event = {
 	}
 }
 
+# PlusFaction.201 [Liege & His Court Faction Members]
 # Notification of court faction mood change
 character_event = {
 	id = PlusFaction.201
@@ -92,6 +94,7 @@ character_event = {
 	}
 }
 
+# PlusFaction.202 [Liege & His Prosperity Faction Members]
 # Notification of prosperity faction mood change
 character_event = {
 	id = PlusFaction.202
@@ -137,6 +140,7 @@ character_event = {
 	}
 }
 
+# PlusFaction.203 [Liege & His Glory Faction Members]
 # Notification of glory faction mood change
 character_event = {
 	id = PlusFaction.203
@@ -182,6 +186,7 @@ character_event = {
 	}
 }
 
+# PlusFaction.204 [Liege & His Tradition Faction Members]
 # Notification of tradition faction mood change
 character_event = {
 	id = PlusFaction.204
@@ -227,6 +232,7 @@ character_event = {
 	}
 }
 
+# PlusFaction.205 [Dying Liege and/or Revolter]
 # Faction maintenance on character death
 character_event = {
 	id = PlusFaction.205
@@ -236,27 +242,68 @@ character_event = {
 	
 	only_playable = yes
 
-	trigger = { current_heir = { is_alive = yes } }
-
 	immediate = {
-		#convenience
-		current_heir = { save_event_target_as = heir }
+		if = {
+			limit = {
+				primary_title = {
+					is_vice_royalty = yes
+				}
+			}
+			capital_scope = {
+				county = {
+					current_heir = {
+						save_event_target_as = heir
+					}
+				}
+			}
+		}
+		if = {
+			limit = {
+				NOT = {
+					primary_title = {
+						is_vice_royalty = yes
+					}
+				}
+			}
+			primary_title = {
+				current_heir = {
+					save_event_target_as = heir
+				}
+			}
+		}
 
-		#pass on proper flags to the heir if currently in a faction revolt
-		pf_inherit_war_flags_effect = yes
-		
+		log = "DEBUG: processing death for [This.GetTitledFirstName] of the [This.PrimaryTitle.GetFullBaseName] (ID: [This.GetID]) ..."
+
+		current_heir = {
+			if = {
+				limit = { is_ruler = yes }
+				log = "DEBUG: current_heir: [This.GetTitledFirstName] of the [This.PrimaryTitle.GetFullBaseName] (ID: [This.GetID])"
+			}
+			if = {
+				limit = { is_ruler = no }
+				log = "DEBUG: current_heir: [This.GetTitledName] (ID: [This.GetID])"
+			}
+		}
+		event_target:heir = {
+			if = {
+				limit = { is_ruler = yes }
+				log = "DEBUG: heir: [This.GetTitledFirstName] of the [This.PrimaryTitle.GetFullBaseName] (ID: [This.GetID])"
+			}
+			if = {
+				limit = { is_ruler = no }
+				log = "DEBUG: heir: [This.GetTitledName] (ID: [This.GetID])"
+			}
+		}
+
 		#pass down laws if the heir is inheriting a new primary title
 		if = {
 			limit = {
-				current_heir = { lower_tier_than = ROOT }
+				event_target:heir = { lower_real_tier_than = ROOT }
 			}
-			current_heir = {
-				clr_character_flag = lifetime_appointments
-				clr_character_flag = max_levies
-			}
+			event_target:heir = { clr_character_flag = lifetime_appointments }
 			if = {
 				limit = { has_character_flag = lifetime_appointments }
-				current_heir = {
+				event_target:heir = {
 					set_character_flag = lifetime_appointments
 					if = {
 						limit = { is_ruler = yes }
@@ -268,336 +315,10 @@ character_event = {
 					}
 				}
 			}
-			if = {
-				limit = { has_character_flag = max_levies }
-				current_heir = { set_character_flag = max_levies }
-			}
-		}
-
-		# Pass on any civil war state we may have versus *OUR* liege
-
-		if = { # Sanity check, first.
-			limit = {
-				trait = rebel
-				NOR = {
-					any_war = { # Secondary participant revolter
-						any_attacker = { character = ROOT } # Non-faction participant in this war or revolt leader
-						OR = {
-							using_cb = cb_faction_overthrow_ruler
-							using_cb = religious_overthrow_ruler
-							using_cb = claim_on_liege_plot
-							using_cb = other_claim_on_liege_plot
-							using_cb = cb_faction_independence
-							using_cb = liberation_revolt
-						}
-					}
-					AND = { # Faction member revolter (also works for revolt leaders, as does above)
-						in_revolt = yes
-						liege = {
-							any_war = {
-								attacker = { character = PREVPREV } # Liege is a revolt leader
-								OR = {
-									using_cb = cb_faction_overthrow_ruler
-									using_cb = religious_overthrow_ruler
-									using_cb = claim_on_liege_plot
-									using_cb = other_claim_on_liege_plot
-									using_cb = cb_faction_independence
-									using_cb = liberation_revolt
-								}
-							}
-						}
-					}
-				}
-			}
-			log = "PlusFaction.205: SERIOUS: dying ruler had `rebel` trait but isn't involved in a PF revolt: [This.GetTitledFirstName] of the [This.PrimaryTitle.GetFullBaseName] (ID: [This.GetID])"
-			remove_trait = rebel
-		}
-
-		# Are we a revolt leader?
-		if = {
-			limit = {
-				in_revolt = yes
-				independent = no
-				liege = { character = PREV }
-			}
-			set_character_flag = is_revolt_leader_temp
-		}
-
-		if = {
-			limit = {
-				NOT = { has_character_flag = is_revolt_leader_temp }
-				has_character_flag = original_war_liege
-			}
-			log = "PlusFaction.205: SERIOUS: dying ruler had original_war_liege flag but wasn't a revolt leader: [This.GetTitledFirstName] of the [This.PrimaryTitle.GetFullBaseName] (ID: [This.GetID])"
-			clr_character_flag = original_war_liege
-		}
-
-		# Handle the case where we're a revolt leader and need to potentially
-		# pass on an original_war_liege flag
-		liege_before_war = {
-			any_war = {
-				limit = {
-					ROOT = { has_character_flag = is_revolt_leader_temp }
-					defender = { character = PREVPREV }
-					attacker = {
-						character = ROOT
-						has_opinion_modifier = { who = PREVPREV modifier = revolting_against }
-						has_character_flag = original_war_liege
-					}
-				}
-				ROOT = { current_heir = { set_character_flag = original_war_liege } }
-			}
-		}
-
-		clr_character_flag = is_revolt_leader_temp
-
-		if = {
-			limit = { trait = rebel } # Are we a PF-style rebel?
-			remove_trait = rebel
-
-			if = {
-				limit = { # Should we NOT pass down the revolt to our heir?
-					NOT = {
-						current_heir = {
-							pf_war_trait_trigger = no
-							pf_real_war_with_ROOT_trigger = no
-						}
-					}
-				}
-
-				current_heir = { # Sanity check
-					if = {
-						limit = {
-							NAND = {
-								is_playable = yes
-								num_of_baron_titles = 1
-							}
-						}
-
-						log = "PlusFaction.205: WARNING: character [This.GetTitledName] (ID: [This.GetID]), heir of [Root.GetTitledFirstName] of the [Root.PrimaryTitle.GetFullBaseName] (ID: [Root.GetID]), supposedly shouldn't inherit PF revolter status, but they are NOT EVEN A PLAYABLE RULER with at least 1 baron title!"
-
-						if = {
-							limit = { trait = rebel }
-							log = "PlusFaction.205: they have the `rebel` trait"
-						}
-						if = {
-							limit = { trait = loyalist }
-							log = "PlusFaction.205: they have the `loyalist` trait"
-						}
-						if = {
-							limit = { trait = neutral }
-							log = "PlusFaction.205: they have the `neutral` trait"
-						}
-						if = {
-							limit = { pf_real_war_with_ROOT_trigger = yes }
-							log = "PlusFaction.205: they are on opposing sides of a war"
-						}
-					}
-				}
-
-				# If we're a revolt leader, then we can't pass down the revolt
-				# to anyone in this case, so invalidate our PF-style revolts.
-
-				liege_before_war = {
-					any_war = {
-						limit = {
-							defender = { character = PREVPREV }
-							attacker = {
-								character = ROOT
-								has_opinion_modifier = { who = PREVPREV modifier = revolting_against }
-							}
-						}
-						defender = {
-							log = "PlusFaction.205: INFO: dying ruler [Root.GetTitledFirstName] of the [Root.PrimaryTitle.GetFullBaseName] (ID: [Root.GetID]) is a revolt leader against [This.GetTitledFirstName] of the [This.PrimaryTitle.GetFullBaseName] (ID: [This.GetID]), but their heir cannot inherit the war, so the revolt must be invalidated"
-						}
-						end_war = invalid
-						ROOT = { set_character_flag = invalidated_revolt_temp }
-					}
-				}
-
-				if = {
-					limit = {
-						has_character_flag = invalidated_revolt_temp
-						has_any_opinion_modifier = revolting_against
-					}
-
-					log = "PlusFaction.205: SERIOUS: former revolt leader [This.GetTitledFirstName] of the [This.PrimaryTitle.GetFullBaseName] (ID: [This.GetID]) still has at least one revolting_against TOM after invalidating his revolt; possibly check the CB's on_invalidation code, although it might be due to otherwise-incoherent TOM state; continuing anyway..."
-				}
-
-				clr_character_flag = invalidated_revolt_temp
-
-				# Note that war invalidation will cleanup any revolting_against, etc. TOM state and such
-				# by this point in the code if we were a revolt leader.
-
-				# If we're not a revolt leader and we're a secondary revolt participant
-				# (i.e., answered dynamic call-to-arms) in a PF revolt, revassalize
-				# ourselves to the liege now, since our heir can't/shouldn't take our place.
-				#
-				# Likewise, if we're an ex-faction-member (not leader), part of the revolt
-				# realm, also simply revassalize to the liege at this point, since our
-				# heir shouldn't become a revolter.
-
-				random_opinion_modifier_target = {
-					limit = { reverse_has_opinion_modifier = { who = PREV modifier = revolting_against } }
-					
-					if = {
-						limit = {
-							any_war = { # Has to be a PF-style revolt by definition of revolting_against
-								defender = { character = PREVPREV }
-								any_attacker = { character = ROOT }
-								attacker = { NOT = { character = ROOT } } # Should never happen due to war invalidation cleanup implied above
-							}
-						}
-
-						log = "PlusFaction.205: INFO: dying ruler [Root.GetTitledFirstName] of the [Root.PrimaryTitle.GetFullBaseName] (ID: [Root.GetID]) is a 3rd-party revolter against [This.GetTitledFirstName] of the [This.PrimaryTitle.GetFullBaseName] (ID: [This.GetID]), but their heir cannot inherit the war, so they will be revassalized"
-					}
-
-					if = { # Note that this also catches revolt leaders if they somehow weren't handled previously
-						limit = { # ... but they won't actually be able to be vassalized due to their revolt title's tier
-							ROOT = {
-								in_revolt = yes
-								liege = {
-									any_war = {
-										attacker = { character = PREVPREV } # revolt leader
-										defender = {
-											reverse_has_opinion_modifier = { who = PREVPREV modifier = revolting_against }
-											reverse_has_opinion_modifier = { who = ROOT modifier = revolting_against }
-										}
-									}
-								}
-							}
-						}
-
-						log = "PlusFaction.205: INFO: dying ruler [Root.GetTitledFirstName] of the [Root.PrimaryTitle.GetFullBaseName] (ID: [Root.GetID]) is a faction revolter against [This.GetTitledFirstName] of the [This.PrimaryTitle.GetFullBaseName] (ID: [This.GetID]), but their heir cannot inherit the war, so they will be revassalized"
-					}
-
-					set_defacto_vassal = ROOT
-
-					if = {
-						limit = { NOT = { is_vassal_or_below = ROOT } }
-
-						log = "PlusFaction.205: SERIOUS: dying ruler [Root.GetTitledFirstName] of the [Root.PrimaryTitle.GetFullBaseName] (ID: [Root.GetID]) has an heir that cannot inherit their revolt, but revassalization somehow failed!"
-					}
-
-					reverse_remove_opinion = { who = PREV modifier = revolting_against }
-					save_event_target_as = pf_was_revolting_against
-				}
-
-				if = {
-					limit = { has_any_opinion_modifier = revolting_against }
-
-					log = "PlusFaction.205: SERIOUS: multiple revolting_against TOMs for [Root.GetTitledFirstName] of the [Root.PrimaryTitle.GetFullBaseName] (ID: [Root.GetID])! remaining targets after removing TOM against [pf_was_revolting_against.GetTitledFirstName] of the [pf_was_revolting_against.PrimaryTitle.GetFullBaseName] (ID: [pf_was_revolting_against.GetID]):"
-					
-					any_opinion_modifier_target = {
-						limit = { reverse_has_opinion_modifier = { who = PREV modifier = revolting_against } }
-						log = "PlusFaction.205: --> [This.GetTitledFirstName] of the [This.PrimaryTitle.GetFullBaseName] (ID: [This.GetID])"
-					}
-				}
-
-				clear_event_target = pf_was_revolting_against
-			}
-
-			if = {
-				limit = { # Can we pass down the revolt to our heir?
-					current_heir = {
-						pf_war_trait_trigger = no
-						pf_real_war_with_ROOT_trigger = no
-					}
-				}
-
-				# Yes, we can pass it down.
-
-				current_heir = { add_trait = rebel }
-
-				random_opinion_modifier_target = { # Should only be one
-					limit = { reverse_has_opinion_modifier = { who = PREV modifier = revolting_against } }
-					ROOT = {
-						current_heir = {
-							if = {
-								limit = { NOT = { has_opinion_modifier = { who = PREVPREV modifier = revolting_against } } }
-								opinion = { who = PREVPREV modifier = revolting_against years = 100 }
-							}
-						}
-					}
-					reverse_remove_opinion = { who = PREV modifier = revolting_against }
-					save_event_target_as = pf_was_revolting_against
-				}
-
-				if = {
-					limit = { has_any_opinion_modifier = revolting_against }
-
-					log = "PlusFaction.205: SERIOUS: heir will inherit multiple revolting_against TOMs from [This.GetTitledFirstName] of the [This.PrimaryTitle.GetFullBaseName] (ID: [This.GetID])! remaining targets after removing TOM against [pf_was_revolting_against.GetTitledFirstName] of the [pf_was_revolting_against.PrimaryTitle.GetFullBaseName] (ID: [pf_was_revolting_against.GetID]):"
-					
-					any_opinion_modifier_target = {
-						limit = { reverse_has_opinion_modifier = { who = PREV modifier = revolting_against } }
-						log = "PlusFaction.205: --> [This.GetTitledFirstName] of the [This.PrimaryTitle.GetFullBaseName] (ID: [This.GetID])"
-						ROOT = {
-							current_heir = {
-								if = {
-									limit = { NOT = { has_opinion_modifier = { who = PREVPREV modifier = revolting_against } } }
-									opinion = { who = PREVPREV modifier = revolting_against years = 100 }
-								}
-							}
-						}
-					}
-				}
-
-				clear_event_target = pf_was_revolting_against
-			}
-		}
-		
-		# update civil war state of rebels who will now be rebelling against our heir
-		# (i.e., those who are currently rebelling against *US*)
-
-		# Liege change for the civil war
-		any_war = {
-			limit = {
-				defender = { character = ROOT }
-				attacker = { has_opinion_modifier = { who = ROOT modifier = revolting_against } }
-			}
-			attacker = { clr_character_flag = original_war_liege }
-		}
-
-		any_opinion_modifier_target = {
-			limit = { reverse_has_opinion_modifier = { who = PREV modifier = revolting_against_me } }
-			ROOT = {
-				current_heir = {
-					if = {
-						limit = { NOT = { has_opinion_modifier = { who = PREVPREV modifier = revolting_against_me } } }
-						opinion = { who = PREVPREV modifier = revolting_against_me years = 100 }
-					}
-					if = {
-						limit = { NOT = { reverse_has_opinion_modifier = { who = PREVPREV modifier = revolting_against } } }
-						reverse_opinion = { who = PREVPREV modifier = revolting_against years = 100 }
-					}
-				}
-			}
-		}
-		any_opinion_modifier_target = {
-			limit = { reverse_has_opinion_modifier = { who = PREV modifier = supported_civil_war } }
-			ROOT = {
-				current_heir = {
-					if = {
-						limit = { NOT = { has_opinion_modifier = { who = PREVPREV modifier = supported_civil_war } } }
-						opinion = { who = PREVPREV modifier = supported_civil_war years = 100 }
-					}
-				}
-			}
-		}
-		any_opinion_modifier_target = {
-			limit = { reverse_has_opinion_modifier = { who = PREV modifier = neutral_civil_war } }
-			ROOT = {
-				current_heir = {
-					if = {
-						limit = { NOT = { has_opinion_modifier = { who = PREVPREV modifier = neutral_civil_war } } }
-						opinion = { who = PREVPREV modifier = neutral_civil_war years = 100 }
-					}
-				}
-			}
 		}
 
 		#reset heir's faction variables
-		current_heir = {
+		event_target:heir = {
 			pf_reset_maintenance_vars_effect = yes
 			clr_character_flag = faction_court_happy
 			clr_character_flag = faction_court_unhappy
@@ -613,59 +334,531 @@ character_event = {
 			clr_character_flag = faction_tradition_angry
 		}
 
-		#pass on the liege's faction mood flags
-		if = {
-			limit = { has_character_flag = faction_court_happy }
-			current_heir = { set_character_flag = faction_court_happy }
+		#pass on the liege's faction flags
+		event_target:heir = {
+			# Moods
+			if = {
+				limit = { ROOT = { has_character_flag = faction_court_happy } }
+				set_character_flag = faction_court_happy
+			}
+			if = {
+				limit = { ROOT = { has_character_flag = faction_court_unhappy } }
+				set_character_flag = faction_court_unhappy
+			}
+			if = {
+				limit = { ROOT = { has_character_flag = faction_court_angry } }
+				set_character_flag = faction_court_angry
+			}
+			if = {
+				limit = { ROOT = { has_character_flag = faction_prosperity_happy } }
+				set_character_flag = faction_prosperity_happy
+			}
+			if = {
+				limit = { ROOT = { has_character_flag = faction_prosperity_unhappy } }
+				set_character_flag = faction_prosperity_unhappy
+			}
+			if = {
+				limit = { ROOT = { has_character_flag = faction_prosperity_angry } }
+				set_character_flag = faction_prosperity_angry
+			}
+			if = {
+				limit = { ROOT = { has_character_flag = faction_glory_happy } }
+				set_character_flag = faction_glory_happy
+			}
+			if = {
+				limit = { ROOT = { has_character_flag = faction_glory_unhappy } }
+				set_character_flag = faction_glory_unhappy
+			}
+			if = {
+				limit = { ROOT = { has_character_flag = faction_glory_angry } }
+				set_character_flag = faction_glory_angry
+			}
+			if = {
+				limit = { ROOT = { has_character_flag = faction_tradition_happy } }
+				set_character_flag = faction_tradition_happy
+			}
+			if = {
+				limit = { ROOT = { has_character_flag = faction_tradition_unhappy } }
+				set_character_flag = faction_tradition_unhappy
+			}
+			if = {
+				limit = { ROOT = { has_character_flag = faction_tradition_angry } }
+				set_character_flag = faction_tradition_angry
+			}
+			# War type
+			if = {
+				limit = { ROOT = { has_character_flag = faction_court_war } }
+				set_character_flag = faction_court_war
+			}
+			if = {
+				limit = { ROOT = { has_character_flag = faction_prosperity_war } }
+				set_character_flag = faction_prosperity_war
+			}
+			if = {
+				limit = { ROOT = { has_character_flag = faction_glory_war } }
+				set_character_flag = faction_glory_war
+			}
+			if = {
+				limit = { ROOT = { has_character_flag = faction_tradition_war } }
+				set_character_flag = faction_tradition_war
+			}
+			if = {
+				limit = { ROOT = { has_character_flag = faction_separatist_war } }
+				set_character_flag = faction_separatist_war
+			}
+			if = {
+				limit = { ROOT = { has_character_flag = faction_pretender_war } }
+				set_character_flag = faction_pretender_war
+			}
+			if = {
+				limit = { ROOT = { has_character_flag = faction_religious_war } }
+				set_character_flag = faction_religious_war
+			}
+			if = {
+				limit = { ROOT = { has_character_flag = faction_succession_war } }
+				set_character_flag = faction_succession_war
+			}
+			if = {
+				limit = { ROOT = { has_character_flag = faction_authority_war } }
+				set_character_flag = faction_authority_war
+			}
+			# Demands
+			if = {
+				limit = { ROOT = { has_character_flag = demands_lower_CA } }
+				set_character_flag = demands_lower_CA
+			}
+			if = {
+				limit = { ROOT = { has_character_flag = demands_lower_TO } }
+				set_character_flag = demands_lower_TO
+			}
+			if = {
+				limit = { ROOT = { has_character_flag = demands_surrender_title } }
+				set_character_flag = demands_surrender_title
+			}
+			if = {
+				limit = { ROOT = { has_character_flag = demands_share_wealth } }
+				set_character_flag = demands_share_wealth
+			}
+			if = {
+				limit = { ROOT = { has_character_flag = demands_revert_succession } }
+				set_character_flag = demands_revert_succession
+			}
+			if = {
+				limit = { ROOT = { has_character_flag = demands_council_life_terms } }
+				set_character_flag = demands_council_life_terms
+			}
+			if = {
+				limit = { ROOT = { has_character_flag = demands_lower_feudal_obligations } }
+				set_character_flag = demands_lower_feudal_obligations
+			}
+			if = {
+				limit = { ROOT = { has_character_flag = demands_lower_tribal_obligations } }
+				set_character_flag = demands_lower_tribal_obligations
+			}
+			if = {
+				limit = { ROOT = { has_character_flag = demands_lower_city_obligations } }
+				set_character_flag = demands_lower_city_obligations
+			}
+			if = {
+				limit = { ROOT = { has_character_flag = demands_lower_temple_obligations } }
+				set_character_flag = demands_lower_temple_obligations
+			}
+			if = {
+				limit = { ROOT = { has_character_flag = demands_seniority } }
+				set_character_flag = demands_seniority
+			}
+			if = {
+				limit = { ROOT = { has_character_flag = demands_primogeniture } }
+				set_character_flag = demands_primogeniture
+			}
+			if = {
+				limit = { ROOT = { has_character_flag = demands_gavelkind } }
+				set_character_flag = demands_gavelkind
+			}
+			if = {
+				limit = { ROOT = { has_character_flag = demands_feudal_elective } }
+				set_character_flag = demands_feudal_elective
+			}
 		}
-		if = {
-			limit = { has_character_flag = faction_court_unhappy }
-			current_heir = { set_character_flag = faction_court_unhappy }
+
+		if = { # Are we a civil war liege (defender)?
+			limit = {
+				any_war = {
+					defender = { character = ROOT }
+					pf_cb_trigger = yes
+				}
+			}
+
+			log = "DEBUG: dying ruler is a civil war liege"
+
+			# update civil war state of rebels who will now be rebelling against our heir
+			# (i.e., those who are currently rebelling against *US*)
+
+			# Liege change for the civil war(s)
+			any_war = {
+				limit = {
+					defender = { character = ROOT }
+					pf_cb_trigger = yes
+				}
+				attacker = { clr_character_flag = original_war_liege }
+			}
+
+			# Transfer TOMs ...
+
+			any_opinion_modifier_target = { # Those w/ revolting_against_me -> them but not from my heir
+				limit = {
+					reverse_has_opinion_modifier = { who = PREV modifier = revolting_against_me }
+					NOT = { reverse_has_opinion_modifier = { who = event_target:heir modifier = revolting_against_me } }
+				}
+				reverse_opinion = { who = event_target:heir modifier = revolting_against_me }
+			}
+			any_opinion_modifier_target = { # Those w/ revolting_against -> me but not my heir
+				limit = {
+					has_opinion_modifier = { who = PREV modifier = revolting_against }
+					NOT = { has_opinion_modifier = { who = event_target:heir modifier = revolting_against } }
+				}
+				opinion = { who = event_target:heir modifier = revolting_against }
+			}
+			any_opinion_modifier_target = { # Those supporting me and not my heir
+				limit = {
+					reverse_has_opinion_modifier = { who = PREV modifier = supported_civil_war }
+					NOT = { reverse_has_opinion_modifier = { who = event_target:heir modifier = supported_civil_war } }
+				}
+				reverse_opinion = { who = event_target:heir modifier = supported_civil_war years = 100 }
+			}
+			any_opinion_modifier_target = { # Those neutral to me and not my heir
+				limit = {
+					reverse_has_opinion_modifier = { who = PREV modifier = neutral_civil_war }
+					NOT = { reverse_has_opinion_modifier = { who = event_target:heir modifier = neutral_civil_war } }
+				}
+				reverse_opinion = { who = event_target:heir modifier = neutral_civil_war years = 100 }
+			}
 		}
+
 		if = {
-			limit = { has_character_flag = faction_court_angry }
-			current_heir = { set_character_flag = faction_court_angry }
+			limit = { NOT = { trait = rebel } }
+			break = yes
 		}
-		if = {
-			limit = { has_character_flag = faction_prosperity_happy }
-			current_heir = { set_character_flag = faction_prosperity_happy }
+
+		# We are a rebel, if we made it here.
+
+		# We won't be needing this anymore...
+		remove_trait = rebel
+
+		if = { # Sanity check, first.
+			limit = { pf_in_revolt_trigger = no }
+			log = "ERROR: dying ruler had Rebel trait but isn't involved in a PF revolt: [This.GetTitledFirstName] of the [This.PrimaryTitle.GetFullBaseName] (ID: [This.GetID]): aborting!"
+			break = yes
 		}
+
+		# We are involved in a PF revolt (as a revolter), if we made it here.
+
+		log = "DEBUG: dying ruler is a rebel"
+
+		# Inherit original_war_liege if we have it.
 		if = {
-			limit = { has_character_flag = faction_prosperity_unhappy }
-			current_heir = { set_character_flag = faction_prosperity_unhappy }
+			limit = { has_character_flag = original_war_liege }
+			event_target:heir = { set_character_flag = original_war_liege }
 		}
-		if = {
-			limit = { has_character_flag = faction_prosperity_angry }
-			current_heir = { set_character_flag = faction_prosperity_angry }
+
+		random_opinion_modifier_target = {
+			limit = { reverse_has_opinion_modifier = { who = PREV modifier = revolting_against } }
+			save_event_target_as = pf_war_liege
 		}
+
 		if = {
-			limit = { has_character_flag = faction_glory_happy }
-			current_heir = { set_character_flag = faction_glory_happy }
+			limit = {
+				event_target:heir = {
+					NOR = {
+						character = event_target:pf_war_liege # Defender shouldn't inherit revolter status
+						is_nomadic = yes # Don't want nomads involved in the civil war
+						AND = { # Rebels NOT revolting against the same defender are excluded
+							trait = rebel
+							NOT = { has_opinion_modifier = { who = event_target:pf_war_liege modifier = revolting_against } }
+						}
+						AND = { # Loyalists/neutrals that are vassals of the defender are excluded
+							OR = {
+								trait = loyalist
+								trait = neutral
+							}
+							is_ruler = yes
+							liege = { character = event_target:pf_war_liege }
+						}
+						pf_leads_revolt_trigger = yes
+						# And, for some reason, heirs on the wrong side of ANY war with us are excluded
+						# FIXME: ... (?! could this be refined ?!)
+						pf_real_war_with_ROOT_trigger = yes
+					}
+				}
+			}
+
+			event_target:heir = {
+				if = {
+					limit = {
+						OR = {
+							trait = loyalist
+							trait = neutral
+						}
+					}
+					log = "DEBUG: cleaning-up heir's unrelated loyalist/neutral state"
+					remove_trait = loyalist
+					remove_trait = neutral
+					liege = {
+						remove_opinion = { who = PREV modifier = supported_civil_war }
+						remove_opinion = { who = PREV modifier = neutral_civil_war }
+					}
+				}
+			}
+
+			log = "DEBUG: dying revolter's heir SHOULD inherit their revolt; transferring revolting_against TOMs..."
+
+			event_target:heir = { add_trait = rebel }
+
+			# Transfer revolting_against[_me] TOMs to heir ...
+
+			any_opinion_modifier_target = { # War liege but not for our heir
+				limit = {
+					reverse_has_opinion_modifier = { who = PREV modifier = revolting_against }
+					NOT = { reverse_has_opinion_modifier = { who = event_target:heir modifier = revolting_against } }
+				}
+				reverse_opinion = { who = event_target:heir modifier = revolting_against }
+			}
+			any_opinion_modifier_target = { # War liege but not for our heir [reverse]
+				limit = {
+					has_opinion_modifier = { who = PREV modifier = revolting_against_me }
+					NOT = { has_opinion_modifier = { who = event_target:heir modifier = revolting_against_me } }
+				}
+				opinion = { who = event_target:heir modifier = revolting_against_me }
+			}
+
+			break = yes
 		}
-		if = {
-			limit = { has_character_flag = faction_glory_unhappy }
-			current_heir = { set_character_flag = faction_glory_unhappy }
+
+		# We should NOT pass-down the revolt, if we made it here.
+
+		log = "DEBUG: dying revolter's heir should NOT inherit their revolt"
+
+		# If we're a revolt leader, then we can't pass down the revolt
+		# to anyone in this case, so invalidate our PF-style revolts.
+
+		any_war = {
+			limit = {
+				defender = { character = event_target:pf_war_liege }
+				attacker = { character = ROOT }
+				pf_cb_trigger = yes
+			}
+			defender = {
+				log = "INFO: dying ruler [Root.GetTitledFirstName] of the [Root.PrimaryTitle.GetFullBaseName] (ID: [Root.GetID]) is a revolt leader against [This.GetTitledFirstName] of the [This.PrimaryTitle.GetFullBaseName] (ID: [This.GetID]), but their heir cannot inherit the war, so the revolt must be invalidated"
+			}
+			end_war = invalid
+			break = yes # Nothing further for us to do, as CB invalidation
+			            # should cleanup everything for us
 		}
-		if = {
-			limit = { has_character_flag = faction_glory_angry }
-			current_heir = { set_character_flag = faction_glory_angry }
-		}
-		if = {
-			limit = { has_character_flag = faction_tradition_happy }
-			current_heir = { set_character_flag = faction_tradition_happy }
-		}
-		if = {
-			limit = { has_character_flag = faction_tradition_unhappy }
-			current_heir = { set_character_flag = faction_tradition_unhappy }
-		}
-		if = {
-			limit = { has_character_flag = faction_tradition_angry }
-			current_heir = { set_character_flag = faction_tradition_angry }
+
+		# We're not a revolt leader, if we've made it here.
+
+		log = "DEBUG: dying revolter is NOT the revolt leader"
+
+		event_target:pf_war_liege = {
+			log = "INFO: dying ruler [Root.GetTitledFirstName] of the [Root.PrimaryTitle.GetFullBaseName] (ID: [Root.GetID]) is a revolter against [This.GetTitledFirstName] of the [This.PrimaryTitle.GetFullBaseName] (ID: [This.GetID]), but their heir cannot inherit the war, so they will be revassalized"
+
+			# FIXME: some recent testing suggests that this method may not work
+			# on proper faction members, so it seems we will have to force them
+			# to be able to inherit the revolt...
+			set_defacto_vassal = ROOT
+
+			if = {
+				limit = { NOT = { is_liege_of = ROOT } }
+				log = "ASSERT: dying ruler [Root.GetTitledFirstName] of the [Root.PrimaryTitle.GetFullBaseName] (ID: [Root.GetID]) has an heir that cannot inherit their revolt, but revassalization somehow failed!"
+			}
 		}
 	}
 }
 
+# PlusFaction.206 [New Holder]
+#
+# Civil war state passes to a new liege <on_action>
+character_event = {
+	id = PlusFaction.206
+
+	is_triggered_only = yes
+	hide_window = yes
+
+	only_playable = yes
+
+	trigger = {
+		FROM = { higher_tier_than = count }
+#		FROMFROM = { # Previous holder
+#			pf_war_flag_trigger = yes # Has at least one civil war flag (and is alive)
+#		}
+		any_war = { # We've inherited at least one of FROMFROM's civil wars
+			defender = { character = ROOT }
+			attacker = {
+				has_opinion_modifier = { who = FROMFROM modifier = revolting_against }
+			}
+			pf_cb_trigger = yes
+		}
+	}
+
+	immediate = {
+
+		# Note the liege change for our PF civil wars
+		any_war = {
+			limit = {
+				defender = { character = ROOT }
+				attacker = { has_opinion_modifier = { who = FROMFROM modifier = revolting_against } }
+				pf_cb_trigger = yes
+			}
+			attacker = { clr_character_flag = original_war_liege }
+		}
+
+		# Note that demands flags need no manual transfer. However, it's perhaps possible
+		# for faction_succession_war that ROOT simply does/will not have the demesne title
+		# to which the succession demand refers. If that can happen, it'd probably be a
+		# good idea to embed that logic in the CB `is_valid`, as it can't be sanely
+		# handled here (assuming on_invalidation will work properly for tearing down
+		# the _right_ revolters, otherwise something more manual should be done).
+
+		FROMFROM = {
+			log = "DEBUG: civil war liege changed due to title transfer. old war-liege's PF state pre-transfer:"
+			pf_log_state_effect = yes
+
+			any_opinion_modifier_target = { # Those that are revolting against FROMFROM
+				limit = { reverse_has_opinion_modifier = { who = PREV modifier = revolting_against_me } }
+				
+				if = {
+					limit = { NOT = { has_opinion_modifier = { who = ROOT modifier = revolting_against } } }
+					opinion = { who = ROOT modifier = revolting_against }
+				}
+				if = {
+					limit = { NOT = { reverse_has_opinion_modifier = { who = ROOT modifier = revolting_against_me } } }
+					reverse_opinion = { who = ROOT modifier = revolting_against_me }
+				}
+
+				remove_opinion = { who = PREV modifier = revolting_against }
+				reverse_remove_opinion = { who = PREV modifier = revolting_against_me }
+			}
+			any_opinion_modifier_target = { # Those that are loyal to FROMFROM
+				limit = { reverse_has_opinion_modifier = { who = PREV modifier = supported_civil_war } }
+				if = {
+					limit = { NOT = { reverse_has_opinion_modifier = { who = ROOT modifier = supported_civil_war } } }
+					reverse_opinion = { who = ROOT modifier = supported_civil_war }
+				}
+				reverse_remove_opinion = { who = PREV modifier = supported_civil_war }
+			}
+			any_opinion_modifier_target = { # Those that are neutral in FROMFROM's civil war
+				limit = { reverse_has_opinion_modifier = { who = PREV modifier = neutral_civil_war } }
+				if = {
+					limit = { NOT = { reverse_has_opinion_modifier = { who = ROOT modifier = neutral_civil_war } } }
+					reverse_opinion = { who = ROOT modifier = neutral_civil_war }
+				}
+				reverse_remove_opinion = { who = PREV modifier = neutral_civil_war }
+			}
+
+			# War flag transfer [ NOTE: Rylock, you may want to consider how generalized
+			# this state transfer is; it may not be what you want for all types of
+			# PF-style civil wars. ]
+			if = {
+				limit = { has_character_flag = faction_court_war }
+				ROOT = { set_character_flag = faction_court_war }
+			}
+			if = {
+				limit = { has_character_flag = faction_prosperity_war }
+				ROOT = { set_character_flag = faction_prosperity_war }
+			}
+			if = {
+				limit = { has_character_flag = faction_glory_war }
+				ROOT = { set_character_flag = faction_glory_war }
+			}
+			if = {
+				limit = { has_character_flag = faction_tradition_war }
+				ROOT = { set_character_flag = faction_tradition_war }
+			}
+			if = {
+				limit = { has_character_flag = faction_pretender_war }
+				ROOT = { set_character_flag = faction_pretender_war }
+			}
+			if = {
+				limit = { has_character_flag = faction_separatist_war }
+				ROOT = { set_character_flag = faction_separatist_war }
+			}
+			if = {
+				limit = { has_character_flag = faction_religious_war }
+				ROOT = { set_character_flag = faction_religious_war }
+			}
+			if = {
+				limit = { has_character_flag = faction_succession_war }
+				ROOT = { set_character_flag = faction_succession_war }
+			}
+			if = {
+				limit = { has_character_flag = faction_authority_war }
+				ROOT = { set_character_flag = faction_authority_war }
+			}
+
+			pf_clear_war_flags_effect = yes
+
+			log = "DEBUG: old war-liege's PF state post-transfer:"
+			pf_log_state_effect = yes
+		}
+
+		log = "DEBUG: PF state dump of new war-liege post-state-transfer follows:"
+		pf_log_state_effect = yes
+	}
+}
+
+
+# PlusFaction.207 [New Holder]
+#
+# Civil war state cleanup when secondary revolter drops out of war <on_action>
+#
+# Fires when: Some kind of title transfer caused the prior holder, who was a rebel, to
+# undergo liege change or become a non-ruler and now have incoherent TOMs
+character_event = {
+	id = PlusFaction.207
+
+	is_triggered_only = yes
+	hide_window = yes
+
+	only_playable = yes
+
+	trigger = {
+		FROMFROM = {
+			trait = rebel
+			pf_in_revolt_trigger = no
+		}
+	}
+
+	immediate = {
+		FROMFROM = {
+			log = "DEBUG: revolter no longer in civil war after title transfer. PF state dump pre-cleanup:"
+			pf_log_state_effect = yes
+
+			pf_teardown_rebel_effect = yes
+
+			log = "DEBUG: ex-revolter's PF state dump post-cleanup:"
+			pf_log_state_effect = yes
+		}
+	}
+}
+
+
+# PlusFaction.211 [Granted Title]
+# GRANT_LANDED_TITLE_INTERACTION_ACCEPT_EVENT - updates faction response to a granted title
+#character_event = {
+#	id = PlusFaction.211
+#
+#	is_triggered_only = yes
+#	hide_window = yes
+#
+#	immediate = {
+#		FROM = { character_event = { id = PlusFaction.212 days = 1 } }
+#	}
+#}
+
+# PlusFaction.212 [Granter of Title]
 # Faction pleased due to title granted to one of their members
+#
+# FROM = Granted Title
 character_event = {
 	id = PlusFaction.212
 
@@ -835,6 +1028,7 @@ character_event = {
 	}
 }
 
+# PlusFaction.220 [Liege]
 # Annual faction maintenance event <MTTH>
 #
 # This needs to be a separate event from PlusFaction.200 so that it may use an
@@ -883,7 +1077,7 @@ character_event = {
 	# does do this, it'd only be once every several game years, from my experience.
 	#
 	# ^-- All of the above applies to any MTTH scheduling when the "probability"
-	# component is removed by NOT having an MTTH factor clause. These are effectively
+	# component is removed by not having an MTTH factor clause. These are effectively
 	# EVENT_PROCESS_OFFSET-pulse events, except more accurate than any type of
 	# on_action pulse.
 	#
@@ -1936,6 +2130,8 @@ character_event = {
 	}
 }
 
+
+# PlusFaction.221 [Liege]
 # Faction maintenance setup effects
 character_event = {
 	id = PlusFaction.221
@@ -2026,6 +2222,8 @@ character_event = {
 	}
 }
 
+
+# PlusFaction.222 [Liege]
 # Faction maintenance completion effects
 character_event = {
 	id = PlusFaction.222
@@ -2413,6 +2611,7 @@ character_event = {
 	}
 }
 
+# PlusFaction.223 [Faction Leader w/ Mood Increase]
 # Helper to PlusFaction.200 in order to take advantage of `break = yes` (and more)
 character_event = {
 	id = PlusFaction.223
@@ -2514,6 +2713,7 @@ character_event = {
 	}
 }
 
+# PlusFaction.224 [Faction Leader w/ Mood Decrease]
 # Helper to PlusFaction.200 in order to take advantage of `break = yes` (and more)
 character_event = {
 	id = PlusFaction.224
@@ -2614,8 +2814,4 @@ character_event = {
 		}
 	}
 }
-
-# PlusFaction.230-239 intended for handling alternate implementation of
-# conditionally-deferred faction mood maintenance due to active mood
-# impulses (an optimization, NOT a feature).
 

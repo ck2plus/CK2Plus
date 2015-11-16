@@ -828,9 +828,14 @@ letter_event = {
 	
 	immediate = {
 		FROM = {
+			clr_character_flag = civil_war_faction_leader
+			clr_character_flag = civil_war_faction_member
+			clr_character_flag = will_join_civil_war
 			diplomatic_immunity = yes 
 			any_faction_backer = {
 				faction = faction_pretender
+				clr_character_flag = civil_war_faction_member
+				clr_character_flag = will_join_civil_war
 				diplomatic_immunity = yes
 			}
 		}
@@ -1003,11 +1008,73 @@ letter_event = {
 			}
 		}
 		FROM = {
-			letter_event = { id = 8111 tooltip = "EVTTOOLTIP8100" }
-			tooltip = {
+			tooltip = { any_faction_backer = { faction = faction_pretender } }
+			hidden_tooltip = {
+				letter_event = { id = 8111 } #inform
+				
+				#setup faction leader
+				diplomatic_immunity = no
+				clr_character_flag = faction_independence_ultimatum_taken
+				if = {
+					limit = { supported_claimant = { NOT = { character = PREV } } }
+					supported_claimant = {
+						opinion = { modifier = opinion_very_grateful who = PREV years = 10 }
+						reverse_opinion = { modifier = opinion_fought_for_claimant who = PREV years = 20 }
+					}
+				}
+				set_character_flag = original_war_liege
+				pf_setup_rebel_effect = yes
+				
+				#setup faction backers
 				any_faction_backer = {
 					faction = faction_pretender
+					diplomatic_immunity = no
+					supported_claimant = {
+						opinion = { modifier = opinion_very_grateful who = PREV years = 10 }
+						reverse_opinion = { modifier = opinion_fought_for_claimant who = PREV years = 20 }
+					}
+					pf_setup_rebel_effect = yes
 				}
+				
+				#call claimant into war, if possible
+				if = {
+					limit = { supported_claimant = { NOT = { vassal_of = ROOT } } }
+					supported_claimant = { character_event = { id = PlusFaction.423 days = 1 } }
+				}
+			}
+		}
+		
+		#start the actual war
+		set_character_flag = faction_pretender_war
+		FROM = {
+			if = {
+				limit = { supported_claimant = { character = PREV } }
+				faction_pretender = { # The target (title) of the faction
+					reverse_war = {
+						target = PREV
+						casus_belli = claim_on_liege_plot
+						faction = faction_pretender
+					}
+				}
+			}
+			if = {
+				limit = {
+					NOT = { supported_claimant = { character = PREV } }
+				}
+				faction_pretender = { # The target (title) of the faction
+					reverse_war = {
+						target = PREV
+						casus_belli = other_claim_on_liege_plot
+						faction = faction_pretender
+					}
+				}
+			}
+		}
+		
+		#inform remaining vassals
+		hidden_tooltip = {
+			any_vassal = {
+				letter_event = { id = PlusFaction.403 }
 			}
 		}
 	}
@@ -1036,6 +1103,9 @@ letter_event = {
 	
 	immediate = {
 		clr_character_flag = faction_independence_ultimatum_taken
+		clr_character_flag = civil_war_faction_leader
+		clr_character_flag = civil_war_faction_member
+		clr_character_flag = will_join_civil_war
 		supported_claimant = {
 			opinion = {
 				modifier = opinion_very_grateful
@@ -1269,6 +1339,9 @@ letter_event = {
 	is_triggered_only = yes
 	
 	immediate = {
+		clr_character_flag = civil_war_faction_leader
+		clr_character_flag = civil_war_faction_member
+		clr_character_flag = will_join_civil_war
 		supported_claimant = {
 			opinion = {
 				modifier = opinion_very_grateful
@@ -1301,6 +1374,9 @@ character_event = {
 	
 	option = {
 		name = "I_SEE"
+		clr_character_flag = civil_war_faction_leader
+		clr_character_flag = civil_war_faction_member
+		clr_character_flag = will_join_civil_war
 	}
 }
 
@@ -1313,106 +1389,8 @@ letter_event = {
 	
 	is_triggered_only = yes
 	
-	immediate = {
-		clr_character_flag = faction_independence_ultimatum_taken
-		diplomatic_immunity = no
-		if = {
-			limit = {
-				supported_claimant = {
-					NOT = { character = ROOT }
-				}
-			}
-			supported_claimant = {
-				opinion = {
-					modifier = opinion_very_grateful
-					who = ROOT
-					years = 10
-				}
-				reverse_opinion = {
-					modifier = opinion_fought_for_claimant
-					who = ROOT
-					years = 20
-				}
-			}
-		}
-		any_faction_backer = {
-			faction = faction_pretender
-			diplomatic_immunity = no
-			supported_claimant = {
-				opinion = {
-					modifier = opinion_very_grateful
-					who = PREV
-					years = 10
-				}
-				reverse_opinion = {
-					modifier = opinion_fought_for_claimant
-					who = PREV
-					years = 20
-				}
-			}
-		}
-	}
-	
 	option = {
 		name = "EVTOPTA8100"
-		hidden_tooltip = {
-			set_character_flag = original_war_liege
-			pf_setup_rebel_effect = yes
-			any_faction_backer = {
-				faction = faction_pretender
-				pf_setup_rebel_effect = yes
-			}
-		}
-		liege = {
-			set_character_flag = faction_pretender_war
-			ROOT = {
-				if = {
-					limit = {
-						supported_claimant = { character = ROOT }
-					}
-					faction_pretender = { # The target (title) of the faction
-						reverse_war = {
-							target = ROOT
-							casus_belli = claim_on_liege_plot
-							faction = faction_pretender
-						}
-					}
-				}
-
-				if = {
-					limit = {
-						NOT = {
-							supported_claimant = { character = ROOT }
-						}
-					}
-					faction_pretender = { # The target (title) of the faction
-						reverse_war = {
-							target = ROOT
-							casus_belli = other_claim_on_liege_plot
-							faction = faction_pretender
-						}
-					}
-				}
-			}
-			#any vassal might join
-			hidden_tooltip = {
-				any_vassal = {
-					limit = { pf_war_trait_trigger = no }
-					character_event = { id = PlusFaction.422 }
-				}
-			}
-		}
-		if = {
-			limit = {
-				supported_claimant = {
-					NOT = { same_realm = ROOT }
-					is_ruler = yes
-				}
-			}
-			hidden_tooltip = {
-				supported_claimant = { character_event = { id = PlusFaction.423 } }
-			}
-		}
 	}
 }
 

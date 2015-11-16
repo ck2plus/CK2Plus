@@ -11,6 +11,7 @@ namespace = PlusFaction
 # Liege responds to demand from faction
 letter_event = {
 	id = PlusFaction.400
+	border = GFX_event_letter_frame_war
 	
 	desc = {
 		text = EVTDESC_PlusFaction_400A
@@ -19,14 +20,6 @@ letter_event = {
 	desc = {
 		text = EVTDESC_PlusFaction_400B
 		trigger = { FROM = { has_character_flag = demands_lower_TO } }
-	}
-	desc = {
-		text = EVTDESC_PlusFaction_400C
-		trigger = { FROM = { has_character_flag = demands_tax_privilege } }
-	}
-	desc = {
-		text = EVTDESC_PlusFaction_400D
-		trigger = { FROM = { has_character_flag = demands_levy_privilege } }
 	}
 	desc = {
 		text = EVTDESC_PlusFaction_400E
@@ -65,12 +58,7 @@ letter_event = {
 	
 	immediate = {
 		any_vassal = {
-			limit = {
-				OR = {
-					pf_from_faction_backer_trigger = yes
-					character = FROM
-				}
-			}
+			limit = { pf_from_faction_backer_trigger = yes }
 			reverse_opinion = { who = ROOT modifier = made_ultimatum years = 5 }
 		}
 	}
@@ -137,7 +125,8 @@ letter_event = {
 				trait = content
 			}
 		}
-		
+
+		#liege loses prestige
 		if = {
 			limit = { lower_real_tier_than = king }
 			prestige = -100
@@ -200,10 +189,8 @@ letter_event = {
 			limit = { FROM = { has_character_flag = demands_share_wealth } }
 			any_vassal = {
 				limit = {
-					OR = {
-						pf_from_faction_backer_trigger = yes
-						character = FROM
-					}
+					NOT = { has_character_flag = will_join_civil_war }
+					pf_from_faction_backer_trigger = yes
 				}
 				if = { limit = { real_tier = king }  wealth = 100 ROOT = { wealth = -100 } }
 				if = { limit = { real_tier = duke }  wealth = 50  ROOT = { wealth = -50 } }
@@ -239,6 +226,7 @@ letter_event = {
 			limit = { FROM = { has_character_flag = demands_lower_temple_obligations } }
 			pf_lower_temple_obligations_effect = yes
 		}
+
 		if = {
 			limit = { FROM = { leads_faction = faction_court } }
 			custom_tooltip = { text = COURTFACTIONMOODPLUS }
@@ -257,13 +245,16 @@ letter_event = {
 		}
 		hidden_tooltip = {
 			any_vassal = {
-				limit = {
-					OR = {
-						pf_from_faction_backer_trigger = yes
-						character = FROM
-					}
+				clr_character_flag = civil_war_faction_leader
+				clr_character_flag = civil_war_faction_member
+				if = {
+					limit = { pf_from_faction_backer_trigger = no }
+					clr_character_flag = will_join_civil_war
 				}
-				character_event = { id = PlusFaction.401 } #notify
+				if = {
+					limit = { pf_from_faction_backer_trigger = yes }
+					character_event = { id = PlusFaction.401 } #notify
+				}
 			}
 			character_event = { id = PlusFaction.200 days = 1 } #recalculate faction moods
 		}
@@ -431,35 +422,105 @@ letter_event = {
 				}
 			}
 		}
-		if = {
-			limit = { FROM = { leads_faction = faction_court } }
-			custom_tooltip = { text = COURTFACTIONMOODMINUS }
-		}
-		if = {
-			limit = { FROM = { leads_faction = faction_prosperity } }
-			custom_tooltip = { text = PROSPERITYFACTIONMOODMINUS }
-		}
-		if = {
-			limit = { FROM = { leads_faction = faction_glory } }
-			custom_tooltip = { text = GLORYFACTIONMOODMINUS }
-		}
-		if = {
-			limit = { FROM = { leads_faction = faction_tradition } }
-			custom_tooltip = { text = TRADITIONFACTIONMOODMINUS }
-		}
+		#inform faction members of refusal
 		hidden_tooltip = {
 			any_vassal = {
-				limit = {
-					OR = {
-						pf_from_faction_backer_trigger = yes
-						character = FROM
-					}
-				}
-				opinion = { who = ROOT modifier = ultimatum_refused years = 10 }
+				limit = { pf_from_faction_backer_trigger = yes }
+				letter_event = { id = PlusFaction.402 }
 			}
 		}
-		FROM = {
-			letter_event = { id = PlusFaction.402 tooltip = INFORM_MAY_OVERTHROW } #inform
+		
+		#start the war
+		if = {
+			limit = {
+				FROM = { leads_faction = faction_court }
+			}
+			hidden_tooltip = {
+				set_character_flag = faction_court_war
+				FROM = {
+					set_character_flag = original_war_liege
+					pf_setup_rebel_effect = yes
+					any_faction_backer = {
+						faction = faction_court
+						pf_setup_rebel_effect = yes
+					}
+				}
+			}
+			reverse_war = {
+				target = FROM
+				casus_belli = cb_faction_overthrow_ruler
+				faction = faction_court
+			}
+		}
+		if = {
+			limit = {
+				FROM = { leads_faction = faction_prosperity }
+			}
+			hidden_tooltip = {
+				set_character_flag = faction_prosperity_war
+				FROM = {
+					set_character_flag = original_war_liege
+					pf_setup_rebel_effect = yes
+					any_faction_backer = {
+						faction = faction_prosperity
+						pf_setup_rebel_effect = yes
+					}
+				}
+			}
+			reverse_war = {
+				target = FROM
+				casus_belli = cb_faction_overthrow_ruler
+				faction = faction_prosperity
+			}
+		}
+		if = {
+			limit = {
+				FROM = { leads_faction = faction_glory }
+			}
+			hidden_tooltip = {
+				set_character_flag = faction_glory_war
+				FROM = {
+					set_character_flag = original_war_liege
+					pf_setup_rebel_effect = yes
+					any_faction_backer = {
+						faction = faction_glory
+						pf_setup_rebel_effect = yes
+					}
+				}
+			}
+			reverse_war = {
+				target = FROM
+				casus_belli = cb_faction_overthrow_ruler
+				faction = faction_glory
+			}
+		}
+		if = {
+			limit = {
+				FROM = { leads_faction = faction_tradition }
+			}
+			hidden_tooltip = {
+				set_character_flag = faction_tradition_war
+				FROM = {
+					set_character_flag = original_war_liege
+					pf_setup_rebel_effect = yes
+					any_faction_backer = {
+						faction = faction_tradition
+						pf_setup_rebel_effect = yes
+					}
+				}
+			}
+			reverse_war = {
+				target = FROM
+				casus_belli = cb_faction_overthrow_ruler
+				faction = faction_tradition
+			}
+		}
+
+		#inform remaining vassals
+		hidden_tooltip = {
+			any_vassal = {
+				letter_event = { id = PlusFaction.403 }
+			}
 		}
 	}
 }
@@ -467,13 +528,28 @@ letter_event = {
 # Faction informed that liege agreed to the demand
 character_event = {
 	id = PlusFaction.401
-	desc = EVTDESC_PlusFaction_401
 	picture = GFX_evt_council
+	border = GFX_event_normal_frame_war
+	
+	desc = {
+		text = EVTDESC_PlusFaction_401A
+		trigger = { NOT = { has_character_flag = will_join_civil_war } }
+	}
+	desc = {
+		text = EVTDESC_PlusFaction_401B
+		trigger = { has_character_flag = will_join_civil_war }
+	}
 	
 	is_triggered_only = yes
 	
 	option = {
 		name = EXCELLENT
+		if = {
+			limit = { has_character_flag = will_join_civil_war }
+			clr_character_flag = will_join_civil_war
+			reverse_opinion = { who = FROMFROM modifier = opinion_grateful months = 60 }
+			break = yes
+		}
 		if = {
 			limit = { has_opinion_modifier = { who = FROM modifier = ultimatum_refused } }
 			hidden_tooltip = {
@@ -501,305 +577,408 @@ character_event = {
 			}
 			hidden_tooltip = {
 				character_event = { id = PlusFaction.399 days = 1 } #clear flags
-				clr_character_flag = demands_lower_CA
-				clr_character_flag = demands_lower_TO
-				clr_character_flag = demands_tax_privilege
-				clr_character_flag = demands_levy_privilege
-				clr_character_flag = demands_surrender_title
-				clr_character_flag = demands_share_wealth
-				clr_character_flag = demands_revert_succession
-				clr_character_flag = demands_council_life_terms
-				clr_character_flag = demands_lower_feudal_obligations
-				clr_character_flag = demands_lower_tribal_obligations
-				clr_character_flag = demands_lower_city_obligations
-				clr_character_flag = demands_lower_temple_obligations
-				clr_character_flag = demands_seniority
-				clr_character_flag = demands_primogeniture
-				clr_character_flag = demands_gavelkind
-				clr_character_flag = demands_feudal_elective
+				pf_clear_demands_flags_effect = yes
 			}
 		}
 	}
 }
 
-# Faction leader informed that liege refused the demand
+# Faction informed that liege refused the demand
 letter_event = {
 	id = PlusFaction.402
 	desc = EVTDESC_PlusFaction_402
+	border = GFX_event_letter_frame_war
 	
 	is_triggered_only = yes
 	
 	option = {
-		name = EVTOPTA_PlusFaction_402 #Then we go to war!
-		ai_chance = {
-			factor = 100
-			modifier = {
-				factor = 0.5
-				NOT = { trait = deceitful }
-				liege = {
-					reverse_has_opinion_modifier = { who = ROOT modifier = sworn_to_support_heir }
-				}
-			}
-			modifier = {
-				factor = 0
-				leads_faction = faction_court
-				NOT = { faction_power = { faction = faction_court power = 0.5 } }
-			}
-			modifier = {
-				factor = 0
-				leads_faction = faction_prosperity
-				NOT = { faction_power = { faction = faction_prosperity power = 0.5 } }
-			}
-			modifier = {
-				factor = 0
-				leads_faction = faction_glory
-				NOT = { faction_power = { faction = faction_glory power = 0.5 } }
-			}
-			modifier = {
-				factor = 0
-				leads_faction = faction_tradition
-				NOT = { faction_power = { faction = faction_tradition power = 0.5 } }
-			}
-			modifier = {
-				factor = 0.25
-				leads_faction = faction_court
-				NOT = { faction_power = { faction = faction_court power = 0.75 } }
-			}
-			modifier = {
-				factor = 0.25
-				leads_faction = faction_prosperity
-				NOT = { faction_power = { faction = faction_prosperity power = 0.75 } }
-			}
-			modifier = {
-				factor = 0.25
-				leads_faction = faction_glory
-				NOT = { faction_power = { faction = faction_glory power = 0.75 } }
-			}
-			modifier = {
-				factor = 0.25
-				leads_faction = faction_tradition
-				NOT = { faction_power = { faction = faction_tradition power = 0.75 } }
-			}
-			modifier = {
-				factor = 2.0
-				leads_faction = faction_court
-				faction_power = { faction = faction_court power = 1.49 }
-			}
-			modifier = {
-				factor = 2.0
-				leads_faction = faction_prosperity
-				faction_power = { faction = faction_prosperity power = 1.49 }
-			}
-			modifier = {
-				factor = 2.0
-				leads_faction = faction_glory
-				faction_power = { faction = faction_glory power = 1.49 }
-			}
-			modifier = {
-				factor = 2.0
-				leads_faction = faction_tradition
-				faction_power = { faction = faction_tradition power = 1.49 }
-			}
-			modifier = {
-				factor = 5.0
-				leads_faction = faction_court
-				faction_power = { faction = faction_court power = 1.99 }
-			}
-			modifier = {
-				factor = 5.0
-				leads_faction = faction_prosperity
-				faction_power = { faction = faction_prosperity power = 1.99 }
-			}
-			modifier = {
-				factor = 5.0
-				leads_faction = faction_glory
-				faction_power = { faction = faction_glory power = 1.99 }
-			}
-			modifier = {
-				factor = 5.0
-				leads_faction = faction_tradition
-				faction_power = { faction = faction_tradition power = 1.99 }
-			}
-			modifier = {
-				factor = 10.0
-				leads_faction = faction_court
-				faction_power = { faction = faction_court power = 2.99 }
-			}
-			modifier = {
-				factor = 10.0
-				leads_faction = faction_prosperity
-				faction_power = { faction = faction_prosperity power = 2.99 }
-			}
-			modifier = {
-				factor = 10.0
-				leads_faction = faction_glory
-				faction_power = { faction = faction_glory power = 2.99 }
-			}
-			modifier = {
-				factor = 10.0
-				leads_faction = faction_tradition
-				faction_power = { faction = faction_tradition power = 2.99 }
-			}
-			modifier = {
-				factor = 2
-				trait = brave
-			}
-			modifier = {
-				factor = 0.5
-				trait = craven
-			}
+		name = EVTOPTA_PlusFaction_402
+		if = {
+			limit = { NOT = { has_character_flag = will_join_civil_war } }
+			opinion = { who = FROM modifier = ultimatum_refused years = 10 }
 		}
 		hidden_tooltip = {
-			set_character_flag = faction_demand_refused
-			any_faction_backer = {
-				limit = { pf_my_faction_backer_trigger = yes }
-				character_event = { id = PlusFaction.343 } #vote
+			if = {
+				limit = { has_character_flag = will_join_civil_war }
+				FROM = { letter_event = { id = PlusFaction.405 } } #notify
 			}
-		}
-		pf_leader_vote_effect = yes
-		character_event = { id = PlusFaction.344 days = 7 tooltip = EVTTOOLTIP1900737 }
-	}
-	option = {
-		name = EVTOPTB_PlusFaction_402 #Do nothing
-		ai_chance = {
-			factor = 100
-			modifier = {
-				factor = 0.5
-				leads_faction = faction_court
-				faction_power = { faction = faction_court power = 1.49 }
+			if = {
+				limit = { character = FROMFROM }
+				character_event = { id = PlusFaction.399 days = 1 } #clear flags
 			}
-			modifier = {
-				factor = 0.5
-				leads_faction = faction_prosperity
-				faction_power = { faction = faction_prosperity power = 1.49 }
-			}
-			modifier = {
-				factor = 0.5
-				leads_faction = faction_glory
-				faction_power = { faction = faction_glory power = 1.49 }
-			}
-			modifier = {
-				factor = 0.5
-				leads_faction = faction_tradition
-				faction_power = { faction = faction_tradition power = 1.49 }
-			}
-			modifier = {
-				factor = 0.01
-				leads_faction = faction_court
-				faction_power = { faction = faction_court power = 1.99 }
-			}
-			modifier = {
-				factor = 0.01
-				leads_faction = faction_prosperity
-				faction_power = { faction = faction_prosperity power = 1.99 }
-			}
-			modifier = {
-				factor = 0.01
-				leads_faction = faction_glory
-				faction_power = { faction = faction_glory power = 1.99 }
-			}
-			modifier = {
-				factor = 0.01
-				leads_faction = faction_tradition
-				faction_power = { faction = faction_tradition power = 1.99 }
-			}
-		}
-		if = {
-			limit = { lower_real_tier_than = duke }
-			prestige = -25
-		}
-		if = {
-			limit = { real_tier = duke }
-			prestige = -50
-		}
-		if = {
-			limit = { real_tier = king }
-			prestige = -100
-		}
-		hidden_tooltip = {
-			set_character_flag = faction_demand_refused
-			any_faction_backer = {
-				limit = { pf_my_faction_backer_trigger = yes }
-				character_event = { id = PlusFaction.305 } #notify
-			}
-			character_event = { id = PlusFaction.399 days = 1 } #clear flags
-			clr_character_flag = demands_lower_CA
-			clr_character_flag = demands_lower_TO
-			clr_character_flag = demands_tax_privilege
-			clr_character_flag = demands_levy_privilege
-			clr_character_flag = demands_surrender_title
-			clr_character_flag = demands_share_wealth
-			clr_character_flag = demands_revert_succession
-			clr_character_flag = demands_council_life_terms
-			clr_character_flag = demands_lower_feudal_obligations
-			clr_character_flag = demands_lower_tribal_obligations
-			clr_character_flag = demands_lower_city_obligations
-			clr_character_flag = demands_lower_temple_obligations
-			clr_character_flag = demands_seniority
-			clr_character_flag = demands_primogeniture
-			clr_character_flag = demands_gavelkind
-			clr_character_flag = demands_feudal_elective
 		}
 	}
 }
+
+# Remaining vassals asked to support liege in civil war
+letter_event = {
+	id = PlusFaction.403
+	desc = EVTDESC_PlusFaction_403
+	border = GFX_event_letter_frame_war
+	
+	is_triggered_only = yes
+	
+	trigger = {
+		is_playable = yes
+		num_of_baron_titles = 1
+		pf_war_trait_trigger = no
+	}
+	
+	immediate = {
+		clr_character_flag = civil_war_faction_leader
+		clr_character_flag = civil_war_faction_member
+		clr_character_flag = will_join_civil_war
+	}
+	
+	option = {
+		name = EVTOPTA_PlusFaction_403 #I support my liege
+		trigger = {
+			is_adult = yes
+			prisoner = no
+			NOT = { trait = incapable }
+		}
+		ai_chance = {
+			factor = 10
+			modifier = {
+				factor = 0
+				OR = {
+					is_rival = FROM
+					NOT = { opinion = { who = FROM value = -50 } }
+					has_truce = FROM
+					has_opinion_modifier = { who = FROM modifier = opinion_coerced_into_leaving_faction }
+					has_opinion_modifier = { who = FROM modifier = opinion_subjugated }
+					has_opinion_modifier = { who = FROM modifier = opinion_subjugated_other_rel }
+				}
+			}
+			modifier = {
+				factor = 10
+				FROM = { current_heir = { character = ROOT } }
+			}
+			modifier = {
+				factor = 5
+				OR = {
+					is_allied_with = FROM
+					dynasty = FROM
+					is_close_relative = FROM
+					is_rival = FROMFROM
+				}
+			}
+			modifier = {
+				factor = 1.5
+				trait = content
+			}
+			modifier = {
+				factor = 3
+				opinion = { who = FROM value = 25 }
+			}
+			modifier = {
+				factor = 3
+				opinion = { who = FROM value = 50 }
+			}
+			modifier = {
+				factor = 3
+				opinion = { who = FROM value = 75 }
+			}
+		}
+		add_trait = loyalist
+		hidden_tooltip = {
+			liege = {
+				opinion = { who = ROOT modifier = supported_civil_war multiplier = 4 years = 100 }
+				letter_event = { id = PlusFaction.404 } #notify
+			}
+		}
+	}
+	option = {
+		name = EVTOPTB_PlusFaction_403 #I intend to stay out of this
+		trigger = {
+			prisoner = no
+			NOT = { trait = incapable }
+		}
+		ai_chance = {
+			factor = 100
+			modifier = {
+				factor = 2
+				trait = craven
+			}
+			modifier = {
+				factor = 0.5
+				trait = brave
+			}
+			modifier = {
+				factor = 3
+				NOT = { opinion = { who = FROM value = 0 } }
+			}
+			modifier = {
+				factor = 3
+				NOT = { opinion = { who = FROM value = -25 } }
+			}
+			modifier = {
+				factor = 1.25
+				opinion = { who = FROMFROM value = 25 }
+			}
+			modifier = {
+				factor = 1.25
+				opinion = { who = FROMFROM value = 50 }
+			}
+			modifier = {
+				factor = 1.25
+				opinion = { who = FROMFROM value = 75 }
+			}
+			modifier = {
+				factor = 2
+				OR = {
+					dynasty = FROMFROM
+					is_close_relative = FROMFROM
+					is_allied_with = FROMFROM
+					is_friend = FROMFROM
+				}
+			}
+			modifier = {
+				factor = 0.8
+				NOT = { opinion = { who = FROMFROM value = 0 } }
+			}
+			modifier = {
+				factor = 0.8
+				NOT = { opinion = { who = FROMFROM value = -25 } }
+			}
+			modifier = {
+				factor = 0.5
+				NOT = { opinion = { who = FROMFROM value = -50 } }
+			}
+			modifier = {
+				factor = 0.5
+				NOT = { opinion = { who = FROMFROM value = -75 } }
+			}
+		}
+		add_trait = neutral
+		hidden_tooltip = {
+			liege = { opinion = { who = ROOT modifier = neutral_civil_war years = 100 } }
+		}
+	}
+	option = {
+		name = EVTOPTC_PlusFaction_403 #I am imprisoned
+		trigger = {
+			prisoner = yes
+		}
+	}
+	option = {
+		name = EVTOPTD_PlusFaction_403 #I am NOT up to such a fight...
+		trigger = {
+			prisoner = no
+			trait = incapable
+		}
+		tooltip_info = incapable
+	}
+}
+
+# Liege informed of vassal's loyalty
+letter_event = {
+	id = PlusFaction.404
+	desc = EVTDESC_PlusFaction_404
+	border = GFX_event_letter_frame_war
+	
+	is_triggered_only = yes
+	ai = no
+	
+	trigger = {
+		#only significant vassals
+		FROM = {
+			OR = {
+				higher_tier_than = COUNT
+				relative_power_to_liege = 0.1
+			}
+		}
+	}
+	
+	option = {
+		name = EXCELLENT
+		tooltip = {
+			FROM = { add_trait = loyalist }
+		}
+	}
+}
+
+# Liege informed that vassal is standing with the faction
+letter_event = {
+	id = PlusFaction.405
+	desc = EVTDESC_PlusFaction_405
+	border = GFX_event_letter_frame_war
+	
+	is_triggered_only = yes
+	ai = no
+	
+	trigger = {
+		#only significant vassals
+		FROM = {
+			OR = {
+				higher_tier_than = COUNT
+				relative_power_to_liege = 0.1
+			}
+		}
+	}
+	
+	option = {
+		name = CURSES
+		tooltip = {
+			FROM = { add_trait = rebel }
+		}
+	}
+}	
+
+# Faction leader starts civil war
+letter_event = {
+	id = PlusFaction.406
+	desc = EVTDESC_PlusFaction_406
+	border = GFX_event_letter_frame_war
+	
+	is_triggered_only = yes
+	
+	immediate = {
+		any_vassal = {
+			limit = { pf_from_faction_backer_trigger = yes }
+			if = {
+				limit = { has_character_flag = will_join_civil_war }
+				character_event = { id = PlusFaction.407 }
+			}
+		}
+		
+		#start the war
+		if = {
+			limit = {
+				FROM = { leads_faction = faction_court }
+			}
+			hidden_tooltip = {
+				set_character_flag = faction_court_war
+				FROM = {
+					set_character_flag = original_war_liege
+					pf_setup_rebel_effect = yes
+					any_faction_backer = {
+						faction = faction_court
+						pf_setup_rebel_effect = yes
+					}
+				}
+			}
+			reverse_war = {
+				target = FROM
+				casus_belli = cb_faction_overthrow_ruler
+				faction = faction_court
+			}
+		}
+		if = {
+			limit = {
+				FROM = { leads_faction = faction_prosperity }
+			}
+			hidden_tooltip = {
+				set_character_flag = faction_prosperity_war
+				FROM = {
+					set_character_flag = original_war_liege
+					pf_setup_rebel_effect = yes
+					any_faction_backer = {
+						faction = faction_prosperity
+						pf_setup_rebel_effect = yes
+					}
+				}
+			}
+			reverse_war = {
+				target = FROM
+				casus_belli = cb_faction_overthrow_ruler
+				faction = faction_prosperity
+			}
+		}
+		if = {
+			limit = {
+				FROM = { leads_faction = faction_glory }
+			}
+			hidden_tooltip = {
+				set_character_flag = faction_glory_war
+				FROM = {
+					set_character_flag = original_war_liege
+					pf_setup_rebel_effect = yes
+					any_faction_backer = {
+						faction = faction_glory
+						pf_setup_rebel_effect = yes
+					}
+				}
+			}
+			reverse_war = {
+				target = FROM
+				casus_belli = cb_faction_overthrow_ruler
+				faction = faction_glory
+			}
+		}
+		if = {
+			limit = {
+				FROM = { leads_faction = faction_tradition }
+			}
+			hidden_tooltip = {
+				set_character_flag = faction_tradition_war
+				FROM = {
+					set_character_flag = original_war_liege
+					pf_setup_rebel_effect = yes
+					any_faction_backer = {
+						faction = faction_tradition
+						pf_setup_rebel_effect = yes
+					}
+				}
+			}
+			reverse_war = {
+				target = FROM
+				casus_belli = cb_faction_overthrow_ruler
+				faction = faction_tradition
+			}
+		}
+	}
+	
+	option = {
+		name = EVTOPTA_PlusFaction_406
+		#inform remaining vassals
+		hidden_tooltip = {
+			any_vassal = {
+				letter_event = { id = PlusFaction.403 }
+			}
+		}
+	}
+}
+
+# Bounce event for notification from faction supporters
+character_event = {
+	id = PlusFaction.407
+	
+	hide_window = yes
+	is_triggered_only = yes
+	
+	immediate = {
+		FROM = { letter_event = { id = PlusFaction.405 } } #notify
+	}
+}
+
 
 ##################################
 # FACTION CIVIL WAR EVENTS
 ##################################
 
-# Pretender faction goes to war
+# Pretender faction prepares for war
 character_event = {
 	id = PlusFaction.410
-	picture = GFX_evt_battle
-	desc = EVTDESC_PlusFaction_410
-	border = GFX_event_normal_frame_war
 
-	only_rulers = yes
+	hide_window = yes
+
+	ai = yes
+	only_playable = yes
 	prisoner = no
 	capable_only = yes
 	min_age = 16
 	
 	trigger = {
-		ai = yes
 		war = no
 		leads_faction = faction_pretender
 		faction_power = {
 			faction = faction_pretender
 			power = 0.75
 		}
-		liege = {
-			ai = yes
-			pf_war_trigger = no
-		}
-		NOR = {
-			has_character_modifier = do_not_disturb
-			supported_claimant = {
-				any_war = {
-					OR = {
-						AND = {
-							any_attacker = { character = PREV }
-							any_attacker = { 
-								ROOT = {
-									liege = {
-										character = PREVPREV
-									} 
-								}
-							}
-						}
-						AND = {
-							any_defender = { character = PREV }
-							any_defender = { 
-								ROOT = {
-									liege = {
-										character = PREVPREV
-									} 
-								}
-							}
-						}
-					}
-				}
-			}
-		}
+		pf_pending_civil_war_trigger = no
+		liege = { pf_war_flag_trigger = no }
+		ai_not_busy_trigger = yes
 		e_placeholder = { had_title_flag = { flag = startup days = 730 } }
 	}
 
@@ -844,29 +1023,36 @@ character_event = {
 		}
 	}
 
-	option = {
-		name = EVTOPTA_PlusFaction_410 #Make the demand!
-		log = "[Root.GetTitledName] has taken the Pretender faction into war"
-		liege = {
-			letter_event = { id = 8036 days = 7 tooltip = "EVTTOOLTIP8005" }
-		}
-		if = {
-			limit = {
-				supported_claimant = {
-					NOT = { character = ROOT }
-					OR = {
-						NOT = { same_liege = ROOT }
-						NOT = { in_faction = faction_pretender }
-						NOT = { supported_claimant = { character = PREV } }
-					}
+	immediate = {
+		set_character_flag = preparing_claimant_faction_war
+		# allow the faction leader to now take the 'Make Ultimatum to Liege' decision
+		# and set the timer so the AI doesn't use the decision for 30 days (unless everyone has joined)
+		custom_tooltip = {
+			text = MAY_TAKE_ULTIMATUM_DECISION
+			hidden_tooltip = {
+				set_character_flag = civil_war_faction_leader
+				add_character_modifier = {
+					name = declare_civil_war_timer
+					duration = 30
+					hidden = yes
 				}
 			}
-			supported_claimant = {
-				letter_event = { id = 8037 days = 1 }
+		}
+		# invite all other vassals to join the coming civil war
+		liege = {
+			custom_tooltip = { text = INVITE_TO_JOIN_CIVIL_WAR }
+			hidden_tooltip = {
+				any_vassal = {
+					limit = { NOT = { in_faction = faction_pretender } }
+					letter_event = { id = PlusFaction.422 }
+				}
 			}
 		}
 		hidden_tooltip = {
-			set_character_flag = faction_claimant_ultimatum_taken
+			any_faction_backer = {
+				faction = faction_pretender
+				set_character_flag = civil_war_faction_member
+			}
 		}
 	}
 }
@@ -879,12 +1065,12 @@ character_event = {
 	border = GFX_event_normal_frame_war
 	
 	ai = yes
-	only_rulers = yes
-	capable_only = yes
+	only_playable = yes
 	prisoner = no
+	capable_only = yes
+	min_age = 16
 
 	trigger = {
-		ai = yes
 		war = no
 		has_regent = no
 		leads_faction = faction_separatist
@@ -892,8 +1078,8 @@ character_event = {
 			faction = faction_separatist
 			power = 0.75
 		}
-		liege = { pf_war_trigger = no }
-		NOT = { has_character_modifier = do_not_disturb }
+		liege = { pf_war_flag_trigger = no }
+		ai_not_busy_trigger = yes
 		NOT = { has_character_modifier = faction_independence_ultimatum_timer }
 		e_placeholder = { had_title_flag = { flag = startup days = 730 } }
 	}
@@ -961,616 +1147,99 @@ character_event = {
 	}
 }
 
-### PICKING SIDES ONCE THE CIVIL WAR BEGINS
+### PICKING SIDES BEFORE THE CIVIL WAR BEGINS
 
-# Faction leader given option to join civil war
-character_event = {
+# Vassal invited to join a faction's planned civil war
+letter_event = {
 	id = PlusFaction.415
-	desc = EVTDESC_PlusFaction_415
-	picture = GFX_evt_battle
-	border = GFX_event_normal_frame_war
-	
-	is_triggered_only = yes
-
-	option = {
-		name = EVTOPTA_PlusFaction_415 #join the rebellion
-		ai_chance = {
-			factor = 100
-			modifier = {
-				factor = 0
-				leads_faction = faction_court
-				liege = {
-					NOR = {
-						has_character_flag = faction_court_angry
-						has_character_flag = faction_court_unhappy
-					}
-				}
-			}
-			modifier = {
-				factor = 0
-				leads_faction = faction_prosperity
-				liege = {
-					NOR = {
-						has_character_flag = faction_court_angry
-						has_character_flag = faction_court_unhappy
-					}
-				}
-			}
-			modifier = {
-				factor = 0
-				leads_faction = faction_glory
-				liege = {
-					NOR = {
-						has_character_flag = faction_court_angry
-						has_character_flag = faction_court_unhappy
-					}
-				}
-			}
-			modifier = {
-				factor = 0
-				leads_faction = faction_tradition
-				liege = {
-					NOR = {
-						has_character_flag = faction_court_angry
-						has_character_flag = faction_court_unhappy
-					}
-				}
-			}
-			modifier = {
-				factor = 4
-				leads_faction = faction_court
-				liege = { has_character_flag = faction_court_angry }
-			}
-			modifier = {
-				factor = 4
-				leads_faction = faction_prosperity
-				liege = { has_character_flag = faction_prosperity_angry }
-			}
-			modifier = {
-				factor = 4
-				leads_faction = faction_glory
-				liege = { has_character_flag = faction_glory_angry }
-			}
-			modifier = {
-				factor = 4
-				leads_faction = faction_tradition
-				liege = { has_character_flag = faction_tradition_angry }
-			}
-			modifier = {
-				factor = 1.25
-				trait = proud
-			}
-			modifier = {
-				factor = 1.25
-				trait = ambitious
-			}
-			modifier = {
-				factor = 0.8
-				trait = content
-			}
-			modifier = {
-				factor = 0.8
-				trait = craven
-			}
-			modifier = {
-				factor = 0.8
-				trait = humble
-			}
-			modifier = {
-				factor = 0.8
-				opinion = { who = liege value = 0 }
-			}
-			modifier = {
-				factor = 1.25
-				NOT = { opinion = { who = liege value = 0 } }
-			}
-			modifier = {
-				factor = 1.25
-				NOT = { opinion = { who = liege value = -25 } }
-			}
-			modifier = {
-				factor = 1.25
-				NOT = { opinion = { who = liege value = -50 } }
-			}
-			modifier = {
-				factor = 1.25
-				NOT = { opinion = { who = liege value = -75 } }
-			}
-			modifier = {
-				factor = 1.1
-				opinion = { who = FROM value = 0 }
-			}
-			modifier = {
-				factor = 1.1
-				opinion = { who = FROM value = 25 }
-			}
-			modifier = {
-				factor = 1.1
-				opinion = { who = FROM value = 50 }
-			}
-			modifier = {
-				factor = 1.1
-				opinion = { who = FROM value = 75 }
-			}
-			modifier = {
-				factor = 0.9
-				NOT = { opinion = { who = FROM value = 0 } }
-			}
-			modifier = {
-				factor = 0.9
-				NOT = { opinion = { who = FROM value = -25 } }
-			}
-			modifier = {
-				factor = 0.9
-				NOT = { opinion = { who = FROM value = -50 } }
-			}
-			modifier = {
-				factor = 0.9
-				NOT = { opinion = { who = FROM value = -75 } }
-			}
-			modifier = {
-				factor = 0.75
-				liege = { dynasty = ROOT }
-				FROM = { NOT = { dynasty = ROOT } }
-			}
-			modifier = {
-				factor = 1.5
-				liege = { NOT = { dynasty = ROOT } }
-				FROM = { dynasty = ROOT }
-			}
-		}
-		if = {
-			limit = { leads_faction = faction_court }
-			liege = { set_character_flag = faction_court_war }
-		}
-		if = {
-			limit = { leads_faction = faction_prosperity }
-			liege = { set_character_flag = faction_prosperity_war }
-		}
-		if = {
-			limit = { leads_faction = faction_glory }
-			liege = { set_character_flag = faction_glory_war }
-		}
-		if = {
-			limit = { leads_faction = faction_tradition }
-			liege = { set_character_flag = faction_tradition_war }
-		}
-		pf_setup_rebel_effect = yes
-		hidden_tooltip = {
-			liege = {
-				letter_event = { id = PlusFaction.416 }
-			}
-			any_faction_backer = {
-				limit = {
-					pf_war_trait_trigger = no
-					pf_my_faction_backer_trigger = yes
-				}
-				letter_event = { id = PlusFaction.418 } #notify
-			}
-		}
-		pf_rebel_independence_effect = yes
-		join_attacker_wars = FROM
-	}
-	option = {
-		name = EVTOPTB_PlusFaction_415 #remain loyal
-		ai_chance = {
-			factor = 50
-			modifier = {
-				factor = 0
-				leads_faction = faction_court
-				liege = {
-					OR = {
-						has_character_flag = faction_court_angry
-						has_character_flag = faction_court_unhappy
-					}
-				}
-			}
-			modifier = {
-				factor = 0
-				leads_faction = faction_prosperity
-				liege = {
-					OR = {
-						has_character_flag = faction_court_angry
-						has_character_flag = faction_court_unhappy
-					}
-				}
-			}
-			modifier = {
-				factor = 0
-				leads_faction = faction_glory
-				liege = {
-					OR = {
-						has_character_flag = faction_court_angry
-						has_character_flag = faction_court_unhappy
-					}
-				}
-			}
-			modifier = {
-				factor = 0
-				leads_faction = faction_tradition
-				liege = {
-					OR = {
-						has_character_flag = faction_court_angry
-						has_character_flag = faction_court_unhappy
-					}
-				}
-			}
-			modifier = {
-				factor = 5
-				leads_faction = faction_court
-				liege = { has_character_flag = faction_court_happy }
-			}
-			modifier = {
-				factor = 5
-				leads_faction = faction_prosperity
-				liege = { has_character_flag = faction_prosperity_happy }
-			}
-			modifier = {
-				factor = 5
-				leads_faction = faction_glory
-				liege = { has_character_flag = faction_glory_happy }
-			}
-			modifier = {
-				factor = 5
-				leads_faction = faction_tradition
-				liege = { has_character_flag = faction_tradition_happy }
-			}
-			modifier = {
-				factor = 1.25
-				opinion = { who = liege value = 25 }
-			}
-			modifier = {
-				factor = 1.25
-				opinion = { who = liege value = 50 }
-			}
-			modifier = {
-				factor = 1.25
-				opinion = { who = liege value = 75 }
-			}
-		}
-		add_trait = loyalist
-		hidden_tooltip = {
-			liege = {
-				opinion = { who = ROOT modifier = supported_civil_war multiplier = 4 years = 100 }
-				letter_event = { id = PlusFaction.417 }
-			}
-			any_faction_backer = {
-				limit = {
-					pf_war_trait_trigger = no
-					pf_my_faction_backer_trigger = yes
-				}
-				letter_event = { id = PlusFaction.419 } #notify
-			}
-		}
-	}
-	option = {
-		name = EVTOPTC_PlusFaction_415 #remain neutral
-		ai_chance = {
-			factor = 100
-			modifier = {
-				factor = 1.25
-				trait = craven
-			}
-			modifier = {
-				factor = 0.8
-				trait = brave
-			}
-		}
-		add_trait = neutral
-		hidden_tooltip = {
-			liege = {
-				opinion = { who = ROOT modifier = neutral_civil_war years = 100 }
-			}
-			any_faction_backer = {
-				limit = {
-					pf_war_trait_trigger = no
-					pf_my_faction_backer_trigger = yes
-				}
-				letter_event = { id = PlusFaction.420 } #notify
-			}
-		}
-	}
-}
-
-# Notify liege that the faction has joined the rebellion
-letter_event = {
-	id = PlusFaction.416
 	border = GFX_event_letter_frame_war
 	
 	desc = {
-		text = EVTDESC_PlusFaction_416A
-		trigger = { FROM = { leads_faction = faction_court } }
+		text = EVTDESC_PlusFaction_415A
+		trigger = { FROM = { has_character_flag = demands_lower_CA } }
 	}
 	desc = {
-		text = EVTDESC_PlusFaction_416B
-		trigger = { FROM = { leads_faction = faction_prosperity } }
+		text = EVTDESC_PlusFaction_415B
+		trigger = { FROM = { has_character_flag = demands_lower_TO } }
 	}
 	desc = {
-		text = EVTDESC_PlusFaction_416C
-		trigger = { FROM = { leads_faction = faction_glory } }
+		text = EVTDESC_PlusFaction_415E
+		trigger = { FROM = { has_character_flag = demands_surrender_title } }
 	}
 	desc = {
-		text = EVTDESC_PlusFaction_416D
-		trigger = { FROM = { leads_faction = faction_tradition } }
+		text = EVTDESC_PlusFaction_415H
+		trigger = { FROM = { has_character_flag = demands_share_wealth } }
+	}
+	desc = {
+		text = EVTDESC_PlusFaction_415J
+		trigger = { FROM = { has_character_flag = demands_revert_succession } }
+	}
+	desc = {
+		text = EVTDESC_PlusFaction_415K
+		trigger = { FROM = { has_character_flag = demands_council_life_terms } }
+	}
+	desc = {
+		text = EVTDESC_PlusFaction_415L
+		trigger = { FROM = { has_character_flag = demands_lower_feudal_obligations } }
+	}
+	desc = {
+		text = EVTDESC_PlusFaction_415M
+		trigger = { FROM = { has_character_flag = demands_lower_tribal_obligations } }
+	}
+	desc = {
+		text = EVTDESC_PlusFaction_415N
+		trigger = { FROM = { has_character_flag = demands_lower_city_obligations } }
+	}
+	desc = {
+		text = EVTDESC_PlusFaction_415O
+		trigger = { FROM = { has_character_flag = demands_lower_temple_obligations } }
+	}
+	desc = {
+		text = EVTDESC_PlusFaction_415P
+		trigger = { FROM = { has_character_flag = demands_seniority } }
+	}
+	desc = {
+		text = EVTDESC_PlusFaction_415Q
+		trigger = { FROM = { has_character_flag = demands_primogeniture } }
+	}
+	desc = {
+		text = EVTDESC_PlusFaction_415R
+		trigger = { FROM = { has_character_flag = demands_gavelkind } }
+	}
+	desc = {
+		text = EVTDESC_PlusFaction_415S
+		trigger = { FROM = { has_character_flag = demands_feudal_elective } }
+	}
+	desc = {
+		text = EVTDESC_PlusFaction_415T
+		trigger = { FROM = { pf_has_demands_trigger = no } }
 	}
 	
 	is_triggered_only = yes
-
-	option = {
-		name = EVTOPTA_PlusFaction_416
-	}
-}
-
-# Notify liege that the faction is loyal
-letter_event = {
-	id = PlusFaction.417
-	border = GFX_event_letter_frame_war
 	
-	desc = {
-		text = EVTDESC_PlusFaction_417A
-		trigger = { FROM = { leads_faction = faction_court } }
-	}
-	desc = {
-		text = EVTDESC_PlusFaction_417B
-		trigger = { FROM = { leads_faction = faction_prosperity } }
-	}
-	desc = {
-		text = EVTDESC_PlusFaction_417C
-		trigger = { FROM = { leads_faction = faction_glory } }
-	}
-	desc = {
-		text = EVTDESC_PlusFaction_417D
-		trigger = { FROM = { leads_faction = faction_tradition } }
-	}
-	
-	is_triggered_only = yes
-
-	option = {
-		name = EXCELLENT
-	}
-}
-
-# Faction member is called into the rebellion
-letter_event = {
-	id = PlusFaction.418
-	desc = EVTDESC_PlusFaction_418
-	border = GFX_event_letter_frame_war
-	
-	is_triggered_only = yes
-
-	option = {
-		name = TOARMS
-		if = {
-			limit = {
-				prisoner = yes
-				OR = {
-					host = { character = FROM } # Faction leader
-					host = { character = FROMFROM } # Initiating faction leader
-				}
-			}
-			prisoner = no
-		}
-		pf_setup_rebel_effect = yes
-		pf_rebel_independence_effect = yes
-		join_attacker_wars = FROMFROM
-	}
-}
-
-# Faction member is informed of the faction's loyalty
-letter_event = {
-	id = PlusFaction.419
-	desc = EVTDESC_PlusFaction_419
-	border = GFX_event_letter_frame_war
-	
-	is_triggered_only = yes
-
-	option = {
-		name = TOARMS
-		add_trait = loyalist
-		hidden_tooltip = {
-			liege = { opinion = { who = ROOT modifier = supported_civil_war multiplier = 4 years = 100 } }
-		}
-	}
-}
-
-# Faction member informed of faction's neutrality -- may pick sides
-letter_event = {
-	id = PlusFaction.420
-	desc = EVTDESC_PlusFaction_420
-	border = GFX_event_letter_frame_war
-	
-	is_triggered_only = yes
-
-	option = {
-		name = EVTOPTA_PlusFaction_420 #join the rebellion anyway
-		ai_chance = {
-			factor = 10
-			modifier = {
-				factor = 0
-				is_adult = no
-			}
-			modifier = {
-				factor = 0
-				liege = { current_heir = { character = ROOT } }
-			}
-			modifier = {
-				factor = 0.5
-				liege = {
-					OR = {
-						is_allied_with = ROOT
-						dynasty = ROOT
-						is_close_relative = ROOT
-					}
-				}
-			}
-			modifier = {
-				factor = 5
-				liege = { is_rival = ROOT }
-			}
-			modifier = {
-				factor = 1.5
-				trait = ambitious
-			}
-			modifier = {
-				factor = 1.25
-				OR = {
-					is_allied_with = FROMFROM
-					is_close_relative = FROMFROM
-				}
-			}
-			modifier = {
-				factor = 0.8
-				NOT = { opinion = { who = FROMFROM value = 0 } }
-			}
-			modifier = {
-				factor = 0.8
-				NOT = { opinion = { who = FROMFROM value = -25 } }
-			}
-			modifier = {
-				factor = 0.5
-				NOT = { opinion = { who = FROMFROM value = -50 } }
-			}
-			modifier = {
-				factor = 0.5
-				NOT = { opinion = { who = FROMFROM value = -75 } }
-			}
-			modifier = {
-				factor = 1.25
-				opinion = { who = FROMFROM value = 25 }
-			}
-			modifier = {
-				factor = 1.25
-				opinion = { who = FROMFROM value = 50 }
-			}
-			modifier = {
-				factor = 1.25
-				opinion = { who = FROMFROM value = 75 }
-			}
-			modifier = {
-				factor = 0
-				opinion = { who = liege value = 0 }
-			}
-			modifier = {
-				factor = 2
-				NOT = { opinion = { who = liege value = 0 } }
-			}
-			modifier = {
-				factor = 2
-				NOT = { opinion = { who = liege value = -25 } }
-			}
-			modifier = {
-				factor = 2
-				NOT = { opinion = { who = liege value = -50 } }
-			}
-			modifier = {
-				factor = 2
-				NOT = { opinion = { who = liege value = -75 } }
-			}
-		}
-		pf_setup_rebel_effect = yes
-		pf_rebel_independence_effect = yes
-		join_attacker_wars = FROMFROM
-	}
-	option = {
-		name = EVTOPTB_PlusFaction_420 #support the liege anyway
-		ai_chance = {
-			factor = 10
-			modifier = {
-				factor = 0
-				is_adult = no
-			}
-			modifier = {
-				factor = 0
-				NOT = { opinion = { who = liege value = -50 } }
-			}
-			modifier = {
-				factor = 0.1
-				NOT = { opinion = { who = liege value = 0 } }
-			}
-			modifier = {
-				factor = 10
-				liege = { current_heir = { character = ROOT } }
-			}
-			modifier = {
-				factor = 5
-				liege = {
-					OR = {
-						is_allied_with = ROOT
-						dynasty = ROOT
-						is_close_relative = ROOT
-					}
-				}
-			}
-			modifier = {
-				factor = 1.5
-				trait = content
-			}
-			modifier = {
-				factor = 3
-				opinion = { who = liege value = 25 }
-			}
-			modifier = {
-				factor = 3
-				opinion = { who = liege value = 50 }
-			}
-			modifier = {
-				factor = 3
-				opinion = { who = liege value = 75 }
-			}
-		}
-		add_trait = loyalist
-		hidden_tooltip = {
-			liege = { opinion = { who = ROOT modifier = supported_civil_war multiplier = 4 years = 100 } }
-		}
-	}
-	option = {
-		name = EVTOPTC_PlusFaction_420 #stay neutral
-		ai_chance = {
-			factor = 100
-			modifier = {
-				factor = 2
-				trait = craven
-			}
-			modifier = {
-				factor = 0.5
-				trait = brave
-			}
-		}
-		add_trait = neutral
-		hidden_tooltip = {
-			liege = { opinion = { who = ROOT modifier = neutral_civil_war years = 100 } }
-		}
-	}
-}
-
-# Factionless vassals pick a side in the civil war
-character_event = {
-	id = PlusFaction.421
-	desc = EVTDESC_PlusFaction_421
-	picture = GFX_evt_battle
-	border = GFX_event_normal_frame_war
-	
-	is_triggered_only = yes
-
 	trigger = {
 		is_playable = yes
 		num_of_baron_titles = 1
 		pf_war_trait_trigger = no
-		pf_member_trigger = no
 	}
-
+	
 	option = {
-		name = EVTOPTA_PlusFaction_421 #join the rebellion
+		name = EVTOPTA_PlusFaction_415 #join the rebellion
 		trigger = {
 			prisoner = no
 			NOT = { trait = incapable }
+			is_adult = yes
+			liege = {
+				NOR = {
+					reverse_has_truce = ROOT
+					reverse_has_opinion_modifier = { who = ROOT modifier = opinion_coerced_into_leaving_faction }
+					reverse_has_opinion_modifier = { who = ROOT modifier = opinion_subjugated }
+					reverse_has_opinion_modifier = { who = ROOT modifier = opinion_subjugated_other_rel }
+				}
+			}
 		}
 		ai_chance = {
 			factor = 10
-			modifier = {
-				factor = 0
-				is_adult = no
-			}
 			modifier = {
 				factor = 0
 				liege = { current_heir = { character = ROOT } }
@@ -1634,10 +1303,6 @@ character_event = {
 			}
 			modifier = {
 				factor = 3
-				NOT = { opinion = { who = liege value = 0 } }
-			}
-			modifier = {
-				factor = 3
 				NOT = { opinion = { who = liege value = -25 } }
 			}
 			modifier = {
@@ -1649,71 +1314,23 @@ character_event = {
 				NOT = { opinion = { who = liege value = -75 } }
 			}
 		}
-		pf_setup_rebel_effect = yes
-		pf_rebel_independence_effect = yes
-		join_attacker_wars = FROM
+		set_character_flag = will_join_civil_war
+		custom_tooltip = { text = MUST_MANUALLY_JOIN_FACTION }
 	}
 	option = {
-		name = EVTOPTB_PlusFaction_421 #remain loyal
+		name = EVTOPTB_PlusFaction_415 #refuse
 		trigger = {
 			prisoner = no
 			NOT = { trait = incapable }
-		}
-		ai_chance = {
-			factor = 10
-			modifier = {
-				factor = 0
-				is_adult = no
-			}
-			modifier = {
-				factor = 0
-				NOT = { opinion = { who = liege value = -50 } }
-			}
-			modifier = {
-				factor = 0.1
-				NOT = { opinion = { who = liege value = 0 } }
-			}
-			modifier = {
-				factor = 10
-				liege = { current_heir = { character = ROOT } }
-			}
-			modifier = {
-				factor = 5
-				liege = {
-					OR = {
-						is_allied_with = ROOT
-						dynasty = ROOT
-						is_close_relative = ROOT
-					}
+			is_adult = yes
+			liege = {
+				NOR = {
+					reverse_has_truce = ROOT
+					reverse_has_opinion_modifier = { who = ROOT modifier = opinion_coerced_into_leaving_faction }
+					reverse_has_opinion_modifier = { who = ROOT modifier = opinion_subjugated }
+					reverse_has_opinion_modifier = { who = ROOT modifier = opinion_subjugated_other_rel }
 				}
 			}
-			modifier = {
-				factor = 1.5
-				trait = content
-			}
-			modifier = {
-				factor = 3
-				opinion = { who = liege value = 25 }
-			}
-			modifier = {
-				factor = 3
-				opinion = { who = liege value = 50 }
-			}
-			modifier = {
-				factor = 3
-				opinion = { who = liege value = 75 }
-			}
-		}
-		add_trait = loyalist
-		hidden_tooltip = {
-			liege = { opinion = { who = ROOT modifier = supported_civil_war multiplier = 4 years = 100 } }
-		}
-	}
-	option = {
-		name = EVTOPTC_PlusFaction_421 #remain neutral
-		trigger = {
-			prisoner = no
-			NOT = { trait = incapable }
 		}
 		ai_chance = {
 			factor = 100
@@ -1722,36 +1339,79 @@ character_event = {
 				trait = craven
 			}
 			modifier = {
-				factor = 0.5
-				trait = brave
+				factor = 2
+				trait = content
+			}
+			modifier = {
+				factor = 2
+				trait = humble
 			}
 		}
-		add_trait = neutral
-		hidden_tooltip = {
-			liege = { opinion = { who = ROOT modifier = neutral_civil_war years = 100 } }
-		}
+		reverse_opinion = { who = FROM modifier = opinion_disappointed years = 5 }
 	}
 	option = {
-		name = EVTOPTD_PlusFaction_421 #I am imprisoned
-		trigger = {
-			prisoner = yes
+		name = {
+			text = EVTOPTC_PlusFaction_415_prisoner #I am imprisoned
+			trigger = {
+				prisoner = yes
+			}
 		}
-	}
-	option = {
-		name = EVTOPTE_PlusFaction_421 #I am NOT up to such a fight...
-		tooltip_info = incapable
-		trigger = {
-			trait = incapable
+		name = {
+			text = EVTOPTC_PlusFaction_415_incapable #I am NOT up to such a fight...
+			trigger = {
+				prisoner = no
+				trait = incapable
+			}
+		}
+		name = {
+			text = EVTOPTC_PlusFaction_415_child #I am a child
+			trigger = {
+				prisoner = no
+				NOT = { trait = incapable }
+				is_adult = no
+			}
+		}
+		name = {
+			text = EVTOPTC_PlusFaction_415_truce #I cannot
+			trigger = {
+				prisoner = no
+				NOT = { trait = incapable }
+				is_adult = yes
+				liege = {
+					OR = {
+						reverse_has_truce = ROOT
+						reverse_has_opinion_modifier = { who = ROOT modifier = opinion_coerced_into_leaving_faction }
+						reverse_has_opinion_modifier = { who = ROOT modifier = opinion_subjugated }
+						reverse_has_opinion_modifier = { who = ROOT modifier = opinion_subjugated_other_rel }
+					}
+				}
+			}
 		}
 	}
 }
 
+# Player who refused to fulfill their promise loses prestige
+letter_event = {
+	id = PlusFaction.416
+	desc = EVTDESC_PlusFaction_416
+	border = GFX_event_letter_frame_war
+	
+	is_triggered_only = yes
+	
+	option = {
+		name = OK
+		clr_character_flag = civil_war_faction_member
+		clr_character_flag = will_join_civil_war
+		reverse_opinion = { who = FROM modifier = opinion_very_disappointed years = 10 }
+		prestige = -250
+	}
+}
+
 # Vassal chooses sides at the outbreak of a pretender war
-character_event = {
+letter_event = {
 	id = PlusFaction.422
 	desc = EVTDESC_PlusFaction_422
-	picture = GFX_evt_battle
-	border = GFX_event_normal_frame_war
+	border = GFX_event_letter_frame_war
 
 	is_triggered_only = yes
 
@@ -1762,78 +1422,40 @@ character_event = {
 	}
 	
 	option = {
-		name = EVTOPTA_PlusFaction_421 #join the rebellion
+		name = EVTOPTA_PlusFaction_415 #join the rebellion
 		trigger = {
 			prisoner = no
 			NOT = { trait = incapable }
+			is_adult = yes
+			liege = {
+				NOR = {
+					reverse_has_truce = ROOT
+					reverse_has_opinion_modifier = { who = ROOT modifier = opinion_coerced_into_leaving_faction }
+					reverse_has_opinion_modifier = { who = ROOT modifier = opinion_subjugated }
+					reverse_has_opinion_modifier = { who = ROOT modifier = opinion_subjugated_other_rel }
+				}
+			}
 		}
 		ai_chance = {
 			factor = 10
 			modifier = {
 				factor = 0
-				is_adult = no
-				FROM = {
-					supported_claimant = {
-						NOT = { character = ROOT }
-					}
-				}
-			}
-			modifier = {
-				factor = 0
-				liege = {
-					current_heir = { character = ROOT }
-				}
-			}
-			modifier = {
-				factor = 0
-				FROM = {
-					supported_claimant = {
-						NOT = { character = ROOT }
-						NOT = { reverse_opinion = { who = ROOT value = 0 } }
-					}
-				}
-			}
-			modifier = {
-				factor = 3
-				FROM = {
-					supported_claimant = {
-						reverse_opinion = { who = ROOT value = 25 }
-					}
-				}
-			}
-			modifier = {
-				factor = 3
-				FROM = {
-					supported_claimant = {
-						reverse_opinion = { who = ROOT value = 50 }
-					}
-				}
-			}
-			modifier = {
-				factor = 3
-				FROM = {
-					supported_claimant = {
-						reverse_opinion = { who = ROOT value = 75 }
-					}
-				}
+				liege = { current_heir = { character = ROOT } }
 			}
 			modifier = {
 				factor = 5
-				liege = {
-					NOT = { is_close_relative = ROOT }
-				}
-				FROM = {
-					supported_claimant = { is_close_relative = ROOT }
-				}
+				liege = { NOT = { is_close_relative = ROOT } }
+				FROM = { supported_claimant = { is_close_relative = ROOT } }
 			}
 			modifier = {
 				factor = 2
-				liege = {
-					NOT = { is_allied_with = ROOT }
-				}
-				FROM = {
-					supported_claimant = { is_allied_with = ROOT }
-				}
+				liege = { NOT = { is_allied_with = ROOT } }
+				FROM = { supported_claimant = { is_allied_with = ROOT } }
+			}
+			modifier = {
+				factor = 2
+				liege = { NOT = { dynasty = ROOT } }
+				FROM = { supported_claimant = { dynasty = ROOT } }
 			}
 			modifier = {
 				factor = 0.5
@@ -1844,171 +1466,194 @@ character_event = {
 				}
 			}
 			modifier = {
-				factor = 0.5
-				liege = { is_allied_with = ROOT }
-			}
-			modifier = {
 				factor = 5
 				liege = { is_rival = ROOT }
 			}
 			modifier = {
-				factor = 0.5
-				opinion = { who = liege value = 0 }
-			}
-			modifier = {
-				factor = 0
-				opinion = { who = liege value = 25 	}
-				FROM = {
-					supported_claimant = {
-						NOT = { character = ROOT }
-					}
-				}
-			}
-			modifier = {
-				factor = 2
-				NOT = { opinion = { who = liege value = 0 } }
-			}
-			modifier = {
-				factor = 2
-				NOT = { opinion = { who = liege value = -25 } }
-			}
-			modifier = {
-				factor = 2
-				NOT = { opinion = { who = liege value = -50 } }
-			}
-			modifier = {
-				factor = 2
-				NOT = { opinion = { who = liege value = -75 } }
-			}
-		}
-		pf_setup_rebel_effect = yes
-		pf_rebel_independence_effect = yes
-		join_attacker_wars = FROM
-	}
-	option = {
-		name = EVTOPTB_PlusFaction_421 #remain loyal
-		trigger = {
-			prisoner = no
-			NOT = { trait = incapable }
-		}
-		ai_chance = {
-			factor = 10
-			modifier = {
-				factor = 0
-				FROM = { supported_claimant = { character = ROOT } }
-				liege = { NOT = { current_heir = { character = ROOT } } }
-			}
-			modifier = {
-				factor = 0
-				NOT = { opinion = { who = liege value = -50 } }
-			}
-			modifier = {
-				factor = 0.1
-				NOT = { opinion = { who = liege value = 0 } }
-			}
-			modifier = {
-				factor = 3
-				FROM = {
-					supported_claimant = {
-						NOT = { reverse_opinion = { who = ROOT value = -25 } }
-					}
-				}
-			}
-			modifier = {
-				factor = 3
-				FROM = {
-					supported_claimant = {
-						NOT = { reverse_opinion = { who = ROOT value = -50 } }
-					}
-				}
-			}
-			modifier = {
-				factor = 3
-				FROM = {
-					supported_claimant = {
-						NOT = { reverse_opinion = { who = ROOT value = -75 } }
-					}
+				factor = 1.25
+				OR = {
+					is_allied_with = FROM
+					is_close_relative = FROM
 				}
 			}
 			modifier = {
 				factor = 10
-				liege = { current_heir = { character = ROOT } }
-			}
-			modifier = {
-				factor = 5
-				liege = { is_allied_with = ROOT }
 				FROM = {
-					supported_claimant = { NOT = { is_allied_with = ROOT } }
+					supported_claimant = { character = ROOT }
 				}
 			}
 			modifier = {
-				factor = 5
-				liege = { is_close_relative = ROOT }
+				factor = 1.25
 				FROM = {
-					supported_claimant = { NOT = { is_close_relative = ROOT } }
+					supported_claimant = {
+						NOT = { character = ROOT }
+						ROOT = { opinion_diff = { first = PREV second = LIEGE value = 10 as_if_liege = yes } }
+					}
 				}
 			}
 			modifier = {
 				factor = 1.5
-				trait = content
+				FROM = {
+					supported_claimant = {
+						NOT = { character = ROOT }
+						ROOT = { opinion_diff = { first = PREV second = LIEGE value = 25 as_if_liege = yes } }
+					}
+				}
 			}
 			modifier = {
-				factor = 3
-				opinion = { who = liege value = 25 }
+				factor = 2
+				FROM = {
+					supported_claimant = {
+						NOT = { character = ROOT }
+						ROOT = { opinion_diff = { first = PREV second = LIEGE value = 50 as_if_liege = yes } }
+					}
+				}
 			}
 			modifier = {
-				factor = 3
-				opinion = { who = liege value = 50 }
+				factor = 2
+				FROM = {
+					supported_claimant = {
+						NOT = { character = ROOT }
+						ROOT = { opinion_diff = { first = PREV second = LIEGE value = 75 as_if_liege = yes } }
+					}
+				}
 			}
 			modifier = {
-				factor = 3
-				opinion = { who = liege value = 75 }
+				factor = 0.5
+				FROM = {
+					supported_claimant = {
+						NOT = { character = ROOT }
+						ROOT = { opinion_diff = { first = LIEGE second = PREV value = 5 as_if_liege = yes } }
+					}
+				}
+			}
+			modifier = {
+				factor = 0
+				FROM = {
+					supported_claimant = {
+						NOT = { character = ROOT }
+						ROOT = { opinion_diff = { first = LIEGE second = PREV value = 25 as_if_liege = yes } }
+					}
+				}
+			}
+			modifier = {
+				factor = 0
+				opinion = { who = liege value = 0 }
+			}
+			modifier = {
+				factor = 0.8
+				NOT = { opinion = { who = FROM value = 0 } }
+			}
+			modifier = {
+				factor = 0.8
+				NOT = { opinion = { who = FROM value = -25 } }
+			}
+			modifier = {
+				factor = 0.5
+				NOT = { opinion = { who = FROM value = -50 } }
+			}
+			modifier = {
+				factor = 1.2
+				opinion = { who = FROM value = 25 }
+			}
+			modifier = {
+				factor = 1.2
+				opinion = { who = FROM value = 50 }
+			}
+			modifier = {
+				factor = 1.2
+				opinion = { who = FROM value = 75 }
 			}
 		}
-		add_trait = loyalist
-		hidden_tooltip = {
-			liege = { opinion = { who = ROOT modifier = supported_civil_war multiplier = 4 years = 100 } }
-		}
+		set_character_flag = will_join_civil_war
+		custom_tooltip = { text = MUST_MANUALLY_JOIN_FACTION }
 	}
 	option = {
-		name = EVTOPTC_PlusFaction_421 #remain neutral
+		name = EVTOPTB_PlusFaction_415 #refuse
 		trigger = {
 			prisoner = no
 			NOT = { trait = incapable }
+			is_adult = yes
+			liege = {
+				NOR = {
+					reverse_has_truce = ROOT
+					reverse_has_opinion_modifier = { who = ROOT modifier = opinion_coerced_into_leaving_faction }
+					reverse_has_opinion_modifier = { who = ROOT modifier = opinion_subjugated }
+					reverse_has_opinion_modifier = { who = ROOT modifier = opinion_subjugated_other_rel }
+				}
+			}
 		}
 		ai_chance = {
 			factor = 100
-			modifier = {
-				factor = 0
-				FROM = { supported_claimant = { character = ROOT } }
-			}
 			modifier = {
 				factor = 2
 				trait = craven
 			}
 			modifier = {
-				factor = 0.5
-				trait = brave
+				factor = 2
+				trait = content
+			}
+			modifier = {
+				factor = 2
+				trait = humble
+			}
+			modifier = {
+				factor = 3
+				liege = { is_close_relative = ROOT }
+				FROM = { supported_claimant = { NOT = { is_close_relative = ROOT } } }
+			}
+			modifier = {
+				factor = 2
+				liege = { is_allied_with = ROOT }
+				FROM = { supported_claimant = { NOT = { is_allied_with = ROOT } } }
+			}
+			modifier = {
+				factor = 2
+				liege = { dynasty = ROOT }
+				FROM = { supported_claimant = { NOT = { dynasty = ROOT } } }
 			}
 		}
-		add_trait = neutral
-		hidden_tooltip = {
-			liege = { opinion = { who = ROOT modifier = neutral_civil_war years = 100 } }
-		}
+		reverse_opinion = { who = FROM modifier = opinion_disappointed years = 5 }
 	}
 	option = {
-		name = EVTOPTD_PlusFaction_421 #I am imprisoned
-		trigger = {
-			prisoner = yes
+		name = {
+			text = EVTOPTC_PlusFaction_415_prisoner #I am imprisoned
+			trigger = {
+				prisoner = yes
+			}
 		}
-	}
-	option = {
-		name = EVTOPTE_PlusFaction_421 #I am NOT up to such a fight...
-		tooltip_info = incapable
-		trigger = {
-			trait = incapable
+		name = {
+			text = EVTOPTC_PlusFaction_415_incapable #I am NOT up to such a fight...
+			trigger = {
+				prisoner = no
+				trait = incapable
+			}
 		}
-	}
+		name = {
+			text = EVTOPTC_PlusFaction_415_child #I am a child
+			trigger = {
+				prisoner = no
+				NOT = { trait = incapable }
+				is_adult = no
+			}
+		}
+		name = {
+			text = EVTOPTC_PlusFaction_415_truce #I cannot
+			trigger = {
+				prisoner = no
+				NOT = { trait = incapable }
+				is_adult = yes
+				liege = {
+					OR = {
+						reverse_has_truce = ROOT
+						reverse_has_opinion_modifier = { who = ROOT modifier = opinion_coerced_into_leaving_faction }
+						reverse_has_opinion_modifier = { who = ROOT modifier = opinion_subjugated }
+						reverse_has_opinion_modifier = { who = ROOT modifier = opinion_subjugated_other_rel }
+					}
+				}
+			}
+		}
+	}	
 }	
 
 # Claimant may choose to join a pretender war
@@ -2019,18 +1664,19 @@ character_event = {
 	border = GFX_event_normal_frame_war
 	
 	is_triggered_only = yes
+	show_from_from = yes
 	
 	trigger = {
-		is_ruler = yes
-		NOT = { same_realm = FROM }
+		is_playable = yes
+		num_of_baron_titles = 1
 	}
 	
 	option = {
-		name = EVTOPTA_PlusFaction_421 #Of course I will join them!
+		name = EVTOPTA_PlusFaction_423 #Of course I will join them!
 		trigger = {
-			higher_tier_than = BARON
 			is_adult = yes
 			NOT = { trait = incapable }
+			NOT = { trait = rebel }
 			prisoner = no
 			OR = {
 				independent = yes
@@ -2091,7 +1737,22 @@ character_event = {
 			}
 			modifier = {
 				factor = 0.5
-				FROM = {
+				FROMFROM = {
+					capital_scope = {
+						ROOT = {
+							capital_scope = {
+								distance = {
+									where = PREVPREV
+									value = 200
+								}
+							}
+						}
+					}
+				}
+			}
+			modifier = {
+				factor = 0.5
+				FROMFROM = {
 					capital_scope = {
 						ROOT = {
 							capital_scope = {
@@ -2106,7 +1767,7 @@ character_event = {
 			}
 			modifier = {
 				factor = 0.5
-				FROM = {
+				FROMFROM = {
 					capital_scope = {
 						ROOT = {
 							capital_scope = {
@@ -2121,7 +1782,7 @@ character_event = {
 			}
 			modifier = {
 				factor = 0.1
-				FROM = {
+				FROMFROM = {
 					capital_scope = {
 						ROOT = {
 							capital_scope = {
@@ -2135,7 +1796,7 @@ character_event = {
 				}
 			}
 		}
-		join_attacker_wars = FROM
+		join_attacker_wars = FROMFROM
 	}
 	option = {
 		name = EVTOPTB_PlusFaction_423 #They are on their own
@@ -2158,127 +1819,6 @@ character_event = {
 }
 
 
-### CIVIL WAR INHERITANCE THROUGH TITLE TRANSFER
-
-# PlusFaction.445 [New Holder]
-#
-# Civil war passes to a new liege <on_action>
-character_event = {
-	id = PlusFaction.445
-
-	is_triggered_only = yes
-	hide_window = yes
-
-	only_playable = yes
-
-	trigger = {
-		FROM = { higher_tier_than = count }
-		FROMFROM = { # Previous holder
-			pf_war_trigger = yes # Has at least one civil war flag (and is alive)
-		}
-		any_war = { # We've inherited at least one of FROMFROM's civil wars
-			defender = { character = ROOT }
-			attacker = {
-				has_opinion_modifier = { who = FROMFROM modifier = revolting_against }
-			}
-		}
-	}
-
-	immediate = {
-
-		# Note the liege change for our PF civil wars
-		any_war = {
-			limit = {
-				defender = { character = ROOT }
-				attacker = { has_opinion_modifier = { who = FROMFROM modifier = revolting_against } }
-			}
-			attacker = { clr_character_flag = original_war_liege }
-		}
-		
-		# Note that demands flags need no manual transfer. However, it's perhaps possible
-		# for faction_succession_war that ROOT simply does/will not have the demesne title
-		# to which the succession demand refers. If that can happen, it'd probably be a
-		# good idea to embed that logic in the CB `is_valid`, as it can't be sanely
-		# handled here (assuming on_invalidation will work properly for tearing down
-		# the _right_ revolters, otherwise something more manual should be done).
-
-		FROMFROM = {
-			any_opinion_modifier_target = {
-				limit = { reverse_has_opinion_modifier = { who = PREV modifier = revolting_against_me } }
-				
-				if = {
-					limit = { NOT = { has_opinion_modifier = { who = ROOT modifier = revolting_against } } }
-					opinion = { who = ROOT modifier = revolting_against }
-				}
-				if = {
-					limit = { NOT = { reverse_has_opinion_modifier = { who = ROOT modifier = revolting_against_me } } }
-					reverse_opinion = { who = ROOT modifier = revolting_against_me }
-				}
-
-				remove_opinion = { who = PREV modifier = revolting_against }
-				reverse_remove_opinion = { who = PREV modifier = revolting_against_me }
-			}
-			any_opinion_modifier_target = {
-				limit = { reverse_has_opinion_modifier = { who = PREV modifier = supported_civil_war } }
-				if = {
-					limit = { NOT = { reverse_has_opinion_modifier = { who = ROOT modifier = supported_civil_war } } }
-					reverse_opinion = { who = ROOT modifier = supported_civil_war }
-				}
-				reverse_remove_opinion = { who = PREV modifier = supported_civil_war }
-			}
-			any_opinion_modifier_target = {
-				limit = { reverse_has_opinion_modifier = { who = PREV modifier = neutral_civil_war } }
-				if = {
-					limit = { NOT = { reverse_has_opinion_modifier = { who = ROOT modifier = neutral_civil_war } } }
-					reverse_opinion = { who = ROOT modifier = neutral_civil_war }
-				}
-				reverse_remove_opinion = { who = PREV modifier = neutral_civil_war }
-			}
-
-			# War flag transfer [ NOTE: Rylock, you may want to consider how generalized
-			# this state transfer is; it may not be what you want for all types of
-			# PF-style civil wars. ]
-			if = {
-				limit = { has_character_flag = faction_court_war }
-				ROOT = { set_character_flag = faction_court_war }
-			}
-			if = {
-				limit = { has_character_flag = faction_prosperity_war }
-				ROOT = { set_character_flag = faction_prosperity_war }
-			}
-			if = {
-				limit = { has_character_flag = faction_glory_war }
-				ROOT = { set_character_flag = faction_glory_war }
-			}
-			if = {
-				limit = { has_character_flag = faction_tradition_war }
-				ROOT = { set_character_flag = faction_tradition_war }
-			}
-			if = {
-				limit = { has_character_flag = faction_pretender_war }
-				ROOT = { set_character_flag = faction_pretender_war }
-			}
-			if = {
-				limit = { has_character_flag = faction_separatist_war }
-				ROOT = { set_character_flag = faction_separatist_war }
-			}
-			if = {
-				limit = { has_character_flag = faction_religious_war }
-				ROOT = { set_character_flag = faction_religious_war }
-			}
-			if = {
-				limit = { has_character_flag = faction_succession_war }
-				ROOT = { set_character_flag = faction_succession_war }
-			}
-			if = {
-				limit = { has_character_flag = faction_authority_war }
-				ROOT = { set_character_flag = faction_authority_war }
-			}
-		}
-	}
-}
-
-	
 ### THE CIVIL WAR ENDS
 
 # The victorious side rewards their supporters & punishes opponents
@@ -2732,39 +2272,161 @@ character_event = {
 	}
 }
 
+
 ### WAR MAINTENANCE EVENTS
 
-# Glory faction happy that war was won
+# will_join_civil_war flag removal
 character_event = {
 	id = PlusFaction.460
 	
 	hide_window = yes
-	is_triggered_only = yes
+	has_character_flag = will_join_civil_war
+	
+	trigger = {
+		OR = {
+			pf_pending_civil_war_trigger = no
+			pf_war_trait_trigger = yes
+			had_character_flag = { flag = will_join_civil_war days = 60 }
+			is_ruler = no
+			independent = yes
+			trait = incapable
+		}
+	}
+	
+	mean_time_to_happen = {
+		days = 1
+	}
 	
 	immediate = {
-		random_vassal = {
-			limit = { leads_faction = faction_glory }
-			set_variable = { which = "faction_mood_increase" value = 2 }
-			ROOT = { character_event = { id = PlusFaction.200 days = 1 } } # recalculate faction moods
-		}
+		clr_character_flag = will_join_civil_war
 	}
 }
 
-# Glory faction unhappy that war was lost
+# civil_war_faction_leader flag removal
 character_event = {
 	id = PlusFaction.461
 	
 	hide_window = yes
-	is_triggered_only = yes
+	has_character_flag = civil_war_faction_leader
 	
-	immediate = {
-		random_vassal = {
-			limit = { leads_faction = faction_glory }
-			set_variable = { which = "faction_mood_decrease" value = 2 }
-			ROOT = { character_event = { id = PlusFaction.200 days = 1 } } # recalculate faction moods
+	trigger = {
+		OR = {
+			NOR = {
+				AND = {
+					pf_leader_trigger = yes
+					pf_not_regular_faction_war_trigger = no
+				}
+				AND = {
+					leads_faction = faction_succ_seniority
+					has_character_flag = demands_seniority
+				}
+				AND = {
+					leads_faction = faction_succ_primogeniture
+					has_character_flag = demands_primogeniture
+				}
+				AND = {
+					leads_faction = faction_succ_gavelkind
+					has_character_flag = demands_gavelkind
+				}
+				AND = {
+					leads_faction = faction_succ_feudal_elective
+					has_character_flag = demands_feudal_elective
+				}
+				AND = {
+					leads_faction = faction_pretender
+					has_character_flag = preparing_claimant_faction_war
+				}
+			}
+			had_character_flag = { flag = civil_war_faction_leader days = 60 }
 		}
 	}
+	
+	mean_time_to_happen = {
+		days = 1
+	}
+	
+	immediate = {
+		clr_character_flag = civil_war_faction_leader
+	}
 }
+
+# civil_war_faction_member flag removal
+character_event = {
+	id = PlusFaction.462
+	
+	hide_window = yes
+	has_character_flag = civil_war_faction_member
+	
+	trigger = {
+		OR = {
+			pf_pending_civil_war_trigger = no
+			pf_war_trait_trigger = yes
+			had_character_flag = { flag = civil_war_faction_member days = 60 }
+			is_ruler = no
+			independent = yes
+			trait = incapable
+		}
+	}
+	
+	mean_time_to_happen = {
+		days = 1
+	}
+	
+	immediate = {
+		clr_character_flag = civil_war_faction_member
+	}
+}
+
+# preparing_claimant_faction_war flag removal
+character_event = {
+	id = PlusFaction.463
+	
+	hide_window = yes
+	has_character_flag = preparing_claimant_faction_war
+	
+	trigger = {
+		OR = {
+			NOT = { leads_faction = faction_pretender }
+			NOT = { has_character_flag = civil_war_faction_leader }
+			independent = yes
+			liege = { pf_war_flag_trigger = yes }
+		}
+	}
+	
+	mean_time_to_happen = {
+		days = 1
+	}
+	
+	immediate = {
+		clr_character_flag = preparing_claimant_faction_war
+	}
+}
+
+# preparing_religious_faction_war flag removal
+character_event = {
+	id = PlusFaction.464
+	
+	hide_window = yes
+	has_character_flag = preparing_religious_faction_war
+	
+	trigger = {
+		OR = {
+			NOT = { leads_faction = faction_religious }
+			NOT = { has_character_flag = civil_war_faction_leader }
+			independent = yes
+			liege = { pf_war_flag_trigger = yes }
+		}
+	}
+	
+	mean_time_to_happen = {
+		days = 1
+	}
+	
+	immediate = {
+		clr_character_flag = preparing_religious_faction_war
+	}
+}
+
 
 ### SUCCESSION FACTIONS
 
@@ -2871,10 +2533,7 @@ letter_event = {
 					limit = { has_character_flag = demands_seniority }
 					ROOT = {
 						any_vassal = {
-							limit = {
-								ai = no
-								NOT = { in_faction = faction_succ_seniority }
-							}
+							limit = { NOT = { in_faction = faction_succ_seniority } }
 							character_event = { id = PlusFaction.473 }
 						}
 					}
@@ -2888,10 +2547,7 @@ letter_event = {
 					limit = { has_character_flag = demands_primogeniture }
 					ROOT = {
 						any_vassal = {
-							limit = {
-								ai = no
-								NOT = { in_faction = faction_succ_primogeniture }
-							}
+							limit = { NOT = { in_faction = faction_succ_primogeniture } }
 							character_event = { id = PlusFaction.473 }
 						}
 					}
@@ -2905,10 +2561,7 @@ letter_event = {
 					limit = { has_character_flag = demands_gavelkind }
 					ROOT = {
 						any_vassal = {
-							limit = {
-								ai = no
-								NOT = { in_faction = faction_succ_gavelkind }
-							}
+							limit = { NOT = { in_faction = faction_succ_gavelkind } }
 							character_event = { id = PlusFaction.473 }
 						}
 					}
@@ -2922,10 +2575,7 @@ letter_event = {
 					limit = { has_character_flag = demands_feudal_elective }
 					ROOT = {
 						any_vassal = {
-							limit = {
-								ai = no
-								NOT = { in_faction = faction_succ_feudal_elective }
-							}
+							limit = { NOT = { in_faction = faction_succ_feudal_elective } }
 							character_event = { id = PlusFaction.473 }
 						}
 					}
@@ -3102,7 +2752,6 @@ letter_event = {
 			}
 		}
 		FROM = {
-			letter_event = { id = PlusFaction.474 days = 3 tooltip = EVTTOOLTIP8100 }
 			if = {
 				limit = { has_character_flag = demands_seniority }
 				tooltip = { any_faction_backer = { faction = faction_succ_seniority } }
@@ -3120,6 +2769,122 @@ letter_event = {
 				tooltip = { any_faction_backer = { faction = faction_succ_feudal_elective } }
 			}
 		}
+
+		#inform faction members of refusal
+		hidden_tooltip = {
+			any_vassal = {
+				limit = {
+					OR = {
+						AND = {
+							FROM = { leads_faction = faction_succ_seniority }
+							in_faction = faction_succ_seniority
+						}
+						AND = {
+							FROM = { leads_faction = faction_succ_primogeniture }
+							in_faction = faction_succ_primogeniture
+						}
+						AND = {
+							FROM = { leads_faction = faction_succ_gavelkind }
+							in_faction = faction_succ_gavelkind
+						}
+						AND = {
+							FROM = { leads_faction = faction_succ_feudal_elective }
+							in_faction = faction_succ_feudal_elective
+						}
+					}
+				}
+				letter_event = { id = PlusFaction.474 }
+			}
+		}
+		
+		#start the war
+		if = {
+			limit = { FROM = { has_character_flag = demands_seniority } }
+			FROM = { faction_succ_seniority = { set_title_flag = change_seniority } }
+			hidden_tooltip = {
+				set_character_flag = faction_succession_war
+				FROM = {
+					set_character_flag = original_war_liege
+					pf_setup_rebel_effect = yes
+					any_faction_backer = {
+						faction = faction_succ_seniority
+						pf_setup_rebel_effect = yes
+					}
+				}
+			}
+			reverse_war = {
+				target = FROM
+				casus_belli = cb_faction_overthrow_ruler
+				faction = faction_succ_seniority
+			}
+		}
+		if = {
+			limit = { FROM = { has_character_flag = demands_primogeniture } }
+			FROM = { faction_succ_seniority = { set_title_flag = change_primogeniture } }
+			hidden_tooltip = {
+				set_character_flag = faction_succession_war
+				FROM = {
+					set_character_flag = original_war_liege
+					pf_setup_rebel_effect = yes
+					any_faction_backer = {
+						faction = faction_succ_primogeniture
+						pf_setup_rebel_effect = yes
+					}
+				}
+			}
+			reverse_war = {
+				target = FROM
+				casus_belli = cb_faction_overthrow_ruler
+				faction = faction_succ_primogeniture
+			}
+		}
+		if = {
+			limit = { FROM = { has_character_flag = demands_gavelkind } }
+			FROM = { faction_succ_seniority = { set_title_flag = change_gavelkind } }
+			hidden_tooltip = {
+				set_character_flag = faction_succession_war
+				FROM = {
+					set_character_flag = original_war_liege
+					pf_setup_rebel_effect = yes
+					any_faction_backer = {
+						faction = faction_succ_gavelkind
+						pf_setup_rebel_effect = yes
+					}
+				}
+			}
+			reverse_war = {
+				target = FROM
+				casus_belli = cb_faction_overthrow_ruler
+				faction = faction_succ_gavelkind
+			}
+		}
+		if = {
+			limit = { FROM = { has_character_flag = demands_feudal_elective } }
+			FROM = { faction_succ_seniority = { set_title_flag = change_feudal_elective } }
+			hidden_tooltip = {
+				set_character_flag = faction_succession_war
+				FROM = {
+					set_character_flag = original_war_liege
+					pf_setup_rebel_effect = yes
+					any_faction_backer = {
+						faction = faction_succ_feudal_elective
+						pf_setup_rebel_effect = yes
+					}
+				}
+			}
+			reverse_war = {
+				target = FROM
+				casus_belli = cb_faction_overthrow_ruler
+				faction = faction_succ_feudal_elective
+			}
+		}
+		
+		#inform remaining vassals
+		hidden_tooltip = {
+			any_vassal = {
+				letter_event = { id = PlusFaction.403 }
+			}
+		}
 	}
 }
 
@@ -3132,10 +2897,8 @@ letter_event = {
 	
 	option = {
 		name = EXCELLENT
-		clr_character_flag = faction_succ_seniority_ultimatum_taken
-		clr_character_flag = faction_succ_primogeniture_ultimatum_taken
-		clr_character_flag = faction_succ_gavelkind_ultimatum_taken
-		clr_character_flag = faction_succ_feudal_elective_ultimatum_taken
+		clr_character_flag = civil_war_faction_leader
+		pf_clear_demands_flags_effect = yes
 	}
 }
 
@@ -3150,6 +2913,8 @@ letter_event = {
 	
 	option = {
 		name = GOOD
+		clr_character_flag = civil_war_faction_member
+		clr_character_flag = will_join_civil_war
 		reverse_opinion = {
 			modifier = opinion_grateful
 			who = FROMFROM
@@ -3171,6 +2936,8 @@ character_event = {
 	
 	option = {
 		name = I_SEE
+		clr_character_flag = civil_war_faction_member
+		clr_character_flag = will_join_civil_war
 	}
 }
 
@@ -3183,344 +2950,9 @@ letter_event = {
 	
 	option = {
 		name = EVTOPTA8100 #Then war it is!
-		clr_character_flag = faction_succ_seniority_ultimatum_taken
-		clr_character_flag = faction_succ_primogeniture_ultimatum_taken
-		clr_character_flag = faction_succ_gavelkind_ultimatum_taken
-		clr_character_flag = faction_succ_feudal_elective_ultimatum_taken
-		if = {
-			limit = { has_character_flag = demands_seniority }
-			faction_succ_seniority = { set_title_flag = change_seniority }
-			liege = {
-				hidden_tooltip = {
-					set_character_flag = faction_succession_war
-					ROOT = {
-						set_character_flag = original_war_liege
-						pf_setup_rebel_effect = yes
-						any_faction_backer = {
-							faction = faction_succ_seniority
-							pf_setup_rebel_effect = yes
-						}
-					}
-					any_vassal = {
-						limit = { pf_war_trait_trigger = no }
-						character_event = { id = PlusFaction.475 days = 1 } #invite other vassals to join
-					}
-				}
-				reverse_war = {
-					target = ROOT
-					casus_belli = cb_faction_overthrow_ruler
-					faction = faction_succ_seniority
-				}
-			}
-		}
-		if = {
-			limit = { has_character_flag = demands_primogeniture }
-			faction_succ_primogeniture = { set_title_flag = change_primogeniture }
-			liege = {
-				hidden_tooltip = {
-					set_character_flag = faction_succession_war
-					ROOT = {
-						set_character_flag = original_war_liege
-						pf_setup_rebel_effect = yes
-						any_faction_backer = {
-							faction = faction_succ_primogeniture
-							pf_setup_rebel_effect = yes
-						}
-					}
-					any_vassal = {
-						limit = { pf_war_trait_trigger = no }
-						character_event = { id = PlusFaction.475 days = 1 } #invite other vassals to join
-					}
-				}
-				reverse_war = {
-					target = ROOT
-					casus_belli = cb_faction_overthrow_ruler
-					faction = faction_succ_primogeniture
-				}
-			}
-		}
-		if = {
-			limit = { has_character_flag = demands_gavelkind }
-			faction_succ_gavelkind = { set_title_flag = change_gavelkind }
-			liege = {
-				hidden_tooltip = {
-					set_character_flag = faction_succession_war
-					ROOT = {
-						set_character_flag = original_war_liege
-						pf_setup_rebel_effect = yes
-						any_faction_backer = {
-							faction = faction_succ_gavelkind
-							pf_setup_rebel_effect = yes
-						}
-					}
-					any_vassal = {
-						limit = { pf_war_trait_trigger = no }
-						character_event = { id = PlusFaction.475 days = 1 } #invite other vassals to join
-					}
-				}
-				reverse_war = {
-					target = ROOT
-					casus_belli = cb_faction_overthrow_ruler
-					faction = faction_succ_gavelkind
-				}
-			}
-		}
-		if = {
-			limit = { has_character_flag = demands_feudal_elective }
-			faction_succ_feudal_elective = { set_title_flag = change_feudal_elective }
-			liege = {
-				hidden_tooltip = {
-					set_character_flag = faction_succession_war
-					ROOT = {
-						set_character_flag = original_war_liege
-						pf_setup_rebel_effect = yes
-						any_faction_backer = {
-							faction = faction_succ_feudal_elective
-							pf_setup_rebel_effect = yes
-						}
-					}
-					any_vassal = {
-						limit = { pf_war_trait_trigger = no }
-						character_event = { id = PlusFaction.475 days = 1 } #invite other vassals to join
-					}
-				}
-				reverse_war = {
-					target = ROOT
-					casus_belli = cb_faction_overthrow_ruler
-					faction = faction_succ_feudal_elective
-				}
-			}
-		}
-	}
-}
-
-# Vassal chooses sides at the outbreak of a succession war
-character_event = {
-	id = PlusFaction.475
-	picture = GFX_evt_battle
-	border = GFX_event_normal_frame_war
-	
-	desc = {
-		text = EVTDESC_PlusFaction_475_seniority
-		trigger = { FROM = { has_character_flag = demands_seniority } }
-	}
-	desc = {
-		text = EVTDESC_PlusFaction_475_primogeniture
-		trigger = { FROM = { has_character_flag = demands_primogeniture } }
-	}
-	desc = {
-		text = EVTDESC_PlusFaction_475_gavelkind
-		trigger = { FROM = { has_character_flag = demands_gavelkind } }
-	}
-	desc = {
-		text = EVTDESC_PlusFaction_475_feudal_elective
-		trigger = { FROM = { has_character_flag = demands_feudal_elective } }
-	}
-
-	is_triggered_only = yes
-
-	trigger = {
-		is_playable = yes
-		num_of_baron_titles = 1
-		pf_war_trait_trigger = no
-	}
-	
-	option = {
-		name = EVTOPTA_PlusFaction_421 #join the rebellion
-		trigger = {
-			prisoner = no
-			NOT = { trait = incapable }
-		}
-		ai_chance = {
-			factor = 10
-			modifier = {
-				factor = 0
-				is_adult = no
-			}
-			modifier = {
-				factor = 0
-				liege = { current_heir = { character = ROOT } }
-			}
-			modifier = {
-				factor = 0.5
-				liege = {
-					OR = {
-						is_allied_with = ROOT
-						dynasty = ROOT
-						is_close_relative = ROOT
-					}
-				}
-			}
-			modifier = {
-				factor = 5
-				liege = { is_rival = ROOT }
-			}
-			modifier = {
-				factor = 5
-				trait = zealous
-			}
-			modifier = {
-				factor = 1.5
-				trait = ambitious
-			}
-			modifier = {
-				factor = 0.5
-				trait = cynical
-			}
-			modifier = {
-				factor = 1.25
-				OR = {
-					is_allied_with = FROM
-					is_close_relative = FROM
-				}
-			}
-			modifier = {
-				factor = 0.8
-				NOT = { opinion = { who = FROM value = 0 } }
-			}
-			modifier = {
-				factor = 0.8
-				NOT = { opinion = { who = FROM value = -25 } }
-			}
-			modifier = {
-				factor = 0.5
-				NOT = { opinion = { who = FROM value = -50 } }
-			}
-			modifier = {
-				factor = 0.5
-				NOT = { opinion = { who = FROM value = -75 } }
-			}
-			modifier = {
-				factor = 1.25
-				opinion = { who = FROM value = 25 }
-			}
-			modifier = {
-				factor = 1.25
-				opinion = { who = FROM value = 50 }
-			}
-			modifier = {
-				factor = 1.25
-				opinion = { who = FROM value = 75 }
-			}
-			modifier = {
-				factor = 0
-				opinion = { who = liege value = 0 }
-			}
-			modifier = {
-				factor = 3
-				NOT = { opinion = { who = liege value = 0 } }
-			}
-			modifier = {
-				factor = 3
-				NOT = { opinion = { who = liege value = -25 } }
-			}
-			modifier = {
-				factor = 3
-				NOT = { opinion = { who = liege value = -50 } }
-			}
-			modifier = {
-				factor = 3
-				NOT = { opinion = { who = liege value = -75 } }
-			}
-		}
-		pf_setup_rebel_effect = yes
-		pf_rebel_independence_effect = yes
-		join_attacker_wars = FROM
-	}
-	option = {
-		name = EVTOPTB_PlusFaction_421 #remain loyal
-		trigger = {
-			prisoner = no
-			NOT = { trait = incapable }
-		}
-		ai_chance = {
-			factor = 10
-			modifier = {
-				factor = 0
-				is_adult = no
-			}
-			modifier = {
-				factor = 0
-				liege = { NOT = { religion = ROOT } }
-			}
-			modifier = {
-				factor = 0
-				NOT = { opinion = { who = liege value = -50 } }
-			}
-			modifier = {
-				factor = 0.1
-				NOT = { opinion = { who = liege value = 0 } }
-			}
-			modifier = {
-				factor = 10
-				liege = { current_heir = { character = ROOT } }
-			}
-			modifier = {
-				factor = 5
-				liege = {
-					OR = {
-						is_allied_with = ROOT
-						dynasty = ROOT
-						is_close_relative = ROOT
-					}
-				}
-			}
-			modifier = {
-				factor = 1.5
-				trait = content
-			}
-			modifier = {
-				factor = 3
-				opinion = { who = liege value = 25 }
-			}
-			modifier = {
-				factor = 3
-				opinion = { who = liege value = 50 }
-			}
-			modifier = {
-				factor = 3
-				opinion = { who = liege value = 75 }
-			}
-		}
-		add_trait = loyalist
-		hidden_tooltip = {
-			liege = { opinion = { who = ROOT modifier = supported_civil_war multiplier = 4 years = 100 } }
-		}
-	}
-	option = {
-		name = EVTOPTC_PlusFaction_421 #remain neutral
-		trigger = {
-			prisoner = no
-			NOT = { trait = incapable }
-		}
-		ai_chance = {
-			factor = 100
-			modifier = {
-				factor = 2
-				trait = craven
-			}
-			modifier = {
-				factor = 0.5
-				trait = brave
-			}
-		}
-		add_trait = neutral
-		hidden_tooltip = {
-			liege = { opinion = { who = ROOT modifier = neutral_civil_war years = 100 } }
-		}
-	}
-	option = {
-		name = EVTOPTD_PlusFaction_421 #I am imprisoned
-		trigger = {
-			prisoner = yes
-		}
-	}
-	option = {
-		name = EVTOPTE_PlusFaction_421 #I am NOT up to such a fight...
-		tooltip_info = incapable
-		trigger = {
-			trait = incapable
-		}
+		clr_character_flag = civil_war_faction_leader
+		clr_character_flag = civil_war_faction_member
+		clr_character_flag = will_join_civil_war
 	}
 }
 

@@ -580,6 +580,7 @@ decisions = {
 			custom_tooltip = {
 				text = CAN_HOLD_FACTION_MEETING
 				hidden_tooltip = {
+					pf_pending_civil_war_trigger = no
 					OR = {
 						NOT = { has_character_flag = faction_meeting }
 						had_character_flag = { flag = faction_meeting days = 1095 }
@@ -631,6 +632,7 @@ decisions = {
 			custom_tooltip = {
 				text = CAN_HOLD_FACTION_MEETING
 				hidden_tooltip = {
+					pf_pending_civil_war_trigger = no
 					OR = {
 						NOT = { has_character_flag = faction_meeting }
 						had_character_flag = { flag = faction_meeting days = 1095 }
@@ -682,6 +684,7 @@ decisions = {
 			custom_tooltip = {
 				text = CAN_HOLD_FACTION_MEETING
 				hidden_tooltip = {
+					pf_pending_civil_war_trigger = no
 					OR = {
 						NOT = { has_character_flag = faction_meeting }
 						had_character_flag = { flag = faction_meeting days = 1095 }
@@ -733,6 +736,7 @@ decisions = {
 			custom_tooltip = {
 				text = CAN_HOLD_FACTION_MEETING
 				hidden_tooltip = {
+					pf_pending_civil_war_trigger = no
 					OR = {
 						NOT = { has_character_flag = faction_meeting }
 						had_character_flag = { flag = faction_meeting days = 1095 }
@@ -762,6 +766,141 @@ decisions = {
 		}
 		ai_will_do = {
 			factor = 0
+		}
+	}
+	
+	faction_send_ultimatum = {
+		is_high_prio = yes
+		
+		potential = {
+			independent = no
+			OR = {
+				pf_leader_trigger = yes
+				leads_faction = faction_succ_seniority
+				leads_faction = faction_succ_primogeniture
+				leads_faction = faction_succ_gavelkind
+				leads_faction = faction_succ_feudal_elective
+			}
+			pf_has_demands_trigger = yes
+			has_character_flag = civil_war_faction_leader
+			OR = {
+				NOT = { has_character_flag = faction_regular_ultimatum_taken }
+				had_character_flag = { flag = faction_regular_ultimatum_taken days = 7 }
+			}
+		}
+		allow = {
+			liege = {
+				NOT = { war_with = ROOT }
+				custom_tooltip = {
+					text = HAS_NO_CIVIL_WAR
+					hidden_tooltip = { pf_war_flag_trigger = no }
+				}
+			}
+		}
+		effect = {
+			log = "[Root.GetTitledName] has issued a regular faction ultimatum to [Root.Liege.GetTitledName]"
+			set_character_flag = faction_regular_ultimatum_taken
+			pf_punish_deceitful_player_effect = yes
+			if = {
+				limit = {
+					ROOT = {
+						NOR = {
+							has_character_flag = demands_seniority
+							has_character_flag = demands_primogeniture
+							has_character_flag = demands_gavelkind
+							has_character_flag = demands_feudal_elective
+						}
+					}
+				}
+				liege = {
+					letter_event = { id = PlusFaction.400 tooltip = SEND_REGULAR_ULTIMATUM }
+				}
+			}
+			if = {
+				limit = {
+					ROOT = {
+						OR = {
+							has_character_flag = demands_seniority
+							has_character_flag = demands_primogeniture
+							has_character_flag = demands_gavelkind
+							has_character_flag = demands_feudal_elective
+						}
+					}
+				}
+				liege = {
+					letter_event = { id = PlusFaction.470 tooltip = SEND_REGULAR_ULTIMATUM }
+				}
+			}
+		}
+		ai_will_do = {
+			factor = 1
+			# AI will not take war while 30-day timer lasts
+			# unless there are no vassals left to join the faction
+			modifier = {
+				factor = 0
+				has_character_modifier = declare_civil_war_timer
+				liege = {
+					any_vassal = {
+						pf_root_faction_backer_trigger = no
+						has_character_flag = will_join_civil_war
+					}
+				}
+			}
+		}
+	}
+	
+	faction_begin_civil_war = {
+		is_high_prio = yes
+		
+		potential = {
+			independent = no
+			pf_leader_trigger = yes
+			pf_has_demands_trigger = no
+			has_character_flag = civil_war_faction_leader
+			NOT = { has_character_flag = preparing_claimant_faction_war }
+			NOT = { has_character_flag = preparing_religious_faction_war }
+		}
+		allow = {
+			liege = {
+				NOT = { war_with = ROOT }
+				custom_tooltip = {
+					text = HAS_NO_CIVIL_WAR
+					hidden_tooltip = { pf_war_flag_trigger = no }
+				}
+			}
+		}
+		effect = {
+			log = "[Root.GetTitledName] has issued a began a faction war to overthrow [Root.Liege.GetTitledName]"
+			pf_punish_deceitful_player_effect = yes
+			liege = {
+				tooltip = {
+					reverse_war = {
+						target = ROOT
+						casus_belli = cb_faction_overthrow_ruler
+					}
+				}
+				hidden_tooltip = {
+					letter_event = { id = PlusFaction.406 }
+				}
+			}
+			hidden_tooltip = {
+				character_event = { id = PlusFaction.399 days = 1 } #clear flags
+			}
+		}
+		ai_will_do = {
+			factor = 1
+			# AI will not take war while 30-day timer lasts
+			# unless there are no vassals left to join the faction
+			modifier = {
+				factor = 0
+				has_character_modifier = declare_civil_war_timer
+				liege = {
+					any_vassal = {
+						pf_root_faction_backer_trigger = no
+						has_character_flag = will_join_civil_war
+					}
+				}
+			}
 		}
 	}
 	
@@ -809,7 +948,7 @@ decisions = {
 			}
 			modifier = {
 				factor = 0
-				has_character_modifier = do_not_disturb
+				ai_not_busy_trigger = no
 			}
 			modifier = {
 				factor = 0
@@ -842,16 +981,14 @@ decisions = {
 		}
 	}
 
-	faction_claimant_ultimatum = {
+	faction_claimant_prepare = {
 		is_high_prio = yes
-
+		
 		potential = {
 			ai = no
 			leads_faction = faction_pretender
-			OR = {
-				NOT = { has_character_flag = faction_claimant_ultimatum_taken }
-				had_character_flag = { flag = faction_claimant_ultimatum_taken days = 7 }
-			}
+			NOT = { has_character_flag = civil_war_faction_leader }
+			NOT = { has_character_flag = civil_war_faction_member }
 		}
 		allow = {
 			war = no
@@ -865,16 +1002,81 @@ decisions = {
 				NOT = { reverse_has_truce = ROOT }
 				custom_tooltip = {
 					text = HAS_NO_CIVIL_WAR
-					hidden_tooltip = { pf_war_trigger = no }
+					hidden_tooltip = { pf_war_flag_trigger = no }
 				}
 			}
-			NOT = {
-				any_realm_title = {
-					is_occupied = yes
+			custom_tooltip = {
+				text = NO_PENDING_CIVIL_WAR
+				hidden_tooltip = { pf_pending_civil_war_trigger = no }
+			}
+			capital_holding = {
+				controller = {
+					character = ROOT
 				}
 			}
 		}
 		effect = {
+			set_character_flag = preparing_claimant_faction_war
+			# allow the faction leader to now take the 'Make Ultimatum to Liege' decision
+			# and set the timer so the AI doesn't use the decision for 30 days (unless everyone has joined)
+			custom_tooltip = {
+				text = MAY_TAKE_ULTIMATUM_DECISION
+				hidden_tooltip = {
+					set_character_flag = civil_war_faction_leader
+					add_character_modifier = {
+						name = declare_civil_war_timer
+						duration = 30
+						hidden = yes
+					}
+				}
+			}
+			# invite all other vassals to join the coming civil war
+			liege = {
+				custom_tooltip = { text = INVITE_TO_JOIN_CIVIL_WAR }
+				hidden_tooltip = {
+					any_vassal = {
+						limit = { NOT = { in_faction = faction_pretender } }
+						letter_event = { id = PlusFaction.422 }
+					}
+				}
+			}
+			hidden_tooltip = {
+				any_faction_backer = {
+					faction = faction_pretender
+					set_character_flag = civil_war_faction_member
+				}
+			}
+		}
+		ai_will_do = {
+			factor = 0
+		}
+	}
+	
+	faction_claimant_ultimatum = {
+		is_high_prio = yes
+
+		potential = {
+			independent = no
+			leads_faction = faction_pretender
+			has_character_flag = preparing_claimant_faction_war
+			has_character_flag = civil_war_faction_leader
+			OR = {
+				NOT = { has_character_flag = faction_claimant_ultimatum_taken }
+				had_character_flag = { flag = faction_claimant_ultimatum_taken days = 7 }
+			}
+		}
+		allow = {
+			liege = {
+				NOT = { war_with = ROOT }
+				custom_tooltip = {
+					text = HAS_NO_CIVIL_WAR
+					hidden_tooltip = { pf_war_flag_trigger = no }
+				}
+			}
+		}
+		effect = {
+			pf_punish_deceitful_player_effect = yes
+			clr_character_flag = preparing_claimant_faction_war
 			liege = {
 				letter_event = { id = 8036 days = 7 tooltip = "EVTTOOLTIP8005" }
 			}
@@ -898,30 +1100,49 @@ decisions = {
 			}
 		}
 		ai_will_do = {
-			factor = 0
+			factor = 1
+			# AI will not take war while 30-day timer lasts
+			# unless there are no vassals left to join the faction
+			modifier = {
+				factor = 0
+				has_character_modifier = declare_civil_war_timer
+				liege = {
+					any_vassal = {
+						NOT = { in_faction = faction_pretender }
+						has_character_flag = will_join_civil_war
+					}
+				}
+			}
 		}
 	}
 
-	faction_religious_ultimatum = {
+	faction_religious_prepare = {
 		is_high_prio = yes
 		
 		potential = {
+			ai = no
 			leads_faction = faction_religious
-			OR = {
-				NOT = { has_character_flag = faction_religious_ultimatum_taken }
-				had_character_flag = { flag = faction_religious_ultimatum_taken days = 7 }
-			}
+			NOT = { has_character_flag = civil_war_faction_leader }
+			NOT = { has_character_flag = civil_war_faction_member }
 		}
 		allow = {
 			war = no
 			has_regent = no
+			faction_power = {
+				faction = faction_religious
+				power = 0.5
+			}
 			liege = {
 				NOT = { war_with = ROOT }
 				NOT = { reverse_has_truce = ROOT }
 				custom_tooltip = {
 					text = HAS_NO_CIVIL_WAR
-					hidden_tooltip = { pf_war_trigger = no }
+					hidden_tooltip = { pf_war_flag_trigger = no }
 				}
+			}
+			custom_tooltip = {
+				text = NO_PENDING_CIVIL_WAR
+				hidden_tooltip = { pf_pending_civil_war_trigger = no }
 			}
 			capital_holding = {
 				controller = {
@@ -930,12 +1151,38 @@ decisions = {
 			}
 		}
 		effect = {
-			log = "[Root.GetTitledName] has issued a Religious ultimatum to [Root.Liege.GetTitledName]"
+			set_character_flag = preparing_religious_faction_war
+			# allow the faction leader to now take the 'Make Ultimatum to Liege' decision
+			# and set the timer so the AI doesn't use the decision for 30 days (unless everyone has joined)
+			custom_tooltip = {
+				text = MAY_TAKE_ULTIMATUM_DECISION
+				hidden_tooltip = {
+					set_character_flag = civil_war_faction_leader
+					add_character_modifier = {
+						name = declare_civil_war_timer
+						duration = 30
+						hidden = yes
+					}
+				}
+			}
+			# invite all other vassals to join the coming civil war
 			liege = {
-				letter_event = { id = Plus.250 days = 3 tooltip = SEND_RELIGIOUS_ULTIMATUM }
+				custom_tooltip = { text = INVITE_TO_JOIN_CIVIL_WAR }
+				hidden_tooltip = {
+					any_vassal = {
+						limit = {
+							religion = ROOT
+							NOT = { in_faction = faction_religious }
+						}
+						letter_event = { id = Plus.255 }
+					}
+				}
 			}
 			hidden_tooltip = {
-				set_character_flag = faction_religious_ultimatum_taken
+				any_faction_backer = {
+					faction = faction_religious
+					set_character_flag = civil_war_faction_member
+				}
 			}
 		}
 		ai_will_do = {
@@ -953,7 +1200,7 @@ decisions = {
 			modifier = {
 				factor = 0
 				NOT = { faction_power = { faction = faction_religious power = 1.0 } }
-				NOT = {
+				NOR = {
 					martial = 15
 					trait = lunatic
 					trait = possessed
@@ -967,7 +1214,7 @@ decisions = {
 			}
 			modifier = {
 				factor = 0
-				has_character_modifier = do_not_disturb
+				ai_not_busy_trigger = no
 			}
 			modifier = {
 				factor = 0
@@ -994,6 +1241,57 @@ decisions = {
 								}
 							}
 						}
+					}
+				}
+			}
+		}
+	}	
+	
+	faction_religious_ultimatum = {
+		is_high_prio = yes
+		
+		potential = {
+			independent = no
+			leads_faction = faction_religious
+			has_character_flag = preparing_religious_faction_war
+			has_character_flag = civil_war_faction_leader
+			OR = {
+				NOT = { has_character_flag = faction_religious_ultimatum_taken }
+				had_character_flag = { flag = faction_religious_ultimatum_taken days = 7 }
+			}
+		}
+		allow = {
+			liege = {
+				NOT = { war_with = ROOT }
+				custom_tooltip = {
+					text = HAS_NO_CIVIL_WAR
+					hidden_tooltip = { pf_war_flag_trigger = no }
+				}
+			}
+		}
+		effect = {
+			log = "[Root.GetTitledName] has issued a Religious ultimatum to [Root.Liege.GetTitledName]"
+			pf_punish_deceitful_player_effect = yes
+			clr_character_flag = preparing_claimant_faction_war
+			liege = {
+				letter_event = { id = Plus.250 tooltip = SEND_RELIGIOUS_ULTIMATUM }
+			}
+			hidden_tooltip = {
+				set_character_flag = faction_religious_ultimatum_taken
+			}
+		}
+		ai_will_do = {
+			factor = 1
+			# AI will not take war while 30-day timer lasts
+			# unless there are no vassals left to join the faction
+			modifier = {
+				factor = 0
+				has_character_modifier = declare_civil_war_timer
+				liege = {
+					any_vassal = {
+						religion = ROOT
+						NOT = { in_faction = faction_religious }
+						has_character_flag = will_join_civil_war
 					}
 				}
 			}
@@ -1020,8 +1318,12 @@ decisions = {
 				NOT = { reverse_has_truce = ROOT }
 				custom_tooltip = {
 					text = HAS_NO_CIVIL_WAR
-					hidden_tooltip = { pf_war_trigger = no }
+					hidden_tooltip = { pf_war_flag_trigger = no }
 				}
+			}
+			custom_tooltip = {
+				text = NO_PENDING_CIVIL_WAR
+				hidden_tooltip = { pf_pending_civil_war_trigger = no }
 			}
 			NOT = {
 				any_realm_title = {
@@ -1068,10 +1370,6 @@ decisions = {
 			liege = {
 				NOT = { war_with = ROOT }
 				NOT = { reverse_has_truce = ROOT }
-				custom_tooltip = {
-					text = HAS_NO_CIVIL_WAR
-					hidden_tooltip = { pf_war_trigger = no }
-				}
 			}
 			NOT = {
 				any_realm_title = {
@@ -1105,7 +1403,7 @@ decisions = {
 			}
 			modifier = {
 				factor = 0
-				has_character_modifier = do_not_disturb
+				ai_not_busy_trigger = no
 			}
 			modifier = {
 				factor = 0
@@ -1145,15 +1443,13 @@ decisions = {
 		}
 	}
 
-	faction_succ_seniority_ultimatum = {
+	faction_succ_seniority_prepare = {
 		is_high_prio = yes
 		
 		potential = {
 			leads_faction = faction_succ_seniority
-			OR = {
-				NOT = { has_character_flag = faction_succ_seniority_ultimatum_taken}
-				had_character_flag = { flag = faction_succ_seniority_ultimatum_taken days = 7 }
-			}
+			NOT = { has_character_flag = civil_war_faction_leader }
+			NOT = { has_character_flag = civil_war_faction_member }
 		}
 		allow = {
 			war = no
@@ -1163,8 +1459,12 @@ decisions = {
 				NOT = { reverse_has_truce = ROOT }
 				custom_tooltip = {
 					text = HAS_NO_CIVIL_WAR
-					hidden_tooltip = { pf_war_trigger = no }
+					hidden_tooltip = { pf_war_flag_trigger = no }
 				}
+			}
+			custom_tooltip = {
+				text = NO_PENDING_CIVIL_WAR
+				hidden_tooltip = { pf_pending_civil_war_trigger = no }
 			}
 			NOT = {
 				any_realm_title = {
@@ -1173,19 +1473,36 @@ decisions = {
 			}
 		}
 		effect = {
-			log = "[Root.GetTitledName] has issued a Seniority ultimatum to [Root.Liege.GetTitledName]"
 			set_character_flag = demands_seniority
 			clr_character_flag = demands_primogeniture
 			clr_character_flag = demands_gavelkind
 			clr_character_flag = demands_feudal_elective
-			liege = {
-				letter_event = { id = PlusFaction.470 tooltip = "EVTTOOLTIP8005" }
+			# allow the faction leader to now take the 'Make Ultimatum to Liege' decision
+			# and set the timer so the AI doesn't use the decision for 30 days (unless everyone has joined)
+			custom_tooltip = {
+				text = MAY_TAKE_ULTIMATUM_DECISION
+				hidden_tooltip = {
+					set_character_flag = civil_war_faction_leader
+					add_character_modifier = {
+						name = declare_civil_war_timer
+						duration = 30
+						hidden = yes
+					}
+				}
 			}
-			hidden_tooltip = {
-				clr_character_flag = faction_succ_primogeniture_ultimatum_taken
-				clr_character_flag = faction_succ_gavelkind_ultimatum_taken
-				clr_character_flag = faction_succ_feudal_elective_ultimatum_taken
-				set_character_flag = faction_succ_seniority_ultimatum_taken
+			# invite all other vassals to join the coming civil war
+			liege = {
+				custom_tooltip = { text = INVITE_TO_JOIN_CIVIL_WAR }
+				hidden_tooltip = {
+					any_vassal = {
+						limit = { NOT = { in_faction = faction_succ_seniority } }
+						letter_event = { id = PlusFaction.415 }
+					}
+					any_vassal = {
+						limit = { in_faction = faction_succ_seniority }
+						set_character_flag = civil_war_faction_member
+					}
+				}
 			}
 		}
 		ai_will_do = {
@@ -1198,6 +1515,10 @@ decisions = {
 			}			
 			modifier = {
 				factor = 0.5 # Slow it down a bit
+			}
+			modifier = {
+				factor = 0
+				ai_not_busy_trigger = no
 			}
 			modifier = {
 				factor = 0
@@ -1266,15 +1587,13 @@ decisions = {
 		}
 	}
 	
-	faction_succ_primogeniture_ultimatum = {
+	faction_succ_primogeniture_prepare = {
 		is_high_prio = yes
 		
 		potential = {
 			leads_faction = faction_succ_primogeniture
-			OR = {
-				NOT = { has_character_flag = faction_succ_primogeniture_ultimatum_taken }
-				had_character_flag = { flag = faction_succ_primogeniture_ultimatum_taken days = 7 }
-			}
+			NOT = { has_character_flag = civil_war_faction_leader }
+			NOT = { has_character_flag = civil_war_faction_member }
 		}
 		allow = {
 			war = no
@@ -1284,8 +1603,12 @@ decisions = {
 				NOT = { reverse_has_truce = ROOT }
 				custom_tooltip = {
 					text = HAS_NO_CIVIL_WAR
-					hidden_tooltip = { pf_war_trigger = no }
+					hidden_tooltip = { pf_war_flag_trigger = no }
 				}
+			}
+			custom_tooltip = {
+				text = NO_PENDING_CIVIL_WAR
+				hidden_tooltip = { pf_pending_civil_war_trigger = no }
 			}
 			NOT = {
 				any_realm_title = {
@@ -1299,14 +1622,32 @@ decisions = {
 			set_character_flag = demands_primogeniture
 			clr_character_flag = demands_gavelkind
 			clr_character_flag = demands_feudal_elective
-			liege = {
-				letter_event = { id = PlusFaction.470 tooltip = "EVTTOOLTIP8005" }
+			# allow the faction leader to now take the 'Make Ultimatum to Liege' decision
+			# and set the timer so the AI doesn't use the decision for 30 days (unless everyone has joined)
+			custom_tooltip = {
+				text = MAY_TAKE_ULTIMATUM_DECISION
+				hidden_tooltip = {
+					set_character_flag = civil_war_faction_leader
+					add_character_modifier = {
+						name = declare_civil_war_timer
+						duration = 30
+						hidden = yes
+					}
+				}
 			}
-			hidden_tooltip = {
-				clr_character_flag = faction_succ_seniority_ultimatum_taken
-				clr_character_flag = faction_succ_gavelkind_ultimatum_taken
-				clr_character_flag = faction_succ_feudal_elective_ultimatum_taken
-				set_character_flag = faction_succ_primogeniture_ultimatum_taken
+			# invite all other vassals to join the coming civil war
+			liege = {
+				custom_tooltip = { text = INVITE_TO_JOIN_CIVIL_WAR }
+				hidden_tooltip = {
+					any_vassal = {
+						limit = { NOT = { in_faction = faction_succ_primogeniture } }
+						letter_event = { id = PlusFaction.415 }
+					}
+					any_vassal = {
+						limit = { in_faction = faction_succ_primogeniture }
+						set_character_flag = civil_war_faction_member
+					}
+				}
 			}
 		}
 		ai_will_do = {
@@ -1316,7 +1657,11 @@ decisions = {
 				e_placeholder = {
 					NOT = { had_title_flag = { flag = startup days = 730 } }
 				}
-			}			
+			}
+			modifier = {
+				factor = 0
+				ai_not_busy_trigger = no
+			}
 			modifier = {
 				factor = 0.5 # Slow it down a bit
 			}
@@ -1387,15 +1732,13 @@ decisions = {
 		}
 	}
 	
-	faction_succ_gavelkind_ultimatum = {
+	faction_succ_gavelkind_prepare = {
 		is_high_prio = yes
 		
 		potential = {
 			leads_faction = faction_succ_gavelkind
-			OR = {
-				NOT = { has_character_flag = faction_succ_gavelkind_ultimatum_taken }
-				had_character_flag = { flag = faction_succ_gavelkind_ultimatum_taken days = 7 }
-			}
+			NOT = { has_character_flag = civil_war_faction_leader }
+			NOT = { has_character_flag = civil_war_faction_member }
 		}
 		allow = {
 			war = no
@@ -1405,8 +1748,12 @@ decisions = {
 				NOT = { reverse_has_truce = ROOT }
 				custom_tooltip = {
 					text = HAS_NO_CIVIL_WAR
-					hidden_tooltip = { pf_war_trigger = no }
+					hidden_tooltip = { pf_war_flag_trigger = no }
 				}
+			}
+			custom_tooltip = {
+				text = NO_PENDING_CIVIL_WAR
+				hidden_tooltip = { pf_pending_civil_war_trigger = no }
 			}
 			NOT = {
 				any_realm_title = {
@@ -1420,14 +1767,32 @@ decisions = {
 			clr_character_flag = demands_primogeniture
 			set_character_flag = demands_gavelkind
 			clr_character_flag = demands_feudal_elective
-			liege = {
-				letter_event = { id = PlusFaction.470 tooltip = "EVTTOOLTIP8005" }
+			# allow the faction leader to now take the 'Make Ultimatum to Liege' decision
+			# and set the timer so the AI doesn't use the decision for 30 days (unless everyone has joined)
+			custom_tooltip = {
+				text = MAY_TAKE_ULTIMATUM_DECISION
+				hidden_tooltip = {
+					set_character_flag = civil_war_faction_leader
+					add_character_modifier = {
+						name = declare_civil_war_timer
+						duration = 30
+						hidden = yes
+					}
+				}
 			}
-			hidden_tooltip = {
-				clr_character_flag = faction_succ_seniority_ultimatum_taken
-				clr_character_flag = faction_succ_primogeniture_ultimatum_taken
-				clr_character_flag = faction_succ_feudal_elective_ultimatum_taken
-				set_character_flag = faction_succ_gavelkind_ultimatum_taken
+			# invite all other vassals to join the coming civil war
+			liege = {
+				custom_tooltip = { text = INVITE_TO_JOIN_CIVIL_WAR }
+				hidden_tooltip = {
+					any_vassal = {
+						limit = { NOT = { in_faction = faction_succ_gavelkind } }
+						letter_event = { id = PlusFaction.415 }
+					}
+					any_vassal = {
+						limit = { in_faction = faction_succ_gavelkind }
+						set_character_flag = civil_war_faction_member
+					}
+				}
 			}
 		}
 		ai_will_do = {
@@ -1437,6 +1802,10 @@ decisions = {
 				e_placeholder = {
 					NOT = { had_title_flag = { flag = startup days = 730 } }
 				}
+			}
+			modifier = {
+				factor = 0
+				ai_not_busy_trigger = no
 			}
 			modifier = {
 				factor = 0.5 # Slow it down a bit
@@ -1508,15 +1877,13 @@ decisions = {
 		}
 	}
 
-	faction_succ_feudal_elective_ultimatum = {
+	faction_succ_feudal_elective_prepare = {
 		is_high_prio = yes
 		
 		potential = {
 			leads_faction = faction_succ_feudal_elective	
-			OR = {
-				NOT = { has_character_flag = faction_succ_feudal_elective_ultimatum_taken }
-				had_character_flag = { flag = faction_succ_feudal_elective_ultimatum_taken days = 7 }
-			}
+			NOT = { has_character_flag = civil_war_faction_leader }
+			NOT = { has_character_flag = civil_war_faction_member }
 		}
 		allow = {
 			war = no
@@ -1526,8 +1893,12 @@ decisions = {
 				NOT = { reverse_has_truce = ROOT }
 				custom_tooltip = {
 					text = HAS_NO_CIVIL_WAR
-					hidden_tooltip = { pf_war_trigger = no }
+					hidden_tooltip = { pf_war_flag_trigger = no }
 				}
+			}
+			custom_tooltip = {
+				text = NO_PENDING_CIVIL_WAR
+				hidden_tooltip = { pf_pending_civil_war_trigger = no }
 			}
 			NOT = {
 				any_realm_title = {
@@ -1541,14 +1912,32 @@ decisions = {
 			clr_character_flag = demands_primogeniture
 			clr_character_flag = demands_gavelkind
 			set_character_flag = demands_feudal_elective
-			liege = {
-				letter_event = { id = PlusFaction.470 tooltip = "EVTTOOLTIP8005" }
+			# allow the faction leader to now take the 'Make Ultimatum to Liege' decision
+			# and set the timer so the AI doesn't use the decision for 30 days (unless everyone has joined)
+			custom_tooltip = {
+				text = MAY_TAKE_ULTIMATUM_DECISION
+				hidden_tooltip = {
+					set_character_flag = civil_war_faction_leader
+					add_character_modifier = {
+						name = declare_civil_war_timer
+						duration = 30
+						hidden = yes
+					}
+				}
 			}
-			hidden_tooltip = {
-				clr_character_flag = faction_succ_seniority_ultimatum_taken
-				clr_character_flag = faction_succ_primogeniture_ultimatum_taken
-				clr_character_flag = faction_succ_gavelkind_ultimatum_taken
-				set_character_flag = faction_succ_feudal_elective_ultimatum_taken
+			# invite all other vassals to join the coming civil war
+			liege = {
+				custom_tooltip = { text = INVITE_TO_JOIN_CIVIL_WAR }
+				hidden_tooltip = {
+					any_vassal = {
+						limit = { NOT = { in_faction = faction_succ_feudal_elective } }
+						letter_event = { id = PlusFaction.415 }
+					}
+					any_vassal = {
+						limit = { in_faction = faction_succ_feudal_elective }
+						set_character_flag = civil_war_faction_member
+					}
+				}
 			}
 		}
 		ai_will_do = {
@@ -1558,6 +1947,10 @@ decisions = {
 				e_placeholder = {
 					NOT = { had_title_flag = { flag = startup days = 730 } }
 				}
+			}
+			modifier = {
+				factor = 0
+				ai_not_busy_trigger = no
 			}
 			modifier = {
 				factor = 0.5 # Slow it down a bit
