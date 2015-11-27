@@ -26,7 +26,6 @@ pf_war_trait_trigger = {
 	}
 }
 
-
 pf_war_flag_trigger = {
 	OR = {
 		has_character_flag = faction_court_war
@@ -38,6 +37,7 @@ pf_war_flag_trigger = {
 		has_character_flag = faction_religious_war
 		has_character_flag = faction_succession_war
 		has_character_flag = faction_authority_war
+		has_character_flag = liberation_revolt_war
 	}
 }
 
@@ -71,50 +71,30 @@ pf_not_regular_faction_war_trigger = {
 	}
 }
 
-# Fill this with an OR of all the CBs associated with PF civil war mechanics
-pf_cb_trigger = {
-	OR = {
-		using_cb = cb_faction_overthrow_ruler
-		using_cb = religious_overthrow_ruler
-		using_cb = claim_on_liege_plot
-		using_cb = other_claim_on_liege_plot
-		using_cb = cb_faction_independence
-		using_cb = liberation_revolt
-	}
-}
-
-# Not to be confused with "part of this revolt": this is the `in_revolt = yes` equivalent for PF revolts (only)
+# Not to be confused with "part of this revolt": this is the `in_revolt = yes`
+# equivalent for PF revolts (only)-- does an actual war check rather than
+# rely upon TOM state
 pf_in_revolt_trigger = {
-	is_ruler = yes
-	liege = {
-		in_revolt = yes
-		any_war = {
-			attacker = { character = PREVPREV }
-			pf_cb_trigger = yes
-		}
-	}
-}
-
-
-pf_leads_revolt_trigger = {
 	in_revolt = yes
-	any_war = {
-		attacker = { character = PREVPREV }
-		pf_cb_trigger = yes
-	}
-}
-
-# Like `war_with` but requires an actual war between THIS and ROOT-- not just hostility
-pf_real_war_with_ROOT_trigger = {
-	any_war = {
-		OR = {
-			AND = {
-				any_attacker = { character = ROOT }
-				any_defender = { character = PREVPREV }
+	liege_before_war = {
+		any_war = {
+			defender = { character = PREVPREV }
+			attacker = {
+				OR = {
+					character = PREVPREVPREV
+					is_vassal_or_below = PREVPREVPREV
+				}
 			}
-			AND = {
-				any_defender = { character = ROOT }
-				any_attacker = { character = PREVPREV }
+			OR = {
+				using_cb = cb_faction_overthrow_ruler
+				using_cb = claim_on_liege_plot
+				using_cb = other_claim_on_liege_plot
+				using_cb = religious_overthrow_ruler
+				using_cb = cb_faction_independence
+				AND = {
+					using_cb = liberation_revolt
+					defender = { has_character_flag = liberation_revolt_war }
+				}
 			}
 		}
 	}
@@ -268,13 +248,10 @@ pf_tradition_approved_war_trigger = {
 	}
 }
 
+# NOTE: This trigger can't support multiple simultaneous PF civil wars coherently until an extra layer of semantic relation
+# tracking is added to PF. Ergo, one should make sure that there cannot be multiple such wars until such is (re-)added.
 pf_part_of_this_revolt_trigger = {
-	has_opinion_modifier = { who = PREV modifier = revolting_against }
-	OR = {
-		character = ROOT
-		vassal_of = ROOT
-		vassal_of = PREV # For the CB effect
-	}
+	reverse_has_opinion_modifier = { who = PREV modifier = revolting_against_me }
 }
 
 pf_pending_civil_war_trigger = {

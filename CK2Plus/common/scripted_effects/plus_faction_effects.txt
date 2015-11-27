@@ -234,6 +234,7 @@ pf_clear_war_flags_effect = {
 	clr_character_flag = faction_religious_war
 	clr_character_flag = faction_succession_war
 	clr_character_flag = faction_authority_war
+	clr_character_flag = liberation_revolt_war
 }
 
 pf_clear_demands_flags_effect = {
@@ -351,7 +352,6 @@ pf_member_vote_against_effect = {
 pf_save_old_gender_law_effect = {
 	if = {
 		limit = {
-			is_primary_holder_title = yes
 			higher_tier_than = count
 		}
 		clr_title_flag = former_cognatic_succession
@@ -375,7 +375,6 @@ pf_save_old_gender_law_effect = {
 pf_save_old_succ_law_effect = {
 	if = {
 		limit = {
-			is_primary_holder_title = yes
 			higher_tier_than = count
 		}
 		clr_title_flag = former_gavelkind
@@ -424,7 +423,6 @@ pf_revert_succession_law_effect = {
 				is_law_potential = succ_elective_to_gavelkind
 			}
 		}
-		clr_title_flag = former_gavelkind
 		add_law = succ_gavelkind
 	}
 	if = {
@@ -436,7 +434,6 @@ pf_revert_succession_law_effect = {
 				is_law_potential = succ_elective_to_seniority
 			}
 		}
-		clr_title_flag = former_seniority
 		add_law = succ_seniority
 	}
 	if = {
@@ -448,7 +445,6 @@ pf_revert_succession_law_effect = {
 				is_law_potential = succ_elective_to_primogeniture
 			}
 		}
-		clr_title_flag = former_primogeniture
 		add_law = succ_primogeniture
 	}
 	if = {
@@ -460,7 +456,6 @@ pf_revert_succession_law_effect = {
 				is_law_potential = succ_elective_to_feudal_elective
 			}
 		}
-		clr_title_flag = former_feudal_elective
 		add_law = succ_feudal_elective
 	}
 	if = {
@@ -472,7 +467,6 @@ pf_revert_succession_law_effect = {
 				is_law_potential = succ_elective_to_tanistry
 			}
 		}
-		clr_title_flag = former_tanistry
 		add_law = succ_tanistry
 	}
 	if = {
@@ -481,7 +475,6 @@ pf_revert_succession_law_effect = {
 			NOT = { has_law = succ_ultimogeniture }
 			is_law_potential = succ_institute_ultimogeniture
 		}
-		clr_title_flag = former_ultimogeniture
 		add_law = succ_ultimogeniture
 	}
 	if = {
@@ -490,7 +483,6 @@ pf_revert_succession_law_effect = {
 			NOT = { has_law = cognatic_succession }
 			is_law_potential = institute_cognatic_succession
 		}
-		clr_title_flag = former_cognatic_succession
 		add_law = cognatic_succession
 	}
 	if = {
@@ -499,7 +491,6 @@ pf_revert_succession_law_effect = {
 			NOT = { has_law = agnatic_succession }
 			is_law_potential = institute_agnatic_succession
 		}
-		clr_title_flag = former_agnatic_succession
 		add_law = agnatic_succession
 	}
 	if = {
@@ -508,9 +499,17 @@ pf_revert_succession_law_effect = {
 			NOT = { has_law = true_cognatic_succession }
 			is_law_potential = institute_true_cognatic_succession
 		}
-		clr_title_flag = former_true_cognatic_succession
 		add_law = true_cognatic_succession
 	}
+	clr_title_flag = former_gavelkind
+	clr_title_flag = former_seniority
+	clr_title_flag = former_primogeniture
+	clr_title_flag = former_feudal_elective
+	clr_title_flag = former_tanistry
+	clr_title_flag = former_ultimogeniture
+	clr_title_flag = former_cognatic_succession
+	clr_title_flag = former_agnatic_succession
+	clr_title_flag = former_true_cognatic_succession
 }
 
 pf_lower_feudal_obligations_effect = {
@@ -693,31 +692,32 @@ pf_setup_rebel_effect = {
 	clr_character_flag = civil_war_faction_member
 	clr_character_flag = will_join_civil_war
 	hidden_tooltip = {
-		liege = {
-			if = {
-				limit = {
-					has_opinion_modifier = { who = PREV modifier = neutral_civil_war }
-				}
-				remove_opinion = { who = PREV modifier = neutral_civil_war }
+		# Remove prior loyalist/neutral TOMs, if any
+		if = {
+			limit = {
+				has_opinion_modifier = { who = LIEGE modifier = pf_loyal_toward }
 			}
-			if = {
-				limit = {
-					has_opinion_modifier = { who = PREV modifier = supported_civil_war }
-				}
-				remove_opinion = { who = PREV modifier = supported_civil_war }
+			remove_opinion = { who = LIEGE modifier = pf_loyal_toward }
+			reverse_remove_opinion = { who = LIEGE modifier = pf_loyal_to_me }
+		}
+		if = {
+			limit = {
+				has_opinion_modifier = { who = LIEGE modifier = pf_neutral_toward }
 			}
-			if = {
-				limit = {
-					NOT = { has_opinion_modifier = { who = PREV modifier = revolting_against_me } }
-				}
-				opinion = { who = PREV modifier = revolting_against_me years = 100 }
+			remove_opinion = { who = LIEGE modifier = pf_neutral_toward }
+			reverse_remove_opinion = { who = LIEGE modifier = pf_neutral_to_me }
+		}
+		if = {
+			limit = {
+				NOT = { has_opinion_modifier = { who = LIEGE modifier = revolting_against } }
 			}
-			if = {
-				limit = {
-					NOT = { reverse_has_opinion_modifier = { who = PREV modifier = revolting_against } }
-				}
-				reverse_opinion = { who = PREV modifier = revolting_against years = 100 }
+			opinion = { who = LIEGE modifier = revolting_against }
+		}
+		if = {
+			limit = {
+				NOT = { reverse_has_opinion_modifier = { who = LIEGE modifier = revolting_against_me } }
 			}
+			reverse_opinion = { who = LIEGE modifier = revolting_against_me }
 		}
 	}
 }
@@ -725,13 +725,36 @@ pf_setup_rebel_effect = {
 pf_teardown_rebel_effect = {
 	remove_trait = rebel
 	hidden_tooltip = {
-		random_opinion_modifier_target = { # Pre-revolt liege
+		any_opinion_modifier_target = { # Pre-revolt liege
 			limit = { reverse_has_opinion_modifier = { who = PREV modifier = revolting_against } }
 			reverse_remove_opinion = { who = PREV modifier = revolting_against }
 			remove_opinion = { who = PREV modifier = revolting_against_me }
 		}
 	}
 }
+
+pf_teardown_loyalist_effect = {
+	remove_trait = loyalist
+	hidden_tooltip = {
+		any_opinion_modifier_target = { # Liege or previous liege
+			limit = { reverse_has_opinion_modifier = { who = PREV modifier = pf_loyal_toward } }
+			reverse_remove_opinion = { who = PREV modifier = pf_loyal_toward }
+			remove_opinion = { who = PREV modifier = pf_loyal_to_me }
+		}
+	}
+}
+
+pf_teardown_neutral_effect = {
+	remove_trait = neutral
+	hidden_tooltip = {
+		any_opinion_modifier_target = { # Liege or previous liege
+			limit = { reverse_has_opinion_modifier = { who = PREV modifier = pf_neutral_toward } }
+			reverse_remove_opinion = { who = PREV modifier = pf_neutral_toward }
+			remove_opinion = { who = PREV modifier = pf_neutral_to_me }
+		}
+	}
+}
+
 # Should be used in the scope of the faction leader
 pf_punish_deceitful_player_effect = {
 	hidden_tooltip = {
@@ -834,23 +857,6 @@ pf_punish_deceitful_player_effect = {
 	}
 }
 
-pf_clear_previous_civil_war_opinions_effect = {
-	hidden_tooltip = {
-		any_opinion_modifier_target = {
-			limit = { reverse_has_opinion_modifier = { who = PREV modifier = opinion_civil_war_loser } }
-			reverse_remove_opinion = { who = PREV modifier = opinion_civil_war_loser }
-		}
-		any_opinion_modifier_target = {
-			limit = { reverse_has_opinion_modifier = { who = PREV modifier = supported_civil_war } }
-			reverse_remove_opinion = { who = PREV modifier = supported_civil_war }
-		}
-		any_opinion_modifier_target = {
-			limit = { reverse_has_opinion_modifier = { who = PREV modifier = neutral_civil_war } }
-			reverse_remove_opinion = { who = PREV modifier = neutral_civil_war }
-		}
-	}
-}
-
 # ROOT=THIS is the victorious side after a civil war
 pf_civil_war_cleanup_effect = {
 	hidden_tooltip = {
@@ -864,14 +870,16 @@ pf_civil_war_cleanup_effect = {
 
 			# Clear neutral/loyalist TOM's
 			any_opinion_modifier_target = {
-				limit = { reverse_has_opinion_modifier = { who = PREV modifier = supported_civil_war } }
+				limit = { reverse_has_opinion_modifier = { who = PREV modifier = pf_loyal_to_me } }
 				remove_trait = loyalist
-				reverse_remove_opinion = { who = PREV modifier = supported_civil_war }
+				reverse_remove_opinion = { who = PREV modifier = pf_loyal_to_me }
+				remove_opinion = { who = PREV modifier = pf_loyal_toward }
 			}
 			any_opinion_modifier_target = {
-				limit = { reverse_has_opinion_modifier = { who = PREV modifier = neutral_civil_war } }
+				limit = { reverse_has_opinion_modifier = { who = PREV modifier = pf_neutral_to_me } }
 				remove_trait = neutral
-				reverse_remove_opinion = { who = PREV modifier = neutral_civil_war }
+				reverse_remove_opinion = { who = PREV modifier = pf_neutral_to_me }
+				remove_opinion = { who = PREV modifier = pf_neutral_toward }
 			}
 		}
 		ROOT = {
@@ -885,167 +893,299 @@ pf_civil_war_cleanup_effect = {
 	}
 }
 
+pf_liege_change_effect = {
+	hidden_tooltip = {
+		if = {
+			limit = {
+				trait = rebel
+				OR = {
+					is_ruler = no
+					pf_in_revolt_trigger = no
+				}
+			}
+			pf_teardown_rebel_effect = yes
+		}
+		if = {
+			limit = {
+				trait = loyalist
+				OR = {
+					is_ruler = no
+					NOT = { has_opinion_modifier = { who = LIEGE modifier = pf_loyal_toward } }
+				}
+			}
+			pf_teardown_loyalist_effect = yes
+		}
+		if = {
+			limit = {
+				trait = neutral
+				OR = {
+					is_ruler = no
+					NOT = { has_opinion_modifier = { who = LIEGE modifier = pf_neutral_toward } }
+				}
+			}
+			pf_teardown_neutral_effect = yes
+		}
+	}
+}
+
+# Careful! Don't put this convenience wrapper under a nested FROM!
+pf_liege_change_under_title_begin_effect = {
+	FROM = { save_event_target_as = pf_lc_enemy }
+	pf_liege_change_under_title_ext_begin_effect = yes
+	clear_event_target = pf_lc_enemy
+}
+
+pf_liege_change_under_title_ext_begin_effect = {
+	hidden_tooltip = {
+		any_de_jure_vassal = { # All rulers with land under this de jure title
+			limit = {
+				# That have civil war state
+				is_playable = yes
+				pf_war_trait_trigger = yes
+
+				# That are in pf_lc_enemy's subrealm under the title PREV
+				OR = {
+					character = event_target:pf_lc_enemy
+					is_liege_or_above = event_target:pf_lc_enemy
+				}
+			}
+			# Add temporary TOM from Coptic Pope to tracked ruler
+			d_miaphysite = {
+				holder_scope = {
+					if = {
+						limit = {
+							NOT = {
+								has_opinion_modifier = {
+									who = PREVPREV
+									modifier = pf_lcut_ruler
+								}
+							}
+						}
+						opinion = { who = PREVPREV modifier = pf_lcut_ruler }
+					}
+				}
+			}
+		}
+	}
+}
+
+pf_liege_change_under_title_end_effect = {
+	hidden_tooltip = {
+		d_miaphysite = {
+			holder_scope = {
+				any_opinion_modifier_target = { # Tracked rulers
+					limit = { reverse_has_opinion_modifier = { who = PREV modifier = pf_lcut_ruler } }
+					reverse_remove_opinion = { who = PREV modifier = pf_lcut_ruler }
+					pf_liege_change_effect = yes
+				}
+			}
+		}
+	}
+}
+
 pf_log_state_effect = {
-	log = "DEBUG: civil war state for [This.GetTitledFirstName] of the [This.PrimaryTitle.GetFullBaseName] ([This.GetID]):"
+	if = {
+		limit = { is_ruler = yes }
+		log = "PF STATE DUMP: [This.GetTitledFirstName] of the [This.PrimaryTitle.GetFullBaseName] ([This.GetID]):"
+	}
+	if = {
+		limit = { is_ruler = no }
+		log = "PF STATE DUMP: [This.GetTitledName] ([This.GetID]):"
+	}
+	log = "<<<<<"
 	if = {
 		limit = {
 			pf_war_trait_trigger = no
-		}
-		log = "DEBUG: no civil war trait"
-	}
-	if = {
-		limit = {
-			is_ruler = no
-			trait = rebel
-		}
-		log = "SERIOUS: trait = rebel but not a ruler!"
-	}
-	if = {
-		limit = {
-			trait = rebel
-			has_any_opinion_modifier = revolting_against
-			pf_leads_revolt_trigger = yes
-			pf_in_revolt_trigger = yes
-		}
-		log = "DEBUG: trait = rebel"
-	}
-	if = {
-		limit = {
-			trait = rebel
-			NOT = { has_any_opinion_modifier = revolting_against }
-			pf_leads_revolt_trigger = yes
-			pf_in_revolt_trigger = yes
-		}
-		log = "SERIOUS: trait = rebel w/o any revolting_against"
-	}
-	if = {
-		limit = {
-			is_ruler = yes
-			trait = rebel
-			has_any_opinion_modifier = revolting_against
-			pf_leads_revolt_trigger = yes
 			pf_in_revolt_trigger = no
 		}
-		log = "SERIOUS: trait = rebel w/o a revolt"
+		log = "no civil war trait (and not in revolt)"
 	}
 	if = {
 		limit = {
-			is_ruler = yes
-			trait = rebel
-			NOT = { has_any_opinion_modifier = revolting_against }
-			pf_leads_revolt_trigger = yes
+			pf_war_trait_trigger = no
 			pf_in_revolt_trigger = yes
 		}
-		log = "SERIOUS: trait = rebel w/o any revolting_against NOR any revolting_for"
+		log = "no civil war trait but nevertheless in a civil war (likely WAD)"
 	}
 	if = {
-		limit = {
-			is_ruler = yes
-			trait = rebel
-			has_any_opinion_modifier = revolting_against
-			pf_leads_revolt_trigger = yes
-			pf_in_revolt_trigger = no
+		limit = { trait = rebel }
+		if = {
+			limit = {
+				has_any_opinion_modifier = revolting_against
+				pf_in_revolt_trigger = yes
+				is_ruler = yes
+			}
+			log = "trait = rebel"
 		}
-		log = "SERIOUS: trait = rebel w/o a revolt NOR any revolting_for"
-	}
-	if = {
-		limit = {
-			is_ruler = yes
-			trait = rebel
-			NOT = { has_any_opinion_modifier = revolting_against }
-			pf_leads_revolt_trigger = yes
-			pf_in_revolt_trigger = no
+		if = {
+			limit = {
+				NOR = {
+					has_any_opinion_modifier = revolting_against
+					pf_in_revolt_trigger = yes
+				}
+			}
+			log = "WARNING: trait = rebel but neither in revolt nor assigned a revolting_against TOM!"
 		}
-		log = "SERIOUS: trait = rebel w/o a revolt NOR any revolting_against NOR any revolting_for"
+		if = {
+			limit = {
+				NOT = { has_any_opinion_modifier = revolting_against }
+				pf_in_revolt_trigger = yes
+			}
+			log = "WARNING: trait = rebel but lacking revolting_against TOM!"
+		}
+		if = {
+			limit = {
+				has_any_opinion_modifier = revolting_against
+				NOT = { pf_in_revolt_trigger = yes }
+			}
+			log = "WARNING: trait = rebel but not in revolt!"
+		}
+		if = {
+			limit = { is_ruler = no }
+			log = "WARNING: trait = rebel but not a ruler!"
+		}
+		if = {
+			limit = { in_revolt = no }
+			log = "in_revolt = no (base API)"
+		}
+		if = {
+			limit = { in_revolt = yes }
+			log = "in_revolt = yes (base API)"
+		}
+		liege_before_war = {
+			log = "liege_before_war: [This.GetTitledFirstName] of the [This.PrimaryTitle.GetFullBaseName] ([This.GetID])"
+		}
 	}
 	if = {
 		limit = {
-			is_ruler = no
 			trait = loyalist
-		}
-		log = "SERIOUS: trait = loyalist but not a ruler!"
-	}
-	if = {
-		limit = {
 			is_ruler = yes
-			trait = loyalist
 			liege = {
-				NOT = { character = PREV }
+				has_opinion_modifier = { who = PREV modifier = pf_loyal_to_me }
 				any_war = {
 					defender = { character = PREVPREV }
-					pf_cb_trigger = yes
+					using_cb = cb_faction_overthrow_ruler
 				}
 			}
 		}
-		log = "DEBUG: trait = loyalist"
+		log = "trait = loyalist"
 	}
 	if = {
 		limit = {
-			is_ruler = yes
 			trait = loyalist
 			liege = {
-				NOT = { character = PREV }
+				NOT = { has_opinion_modifier = { who = PREV modifier = pf_loyal_to_me } }
+				any_war = {
+					defender = { character = PREVPREV }
+					using_cb = cb_faction_overthrow_ruler
+				}
+			}
+		}
+		log = "WARNING: trait = loyalist w/ liege defending against civil war BUT w/o pf_loyal_to_me TOM!"
+	}
+	if = {
+		limit = {
+			trait = loyalist
+			liege = {
+				has_opinion_modifier = { who = PREV modifier = pf_loyal_to_me }
 				NOT = {
 					any_war = {
 						defender = { character = PREVPREV }
-						pf_cb_trigger = yes
+						using_cb = cb_faction_overthrow_ruler
 					}
 				}
 			}
 		}
-		log = "SERIOUS: trait = loyalist w/o liege at war"
+		log = "WARNING: trait = loyalist w/ pf_loyal_to_me TOM, BUT liege isn't defending against a civil war!"
 	}
 	if = {
 		limit = {
 			trait = loyalist
-			liege = { character = PREV }
-		}
-		log = "SERIOUS: trait = loyalist w/o a liege"
-	}
-	if = {
-		limit = {
-			is_ruler = no
-			trait = neutral
-		}
-		log = "SERIOUS: trait = neutral but not a ruler!"
-	}
-	if = {
-		limit = {
-			is_ruler = yes
-			trait = neutral
 			liege = {
-				NOT = { character = PREV }
-				any_war = {
-					defender = { character = PREVPREV }
-					pf_cb_trigger = yes
-				}
-			}
-		}
-		log = "DEBUG: trait = neutral"
-	}
-	if = {
-		limit = {
-			is_ruler = yes
-			trait = neutral
-			liege = {
-				NOT = { character = PREV }
-				NOT = {
+				NOR = {
+					has_opinion_modifier = { who = PREV modifier = pf_loyal_to_me }
 					any_war = {
 						defender = { character = PREVPREV }
-						pf_cb_trigger = yes
+						using_cb = cb_faction_overthrow_ruler
 					}
 				}
 			}
 		}
-		log = "SERIOUS: trait = neutral w/o liege at war"
+		log = "WARNING: trait = loyalist w/o liege defending against civil war AND w/o pf_loyal_to_me TOM!"
 	}
 	if = {
 		limit = {
-			is_ruler = yes
-			trait = neutral
-			liege = { character = PREV }
+			trait = loyalist
+			is_ruler = no
 		}
-		log = "SERIOUS: trait = neutral w/o a liege"
+		log = "WARNING: trait = loyalist but not a ruler!"
+	}
+	if = {
+		limit = {
+			trait = neutral
+			is_ruler = yes
+			liege = {
+				has_opinion_modifier = { who = PREV modifier = pf_loyal_to_me }
+				any_war = {
+					defender = { character = PREVPREV }
+					using_cb = cb_faction_overthrow_ruler
+				}
+			}
+		}
+		log = "trait = neutral"
+	}
+	if = {
+		limit = {
+			trait = neutral
+			liege = {
+				NOT = { has_opinion_modifier = { who = PREV modifier = pf_neutral_to_me } }
+				any_war = {
+					defender = { character = PREVPREV }
+					using_cb = cb_faction_overthrow_ruler
+				}
+			}
+		}
+		log = "WARNING: trait = neutral w/ liege defending against civil war BUT w/o pf_neutral_to_me TOM!"
+	}
+	if = {
+		limit = {
+			trait = neutral
+			liege = {
+				has_opinion_modifier = { who = PREV modifier = pf_neutral_to_me }
+				NOT = {
+					any_war = {
+						defender = { character = PREVPREV }
+						using_cb = cb_faction_overthrow_ruler
+					}
+				}
+			}
+		}
+		log = "WARNING: trait = neutral w/ pf_neutral_to_me TOM, BUT liege isn't defending against a civil war!"
+	}
+	if = {
+		limit = {
+			trait = neutral
+			liege = {
+				NOR = {
+					has_opinion_modifier = { who = PREV modifier = pf_neutral_to_me }
+					any_war = {
+						defender = { character = PREVPREV }
+						using_cb = cb_faction_overthrow_ruler
+					}
+				}
+			}
+		}
+		log = "WARNING: trait = neutral w/o liege defending against civil war AND w/o pf_neutral_to_me TOM!"
+	}
+	if = {
+		limit = {
+			trait = neutral
+			is_ruler = no
+		}
+		log = "WARNING: trait = neutral but not a ruler!"
+	}
+	liege = {
+		log = "liege: [This.GetTitledFirstName] of the [This.PrimaryTitle.GetFullBaseName] ([This.GetID])"
 	}
 	if = {
 		limit = {
@@ -1054,43 +1194,382 @@ pf_log_state_effect = {
 				reverse_has_opinion_modifier = { who = PREV modifier = revolting_against }
 			}
 		}
-		log = "SERIOUS: revolting_against more than 1 character!"
+		log = "WARNING: revolting_against more than 1 character!"
 	}
 	any_opinion_modifier_target = {
 		limit = {
 			reverse_has_opinion_modifier = { who = PREV modifier = revolting_against }
 			has_opinion_modifier = { who = PREV modifier = revolting_against_me }
 		}
-		log = "DEBUG: revolting_against -> [This.GetTitledFirstName] of the [This.PrimaryTitle.GetFullBaseName] ([This.GetID])"
+		log = "revolting_against -> [This.GetTitledFirstName] of the [This.PrimaryTitle.GetFullBaseName] ([This.GetID])"
 	}
 	any_opinion_modifier_target = {
 		limit = {
 			reverse_has_opinion_modifier = { who = PREV modifier = revolting_against }
 			NOT = { has_opinion_modifier = { who = PREV modifier = revolting_against_me } }
 		}
-		log = "SERIOUS: revolting_against w/o [reverse] revolting_against_me -> [This.GetTitledFirstName] of the [This.PrimaryTitle.GetFullBaseName] ([This.GetID])"
+		log = "WARNING: revolting_against w/o [reverse] revolting_against_me -> [This.GetTitledFirstName] of the [This.PrimaryTitle.GetFullBaseName] ([This.GetID])"
 	}
 	any_opinion_modifier_target = {
 		limit = {
 			reverse_has_opinion_modifier = { who = PREV modifier = revolting_against_me }
 			has_opinion_modifier = { who = PREV modifier = revolting_against }
 		}
-		log = "DEBUG: revolting_against_me -> [This.GetTitledFirstName] of the [This.PrimaryTitle.GetFullBaseName] ([This.GetID])"
+		log = "revolting_against_me -> [This.GetTitledFirstName] of the [This.PrimaryTitle.GetFullBaseName] ([This.GetID])"
 	}
 	any_opinion_modifier_target = {
 		limit = {
 			reverse_has_opinion_modifier = { who = PREV modifier = revolting_against_me }
 			NOT = { has_opinion_modifier = { who = PREV modifier = revolting_against } }
 		}
-		log = "SERIOUS: revolting_against_me w/o [reverse] revolting_against -> [This.GetTitledFirstName] of the [This.PrimaryTitle.GetFullBaseName] ([This.GetID])"
+		log = "WARNING: revolting_against_me w/o [reverse] revolting_against -> [This.GetTitledFirstName] of the [This.PrimaryTitle.GetFullBaseName] ([This.GetID])"
+	}
+	if = {
+		limit = {
+			any_opinion_modifier_target = {
+				count = 2
+				reverse_has_opinion_modifier = { who = PREV modifier = pf_loyal_toward }
+			}
+		}
+		log = "WARNING: pf_loyal_toward more than 1 character!"
 	}
 	any_opinion_modifier_target = {
-		limit = { reverse_has_opinion_modifier = { who = PREV modifier = supported_civil_war } }
-		log = "DEBUG: supported_civil_war -> [This.GetTitledFirstName] of the [This.PrimaryTitle.GetFullBaseName] ([This.GetID])"
+		limit = {
+			reverse_has_opinion_modifier = { who = PREV modifier = pf_loyal_toward }
+			has_opinion_modifier = { who = PREV modifier = pf_loyal_to_me }
+		}
+		log = "pf_loyal_toward -> [This.GetTitledFirstName] of the [This.PrimaryTitle.GetFullBaseName] ([This.GetID])"
 	}
 	any_opinion_modifier_target = {
-		limit = { reverse_has_opinion_modifier = { who = PREV modifier = neutral_civil_war } }
-		log = "DEBUG: neutral_civil_war -> [This.GetTitledFirstName] of the [This.PrimaryTitle.GetFullBaseName] ([This.GetID])"
+		limit = {
+			reverse_has_opinion_modifier = { who = PREV modifier = pf_loyal_toward }
+			NOT = { has_opinion_modifier = { who = PREV modifier = pf_loyal_to_me } }
+		}
+		log = "WARNING: pf_loyal_toward w/o [reverse] pf_loyal_to_me -> [This.GetTitledFirstName] of the [This.PrimaryTitle.GetFullBaseName] ([This.GetID])"
 	}
+	any_opinion_modifier_target = {
+		limit = {
+			reverse_has_opinion_modifier = { who = PREV modifier = pf_loyal_to_me }
+			has_opinion_modifier = { who = PREV modifier = pf_loyal_toward }
+		}
+		log = "pf_loyal_to_me -> [This.GetTitledFirstName] of the [This.PrimaryTitle.GetFullBaseName] ([This.GetID])"
+	}
+	any_opinion_modifier_target = {
+		limit = {
+			reverse_has_opinion_modifier = { who = PREV modifier = pf_loyal_to_me }
+			NOT = { has_opinion_modifier = { who = PREV modifier = pf_loyal_toward } }
+		}
+		log = "WARNING: pf_loyal_to_me w/o [reverse] pf_loyal_toward -> [This.GetTitledFirstName] of the [This.PrimaryTitle.GetFullBaseName] ([This.GetID])"
+	}
+	if = {
+		limit = {
+			any_opinion_modifier_target = {
+				count = 2
+				reverse_has_opinion_modifier = { who = PREV modifier = pf_neutral_toward }
+			}
+		}
+		log = "WARNING: pf_neutral_toward more than 1 character!"
+	}
+	any_opinion_modifier_target = {
+		limit = {
+			reverse_has_opinion_modifier = { who = PREV modifier = pf_neutral_toward }
+			has_opinion_modifier = { who = PREV modifier = pf_neutral_to_me }
+		}
+		log = "pf_neutral_toward -> [This.GetTitledFirstName] of the [This.PrimaryTitle.GetFullBaseName] ([This.GetID])"
+	}
+	any_opinion_modifier_target = {
+		limit = {
+			reverse_has_opinion_modifier = { who = PREV modifier = pf_neutral_toward }
+			NOT = { has_opinion_modifier = { who = PREV modifier = pf_neutral_to_me } }
+		}
+		log = "WARNING: pf_neutral_toward w/o [reverse] pf_neutral_to_me -> [This.GetTitledFirstName] of the [This.PrimaryTitle.GetFullBaseName] ([This.GetID])"
+	}
+	any_opinion_modifier_target = {
+		limit = {
+			reverse_has_opinion_modifier = { who = PREV modifier = pf_neutral_to_me }
+			has_opinion_modifier = { who = PREV modifier = pf_neutral_toward }
+		}
+		log = "pf_neutral_to_me -> [This.GetTitledFirstName] of the [This.PrimaryTitle.GetFullBaseName] ([This.GetID])"
+	}
+	any_opinion_modifier_target = {
+		limit = {
+			reverse_has_opinion_modifier = { who = PREV modifier = pf_neutral_to_me }
+			NOT = { has_opinion_modifier = { who = PREV modifier = pf_neutral_toward } }
+		}
+		log = "WARNING: pf_neutral_to_me w/o [reverse] pf_neutral_toward -> [This.GetTitledFirstName] of the [This.PrimaryTitle.GetFullBaseName] ([This.GetID])"
+	}
+	if = {
+		limit = {
+			any_war = {
+				defender = { character = PREVPREV }
+				using_cb = cb_faction_overthrow_ruler
+			}
+		}
+		if = {
+			limit = { has_character_flag = faction_court_war }
+			log = "war flag: faction_court_war"
+		}
+		if = {
+			limit = { has_character_flag = faction_prosperity_war }
+			log = "war flag: faction_prosperity_war"
+		}
+		if = {
+			limit = { has_character_flag = faction_glory_war }
+			log = "war flag: faction_glory_war"
+		}
+		if = {
+			limit = { has_character_flag = faction_tradition_war }
+			log = "war flag: faction_tradition_war"
+		}
+		if = {
+			limit = { has_character_flag = faction_pretender_war }
+			log = "war flag: faction_pretender_war"
+		}
+		if = {
+			limit = { has_character_flag = faction_separatist_war }
+			log = "war flag: faction_separatist_war"
+		}
+		if = {
+			limit = { has_character_flag = faction_religious_war }
+			log = "war flag: faction_religious_war"
+		}
+		if = {
+			limit = { has_character_flag = faction_succession_war }
+			log = "war flag: faction_succession_war"
+		}
+		if = {
+			limit = { has_character_flag = faction_authority_war }
+			log = "war flag: faction_authority_war"
+		}
+	}
+	if = {
+		limit = {
+			NOT = {
+				any_war = {
+					defender = { character = PREVPREV }
+					using_cb = cb_faction_overthrow_ruler
+				}
+			}
+		}
+		if = {
+			limit = { has_character_flag = faction_court_war }
+			log = "WARNING: stale war flag: faction_court_war"
+		}
+		if = {
+			limit = { has_character_flag = faction_prosperity_war }
+			log = "WARNING: stale war flag: faction_prosperity_war"
+		}
+		if = {
+			limit = { has_character_flag = faction_glory_war }
+			log = "WARNING: stale war flag: faction_glory_war"
+		}
+		if = {
+			limit = { has_character_flag = faction_tradition_war }
+			log = "WARNING: stale war flag: faction_tradition_war"
+		}
+		if = {
+			limit = { has_character_flag = faction_pretender_war }
+			log = "WARNING: stale war flag: faction_pretender_war"
+		}
+		if = {
+			limit = { has_character_flag = faction_separatist_war }
+			log = "WARNING: stale war flag: faction_separatist_war"
+		}
+		if = {
+			limit = { has_character_flag = faction_religious_war }
+			log = "WARNING: stale war flag: faction_religious_war"
+		}
+		if = {
+			limit = { has_character_flag = faction_succession_war }
+			log = "WARNING: stale war flag: faction_succession_war"
+		}
+		if = {
+			limit = { has_character_flag = faction_authority_war }
+			log = "WARNING: stale war flag: faction_authority_war"
+		}
+	}
+	if = {
+		limit = {
+			any_war = {
+				attacker = { character = PREVPREV }
+				using_cb = cb_faction_overthrow_ruler
+			}
+		}
+		if = {
+			limit = { has_character_flag = demands_lower_CA }
+			log = "demands flag: demands_lower_CA"
+		}
+		if = {
+			limit = { has_character_flag = demands_lower_TO }
+			log = "demands flag: demands_lower_TO"
+		}
+		if = {
+			limit = { has_character_flag = demands_surrender_title }
+			log = "demands flag: demands_surrender_title"
+		}
+		if = {
+			limit = { has_character_flag = demands_share_wealth }
+			log = "demands flag: demands_share_wealth"
+		}
+		if = {
+			limit = { has_character_flag = demands_revert_succession }
+			log = "demands flag: demands_revert_succession"
+		}
+		if = {
+			limit = { has_character_flag = demands_council_life_terms }
+			log = "demands flag: demands_council_life_terms"
+		}
+		if = {
+			limit = { has_character_flag = demands_lower_feudal_obligations }
+			log = "demands flag: demands_lower_feudal_obligations"
+		}
+		if = {
+			limit = { has_character_flag = demands_lower_tribal_obligations }
+			log = "demands flag: demands_lower_tribal_obligations"
+		}
+		if = {
+			limit = { has_character_flag = demands_lower_city_obligations }
+			log = "demands flag: demands_lower_city_obligations"
+		}
+		if = {
+			limit = { has_character_flag = demands_lower_temple_obligations }
+			log = "demands flag: demands_lower_temple_obligations"
+		}
+		if = {
+			limit = { has_character_flag = demands_seniority }
+			log = "demands flag: demands_seniority"
+			liege_before_war = {
+				if = {
+					limit = { any_demesne_title = { has_title_flag = change_seniority } }
+					any_demesne_title = {
+						limit = { has_title_flag = change_seniority }
+						log = "disputed succession law title: [This.GetFullBaseName]"
+					}
+				}
+				if = {
+					limit = { NOT = { any_demesne_title = { has_title_flag = change_seniority } } }
+					log = "WARNING: demands a succession law change, but defender has no title marked for such a demand"
+				}
+			}
+		}
+		if = {
+			limit = { has_character_flag = demands_primogeniture }
+			log = "demands flag: demands_primogeniture"
+			liege_before_war = {
+				if = {
+					limit = { any_demesne_title = { has_title_flag = change_primogeniture } }
+					any_demesne_title = {
+						limit = { has_title_flag = change_primogeniture }
+						log = "disputed succession law title: [This.GetFullBaseName]"
+					}
+				}
+				if = {
+					limit = { NOT = { any_demesne_title = { has_title_flag = change_primogeniture } } }
+					log = "WARNING: demands a succession law change, but defender has no title marked for such a demand"
+				}
+			}
+		}
+		if = {
+			limit = { has_character_flag = demands_gavelkind }
+			log = "demands flag: demands_gavelkind"
+			liege_before_war = {
+				if = {
+					limit = { any_demesne_title = { has_title_flag = change_gavelkind } }
+					any_demesne_title = {
+						limit = { has_title_flag = change_gavelkind }
+						log = "disputed succession law title: [This.GetFullBaseName]"
+					}
+				}
+				if = {
+					limit = { NOT = { any_demesne_title = { has_title_flag = change_gavelkind } } }
+					log = "WARNING: demands a succession law change, but defender has no title marked for such a demand"
+				}
+			}
+		}
+		if = {
+			limit = { has_character_flag = demands_feudal_elective }
+			log = "demands flag: demands_feudal_elective"
+			liege_before_war = {
+				if = {
+					limit = { any_demesne_title = { has_title_flag = change_feudal_elective } }
+					any_demesne_title = {
+						limit = { has_title_flag = change_feudal_elective }
+						log = "disputed succession law title: [This.GetFullBaseName]"
+					}
+				}
+				if = {
+					limit = { NOT = { any_demesne_title = { has_title_flag = change_feudal_elective } } }
+					log = "WARNING: demands a succession law change, but defender has no title marked for such a demand"
+				}
+			}
+		}
+	}
+	if = {
+		limit = {
+			NOT = {
+				any_war = {
+					attacker = { character = PREVPREV }
+					using_cb = cb_faction_overthrow_ruler
+				}
+			}
+		}
+		if = {
+			limit = { has_character_flag = demands_lower_CA }
+			log = "WARNING: stale demands flag: demands_lower_CA"
+		}
+		if = {
+			limit = { has_character_flag = demands_lower_TO }
+			log = "WARNING: stale demands flag: demands_lower_TO"
+		}
+		if = {
+			limit = { has_character_flag = demands_surrender_title }
+			log = "WARNING: stale demands flag: demands_surrender_title"
+		}
+		if = {
+			limit = { has_character_flag = demands_share_wealth }
+			log = "WARNING: stale demands flag: demands_share_wealth"
+		}
+		if = {
+			limit = { has_character_flag = demands_revert_succession }
+			log = "WARNING: stale demands flag: demands_revert_succession"
+		}
+		if = {
+			limit = { has_character_flag = demands_council_life_terms }
+			log = "WARNING: stale demands flag: demands_council_life_terms"
+		}
+		if = {
+			limit = { has_character_flag = demands_lower_feudal_obligations }
+			log = "WARNING: stale demands flag: demands_lower_feudal_obligations"
+		}
+		if = {
+			limit = { has_character_flag = demands_lower_tribal_obligations }
+			log = "WARNING: stale demands flag: demands_lower_tribal_obligations"
+		}
+		if = {
+			limit = { has_character_flag = demands_lower_city_obligations }
+			log = "WARNING: stale demands flag: demands_lower_city_obligations"
+		}
+		if = {
+			limit = { has_character_flag = demands_lower_temple_obligations }
+			log = "WARNING: stale demands flag: demands_lower_temple_obligations"
+		}
+		if = {
+			limit = { has_character_flag = demands_seniority }
+			log = "WARNING: stale demands flag: demands_seniority"
+		}
+		if = {
+			limit = { has_character_flag = demands_primogeniture }
+			log = "WARNING: stale demands flag: demands_primogeniture"
+		}
+		if = {
+			limit = { has_character_flag = demands_gavelkind }
+			log = "WARNING: stale demands flag: demands_gavelkind"
+		}
+		if = {
+			limit = { has_character_flag = demands_feudal_elective }
+			log = "WARNING: stale demands flag: demands_feudal_elective"
+		}
+	}
+	log = ">>>>>"
 }
 

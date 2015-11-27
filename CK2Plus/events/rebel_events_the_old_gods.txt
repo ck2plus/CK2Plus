@@ -2275,6 +2275,7 @@ character_event = {
 						religion = ROOT
 						capital_scope = { kingdom = { title = event_target:revolt_kingdom } }
 						top_liege = { character = event_target:revolt_top_liege }
+						any_liege = { pf_war_flag_trigger = yes }
 						NOR = {
 							character = event_target:revolt_top_liege
 							has_truce = event_target:revolt_top_liege
@@ -2303,6 +2304,7 @@ character_event = {
 							capital_scope = { kingdom = { title = event_target:revolt_kingdom } }
 							top_liege = { character = event_target:revolt_top_liege }
 							NOR = {
+								any_liege = { pf_war_flag_trigger = yes }
 								character = event_target:revolt_top_liege
 								has_truce = event_target:revolt_top_liege
 								prisoner = yes
@@ -2331,6 +2333,7 @@ character_event = {
 						top_liege = { character = event_target:revolt_top_liege }
 						capital_scope = { kingdom = { title = event_target:revolt_kingdom } }
 						NOR = {
+							any_liege = { pf_war_flag_trigger = yes }
 							character = event_target:revolt_top_liege
 							has_truce = event_target:revolt_top_liege
 							prisoner = yes
@@ -2346,52 +2349,60 @@ character_event = {
 			}
 			break = yes
 		}
-		#move onto other dukes
-		event_target:revolt_location = {
-			owner = {
-				top_liege = {
-					random_realm_lord = {
-						limit = {
-							tier = DUKE
-							culture = ROOT
-							religion = ROOT
-							capital_scope = { kingdom = { title = event_target:revolt_kingdom } }
-							NOR = {
-								character = event_target:revolt_top_liege
-								has_truce = event_target:revolt_top_liege
-								prisoner = yes
-								trait = incapable
-								is_adult = no
-								reverse_has_opinion_modifier = { who = ROOT modifier = refused_revolt_call }
+		#move onto other dukes/counts
+		if = {
+			limit = {
+				NOT = {
+					any_liege = { pf_war_flag_trigger = yes }
+				}
+			}
+			#check dukes
+			event_target:revolt_location = {
+				owner = {
+					top_liege = {
+						random_realm_lord = {
+							limit = {
+								tier = DUKE
+								culture = ROOT
+								religion = ROOT
+								capital_scope = { kingdom = { title = event_target:revolt_kingdom } }
+								NOR = {
+									character = event_target:revolt_top_liege
+									has_truce = event_target:revolt_top_liege
+									prisoner = yes
+									trait = incapable
+									is_adult = no
+									reverse_has_opinion_modifier = { who = ROOT modifier = refused_revolt_call }
+								}
 							}
+							character_event = { id = TOG.1042 }
+							break = yes
 						}
-						character_event = { id = TOG.1042 }
-						break = yes
 					}
 				}
 			}
-		}
-		#move onto other counts
-		event_target:revolt_location = {
-			owner = {
-				top_liege = {
-					random_realm_lord = {
-						limit = {
-							tier = COUNT
-							culture = ROOT
-							religion = ROOT
-							capital_scope = { kingdom = { title = event_target:revolt_kingdom } }
-							NOR = {
-								character = event_target:revolt_top_liege
-								has_truce = event_target:revolt_top_liege
-								prisoner = yes
-								trait = incapable
-								is_adult = no
-								reverse_has_opinion_modifier = { who = ROOT modifier = refused_revolt_call }
+			#check counts
+			event_target:revolt_location = {
+				owner = {
+					top_liege = {
+						random_realm_lord = {
+							limit = {
+								tier = COUNT
+								culture = ROOT
+								religion = ROOT
+								capital_scope = { kingdom = { title = event_target:revolt_kingdom } }
+								NOR = {
+									character = event_target:revolt_top_liege
+									has_truce = event_target:revolt_top_liege
+									prisoner = yes
+									trait = incapable
+									is_adult = no
+									reverse_has_opinion_modifier = { who = ROOT modifier = refused_revolt_call }
+								}
 							}
+							character_event = { id = TOG.1042 }
+							break = yes
 						}
-						character_event = { id = TOG.1042 }
-						break = yes
 					}
 				}
 			}
@@ -2542,6 +2553,7 @@ character_event = {
 							trait = incapable
 							is_adult = no
 							reverse_has_opinion_modifier = { who = ROOT modifier = refused_revolt_call }
+							any_liege = { pf_war_flag_trigger = yes }
 							any_liege = {
 								OR = {
 									culture = ROOT
@@ -2646,7 +2658,45 @@ character_event = {
 		set_character_flag = nationalist_rebel
 		clr_character_flag = wants_to_lead_revolt
 		save_event_target_as = leading_revolt
-		pf_setup_rebel_effect = yes
+		add_trait = rebel
+		clr_character_flag = civil_war_faction_leader
+		clr_character_flag = civil_war_faction_member
+		clr_character_flag = will_join_civil_war
+		hidden_tooltip = {
+			# Remove prior loyalist/neutral TOMs, if any
+			top_liege = {
+				if = {
+					limit = { NOT = { has_character_flag = liberation_revolt_war } }
+					set_character_flag = liberation_revolt_war
+				}
+				if = {
+					limit = {
+						reverse_has_opinion_modifier = { who = ROOT modifier = pf_loyal_toward }
+					}
+					reverse_remove_opinion = { who = ROOT modifier = pf_loyal_toward }
+					remove_opinion = { who = ROOT modifier = pf_loyal_to_me }
+				}
+				if = {
+					limit = {
+						reverse_has_opinion_modifier = { who = ROOT modifier = pf_neutral_toward }
+					}
+					reverse_remove_opinion = { who = ROOT modifier = pf_neutral_toward }
+					remove_opinion = { who = ROOT modifier = pf_neutral_to_me }
+				}
+				if = {
+					limit = {
+						NOT = { reverse_has_opinion_modifier = { who = ROOT modifier = revolting_against } }
+					}
+					reverse_opinion = { who = ROOT modifier = revolting_against }
+				}
+				if = {
+					limit = {
+						NOT = { has_opinion_modifier = { who = ROOT modifier = revolting_against_me } }
+					}
+					opinion = { who = ROOT modifier = revolting_against_me }
+				}
+			}
+		}
 		event_target:revolt_location = {
 			event_target:nationalist_revolt_leader = {
 				move_character = ROOT
@@ -2977,7 +3027,45 @@ character_event = {
 				event_target:nationalist_revolt_leader = { NOT = { culture = ROOT } }
 			}
 		}
-		pf_setup_rebel_effect = yes
+		add_trait = rebel
+		clr_character_flag = civil_war_faction_leader
+		clr_character_flag = civil_war_faction_member
+		clr_character_flag = will_join_civil_war
+		hidden_tooltip = {
+			# Remove prior loyalist/neutral TOMs, if any
+			top_liege = {
+				if = {
+					limit = { NOT = { has_character_flag = liberation_revolt_war } }
+					set_character_flag = liberation_revolt_war
+				}
+				if = {
+					limit = {
+						reverse_has_opinion_modifier = { who = ROOT modifier = pf_loyal_toward }
+					}
+					reverse_remove_opinion = { who = ROOT modifier = pf_loyal_toward }
+					remove_opinion = { who = ROOT modifier = pf_loyal_to_me }
+				}
+				if = {
+					limit = {
+						reverse_has_opinion_modifier = { who = ROOT modifier = pf_neutral_toward }
+					}
+					reverse_remove_opinion = { who = ROOT modifier = pf_neutral_toward }
+					remove_opinion = { who = ROOT modifier = pf_neutral_to_me }
+				}
+				if = {
+					limit = {
+						NOT = { reverse_has_opinion_modifier = { who = ROOT modifier = revolting_against } }
+					}
+					reverse_opinion = { who = ROOT modifier = revolting_against }
+				}
+				if = {
+					limit = {
+						NOT = { has_opinion_modifier = { who = ROOT modifier = revolting_against_me } }
+					}
+					opinion = { who = ROOT modifier = revolting_against_me }
+				}
+			}
+		}
 		clr_character_flag = wants_to_lead_revolt
 		if = {
 			limit = { event_target:nationalist_revolt_leader = { has_character_flag = nationalist_rebel } }
@@ -3050,6 +3138,7 @@ character_event = {
 						religion = ROOT
 						capital_scope = { kingdom = { title = event_target:revolt_kingdom } }
 						NOR = {
+							any_liege = { pf_war_flag_trigger = yes }
 							has_truce = event_target:revolt_top_liege
 							prisoner = yes
 							trait = incapable
