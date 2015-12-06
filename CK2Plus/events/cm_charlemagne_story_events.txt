@@ -3896,20 +3896,40 @@ character_event = {
 				}
 			}
 		}
-		any_playable_ruler = { # Umayyads rule in Spain
-			age = 16
-			NOT = { trait = incapable }
-			prisoner = no
+		any_playable_ruler = {
+			has_regent = no
+			in_revolt = no
 			lower_tier_than = ROOT
-			NOT = { dynasty = 597 } # Umayyad
+			higher_tier_than = COUNT
+			NOR = {
+				dynasty = 597 # Ummayad
+				trait = content
+				trait = humble
+				trait = craven
+			}
 			liege = {
-				dynasty = 597 # Umayyad
+				dynasty = 597 # Ummayad
 				OR = {
 					has_landed_title = e_spain
 					has_landed_title = k_andalusia
 				}
+				NOR = {
+					reverse_has_truce = PREV
+					is_friend = PREV
+				}
 			}
-			num_of_vassals = 1
+			ROOT = {
+				any_realm_province = {
+					any_neighbor_province = {
+						owner = {
+							OR = {
+								character = PREVPREVPREVPREV
+								is_liege_or_above = PREVPREVPREVPREV
+							}
+						}
+					}
+				}
+			}
 		}
 	}
 	
@@ -3921,30 +3941,37 @@ character_event = {
 		set_global_flag = charlemagne_spain_intervention
 		random_playable_ruler = {
 			limit = {
-				age = 16
-				NOT = { trait = incapable }
-				prisoner = no
+				has_regent = no
+				in_revolt = no
 				lower_tier_than = ROOT
-				OR = {
-					tier = KING
-					tier = DUKE
-					NOT = {
-						liege = {
-							any_vassal = {
-								higher_tier_than = COUNT
-							}
-						}
-					}
+				higher_tier_than = COUNT
+				NOR = {
+					dynasty = 597 # Ummayad
+					trait = content
+					trait = humble
+					trait = craven
 				}
-				NOT = { dynasty = 597 } # Umayyad
 				liege = {
-					dynasty = 597 # Umayyad
+					dynasty = 597 # Ummayad
 					OR = {
 						has_landed_title = e_spain
 						has_landed_title = k_andalusia
 					}
-					NOT = {
+					NOR = {
+						reverse_has_truce = PREV
 						is_friend = PREV
+					}
+				}
+				ROOT = {
+					any_realm_province = {
+						any_neighbor_province = {
+							owner = {
+								OR = {
+									character = PREVPREVPREVPREV
+									is_liege_or_above = PREVPREVPREVPREV
+								}
+							}
+						}
 					}
 				}
 			}
@@ -4042,7 +4069,8 @@ character_event = {
 
 	option = {
 		name = EVTOPTA_CM_1404 # Prepare for war
-		hidden_tooltip = { character_event = { id = CM.1405 days = 60 } }  # Prepare for war
+		set_character_flag = ummayad_vassal_independence
+		FROM = { set_character_flag = ummayad_vassal_ally }
 	}
 }
 
@@ -4052,8 +4080,29 @@ character_event = {
 	desc = EVTDESC_CM_1405
 	picture = GFX_evt_large_army
 	border = GFX_event_normal_frame_war
+	
+	has_character_flag = ummayad_vassal_independence
 
-	is_triggered_only = yes
+	trigger = {
+		war = no
+		any_independent_ruler = {
+			has_character_flag = ummayad_vassal_ally
+			war = no
+		}
+	}
+	
+	mean_time_to_happen = {
+		days = 10
+	}
+	
+	immediate = {
+		clr_character_flag = ummayad_vassal_independence
+		random_independent_ruler = {
+			limit = { has_character_flag = ummayad_vassal_ally }
+			clr_character_flag = ummayad_vassal_ally
+			save_event_target_as = ummayad_ally
+		}
+	}
 
 	option = {
 		name = EVTOPTA_CM_1405   # Declares independence war
@@ -4063,8 +4112,10 @@ character_event = {
 				casus_belli = bid_for_independence
 			}
 		}
-		FROMFROM = {
-			hidden_tooltip = { character_event = { id = CM.1406 days = 20 } } # Calls on Frankish ally
+		hidden_tooltip = {
+			event_target:ummayad_ally = {
+				character_event = { id = CM.1406 days = 1 } # Calls on Frankish ally
+			}
 		}
 	}
 }
@@ -4077,10 +4128,44 @@ character_event = {
 	border = GFX_event_normal_frame_war
 
 	is_triggered_only = yes
+	
+	trigger = {
+		FROM = { war = yes }
+	}
 
 	option = {
 		name = EVTOPTA_CM_1406
-		ai_chance = { factor = 70 }
+		ai_chance = {
+			factor = 70
+			modifier = {
+				factor = 1.5
+				trait = brave
+			}
+			modifier = {
+				factor = 0.5
+				any_war = {
+					using_cb = bid_for_independence
+					attacker = { character = FROM }
+					defender = { realm_levy_diff = { who = ROOT value = 1000 } }
+				}
+			}
+			modifier = {
+				factor = 0.5
+				any_war = {
+					using_cb = bid_for_independence
+					attacker = { character = FROM }
+					defender = { realm_levy_diff = { who = ROOT value = 10000 } }
+				}
+			}
+			modifier = {
+				factor = 5
+				any_war = {
+					using_cb = bid_for_independence
+					attacker = { character = FROM }
+					defender = { reverse_realm_levy_diff = { who = ROOT value = 2500 } }
+				}
+			}
+		}
 		reverse_opinion = {
 			modifier = honored_alliance
 			who = FROM
@@ -4092,7 +4177,17 @@ character_event = {
 	}
 	option = {
 		name = EVTOPTB_CM_1406
-		ai_chance = { factor = 30 }
+		ai_chance = {
+			factor = 30
+			modifier = {
+				factor = 0
+				trait = honest
+			}
+			modifier = {
+				factor = 2
+				trait = deceitful
+			}			
+		}
 		prestige = -100
 		reverse_opinion = {
 			modifier = opinion_betrayed
@@ -4123,7 +4218,6 @@ character_event = {
 		}
 		any_independent_ruler = {
 			has_character_flag = intervention_in_spain
-			higher_tier_than = ROOT
 		}
 	}
 	
@@ -4154,12 +4248,29 @@ character_event = {
 	
 	option = {
 		name = EVTOPTA_CM_1408
-		ai_chance = { factor = 30 }
+		ai_chance = {
+			factor = 30
+			modifier = {
+				factor = 0.5
+				trait = deceitful
+			}
+		}
 		any_independent_ruler = {
 			limit = { has_character_flag = intervention_in_spain }  # Fullfill promise
+			clr_character_flag = intervention_in_spain
 			ROOT = {
 				set_defacto_liege = PREV
-				pf_liege_change_effect = yes
+				religion = PREV
+				hidden_tooltip = {
+					any_courtier = {
+						limit = {
+							is_adult = no
+							is_ruler = no
+							dynasty = PREV
+						}
+						religion = PREV
+					}
+				}
 			}
 			opinion = {
 				modifier = honored_alliance
@@ -4170,10 +4281,24 @@ character_event = {
 	}
 	option = {
 		name = EVTOPTB_CM_1408
-		ai_chance = { factor = 70 }
+		ai_chance = {
+			factor = 70
+			modifier = {
+				factor = 0.5
+				trait = honest
+			}
+			modifier = {
+				factor = 0.1
+				any_independent_ruler = {
+					has_character_flag = intervention_in_spain
+					religion = ROOT
+				}
+			}
+		}
 		prestige = -50
 		any_independent_ruler = {
 			limit = { has_character_flag = intervention_in_spain }
+			clr_character_flag = intervention_in_spain
 			opinion = {
 				modifier = opinion_betrayed
 				who = ROOT
