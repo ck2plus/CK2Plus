@@ -7111,12 +7111,9 @@ liberation_revolt = {
 	}
 
 	is_valid = {
-		FROM = {
-			NOT = { culture = ROOT }
-			OR = {
-				reverse_has_opinion_modifier = { who = ROOT modifier = revolting_against }
-				NOT = { has_character_flag = liberation_revolt_war }
-			}
+		ROOT = {
+			NOT = { culture = FROM }
+			has_character_flag = nationalist_rebel
 		}
 	}
 
@@ -7127,16 +7124,6 @@ liberation_revolt = {
 			}
 		}
 	}
-	
-	on_add = {
-		log = "CB(liberation_revolt): START: [Root.GetTitledFirstName] of [Root.PrimaryTitle.GetBaseName] (ID: [Root.GetID]) vs. [From.GetTitledFirstName] of [From.PrimaryTitle.GetBaseName] (ID: [From.GetID])"
-		FROM = {
-			if = {
-				limit = { has_character_flag = liberation_revolt_war }
-				pf_log_state_effect = yes
-			}
-		}
-	}	
 	
 	on_success = {
 		log = "CB(liberation_revolt): VICTORY: [Root.GetTitledFirstName] of [Root.PrimaryTitle.GetBaseName] (ID: [Root.GetID]) vs. [From.GetTitledFirstName] of [From.PrimaryTitle.GetBaseName] (ID: [From.GetID])"
@@ -7166,22 +7153,25 @@ liberation_revolt = {
 			clr_character_flag = has_current_revolt
 		}
 		hidden_tooltip = {
-			if = {
-				limit = {
-					FROM = { has_character_flag = liberation_revolt_war }
-				}
-				any_attacker = {
-					limit = { has_opinion_modifier = { who = FROM modifier = revolting_against } }
-					reverse_opinion = { who = FROM modifier = opinion_independent years = 50 }
-					if = {
-						limit = { NOT = { character = ROOT } }
-						set_character_flag = will_vassalize
-					}
-				}
-				any_attacker = {
+			any_attacker = {
+				limit = { has_character_flag = nationalist_revolt }
+				if = {
 					limit = { NOT = { character = ROOT } }
-					participation_scaled_prestige = 250
+					clr_character_flag = nationalist_revolt
+					set_character_flag = will_vassalize
 				}
+				any_vassal = {
+					limit = {
+						has_character_flag = nationalist_revolt
+						NOT = { character = ROOT }
+					}
+					clr_character_flag = nationalist_revolt
+					set_character_flag = will_vassalize
+				}
+			}
+			any_attacker = {
+				limit = { NOT = { character = ROOT } }
+				participation_scaled_prestige = 250
 			}
 		}
 	}
@@ -7189,10 +7179,7 @@ liberation_revolt = {
 	on_success_title = {
 		log = "[Root.GetBestName] succeeded with their liberation revolt of [This.GetName] against [From.GetBestName]"
 		#tooltips for the CB results
-		ROOT = {
-			custom_tooltip = { text = LIBERATION_TOOLTIP }
-			hidden_tooltip = { remove_trait = rebel }
-		}
+		ROOT = { custom_tooltip = { text = LIBERATION_TOOLTIP } }
 		if = {
 			limit = {
 				has_holder = no
@@ -7203,7 +7190,7 @@ liberation_revolt = {
 		}
 		any_attacker = {
 			limit = {
-				trait = rebel
+				has_character_flag = nationalist_revolt
 				NOT = { character = ROOT }
 				NOT = { vassal_of = ROOT }
 			}
@@ -7211,12 +7198,11 @@ liberation_revolt = {
 		}
 		ROOT = {
 			any_vassal = {
-				limit = { trait = rebel }
+				limit = { has_character_flag = nationalist_revolt }
 				custom_tooltip = { text = LIBERATION_TOOLTIP4 }
 			}
-		}		
+		}
 
-		set_global_flag = pf_teardown_lock
 		pf_liege_change_under_title_begin_effect = yes
 		
 		hidden_tooltip = {
@@ -7258,6 +7244,7 @@ liberation_revolt = {
 							}
 						}
 					}
+					log = "----> [Root.GetBestName] usurps the [This.GetFullName] (Liberation Revolt)"
 					usurp_title = { target = ROOT type = revolt }
 				}
 			}
@@ -7277,12 +7264,14 @@ liberation_revolt = {
 							}
 						}
 					}
+					log = "----> [Root.GetBestName] usurps the [This.GetFullName] (Liberation Revolt)"
 					usurp_title = { target = ROOT type = revolt }
 				}
 			}
 			any_title = {
 				limit = { has_title_flag = nationalist_usurp }
 				clr_title_flag = nationalist_usurp
+				log = "----> [Root.GetBestName] usurps the [This.GetFullName] (Liberation Revolt)"
 				usurp_title = { target = ROOT type = revolt }
 			}
 		}
@@ -7298,6 +7287,7 @@ liberation_revolt = {
 						}
 					}
 				}
+				log = "----> [Root.GetBestName] usurps the [Prev.GetFullName] (Liberation Revolt)"
 				usurp_title = { target = PREV type = revolt }
 			}
 			#take kingdom title if nobody holds it (but it was previously created)
@@ -7328,7 +7318,10 @@ liberation_revolt = {
 						}
 					}
 				}
-				holder_scope = { set_defacto_liege = ROOT }
+				holder_scope = {
+					log = "----> [This.GetBestName] is vassalized by [Root.GetBestName] (Liberation Revolt)"
+					set_defacto_liege = ROOT
+				}
 			}
 			#usurp any vassals who cannot be vassalized
 			any_de_jure_vassal_title = {
@@ -7338,6 +7331,7 @@ liberation_revolt = {
 						NOT = { lower_real_tier_than = ROOT }
 					}
 				}
+				log = "----> [Root.GetBestName] usurps the [This.GetFullName] (Liberation Revolt)"
 				usurp_title_plus_barony_if_unlanded = { target = ROOT type = revolt }
 			}
 		}
@@ -7347,28 +7341,27 @@ liberation_revolt = {
 		}
 		#vassalize any allies and set opinions
 		hidden_tooltip = {
-			FROM = {
+			any_attacker = {
 				if = {
-					limit = { has_character_flag = liberation_revolt_war }	
-					any_opinion_modifier_target = {
-						limit = { has_character_flag = will_vassalize }
-						clr_character_flag = will_vassalize
-						set_defacto_liege = ROOT
-						reverse_opinion = { who = ROOT modifier = opinion_very_grateful years = 20 }
-						opinion = { who = ROOT modifier = opinion_very_grateful years = 20 }
-					}
+					limit = { has_character_flag = will_vassalize }
+					log = "----> [This.GetBestName] is a fellow rebel and is thus vassalized to [Root.GetBestName] (Liberation Revolt)"
+					clr_character_flag = will_vassalize
+					set_defacto_liege = ROOT
+					reverse_opinion = { who = ROOT modifier = opinion_very_grateful years = 20 }
+					opinion = { who = ROOT modifier = opinion_very_grateful years = 20 }
+				}
+				any_vassal = {
+					limit = { has_character_flag = will_vassalize }
+					log = "----> [This.GetBestName] is a fellow rebel and is thus vassalized to [Root.GetBestName] (Liberation Revolt)"
+					clr_character_flag = will_vassalize
+					set_defacto_liege = ROOT
+					reverse_opinion = { who = ROOT modifier = opinion_very_grateful years = 20 }
+					opinion = { who = ROOT modifier = opinion_very_grateful years = 20 }
 				}
 			}
 		}
 
-		clr_global_flag = pf_teardown_lock
 		pf_liege_change_under_title_end_effect = yes
-		
-		# clean up remaining TOMs
-		if = {
-			limit = { FROM = { has_character_flag = liberation_revolt_war } }
-			pf_civil_war_cleanup_effect = yes
-		}
 
 		# make sure revolter has the right government type
 		ROOT = {
@@ -7387,6 +7380,7 @@ liberation_revolt = {
 						limit = {
 							FROM = { is_tribal = yes }
 						}
+						log = "----> [Root.GetBestName] has been set to tribal government (Liberation Revolt)"
 						set_government_type = tribal_government
 					}
 					if = {
@@ -7394,6 +7388,7 @@ liberation_revolt = {
 							FROM = { is_tribal = no }
 							religion_group = muslim
 						}
+						log = "----> [Root.GetBestName] has been set to iqta government (Liberation Revolt)"
 						set_government_type = muslim_government
 					}
 					if = {
@@ -7402,6 +7397,7 @@ liberation_revolt = {
 							NOT = { religion_group = muslim }
 							religion = bogomilist
 						}
+						log = "----> [Root.GetBestName] has been set to bogomilist government (Liberation Revolt)"
 						set_government_type = bogomilist_government
 					}
 					if = {
@@ -7410,6 +7406,7 @@ liberation_revolt = {
 							NOT = { religion_group = muslim }
 							NOT = { religion = bogomilist }
 						}
+						log = "----> [Root.GetBestName] has been set to feudal government (Liberation Revolt)"
 						set_government_type = feudal_government
 					}
 				}
@@ -7423,12 +7420,47 @@ liberation_revolt = {
 		
 		# re-vassalize rebels
 		hidden_tooltip = {
-			FROM = {
+			any_attacker = {
+				any_vassal = {
+					limit = {
+						has_character_flag = nationalist_revolt
+						NOT = { has_character_flag = began_revolt }
+					}
+					clr_character_flag = nationalist_revolt
+					if = {
+						limit = { NOT = { has_any_opinion_modifier = liberation_revolt_against } }
+						log = "----> [This.GetBestName] is a rebel who has been re-vasslized to [From.GetBestName] (Liberation Revolt)"
+						set_defacto_liege = FROM
+					}
+					if = {
+						limit = { has_any_opinion_modifier = liberation_revolt_against }
+						random_opinion_modifier_target = {
+							limit = { reverse_has_opinion_modifier = { who = ROOT modifier = liberation_revolt_against } }
+							log = "----> [Prev.GetBestName] is a rebel who has been re-vasslized to [This.GetBestName] (Liberation Revolt)"
+							reverse_remove_opinion = { who = ROOT modifier = liberation_revolt_against }
+							set_defacto_vassal = PREV
+						}
+					}
+				}					
 				if = {
-					limit = { has_character_flag = liberation_revolt_war }
-					any_opinion_modifier_target = {
-						limit = { has_opinion_modifier = { who = PREV modifier = revolting_against } }
-						set_defacto_liege = PREV
+					limit = {
+						has_character_flag = nationalist_revolt
+						NOT = { has_character_flag = began_revolt }
+					}
+					clr_character_flag = nationalist_revolt
+					if = {
+						limit = { NOT = { has_any_opinion_modifier = liberation_revolt_against } }
+						log = "----> [This.GetBestName] is a rebel who has been re-vasslized to [From.GetBestName] (Liberation Revolt)"
+						set_defacto_liege = FROM
+					}
+					if = {
+						limit = { has_any_opinion_modifier = liberation_revolt_against }
+						random_opinion_modifier_target = {
+							limit = { reverse_has_opinion_modifier = { who = ROOT modifier = liberation_revolt_against } }
+							log = "----> [Prev.GetBestName] is a rebel who has been re-vasslized to [This.GetBestName] (Liberation Revolt)"
+							reverse_remove_opinion = { who = ROOT modifier = liberation_revolt_against }
+							set_defacto_vassal = PREV
+						}
 					}
 				}
 			}
@@ -7450,7 +7482,6 @@ liberation_revolt = {
 			}
 			if = {
 				limit = { NOT = { has_character_flag = began_revolt } }
-				clr_character_flag = nationalist_rebel
 				random_courtier = {
 					limit = { has_character_flag = began_revolt }
 					clr_character_flag = began_revolt
@@ -7468,18 +7499,13 @@ liberation_revolt = {
 				clear_wealth = yes
 				imprison = FROM
 				clr_character_flag = nationalist_rebel
+				clr_character_flag = began_revolt
 				hidden_tooltip = {
 					reverse_opinion = { modifier = opinion_rebel_traitor who = FROM months = 1200 }
 					add_character_modifier = { name = broken_spirit days = 3650 }
 					remove_trait = inspiring_leader
 				}
 			}
-		}
-		
-		# clean up remaining TOMs
-		if = {
-			limit = { FROM = { has_character_flag = liberation_revolt_war } }
-			pf_civil_war_cleanup_effect = yes
 		}
 	}
 
@@ -7497,17 +7523,60 @@ liberation_revolt = {
 		}
 		
 		# re-vassalize rebels
-		FROM = {
+		any_attacker = {
+			any_vassal = {
+				limit = {
+					has_character_flag = nationalist_revolt
+					NOT = { has_character_flag = began_revolt }
+					NOT = { character = ROOT }
+				}
+				imprison = FROM
+				hidden_tooltip = {
+					clr_character_flag = nationalist_revolt
+					participation_scaled_prestige = -200
+					reverse_opinion = { who = FROM modifier = opinion_civil_war_loser months = 60 }
+					opinion = { who = FROM modifier = opinion_coerced_into_leaving_faction months = 60 }
+					if = {
+						limit = { NOT = { has_any_opinion_modifier = liberation_revolt_against } }
+						log = "----> [This.GetBestName] is a rebel who has been re-vasslized to [From.GetBestName] (Liberation Revolt)"
+						set_defacto_liege = FROM
+					}
+					if = {
+						limit = { has_any_opinion_modifier = liberation_revolt_against }
+						random_opinion_modifier_target = {
+							limit = { reverse_has_opinion_modifier = { who = ROOT modifier = liberation_revolt_against } }
+							log = "----> [Prev.GetBestName] is a rebel who has been re-vasslized to [This.GetBestName] (Liberation Revolt)"
+							reverse_remove_opinion = { who = ROOT modifier = liberation_revolt_against }
+							set_defacto_vassal = PREV
+						}
+					}
+				}
+			}					
 			if = {
-				limit = { has_character_flag = liberation_revolt_war }
-				any_opinion_modifier_target = {
-					limit = { has_opinion_modifier = { who = PREV modifier = revolting_against } }
-					imprison = PREV
-					hidden_tooltip = {
-						participation_scaled_prestige = -200
-						reverse_opinion = { who = PREV modifier = opinion_civil_war_loser months = 60 }
-						opinion = { who = PREV modifier = opinion_coerced_into_leaving_faction months = 60 }
-						set_defacto_liege = PREV
+				limit = {
+					has_character_flag = nationalist_revolt
+					NOT = { has_character_flag = began_revolt }
+					NOT = { character = ROOT }
+				}
+				imprison = FROM
+				hidden_tooltip = {
+					clr_character_flag = nationalist_revolt
+					participation_scaled_prestige = -200
+					reverse_opinion = { who = FROM modifier = opinion_civil_war_loser months = 60 }
+					opinion = { who = FROM modifier = opinion_coerced_into_leaving_faction months = 60 }
+					if = {
+						limit = { NOT = { has_any_opinion_modifier = liberation_revolt_against } }
+						log = "----> [This.GetBestName] is a rebel who has been re-vasslized to [From.GetBestName] (Liberation Revolt)"
+						set_defacto_liege = FROM
+					}
+					if = {
+						limit = { has_any_opinion_modifier = liberation_revolt_against }
+						random_opinion_modifier_target = {
+							limit = { reverse_has_opinion_modifier = { who = ROOT modifier = liberation_revolt_against } }
+							log = "----> [Prev.GetBestName] is a rebel who has been re-vasslized to [This.GetBestName] (Liberation Revolt)"
+							reverse_remove_opinion = { who = ROOT modifier = liberation_revolt_against }
+							set_defacto_vassal = PREV
+						}
 					}
 				}
 			}
@@ -7522,7 +7591,25 @@ liberation_revolt = {
 			if = {
 				limit = { NOT = { has_character_flag = began_revolt } }
 				clr_character_flag = nationalist_rebel
-				hidden_tooltip = { reverse_opinion = { who = FROM modifier = opinion_rebel_traitor months = 60 } }
+				imprison = FROM
+				hidden_tooltip = {
+					reverse_opinion = { who = FROM modifier = opinion_rebel_traitor months = 60 }
+					opinion = { who = FROM modifier = opinion_coerced_into_leaving_faction months = 60 }
+					if = {
+						limit = { NOT = { has_any_opinion_modifier = liberation_revolt_against } }
+						log = "----> [This.GetBestName] is a rebel who has been re-vasslized to [From.GetBestName] (Liberation Revolt)"
+						set_defacto_liege = FROM
+					}
+					if = {
+						limit = { has_any_opinion_modifier = liberation_revolt_against }
+						random_opinion_modifier_target = {
+							limit = { reverse_has_opinion_modifier = { who = ROOT modifier = liberation_revolt_against } }
+							log = "----> [Prev.GetBestName] is a rebel who has been re-vasslized to [This.GetBestName] (Liberation Revolt)"
+							reverse_remove_opinion = { who = ROOT modifier = liberation_revolt_against }
+							set_defacto_vassal = PREV
+						}
+					}
+				}
 				random_courtier = {
 					limit = { has_character_flag = began_revolt }
 					clr_character_flag = began_revolt
@@ -7540,6 +7627,7 @@ liberation_revolt = {
 				clear_wealth = yes
 				imprison = FROM
 				clr_character_flag = nationalist_rebel
+				clr_character_flag = began_revolt
 				hidden_tooltip = {
 					reverse_opinion = { modifier = opinion_rebel_traitor who = FROM months = 1200 }
 					add_character_modifier = { name = broken_spirit days = 3650 }
@@ -7547,28 +7635,61 @@ liberation_revolt = {
 				}
 			}
 		}
-		
-		# clean up remaining TOMs
-		if = {
-			limit = { FROM = { has_character_flag = liberation_revolt_war } }
-			pf_civil_war_cleanup_effect = yes
-		}
 	}
 
 	on_invalidation = {
 		log = "CB(liberation_revolt): INVALIDATED: [Root.GetTitledFirstName] of [Root.PrimaryTitle.GetBaseName] (ID: [Root.GetID]) vs. [From.GetTitledFirstName] of [From.PrimaryTitle.GetBaseName] (ID: [From.GetID])"
 		
+		# re-vassalize rebels
 		hidden_tooltip = {
-			FROM = {
-				clr_character_flag = has_current_revolt
+			any_attacker = {
+				any_vassal = {
+					limit = {
+						has_character_flag = nationalist_revolt
+						NOT = { has_character_flag = began_revolt }
+					}
+					clr_character_flag = nationalist_revolt
+					if = {
+						limit = { NOT = { has_any_opinion_modifier = liberation_revolt_against } }
+						log = "----> [This.GetBestName] is a rebel who has been re-vasslized to [From.GetBestName] (Liberation Revolt)"
+						set_defacto_liege = FROM
+					}
+					if = {
+						limit = { has_any_opinion_modifier = liberation_revolt_against }
+						random_opinion_modifier_target = {
+							limit = { reverse_has_opinion_modifier = { who = ROOT modifier = liberation_revolt_against } }
+							log = "----> [Prev.GetBestName] is a rebel who has been re-vasslized to [This.GetBestName] (Liberation Revolt)"
+							reverse_remove_opinion = { who = ROOT modifier = liberation_revolt_against }
+							set_defacto_vassal = PREV
+						}
+					}
+				}					
 				if = {
-					limit = { has_character_flag = liberation_revolt_war }
-					any_opinion_modifier_target = {
-						limit = { has_opinion_modifier = { who = PREV modifier = revolting_against } }			
-						set_defacto_liege = PREV
+					limit = {
+						has_character_flag = nationalist_revolt
+						NOT = { has_character_flag = began_revolt }
+					}
+					clr_character_flag = nationalist_revolt
+					if = {
+						limit = { NOT = { has_any_opinion_modifier = liberation_revolt_against } }
+						log = "----> [This.GetBestName] is a rebel who has been re-vasslized to [From.GetBestName] (Liberation Revolt)"
+						set_defacto_liege = FROM
+					}
+					if = {
+						limit = { has_any_opinion_modifier = liberation_revolt_against }
+						random_opinion_modifier_target = {
+							limit = { reverse_has_opinion_modifier = { who = ROOT modifier = liberation_revolt_against } }
+							log = "----> [Prev.GetBestName] is a rebel who has been re-vasslized to [This.GetBestName] (Liberation Revolt)"
+							reverse_remove_opinion = { who = ROOT modifier = liberation_revolt_against }
+							set_defacto_vassal = PREV
+						}
 					}
 				}
 			}
+		}
+		
+		FROM = {
+			clr_character_flag = has_current_revolt
 		}
 		
 		ROOT = {
@@ -7578,7 +7699,6 @@ liberation_revolt = {
 			}
 			if = {
 				limit = { NOT = { has_character_flag = began_revolt } }
-				clr_character_flag = nationalist_rebel
 				random_courtier = {
 					limit = { has_character_flag = began_revolt }
 					clr_character_flag = began_revolt
@@ -7587,15 +7707,10 @@ liberation_revolt = {
 			}
 			if = {
 				limit = { has_character_flag = began_revolt }
-				clear_wealth = yes
 				clr_character_flag = nationalist_rebel
+				clr_character_flag = began_revolt
+				clear_wealth = yes
 			}
-		}
-		
-		# clean up remaining TOMs
-		if = {
-			limit = { FROM = { has_character_flag = liberation_revolt_war } }
-			pf_civil_war_cleanup_effect = yes
 		}
 	}
 	

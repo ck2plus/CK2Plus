@@ -2275,8 +2275,8 @@ character_event = {
 						religion = ROOT
 						capital_scope = { kingdom = { title = event_target:revolt_kingdom } }
 						top_liege = { character = event_target:revolt_top_liege }
-						any_liege = { pf_war_flag_trigger = yes }
 						NOR = {
+							any_liege = { pf_war_flag_trigger = yes }
 							character = event_target:revolt_top_liege
 							has_truce = event_target:revolt_top_liege
 							prisoner = yes
@@ -2352,9 +2352,7 @@ character_event = {
 		#move onto other dukes/counts
 		if = {
 			limit = {
-				NOT = {
-					any_liege = { pf_war_flag_trigger = yes }
-				}
+				NOT = { any_liege = { pf_war_flag_trigger = yes } }
 			}
 			#check dukes
 			event_target:revolt_location = {
@@ -2367,6 +2365,7 @@ character_event = {
 								religion = ROOT
 								capital_scope = { kingdom = { title = event_target:revolt_kingdom } }
 								NOR = {
+									any_liege = { pf_war_flag_trigger = yes }
 									character = event_target:revolt_top_liege
 									has_truce = event_target:revolt_top_liege
 									prisoner = yes
@@ -2392,6 +2391,7 @@ character_event = {
 								religion = ROOT
 								capital_scope = { kingdom = { title = event_target:revolt_kingdom } }
 								NOR = {
+									any_liege = { pf_war_flag_trigger = yes }
 									character = event_target:revolt_top_liege
 									has_truce = event_target:revolt_top_liege
 									prisoner = yes
@@ -2656,50 +2656,21 @@ character_event = {
 			}
 		}
 
-		log = "[Root.GetBestName] has agreed to lead the liberation revolt of [From.GetBestName] against [Root.TopLiege.GetBestName] -- this should start a civil war."
+		log = "[Root.GetBestName] has agreed to lead the liberation revolt of [From.GetBestName] against [Root.TopLiege.GetBestName]"
 
+		save_event_target_as = leading_revolt
 		set_character_flag = nationalist_rebel
 		clr_character_flag = wants_to_lead_revolt
-		save_event_target_as = leading_revolt
-		add_trait = rebel
 		clr_character_flag = civil_war_faction_leader
 		clr_character_flag = civil_war_faction_member
 		clr_character_flag = will_join_civil_war
-		hidden_tooltip = {
-			# Remove prior loyalist/neutral TOMs, if any
-			top_liege = {
-				if = {
-					limit = { NOT = { has_character_flag = liberation_revolt_war } }
-					set_character_flag = liberation_revolt_war
-				}
-				if = {
-					limit = {
-						reverse_has_opinion_modifier = { who = ROOT modifier = pf_loyal_toward }
-					}
-					reverse_remove_opinion = { who = ROOT modifier = pf_loyal_toward }
-					remove_opinion = { who = ROOT modifier = pf_loyal_to_me }
-				}
-				if = {
-					limit = {
-						reverse_has_opinion_modifier = { who = ROOT modifier = pf_neutral_toward }
-					}
-					reverse_remove_opinion = { who = ROOT modifier = pf_neutral_toward }
-					remove_opinion = { who = ROOT modifier = pf_neutral_to_me }
-				}
-				if = {
-					limit = {
-						NOT = { reverse_has_opinion_modifier = { who = ROOT modifier = revolting_against } }
-					}
-					reverse_opinion = { who = ROOT modifier = revolting_against }
-				}
-				if = {
-					limit = {
-						NOT = { has_opinion_modifier = { who = ROOT modifier = revolting_against_me } }
-					}
-					opinion = { who = ROOT modifier = revolting_against_me }
-				}
-			}
+		
+		#mark original liege
+		liege = {
+			reverse_opinion = { who = ROOT modifier = liberation_revolt_against }
 		}
+		
+		#move the original revolter to the new leader's court
 		event_target:revolt_location = {
 			event_target:nationalist_revolt_leader = {
 				move_character = ROOT
@@ -2709,7 +2680,6 @@ character_event = {
 						province = PREV
 						home = PREV
 						owner = ROOT
-						#leader = THIS
 						scaled_by_biggest_garrison = 2.0
 						troops = {
 							archers = { 6 6 }
@@ -2726,6 +2696,8 @@ character_event = {
 				}
 			}
 		}
+		
+		#create additional rebel commanders
 		hidden_tooltip = {
 			create_character = {
 				random_traits = yes
@@ -2800,8 +2772,10 @@ character_event = {
 					}
 				}
 			}
-			any_liege = { character_event = { id = TOG.1044 } }
+			any_liege = { character_event = { id = TOG.1044 } } #inform lieges
 		}
+		
+		#create revolter title
 		if = {
 			limit = { top_liege = { tier = EMPEROR } }
 			primary_title = {
@@ -2832,6 +2806,8 @@ character_event = {
 				}
 			}
 		}
+		
+		#start the actual war
 		event_target:revolt_location = {
 			ROOT = {
 				event_target:revolt_top_liege = {
@@ -2845,6 +2821,8 @@ character_event = {
 				}
 			}
 		}
+		
+		#attempt to recruit additional revolters
 		hidden_tooltip = {
 			event_target:revolt_top_liege = {
 				any_realm_lord = {
@@ -2865,6 +2843,7 @@ character_event = {
 							trait = incapable
 							is_adult = no
 							reverse_has_opinion_modifier = { who = event_target:nationalist_revolt_leader modifier = refused_revolt_call }
+							any_liege = { pf_war_flag_trigger = yes }
 							any_liege = {
 								OR = {
 									culture = ROOT
@@ -3030,55 +3009,27 @@ character_event = {
 				event_target:nationalist_revolt_leader = { NOT = { culture = ROOT } }
 			}
 		}
-		add_trait = rebel
+		set_character_flag = nationalist_rebel
+		clr_character_flag = wants_to_lead_revolt
 		clr_character_flag = civil_war_faction_leader
 		clr_character_flag = civil_war_faction_member
 		clr_character_flag = will_join_civil_war
 		
 		log = "[Root.GetBestName] has agreed to join the liberation revolt of [From.GetBestName]."
 		
-		hidden_tooltip = {
-			# Remove prior loyalist/neutral TOMs, if any
-			top_liege = {
-				if = {
-					limit = { NOT = { has_character_flag = liberation_revolt_war } }
-					set_character_flag = liberation_revolt_war
-				}
-				if = {
-					limit = {
-						reverse_has_opinion_modifier = { who = ROOT modifier = pf_loyal_toward }
-					}
-					reverse_remove_opinion = { who = ROOT modifier = pf_loyal_toward }
-					remove_opinion = { who = ROOT modifier = pf_loyal_to_me }
-				}
-				if = {
-					limit = {
-						reverse_has_opinion_modifier = { who = ROOT modifier = pf_neutral_toward }
-					}
-					reverse_remove_opinion = { who = ROOT modifier = pf_neutral_toward }
-					remove_opinion = { who = ROOT modifier = pf_neutral_to_me }
-				}
-				if = {
-					limit = {
-						NOT = { reverse_has_opinion_modifier = { who = ROOT modifier = revolting_against } }
-					}
-					reverse_opinion = { who = ROOT modifier = revolting_against }
-				}
-				if = {
-					limit = {
-						NOT = { has_opinion_modifier = { who = ROOT modifier = revolting_against_me } }
-					}
-					opinion = { who = ROOT modifier = revolting_against_me }
-				}
-			}
+		#mark original liege
+		liege = {
+			reverse_opinion = { who = ROOT modifier = liberation_revolt_against }
 		}
-		clr_character_flag = wants_to_lead_revolt
+	
+		#join the war
 		if = {
 			limit = { event_target:nationalist_revolt_leader = { has_character_flag = nationalist_rebel } }
 			join_attacker_wars = event_target:nationalist_revolt_leader
 		}
 		if = {
 			limit = { event_target:leading_revolt = { has_character_flag = nationalist_rebel } }
+			opinion = { who = event_target:leading_revolt modifier = loyal_vassal years = 5 }
 			set_defacto_liege = event_target:leading_revolt
 		}
 	}
@@ -3698,6 +3649,206 @@ character_event = {
 				duration = 1825
 			}
 		}
+	}
+}
+
+# Nationalist revolter is no longer part of the war
+character_event = {
+	id = TOG.1054
+	
+	hide_window = yes
+	has_character_flag = nationalist_rebel
+	
+	trigger = {
+		OR = {
+			is_ruler = no
+			NOT = {
+				any_war = {
+					using_cb = liberation_revolt
+					attacker = {
+						OR = {
+							character = ROOT
+							culture_group = ROOT
+						}
+					}
+					any_attacker = {
+						OR = {
+							character = ROOT
+							is_liege_of = ROOT
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	mean_time_to_happen = {
+		days = 1
+	}
+	
+	immediate = {
+		clr_character_flag = nationalist_rebel
+		
+		if = {
+			limit = { has_any_opinion_modifier = liberation_revolt_against }
+			random_opinion_modifier_target = {
+				limit = { reverse_has_opinion_modifier = { who = ROOT modifier = liberation_revolt_against } }
+				reverse_remove_opinion = { who = ROOT modifier = liberation_revolt_against }
+				if = {
+					limit = {
+						ROOT = { independent = yes }
+						higher_tier_than = ROOT
+					}
+					set_defacto_vassal = ROOT
+				}
+			}
+			break = yes
+		}
+		if = {
+			limit = {
+				independent = yes
+				any_war = {
+					using_cb = liberation_revolt
+					any_attacker = {
+						OR = {
+							character = ROOT
+							is_liege_of = ROOT
+						}
+					}
+				}
+			}
+			any_war = {
+				limit = {
+					using_cb = liberation_revolt
+					any_attacker = {
+						OR = {
+							character = ROOT
+							is_liege_of = ROOT
+						}
+					}
+				}
+				defender = {
+					set_defacto_vassal = ROOT
+				}
+			}
+		}
+	}
+}
+
+# Nationalist revolter dies
+character_event = {
+	id = TOG.1055
+
+	is_triggered_only = yes
+	hide_window = yes
+
+	only_playable = yes
+	
+	trigger = {
+		has_character_flag = nationalist_rebel
+	}
+	
+	immediate = {
+		if = {
+			limit = { primary_title = { is_vice_royalty = yes } }
+			capital_scope = {
+				county = {
+					current_heir = {
+						save_event_target_as = liberation_heir
+					}
+				}
+			}
+		}
+		if = {
+			limit = { primary_title = { is_vice_royalty = no } }
+			primary_title = {
+				current_heir = {
+					save_event_target_as = liberation_heir
+				}
+			}
+		}
+		
+		#check if heir should inherit revolt status
+		event_target:liberation_heir = {
+			if = {
+				limit = {
+					culture = ROOT
+					in_revolt = no
+					OR = {
+						is_ruler = no
+						has_character_flag = nationalist_rebel
+						any_liege = { has_character_flag = nationalist_rebel }
+					}
+				}
+				set_character_flag = nationalist_rebel
+				if = {
+					limit = {
+						NOT = { has_any_opinion_modifier = liberation_revolt_against }
+						ROOT = { has_any_opinion_modifier = liberation_revolt_against }
+					}
+					ROOT = {
+						random_opinion_modifier_target = {
+							limit = { reverse_has_opinion_modifier = { who = PREV modifier = liberation_revolt_against } }
+							reverse_opinion = { who = PREVPREV modifier = liberation_revolt_against }
+						}
+					}
+				}
+				break = yes
+			}
+		}
+		
+		#failing that, end the war or re-vassalize to former liege
+		any_war = {
+			limit = {
+				using_cb = liberation_revolt
+				attacker = { character = ROOT }
+			}
+			end_war = invalid
+			break = yes
+		}
+		if = {
+			limit = { has_any_opinion_modifier = liberation_revolt_against }
+			random_opinion_modifier_target = {
+				limit = { reverse_has_opinion_modifier = { who = ROOT modifier = liberation_revolt_against } }
+				reverse_remove_opinion = { who = ROOT modifier = liberation_revolt_against }
+				if = {
+					limit = {
+						ROOT = { independent = yes }
+						higher_tier_than = ROOT
+					}
+					set_defacto_vassal = ROOT
+				}
+			}
+			break = yes
+		}
+		if = {
+			limit = {
+				independent = yes
+				any_war = {
+					using_cb = liberation_revolt
+					any_attacker = {
+						OR = {
+							character = ROOT
+							is_liege_of = ROOT
+						}
+					}
+				}
+			}
+			any_war = {
+				limit = {
+					using_cb = liberation_revolt
+					any_attacker = {
+						OR = {
+							character = ROOT
+							is_liege_of = ROOT
+						}
+					}
+				}
+				defender = {
+					set_defacto_vassal = ROOT
+				}
+			}
+		}						
 	}
 }
 
