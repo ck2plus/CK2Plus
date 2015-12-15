@@ -413,7 +413,7 @@ character_event = {
 				}
 			}
 			
-			log = "dying ruler is a civil war liege (proper liege defending against civil war)"
+			log = "dying ruler is a civil war liege (defending against civil war)"
 			
 			if = {
 				limit = {
@@ -421,9 +421,7 @@ character_event = {
 				}
 				event_target:heir = {
 					log = "heir was revolting against [Root.GetHerHim]... resetting [heir.GetTitledFirstName] and will try vassalizing [heir.GetHerHim]"
-					reverse_remove_opinion = { who = ROOT modifier = revolting_against_me }
-					remove_opinion = { who = ROOT modifier = revolting_against }
-					remove_trait = rebel
+					pf_teardown_rebel_effect = yes
 					set_defacto_liege = ROOT
 				}
 			}
@@ -557,14 +555,21 @@ character_event = {
 		
 		# Sanity check, first.
 		if = {
-			limit = { is_ruler = no }
-			log = "ERROR: dying ruler had rebel trait but isn't a ruler: [This.GetTitledName] (ID: [This.GetID]): aborting!"
-			log = ">>>>>"
-			break = yes
-		}
-		if = {
 			limit = { pf_in_revolt_trigger = no }
-			log = "ERROR: dying ruler had rebel trait but isn't involved in a PF revolt: [This.GetTitledFirstName] of the [This.PrimaryTitle.GetFullBaseName] (ID: [This.GetID]): aborting!"
+			log = "ERROR: dying ruler had rebel trait but isn't involved in a PF revolt. dump follows:"
+			pf_log_state_effect = yes
+			
+#			if = {
+#				limit = {
+#					has_global_flag = emf_debug
+#					multiplayer = no
+#				}
+#				random_playable_ruler = {
+#					limit = { ai = no }
+#					character_event = { id = emf_faction.1003 }
+#				}
+#			}
+			
 			log = ">>>>>"
 			break = yes
 		}
@@ -828,7 +833,77 @@ character_event = {
 			save_event_target_as = pf_new_title
 			holder_scope = { save_event_target_as = pf_new_owner }
 		}
+		#first check to see if the AI shouldn't have been granted a county
+		#this is for the anti-border gore events in CK2Plus only
+		if = {
+			limit = {
+				#only applies to AI vassals with multiple counties granted a county by AI lieges
+				ai = yes
+				event_target:pf_new_owner = {
+					ai = yes
+					num_of_count_titles = 2
+					NOT = { is_primary_heir = ROOT }
+				}
+				event_target:pf_new_title = {
+					tier = COUNT
+					NOR = {
+						#not within two provinces of a province owned by either the new ruler or one of his vassals
+						location = {
+							any_neighbor_province = {
+								OR = {
+									owner = {
+										OR = {
+											character = event_target:pf_new_owner
+											is_liege_or_above = event_target:pf_new_owner
+										}
+									}
+									any_neighbor_province = {
+										owner = {
+											OR = {
+												character = event_target:pf_new_owner
+												is_liege_or_above = event_target:pf_new_owner
+											}
+										}
+									}
+								}
+							}
+						}
+						#the de jure duchy is held by neither the new ruler or one of his vassals
+						location = {
+							duchy = {
+								holder_scope = {
+									OR = {
+										character = event_target:pf_new_owner
+										is_liege_or_above = event_target:pf_new_owner
+									}
+								}
+							}
+						}
+						#the de jure kingdom is held by neither the new ruler or one of his vassals
+						location = {
+							kingdom = {
+								holder_scope = {
+									OR = {
+										character = event_target:pf_new_owner
+										is_liege_or_above = event_target:pf_new_owner
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+			log = "[pf_new_owner.GetBestName] was granted the [pf_new_title.GetFullName] by [Root.GetBestName], but it will be re-assigned."
+			reverse_remove_opinion = { who = event_target:pf_new_owner modifier = opinion_granted_county }
+			event_target:new_title = {
+				grant_title_no_opinion = ROOT
+				remove_claim = event_target:pf_new_owner
+			}
+			character_event = { id = Plus.1755 } #re-assign title
+			break = yes
+		}
 		#claimants to the granted title who aren't close relatives of the new owner are displeased
+		log = "[pf_new_owner.GetBestName] was granted the [pf_new_title.GetFullName] by [Root.GetBestName]"
 		event_target:pf_new_title = {
 			any_claimant = {
 				limit = {
@@ -2941,7 +3016,7 @@ character_event = {
 			reverse_has_opinion_modifier = { who = PREV modifier = revolting_against }
 			in_revolt = yes
 			any_war = {
-				defender = { character = PREVPREV }
+				defender = { character = PREV }
 				attacker = { # Old revolt leader
 					NOR = {
 						character = ROOT
@@ -3026,12 +3101,12 @@ character_event = {
 	hide_window = yes
 
 	trigger = {
-		has_game_started = yes
 		is_dying = no # This is handled directly on_death by PlusFaction.205
 		OR = {
 			trait = loyalist
 			trait = neutral
 		}
+		has_game_started = yes
 		NOT = { has_global_flag = pf_teardown_lock }
 	}
 

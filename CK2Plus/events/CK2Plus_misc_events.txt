@@ -3989,3 +3989,591 @@ character_event = {
 	}
 }
 
+#######################################
+# ANTI-BORDER GORE EVENTS
+# Written by Rylock
+#######################################
+
+# Ruler returned a county they should not have been granted
+character_event = {
+	id = Plus.1755
+	
+	hide_window = yes
+	is_triggered_only = yes
+	
+	immediate = {
+		#grant the county to a neighbor, if possible
+		event_target:new_title = {
+			location = {
+				random_neighbor_province = {
+					limit = {
+						owner = {
+							vassal_of = ROOT
+							religion = ROOT
+							culture_group = ROOT
+							prisoner = no
+							opinion = { who = ROOT value = -25 }
+							reverse_opinion = { who = ROOT value = -25 }
+							NOR = {
+								relative_power = { who = ROOT power = 1.0 }
+								is_rival = ROOT
+								trait = incapable
+							}
+						}
+					}
+					owner = {
+						save_event_target_as = new_owner
+						log = "---> [new_title.GetFullName] granted to [new_owner.GetBestName], a neighboring province owner."
+						event_target:new_title = { grant_title = event_target:new_owner }
+						set_defacto_liege = ROOT
+					}
+					break = yes
+				}
+			}
+		}
+		
+		#grant_title to an appropriate adult dynasty member, if possible
+		top_liege = {
+			random_realm_character = {
+				limit = {
+					is_ruler = no
+					prisoner = no
+					opinion = { who = ROOT value = -25 }
+					reverse_opinion = { who = ROOT value = -25 }
+					is_liege_or_above = ROOT
+					NOR = {
+						is_rival = ROOT
+						trait = incapable
+						age = 50
+					}
+					is_adult = yes
+					OR = {
+						dynasty = ROOT
+						is_close_relative = ROOT
+					}
+					OR = {
+						fertility = 0.1
+						num_of_children = 1
+					}
+					OR = {
+						event_target:new_title = { has_law = true_cognatic_succession }
+						AND = {
+							is_female = no
+							event_target:new_title = {
+								NOT = { has_law = enatic_succession }
+								NOT = { has_law = enatic_cognatic_succession }
+							}
+						}
+						AND = {
+							is_female = yes
+							event_target:new_title = {
+								NOT = { has_law = agnatic_succession }
+								NOT = { has_law = cognatic_succession }
+							}
+						}
+					}
+				}
+				save_event_target_as = new_owner
+				log = "---> [new_title.GetFullName] granted to [new_owner.GetBestName], an adult dynasty member."
+				event_target:new_title = { grant_title = event_target:new_owner }
+				set_defacto_liege = ROOT
+				break = yes
+			}
+		}
+		
+		#grant_title to an appropriate child, if possible
+		top_liege = {
+			random_realm_character = {
+				limit = {
+					is_ruler = no
+					prisoner = no
+					opinion = { who = ROOT value = -25 }
+					reverse_opinion = { who = ROOT value = -25 }
+					is_liege_or_above = ROOT
+					NOR = {
+						is_rival = ROOT
+						trait = incapable
+						age = 50
+					}
+					OR = {
+						is_child_of = ROOT
+						father_even_if_dead = { is_child_of = ROOT }
+						mother_even_if_dead = { is_child_of = ROOT }
+					}
+					OR = {
+						fertility = 0.1
+						num_of_children = 1
+					}
+					OR = {
+						event_target:new_title = { has_law = true_cognatic_succession }
+						AND = {
+							is_female = no
+							event_target:new_title = {
+								NOT = { has_law = enatic_succession }
+								NOT = { has_law = enatic_cognatic_succession }
+							}
+						}
+						AND = {
+							is_female = yes
+							event_target:new_title = {
+								NOT = { has_law = agnatic_succession }
+								NOT = { has_law = cognatic_succession }
+							}
+						}
+					}
+				}
+				save_event_target_as = new_owner
+				log = "---> [new_title.GetFullName] granted to [new_owner.GetBestName], a child relative."
+				event_target:new_title = { grant_title = event_target:new_owner }
+				set_defacto_liege = ROOT
+				break = yes
+			}
+		}
+		
+		#grant title to an appropriate courtier, if possible
+		random_courtier = {
+			limit = {
+				is_ruler = no
+				prisoner = no
+				opinion = { who = ROOT value = 0 }
+				reverse_opinion = { who = ROOT value = 0 }
+				NOR = {
+					is_rival = ROOT
+					trait = incapable
+				}
+				OR = {
+					is_councillor = yes
+					martial = 8
+					diplomacy = 8
+					intrigue = 8
+					stewardship = 8
+				}
+				OR = {
+					fertility = 0.1
+					num_of_children = 1
+				}
+				OR = {
+					event_target:new_title = { has_law = true_cognatic_succession }
+					AND = {
+						is_female = no
+						event_target:new_title = {
+							NOT = { has_law = enatic_succession }
+							NOT = { has_law = enatic_cognatic_succession }
+						}
+					}
+					AND = {
+						is_female = yes
+						event_target:new_title = {
+							NOT = { has_law = agnatic_succession }
+							NOT = { has_law = cognatic_succession }
+						}
+					}
+				}
+			}
+			save_event_target_as = new_owner
+			log = "---> [new_title.GetFullName] granted to [new_owner.GetBestName], a capable courtier."
+			event_target:new_title = { grant_title = event_target:new_owner }
+			set_defacto_liege = ROOT
+			break = yes
+		}
+		
+		#create new character
+		create_character = {
+			random_traits = yes
+			dynasty = random
+			female = no
+			religion = ROOT
+			culture = ROOT
+		}
+		new_character = {
+			save_event_target_as = new_owner
+			log = "---> [new_title.GetFullName] granted to [new_owner.GetBestName], a new character."
+			event_target:new_title = { grant_title = event_target:new_owner }
+			set_defacto_liege = ROOT
+		}
+	}
+}
+
+# AI vassal has a vassal too far away
+character_event = {
+	id = Plus.1757
+	
+	hide_window = yes
+	only_playable = yes
+	ai = yes
+	
+	trigger = {
+		higher_real_tier_than = COUNT
+		independent = no
+		#both my liege and I can't be involved in a war or revolt
+		war = no
+		pf_war_trait_trigger = no
+		liege = {
+			ai = yes
+			war = no
+		}
+		NOT = { any_liege = { pf_war_flag_trigger = yes } }
+		#has a vassal who holds a county too far away from mine and is not a de jure vassal of mine
+		any_vassal = {
+			num_of_count_titles = 1
+			war = no
+			pf_war_trait_trigger = no
+			NOT = {
+				any_demesne_title = {
+					tier = COUNT
+					location = {
+						OR = {
+							duchy = { holder = ROOT }
+							kingdom = { holder = ROOT }
+							any_neighbor_province = { owner = { character = ROOT } }
+							ROOT = {
+								any_demesne_title = {
+									tier = COUNT
+									location = {
+										NOT = { distance = { where = PREVPREVPREV value = 100 } }
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	mean_time_to_happen = {
+		days = 7
+	}
+	
+	immediate = {
+		save_event_target_as = old_liege
+		liege = { save_event_target_as = current_liege }
+		random_vassal = {
+			limit = {
+				num_of_count_titles = 1
+				war = no
+				pf_war_trait_trigger = no
+				NOT = {
+					any_demesne_title = {
+						tier = COUNT
+						location = {
+							OR = {
+								duchy = { holder = ROOT }
+								kingdom = { holder = ROOT }
+								any_neighbor_province = { owner = { character = ROOT } }
+								ROOT = {
+									any_demesne_title = {
+										tier = COUNT
+										location = {
+											NOT = { distance = { where = PREVPREVPREV value = 100 } }
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+			save_event_target_as = reassigned_vassal
+			#temporarily assign the vassal back to my liege
+			set_defacto_liege = event_target:current_liege
+			event_target:current_liege = {
+				reverse_remove_opinion = { who = ROOT modifier = opinion_vassal_transfer }
+				character_event = { id = Plus.1758 }
+			}
+		}
+	}
+}
+
+character_event = {
+	id = Plus.1758
+	
+	hide_window = yes
+	is_triggered_only = yes
+	
+	immediate = {
+		#keep the vassal if not over the vassal limit
+		if = {
+			limit = { NOT = { over_vassal_limit = 1 } }
+			save_event_target_as = new_liege
+			log = "[reassigned_vassal.GetBestName] was too distant a vassal from [old_liege.GetBestName], and thus was re-assigned as vassal to [new_liege.GetBestName]"
+		}
+		#find a closer new liege if over the vassal limit
+		if = {
+			limit = { over_vassal_limit = 1 }
+			#first look for a vassal who doesn't hate me, who is not too strong, and is the de jure liege or a neighbor
+			random_vassal = {
+				limit = {
+					NOT = { character = event_target:old_liege }
+					NOT = { trait = rebel }
+					NOT = { relative_power = { who = ROOT power = 1.0 } }
+					NOT = { in_faction = faction_separatist }
+					opinion = { who = ROOT value = 0 }
+					higher_tier_than = event_target:reassigned_vassal
+					OR = {
+						de_jure_vassal_or_below = event_target:reassigned_vassal
+						any_demesne_title = {
+							tier = COUNT
+							location = {
+								any_neighbor_province = { owner = { character = event_target:reassigned_vassal } }
+							}
+						}
+					}
+				}
+				save_event_target_as = new_liege
+				log = "[reassigned_vassal.GetBestName] was too distant a vassal from [old_liege.GetBestName], and thus was re-assigned as vassal to [new_liege.GetBestName]"
+				opinion = { who = ROOT modifier = opinion_vassal_transfer }
+				event_target:reassigned_vassal = { set_defacto_liege = event_target:new_liege }
+				break = yes
+			}
+			#then look for a de jure liege or neighbor who doesn't hate me
+			random_vassal = {
+				limit = {
+					NOT = { character = event_target:old_liege }
+					NOT = { trait = rebel }
+					opinion = { who = ROOT value = 0 }
+					higher_tier_than = event_target:reassigned_vassal
+					OR = {
+						de_jure_vassal_or_below = event_target:reassigned_vassal
+						any_demesne_title = {
+							tier = COUNT
+							location = {
+								any_neighbor_province = { owner = { character = event_target:reassigned_vassal } }
+							}
+						}
+					}
+				}
+				save_event_target_as = new_liege
+				log = "[reassigned_vassal.GetBestName] was too distant a vassal from [old_liege.GetBestName], and thus was re-assigned as vassal to [new_liege.GetBestName]"
+				opinion = { who = ROOT modifier = opinion_vassal_transfer }
+				event_target:reassigned_vassal = { set_defacto_liege = event_target:new_liege }
+				break = yes
+			}
+			#then look for any de jure liege or neighbor who isn't a rival
+			random_vassal = {
+				limit = {
+					NOT = { character = event_target:old_liege }
+					NOT = { trait = rebel }
+					NOT = { is_rival = ROOT }
+					higher_tier_than = event_target:reassigned_vassal
+					OR = {
+						de_jure_vassal_or_below = event_target:reassigned_vassal
+						any_demesne_title = {
+							tier = COUNT
+							location = {
+								any_neighbor_province = { owner = { character = event_target:reassigned_vassal } }
+							}
+						}
+					}
+				}
+				save_event_target_as = new_liege
+				log = "[reassigned_vassal.GetBestName] was too distant a vassal from [old_liege.GetBestName], and thus was re-assigned as vassal to [new_liege.GetBestName]"
+				opinion = { who = ROOT modifier = opinion_vassal_transfer }
+				event_target:reassigned_vassal = { set_defacto_liege = event_target:new_liege }
+				break = yes
+			}
+			#then look for a vassal who isn't too far away, who doesn't hate me, and who isn't too strong
+			random_vassal = {
+				limit = {
+					NOT = { character = event_target:old_liege }
+					NOT = { trait = rebel }
+					opinion = { who = ROOT value = 0 }
+					NOT = { relative_power = { who = ROOT power = 1.0 } }
+					NOT = { in_faction = faction_separatist }
+					higher_tier_than = event_target:reassigned_vassal
+					OR = {
+						de_jure_vassal_or_below = event_target:reassigned_vassal
+						any_demesne_title = {
+							tier = COUNT
+							location = {
+								OR = {
+									any_neighbor_province = { owner = { character = event_target:reassigned_vassal } }
+									event_target:reassigned_vassal = {
+										any_demesne_title = {
+											tier = COUNT
+											location = {
+												NOT = { distance = { where = PREVPREVPREV value = 50 } }
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+				save_event_target_as = new_liege
+				log = "[reassigned_vassal.GetBestName] was too distant a vassal from [old_liege.GetBestName], and thus was re-assigned as vassal to [new_liege.GetBestName]"
+				opinion = { who = ROOT modifier = opinion_vassal_transfer }
+				event_target:reassigned_vassal = { set_defacto_liege = event_target:new_liege }
+				break = yes
+			}
+			#then look for a vassal who isn't too far away and who doesn't hate me
+			random_vassal = {
+				limit = {
+					NOT = { character = event_target:old_liege }
+					NOT = { trait = rebel }
+					opinion = { who = ROOT value = 0 }
+					higher_tier_than = event_target:reassigned_vassal
+					OR = {
+						de_jure_vassal_or_below = event_target:reassigned_vassal
+						any_demesne_title = {
+							tier = COUNT
+							location = {
+								OR = {
+									any_neighbor_province = { owner = { character = event_target:reassigned_vassal } }
+									event_target:reassigned_vassal = {
+										any_demesne_title = {
+											tier = COUNT
+											location = {
+												NOT = { distance = { where = PREVPREVPREV value = 50 } }
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+				save_event_target_as = new_liege
+				log = "[reassigned_vassal.GetBestName] was too distant a vassal from [old_liege.GetBestName], and thus was re-assigned as vassal to [new_liege.GetBestName]"
+				opinion = { who = ROOT modifier = opinion_vassal_transfer }
+				event_target:reassigned_vassal = { set_defacto_liege = event_target:new_liege }
+				break = yes
+			}
+			#then look for a vassal who isn't too far away who isn't a rival
+			random_vassal = {
+				limit = {
+					NOT = { character = event_target:old_liege }
+					NOT = { trait = rebel }
+					NOT = { is_rival = ROOT }
+					higher_tier_than = event_target:reassigned_vassal
+					OR = {
+						de_jure_vassal_or_below = event_target:reassigned_vassal
+						any_demesne_title = {
+							tier = COUNT
+							location = {
+								OR = {
+									any_neighbor_province = { owner = { character = event_target:reassigned_vassal } }
+									event_target:reassigned_vassal = {
+										any_demesne_title = {
+											tier = COUNT
+											location = {
+												NOT = { distance = { where = PREVPREVPREV value = 50 } }
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+				save_event_target_as = new_liege
+				log = "[reassigned_vassal.GetBestName] was too distant a vassal from [old_liege.GetBestName], and thus was re-assigned as vassal to [new_liege.GetBestName]"
+				opinion = { who = ROOT modifier = opinion_vassal_transfer }
+				event_target:reassigned_vassal = { set_defacto_liege = event_target:new_liege }
+				break = yes
+			}
+			#then look for a vassal who's a bit further away, who doesn't hate me, and who isn't too strong
+			random_vassal = {
+				limit = {
+					NOT = { character = event_target:old_liege }
+					NOT = { trait = rebel }
+					opinion = { who = ROOT value = 0 }
+					NOT = { relative_power = { who = ROOT power = 1.0 } }
+					NOT = { in_faction = faction_separatist }
+					higher_tier_than = event_target:reassigned_vassal
+					OR = {
+						de_jure_vassal_or_below = event_target:reassigned_vassal
+						any_demesne_title = {
+							tier = COUNT
+							location = {
+								OR = {
+									any_neighbor_province = { owner = { character = event_target:reassigned_vassal } }
+									event_target:reassigned_vassal = {
+										any_demesne_title = {
+											tier = COUNT
+											location = {
+												NOT = { distance = { where = PREVPREVPREV value = 100 } }
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+				save_event_target_as = new_liege
+				log = "[reassigned_vassal.GetBestName] was too distant a vassal from [old_liege.GetBestName], and thus was re-assigned as vassal to [new_liege.GetBestName]"
+				opinion = { who = ROOT modifier = opinion_vassal_transfer }
+				event_target:reassigned_vassal = { set_defacto_liege = event_target:new_liege }
+				break = yes
+			}
+			#then look for a vassal who's a bit further away and who doesn't hate me
+			random_vassal = {
+				limit = {
+					NOT = { character = event_target:old_liege }
+					NOT = { trait = rebel }
+					opinion = { who = ROOT value = 0 }
+					higher_tier_than = event_target:reassigned_vassal
+					OR = {
+						de_jure_vassal_or_below = event_target:reassigned_vassal
+						any_demesne_title = {
+							tier = COUNT
+							location = {
+								OR = {
+									any_neighbor_province = { owner = { character = event_target:reassigned_vassal } }
+									event_target:reassigned_vassal = {
+										any_demesne_title = {
+											tier = COUNT
+											location = {
+												NOT = { distance = { where = PREVPREVPREV value = 100 } }
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+				save_event_target_as = new_liege
+				log = "[reassigned_vassal.GetBestName] was too distant a vassal from [old_liege.GetBestName], and thus was re-assigned as vassal to [new_liege.GetBestName]"
+				opinion = { who = ROOT modifier = opinion_vassal_transfer }
+				event_target:reassigned_vassal = { set_defacto_liege = event_target:new_liege }
+				break = yes
+			}
+			#then look for a vassal who's a bit further away who isn't a rival
+			random_vassal = {
+				limit = {
+					NOT = { character = event_target:old_liege }
+					NOT = { trait = rebel }
+					NOT = { is_rival = ROOT }
+					higher_tier_than = event_target:reassigned_vassal
+					OR = {
+						de_jure_vassal_or_below = event_target:reassigned_vassal
+						any_demesne_title = {
+							tier = COUNT
+							location = {
+								OR = {
+									any_neighbor_province = { owner = { character = event_target:reassigned_vassal } }
+									event_target:reassigned_vassal = {
+										any_demesne_title = {
+											tier = COUNT
+											location = {
+												NOT = { distance = { where = PREVPREVPREV value = 100 } }
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+				save_event_target_as = new_liege
+				log = "[reassigned_vassal.GetBestName] was too distant a vassal from [old_liege.GetBestName], and thus was re-assigned as vassal to [new_liege.GetBestName]"
+				opinion = { who = ROOT modifier = opinion_vassal_transfer }
+				event_target:reassigned_vassal = { set_defacto_liege = event_target:new_liege }
+			}
+		}
+	}
+}
+
