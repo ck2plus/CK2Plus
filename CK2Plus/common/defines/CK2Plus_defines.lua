@@ -214,11 +214,13 @@ NDefines.NMilitary.MAJOR_BATTLE_WARSCORE = 5.0					-- The minium warscore gain n
 
 NDefines.NTechnology.IDEAL_YEAR_AHEAD_PENALTY_INVEST = 0.4			-- Percent increase in cost pre level ahead of ideal date
 NDefines.NEngine.EVENT_PROCESS_OFFSET = 20  						-- Events are checked every X day per character or province (1 is ideal but CPU heavy)
+NDefines.NAI.INTERACTION_THRESHOLD_FOR_NO = 50						-- Interactions with chance below this will always be declined
+NDefines.NAI.INTERACTION_THRESHOLD_FOR_YES = 50						-- Interactions with chance above this will always be accepted
 NDefines.NAI.DOW_AGGRESSION_FACTOR = 1.0							-- General aggressiveness declarations of war
 NDefines.NAI.REVOLT_DISTANCE_FACTOR = 0								-- Multiplier for how much distance from capital affects independence minded revolters
 NDefines.NAI.REVOLT_OTHER_INDEP_RISK = 0							-- Each ongoing other independence revolt increases revolt risk by this amount for all independence-minded revolters
 NDefines.NAI.REVOLT_OTHER_INDEP_RISK_CAP = 0						-- Cap to the total risk from the above	
-NDefines.NAI.MARRIAGE_AI_PRESTIGE_VALUE = 50						-- Multiplier for how highly AI values prestige when arranging marriages and evaluating marriage offers
+NDefines.NAI.MARRIAGE_AI_PRESTIGE_VALUE = 1							-- Multiplier for how highly AI values prestige when arranging marriages and evaluating marriage offers
 NDefines.NAI.MAX_EMPIRE_TITLES_TO_CREATE = 1						-- AI will not seek to create/usurp more Empire-level titles than this (0 for unlimited)
 NDefines.NAI.AI_EMPEROR_CREATES_KINGDOMS = 1						-- If set to 1 AI Emperors will create King-level titles
 NDefines.NAI.AI_ALWAYS_CREATES_DUCHIES = 1							-- If set to 1 AI will always create Duchy titles even if it has Gavelkind etc	
