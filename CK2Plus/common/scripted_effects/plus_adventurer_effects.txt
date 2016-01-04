@@ -1,0 +1,184 @@
+# Scripted effects for adventurer events
+
+# ROOT = adventurer
+adv_find_adventurer_target_effect = {
+	random_opinion_modifier_target = {
+		limit = {
+			reverse_has_opinion_modifier = { who = ROOT modifier = opinion_claimant_adventure_target }
+		}
+		save_event_target_as = adventurer_target
+	}
+}
+
+# ROOT = adventurer
+adv_reset_location_effect = {
+	if = {
+		limit = {
+			NOT = { event_target:current_court = { always = yes } }
+		}
+		location = { save_event_target_as = current_court }
+	}
+}
+
+# ROOT = adventurer
+adv_find_friendly_court_effect = {
+	# find a court that supported me first
+	random_opinion_modifier_target = {
+		limit = {
+			is_playable = yes
+			demesne_size = 1
+			reverse_has_opinion_modifier = { who = ROOT modifier = backed_adventurer }
+		}
+		ROOT = { set_character_flag = found_home }
+		save_event_target_as = new_court_home
+	}
+	# failing that, find a court that let me stay
+	random_opinion_modifier_target = {
+		limit = {
+			ROOT = { NOT = { has_character_flag = found_home } }
+			is_playable = yes
+			demesne_size = 1
+			reverse_has_opinion_modifier = { who = ROOT modifier = let_adventurer_stay }
+		}
+		ROOT = { set_character_flag = found_home }
+		save_event_target_as = new_court_home
+	}
+	# failing that, my current location will have to do
+	if = {
+		limit = { NOT = { has_character_flag = found_home } }
+		location = { owner = { save_event_target_as = new_court_home } }
+	}
+	clr_character_flag = found_home
+}
+
+# THIS = adventurer, must be used inside the adventurer's scope
+adv_abandon_adventure_effect = {
+	# move all courtiers to the new court
+	any_courtier = { move_character = event_target:new_court_home }
+	
+	# remove all adventurer statuses
+	remove_character_modifier = planning_claimant_adventure
+	remove_character_modifier = do_not_disturb
+	clr_character_flag = planning_claimant_adventure
+	clr_character_flag = warned_adventurer_target
+	clr_character_flag = not_interested_in_movements
+	clr_character_flag = found_home
+	any_opinion_modifier_target = {
+		limit = { has_opinion_modifier = { who = PREV modifier = opinion_targeted_by_adventurer } }
+		remove_opinion = { who = PREV modifier = opinion_targeted_by_adventurer }
+		reverse_remove_opinion = { who = PREV modifier = opinion_claimant_adventure_target }
+	}
+	any_demesne_title = {
+		limit = { adventurer = yes }
+		unsafe_destroy_landed_title = THIS
+	}
+	move_character = event_target:new_court_home
+}
+
+# THIS = targeted ruler, ROOT = adventurer
+adv_started_war_effect = {
+	reverse_remove_opinion = { who = ROOT modifier = opinion_claimant_adventure_target }
+	remove_opinion = { who = ROOT modifier = opinion_targeted_by_adventurer }
+	random_vassal = {
+		limit = {
+			leads_faction = faction_pretender
+			supported_claimant = { character = ROOT }
+		}
+		letter_event = { id = TOG.1250 days = 2 }
+	}
+	ROOT = {
+		character_event = { id = TOG.1247 days = 1 } # double-check that we're at war
+	}
+}
+
+# THIS = adventurer, PREV = chosen province location
+adv_buy_troops_effect = {
+	if = {
+		limit = { wealth = 50 }
+		wealth = -50
+		spawn_unit = {
+			province = PREV
+			home = PREV
+			owner = THIS
+			match_character = event_target:adventurer_target
+			match_mult = 0.05
+			match_min = 100
+			match_max = 2000
+			attrition = 0.25
+			earmark = claimant_adventure
+			merge = yes
+			cannot_inherit = yes
+			reinforces = yes
+		}
+		spawn_fleet = {
+			province = closest # closest sea zone
+			owner = THIS
+			disband_on_peace = yes
+			merge = yes
+			troops = {
+				galleys = { 20 20 }
+			}
+			earmark = claimant_adventure
+		}
+	}
+}
+
+# ROOT = approached character, FROM = adventurer
+adv_donate_to_adventurer_effect = {
+	if = {
+		limit = {
+			wealth = 10
+			NOT = { wealth = 40 }
+		}
+		wealth = -10
+		FROM = { wealth = 10 }
+	}
+	if = {
+		limit = {
+			wealth = 40
+			NOT = { wealth = 80 }
+		}
+		wealth = -20
+		FROM = { wealth = 20 }
+	}
+	if = {
+		limit = {
+			wealth = 80
+			NOT = { wealth = 120 }
+		}
+		wealth = -40
+		FROM = { wealth = 40 }
+	}
+	if = {
+		limit = {
+			wealth = 120
+			NOT = { wealth = 160 }
+		}
+		wealth = -60
+		FROM = { wealth = 60 }
+	}
+	if = {
+		limit = {
+			wealth = 160
+			NOT = { wealth = 200 }
+		}
+		wealth = -80
+		FROM = { wealth = 80 }
+	}
+	if = {
+		limit = {
+			wealth = 200
+			NOT = { wealth = 300 }
+		}
+		wealth = -100
+		FROM = { wealth = 100 }
+	}
+	if = {
+		limit = {
+			wealth = 300
+		}
+		wealth = -150
+		FROM = { wealth = 150 }
+	}
+}
+
