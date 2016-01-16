@@ -399,18 +399,19 @@ character_event = {
 			}
 		}
 		
-		if = { # Are we a civil war liege (defender)?
+		if = { # Are we a civil war liege (defender) that is allowed to pass on our revolt to someone?
 			limit = {
 				any_war = {
 					defender = { character = ROOT }
-					OR = {
-						using_cb = cb_faction_overthrow_ruler
-						using_cb = claim_on_liege_plot
-						using_cb = other_claim_on_liege_plot
-						using_cb = religious_overthrow_ruler
-						using_cb = cb_faction_independence
-					}
+					using_cb = cb_faction_overthrow_ruler
 				}
+				# Our liege cannot also be our heir if the revolt is to continue, because the revolt leader's
+				# temporary liege (i.e., NOT the liege_before_war) for the revolt cannot also be the target
+				# of the revolt. This would otherwise violate the premises of the hard-coded revolt title
+				# system, although if Paradox wanted, they could handle this more gracefully by elevating the
+				# revolt title to a yet higher tier and revassalizing the revolt title to the liege
+				# of the dying ruler's liege/heir (or independent if no such liege).
+				NOT = { liege = { character = event_target:heir } }
 			}
 			
 			log = "dying ruler is a civil war liege (defending against civil war)"
@@ -469,13 +470,7 @@ character_event = {
 			any_war = {
 				limit = {
 					defender = { character = ROOT }
-					OR = {
-						using_cb = cb_faction_overthrow_ruler
-						using_cb = claim_on_liege_plot
-						using_cb = other_claim_on_liege_plot
-						using_cb = religious_overthrow_ruler
-						using_cb = cb_faction_independence
-					}
+					using_cb = cb_faction_overthrow_ruler
 				}
 				attacker = {
 					if = {
@@ -542,6 +537,24 @@ character_event = {
 				}
 				reverse_opinion = { who = event_target:heir modifier = pf_neutral_to_me }
 				opinion = { who = event_target:heir modifier = pf_neutral_toward }
+			}
+		}
+		
+		if = { # Are we a civil war liege (defender) that is NOT allowed to pass on our revolt to someone?
+			limit = {
+				any_war = {
+					defender = { character = ROOT }
+					using_cb = cb_faction_overthrow_ruler
+				}
+				liege = { character = event_target:heir }
+			}
+			log = "dying ruler is a civil war liege, but [Root.GetHerHis] heir is also [Root.GetHerHis] liege, so the revolt should invalidate."			
+			any_war = {
+				limit = {
+					defender = { character = ROOT }
+					using_cb = cb_faction_overthrow_ruler
+				}
+				end_war = invalid # civil war state will be cleaned-up gracefully, because the war defender is [barely] still alive.
 			}
 		}
 		
