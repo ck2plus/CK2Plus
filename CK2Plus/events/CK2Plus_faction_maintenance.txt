@@ -256,6 +256,10 @@ character_event = {
 					using_cb = cb_faction_independence
 				}
 			}
+			has_any_opinion_modifier = revolting_against
+			has_any_opinion_modifier = revolting_against_me
+			has_any_opinion_modifier = pf_loyal_toward
+			has_any_opinion_modifier = pf_neutral_toward
 			any_vassal = { pf_member_trigger = yes }
 		}
 	}
@@ -290,7 +294,6 @@ character_event = {
 		
 		if = {
 			limit = {
-				NOT = { liege_before_war = { character = event_target:heir } }
 				OR = {
 					higher_real_tier_than = event_target:heir
 					event_target:heir = { is_ruler = no }
@@ -366,8 +369,8 @@ character_event = {
 		}
 		
 		# If we have these, we don't want them to persist after death
-		remove_trait = loyalist
-		remove_trait = neutral
+		pf_teardown_loyalist_effect = yes
+		pf_teardown_neutral_effect = yes
 		
 		if = {
 			limit = {
@@ -525,6 +528,8 @@ character_event = {
 				}
 				reverse_opinion = { who = event_target:heir modifier = revolting_against_me }
 				opinion = { who = event_target:heir modifier = revolting_against }
+				reverse_remove_opinion = { who = ROOT modifier = revolting_against_me }
+				remove_opinion = { who = ROOT modifier = revolting_against }
 			}
 			
 			# Transfer loyalist/neutral TOMs
@@ -545,6 +550,8 @@ character_event = {
 				}
 				reverse_opinion = { who = event_target:heir modifier = pf_loyal_to_me }
 				opinion = { who = event_target:heir modifier = pf_loyal_toward }
+				reverse_remove_opinion = { who = ROOT modifier = pf_loyal_to_me }
+				remove_opinion = { who = ROOT modifier = pf_loyal_toward }
 			}
 			any_vassal = { # Those neutral to me
 				limit = {
@@ -563,6 +570,8 @@ character_event = {
 				}
 				reverse_opinion = { who = event_target:heir modifier = pf_neutral_to_me }
 				opinion = { who = event_target:heir modifier = pf_neutral_toward }
+				reverse_remove_opinion = { who = ROOT modifier = pf_neutral_to_me }
+				remove_opinion = { who = ROOT modifier = pf_neutral_toward }
 			}
 		}
 		
@@ -615,27 +624,25 @@ character_event = {
 				end_war = invalid # civil war state will be cleaned-up gracefully, because the war defender is [barely] still alive.
 			}
 		}
-		
+
 		if = {
 			limit = { NOT = { trait = rebel } }
 			log = ">>>>>"
 			break = yes
 		}
 		
-		remove_trait = rebel
-		
 		# We're supposed to be involved in a PF revolt (as a revolter), if we made it here.
-
+		
 		log = "dying ruler is a revolter"
 		
 		random_opinion_modifier_target = {
-			limit = { has_opinion_modifier = { who = ROOT modifier = revolting_against_me } }
-			save_event_target_as = revolt_target
+			limit = { reverse_has_opinion_modifier = { who = PREV modifier = revolting_against } }
+			save_event_target_as = pf_war_liege
 		}
 		
 		if = {
 			limit = {
-				event_target:revolt_target = {
+				event_target:pf_war_liege = {
 					event_target:heir = {
 						NOR = {
 							character = PREV
@@ -645,7 +652,10 @@ character_event = {
 							AND = {
 								trait = rebel
 								any_opinion_modifier_target = {
-									has_opinion_modifier = { who = PREV modifier = revolting_against_me }
+									reverse_has_opinion_modifier = {
+										who = PREV
+										modifier = revolting_against
+									}
 									NOT = { character = PREVPREV }
 								}
 							}
@@ -763,7 +773,7 @@ character_event = {
 				}
 			}
 			
-			event_target:revolt_target = {
+			event_target:pf_war_liege = {
 				if = {
 					limit = {
 						NOR = {
@@ -779,6 +789,8 @@ character_event = {
 					}
 					reverse_opinion = { who = event_target:heir modifier = revolting_against }
 					opinion = { who = event_target:heir modifier = revolting_against_me }
+					reverse_remove_opinion = { who = ROOT modifier = revolting_against }
+					remove_opinion = { who = ROOT modifier = revolting_against_me }
 				}
 			}
 			
@@ -791,7 +803,7 @@ character_event = {
 		log = "dying rebel's heir should NOT inherit their revolt. reason(s):"
 		
 		if = {
-			limit = { event_target:revolt_target = { character = event_target:heir } }
+			limit = { event_target:pf_war_liege = { character = event_target:heir } }
 			log = "-> the dying rebel's proper liege is also his heir"
 		}
 		if = {
@@ -808,11 +820,14 @@ character_event = {
 		}
 		if = {
 			limit = {
-				event_target:revolt_target = {
+				event_target:pf_war_liege = {
 					event_target:heir = {
 						trait = rebel
 						any_opinion_modifier_target = {
-							has_opinion_modifier = { who = PREV modifier = revolting_against_me }
+							reverse_has_opinion_modifier = {
+								who = PREV
+								modifier = revolting_against
+							}
 							NOT = { character = PREVPREV }
 						}
 					}
@@ -822,7 +837,7 @@ character_event = {
 		}
 		if = {
 			limit = {
-				event_target:revolt_target = {
+				event_target:pf_war_liege = {
 					event_target:heir = {
 						OR = {
 							trait = loyalist
@@ -869,12 +884,10 @@ character_event = {
 			break = yes
 		}
 		
-		clear_event_target = revolt_target
-		clear_event_target = heir
-		
 		# We're not a revolt leader, if we've made it here.
 		
 		log = "dying rebel is NOT a rebel leader"
+		pf_teardown_rebel_effect = yes
 		log = ">>>>>"
 	}
 }
@@ -1704,10 +1717,7 @@ character_event = {
 		if = {
 			limit = { pf_councillor_court_trigger = no }
 			any_vassal = {
-				limit = {
-					is_councillor = no
-					in_faction = faction_court
-				}
+				limit = { in_faction = faction_court }
 				opinion = { who = ROOT modifier = faction_disapprove_council months = 14 }
 			}
 		}
@@ -1715,64 +1725,67 @@ character_event = {
 		if = {
 			limit = { pf_councillor_court_trigger = yes }
 			any_vassal = {
-				limit = { in_faction = faction_court }
+				limit = {
+					is_councillor = no
+					in_faction = faction_court
+				}
 				opinion = { who = ROOT modifier = faction_approve_council months = 14 }
 			}
 		}
-		#Steward is NOT member of Prosperity Faction
+		#No Prosperity Faction member on council
 		if = {
 			limit = { pf_councillor_prosperity_trigger = no }
+			any_vassal = {
+				limit = { in_faction = faction_prosperity }
+				opinion = { who = ROOT modifier = faction_disapprove_council months = 14 }
+			}
+		}
+		#Prosperity Faction member on council
+		if = {
+			limit = { pf_councillor_prosperity_trigger = yes }
 			any_vassal = {
 				limit = {
 					is_councillor = no
 					in_faction = faction_prosperity
 				}
-				opinion = { who = ROOT modifier = faction_disapprove_council months = 14 }
-			}
-		}
-		#Steward is member of Prosperity Faction
-		if = {
-			limit = { pf_councillor_prosperity_trigger = yes }
-			any_vassal = {
-				limit = { in_faction = faction_prosperity }
 				opinion = { who = ROOT modifier = faction_approve_council months = 14 }
 			}
 		}
-		#Marshal is NOT member of Glory Faction
+		#No Glory Faction member on council
 		if = {
 			limit = { pf_councillor_glory_trigger = no }
+			any_vassal = {
+				limit = { in_faction = faction_glory }
+				opinion = { who = ROOT modifier = faction_disapprove_council months = 14 }
+			}
+		}
+		#Glory Faction member on council
+		if = {
+			limit = { pf_councillor_glory_trigger = yes }
 			any_vassal = {
 				limit = {
 					is_councillor = no
 					in_faction = faction_glory
 				}
-				opinion = { who = ROOT modifier = faction_disapprove_council months = 14 }
-			}
-		}
-		#Marshal is member of Glory Faction
-		if = {
-			limit = { pf_councillor_glory_trigger = yes }
-			any_vassal = {
-				limit = { in_faction = faction_glory }
 				opinion = { who = ROOT modifier = faction_approve_council months = 14 }
 			}
 		}
-		#Lord Spiritual is NOT member of Tradition Faction
+		#No Tradition Faction member on council
 		if = {
 			limit = { pf_councillor_tradition_trigger = no }
+			any_vassal = {
+				limit = { in_faction = faction_tradition }
+				opinion = { who = ROOT modifier = faction_disapprove_council months = 14 }
+			}
+		}
+		#Tradition Faction member on council
+		if = {
+			limit = { pf_councillor_tradition_trigger = yes }
 			any_vassal = {
 				limit = {
 					is_councillor = no
 					in_faction = faction_tradition
 				}
-				opinion = { who = ROOT modifier = faction_disapprove_council months = 14 }
-			}
-		}
-		#Lord Spiritual is member of Tradition Faction
-		if = {
-			limit = { pf_councillor_tradition_trigger = yes }
-			any_vassal = {
-				limit = { in_faction = faction_tradition }
 				opinion = { who = ROOT modifier = faction_approve_council months = 14 }
 			}
 		}
