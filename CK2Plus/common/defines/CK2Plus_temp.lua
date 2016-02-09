@@ -1,9 +1,9 @@
-#Shut off Infamy/Coalitions
+--Shut off Infamy/Coalitions
 NDefines.NDiplomacy.START_COALITION_INTERACTION_ENABLED = 0
 NDefines.NDiplomacy.LEAVE_COALITION_INTERACTION_ENABLED = 0
 NDefines.NInfamy.REALM_SIZE_BASE_MODIFIER = 0
 
-#Reduce Effectiveness of Shattered Retreat
+--Reduce Effectiveness of Shattered Retreat
 NDefines.NMilitary.SHATTERED_RETREAT_MOVEMENT_MULTIPLIER = 1.1
 NDefines.NMilitary.SHATTERED_RETREAT_MORALE_MULTIPLIER = 1.0
 NDefines.NMilitary.SHATTERED_RETREAT_PREFERRED_PROVINCES = 2
