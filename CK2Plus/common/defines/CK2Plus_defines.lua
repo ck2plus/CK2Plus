@@ -18,6 +18,10 @@ NDefines.NDiplomacy.VASSAL_LIMIT_EMPEROR_MULT = 20.0 			-- Extra Vassal Limit fr
 NDefines.NDiplomacy.VASSAL_LIMIT_GREAT_DUKE_BONUS = 2.0 		-- Extra Vassal Limit for Dukes with more than one Duchy
 NDefines.NDiplomacy.VASSAL_LIMIT_DIPLOMACY_MULT = 0.3			-- Extra Vasal Limit from ruler and spouse diplomacy	
 NDefines.NDiplomacy.VASSAL_LIMIT_DECADENCE_MULTIPLIER = 0.50	-- Negative modifier multiplied with the current decadence.
+NDefines.NDiplomacy.CONCLAVE_VASSAL_LIMIT_DUKE_MULT = 5.0
+NDefines.NDiplomacy.CONCLAVE_VASSAL_LIMIT_KING_MULT = 10.0
+NDefines.NDiplomacy.CONCLAVE_VASSAL_LIMIT_EMPEROR_MULT = 20.0
+NDefines.NDiplomacy.CONCLAVE_VASSAL_LIMIT_GREAT_DUKE_BONUS = 2.0
 NDefines.NDiplomacy.CROWN_LAW_REVOLTRISK_INCREMENT = 0		-- Revoltrisk reduction/decrease due to crown laws
 NDefines.NDiplomacy.ASSASSINATION_COST_RANK_MULT = 50			-- Additional cost for assassinations multiplied by rank (count = 1 emperor = 4). Also applies to children of rulers.
 NDefines.NDiplomacy.INTER_MUSLIM_WAR_MONTHLY_PIETY_COST = 4  	-- Monthly Piety cost for Muslims who are primary attackers against a ruler of the same religion (not civil wars)
