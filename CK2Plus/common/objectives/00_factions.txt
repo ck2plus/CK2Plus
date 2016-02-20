@@ -787,25 +787,26 @@ faction_succ_seniority = {
 		}
 		modifier = {
 			factor = 0
+			FROM = { preparing_invasion = yes }
+		}
+		modifier = {
+			factor = 0
 			holder_scope = { is_married = FROM }
 		}
 		modifier = {
 			factor = 0
-			current_heir = { character = FROM }
+			current_heir = {
+				OR = {
+					character = FROM
+					is_married = FROM
+					is_primary_heir = FROM
+					is_friend = FROM
+				}
+			}
 		}
 		modifier = {
 			factor = 0
 			FROM = { primary_title = { is_primary_type_title = yes } }
-		}
-		modifier = {
-			factor = 0
-			current_heir = {
-				ROOT = {
-					heir_under_seniority_law = {
-						character = PREVPREV
-					}
-				}
-			}
 		}
 		modifier = {
 			factor = 0
@@ -824,11 +825,25 @@ faction_succ_seniority = {
 					OR = {
 						character = FROM
 						is_married = FROM
-						is_friend = FROM
+						is_primary_heir = FROM
 					}
 					trait = ambitious
-					diplomacy = 12
+					diplomacy = 15
 				}
+				heir_under_seniority_law = {
+					OR = {
+						is_friend = FROM
+						is_lover = FROM
+					}
+					NOR = {
+						trait = content
+						trait = humble
+						trait = greedy
+						trait = slothful
+						trait = envious
+					}
+					diplomacy = 15
+				}	
 			}
 		}
 		modifier = {
@@ -841,6 +856,7 @@ faction_succ_seniority = {
 						dynasty = FROM
 						is_married = FROM
 						is_friend = FROM
+						is_lover = FROM
 					}
 					FROM = { opinion_diff = { first = PREV second = LIEGE value = 25 as_if_liege = yes } }
 					reverse_opinion = { who = FROM value = 0 }
@@ -849,7 +865,46 @@ faction_succ_seniority = {
 		}
 		modifier = {
 			factor = 0
-			FROM = { preparing_invasion = yes }
+			#either has to be the seniority heir or I can't like the current heir a lot more than the seniority heir
+			NOR = {
+				would_be_heir_under_law = { who = FROM law = seniority }
+				heir_under_seniority_law = {
+					ROOT = {
+						current_heir = {
+							FROM = {
+								NOT = { opinion_diff = { first = PREV second = PREVPREVPREV value = 40 as_if_liege = yes } }
+							}
+						}
+					}
+				}
+			}
+		}
+		# Try to exclude people who should rather support a claimant
+		modifier = {
+			factor = 0
+			heir_under_seniority_law = {
+				OR = {
+					NOT = { culture = FROM }
+					NOT = { religion = FROM }
+				}
+			}
+			holder_scope = {
+				any_demesne_title = {
+					OR = {
+						is_primary_holder_title = yes
+						higher_tier_than = DUKE
+					}
+					FROM = {
+						primary_title = {
+							de_jure_liege_or_above = PREVPREV
+						}
+					}
+					any_claimant = {
+						culture = FROM
+						religion = FROM
+					}
+				}
+			}
 		}
 		modifier = {
 			factor = 0.1
@@ -1003,17 +1058,12 @@ faction_succ_seniority = {
 		modifier = {
 			factor = 0
 			FROMFROM = {
-				current_heir = { character = ROOT }
-			}
-		}
-		modifier = {
-			factor = 0
-			FROMFROM = {
 				current_heir = {
-					PREV = {
-						heir_under_seniority_law = {
-							character = PREVPREV
-						}
+					OR = {
+						character = ROOT
+						is_married = ROOT
+						is_primary_heir = ROOT
+						is_friend = ROOT
 					}
 				}
 			}
@@ -1086,7 +1136,51 @@ faction_succ_seniority = {
 			}
 		}
 		modifier = {
+			factor = 0
+			#either has to be the seniority heir or the seniority heir is a dynasty member/ally I like better than my liege
+			NOT = { has_character_flag = will_join_civil_war }
+			FROMFROM = {
+				NOR = {
+					would_be_heir_under_law = { who = ROOT law = seniority }
+					heir_under_seniority_law = {
+						ROOT = { opinion_diff = { first = PREV second = LIEGE value = 25 as_if_liege = yes } }
+						reverse_opinion = { who = ROOT value = 0 }
+					}
+				}
+			}
+		}
+		modifier = {
+			factor = 2
+			#I like the seniority heir a LOT more than my liege
+			FROMFROM = {
+				heir_under_seniority_law = {
+					ROOT = { opinion_diff = { first = PREV second = LIEGE value = 40 as_if_liege = yes } }
+					reverse_opinion = { who = ROOT value = 0 }
+				}
+			}
+		}
+		modifier = {
+			factor = 0
+			#either has to be the seniority heir or I can't like the current heir a lot more than the seniority heir
+			NOT = { has_character_flag = will_join_civil_war }
+			FROMFROM = {
+				NOR = {
+					would_be_heir_under_law = { who = ROOT law = seniority }
+					heir_under_seniority_law = {
+						PREV = {
+							current_heir = {
+								ROOT = {
+									NOT = { opinion_diff = { first = PREV second = PREVPREVPREV value = 40 as_if_liege = yes } }
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		modifier = {
 			factor = 0.1
+			NOT = { has_character_flag = will_join_civil_war }
 			opinion = { who = LIEGE value = 0 } 
 			NOT = {
 				trait = deceitful
@@ -1096,6 +1190,7 @@ faction_succ_seniority = {
 		}
 		modifier = {
 			factor = 0
+			NOT = { has_character_flag = will_join_civil_war }
 			opinion = { who = LIEGE value = 20 } 
 			NOT = {
 				trait = deceitful
@@ -1105,6 +1200,7 @@ faction_succ_seniority = {
 		}		
 		modifier = {
 			factor = 0.1
+			NOT = { has_character_flag = will_join_civil_war }
 			opinion = { who = LIEGE value = 20 } 
 			OR = {
 				trait = deceitful
@@ -1114,20 +1210,12 @@ faction_succ_seniority = {
 		}		
 		modifier = {
 			factor = 0
+			NOT = { has_character_flag = will_join_civil_war }
 			opinion = { who = LIEGE value = 40 } 
 			OR = {
 				trait = deceitful
 				trait = ambitious
 				trait = envious
-			}
-		}
-		modifier = {
-			factor = 2
-			FROMFROM = {
-				heir_under_seniority_law = {
-					ROOT = { opinion_diff = { first = PREV second = LIEGE value = 25 as_if_liege = yes } }
-					reverse_opinion = { who = ROOT value = 0 }
-				}
 			}
 		}
 		modifier = {
@@ -1318,10 +1406,14 @@ faction_succ_primogeniture = {
 
 	# AI creation weight (ROOT = title, FROM = faction creator)
 	chance = {
-		factor = 1	
+		factor = 1
 		modifier = {
 			factor = 0.2
 			FROM = { pacifist = yes }
+		}
+		modifier = {
+			factor = 0
+			FROM = { preparing_invasion = yes }
 		}
 		modifier = {
 			factor = 0
@@ -1329,25 +1421,51 @@ faction_succ_primogeniture = {
 		}
 		modifier = {
 			factor = 0
-			current_heir = { character = FROM }
+			current_heir = {
+				OR = {
+					character = FROM
+					is_married = FROM
+					is_primary_heir = FROM
+					is_friend = FROM
+				}
+			}
 		}
 		modifier = {
 			factor = 0
 			FROM = { primary_title = { is_primary_type_title = yes } }
 		}
 		modifier = {
-			factor = 0
-			current_heir = {
-				ROOT = {
-					heir_under_primogeniture_law = {
-						character = PREVPREV
-					}
-				}
-			}
-		}
-		modifier = {
 			factor = 2
 			has_title_flag = former_primogeniture
+		}
+		modifier = {
+			factor = 0
+			NOR = {
+				has_title_flag = former_primogeniture
+				heir_under_primogeniture_law = {
+					OR = {
+						character = FROM
+						is_married = FROM
+						is_primary_heir = FROM
+					}
+					trait = ambitious
+					diplomacy = 15
+				}
+				heir_under_primogeniture_law = {
+					OR = {
+						is_friend = FROM
+						is_lover = FROM
+					}
+					NOR = {
+						trait = content
+						trait = humble
+						trait = greedy
+						trait = slothful
+						trait = envious
+					}
+					diplomacy = 15
+				}	
+			}
 		}
 		modifier = {
 			factor = 0
@@ -1359,24 +1477,55 @@ faction_succ_primogeniture = {
 						dynasty = FROM
 						is_married = FROM
 						is_friend = FROM
+						is_lover = FROM
 					}
 					FROM = { opinion_diff = { first = PREV second = LIEGE value = 25 as_if_liege = yes } }
 					reverse_opinion = { who = FROM value = 0 }
-				}
-				heir_under_primogeniture_law = {
-					OR = {
-						character = FROM
-						is_married = FROM
-						is_friend = FROM
-					}
-					trait = ambitious
-					diplomacy = 12
 				}
 			}
 		}
 		modifier = {
 			factor = 0
-			FROM = { preparing_invasion = yes }
+			#either has to be the primogeniture heir or I can't like the current heir a lot more than the primogeniture heir
+			NOR = {
+				would_be_heir_under_law = { who = FROM law = primogeniture }
+				heir_under_primogeniture_law = {
+					ROOT = {
+						current_heir = {
+							FROM = {
+								NOT = { opinion_diff = { first = PREV second = PREVPREVPREV value = 40 as_if_liege = yes } }
+							}
+						}
+					}
+				}
+			}
+		}
+		# Try to exclude people who should rather support a claimant
+		modifier = {
+			factor = 0
+			heir_under_primogeniture_law = {
+				OR = {
+					NOT = { culture = FROM }
+					NOT = { religion = FROM }
+				}
+			}
+			holder_scope = {
+				any_demesne_title = {
+					OR = {
+						is_primary_holder_title = yes
+						higher_tier_than = DUKE
+					}
+					FROM = {
+						primary_title = {
+							de_jure_liege_or_above = PREVPREV
+						}
+					}
+					any_claimant = {
+						culture = FROM
+						religion = FROM
+					}
+				}
+			}
 		}
 		modifier = {
 			factor = 0.1
@@ -1530,7 +1679,14 @@ faction_succ_primogeniture = {
 		modifier = {
 			factor = 0
 			FROMFROM = {
-				current_heir = { character = ROOT }
+				current_heir = {
+					OR = {
+						character = ROOT
+						is_married = ROOT
+						is_primary_heir = ROOT
+						is_friend = ROOT
+					}
+				}
 			}
 		}
 		modifier = {
@@ -1616,7 +1772,51 @@ faction_succ_primogeniture = {
 			}
 		}
 		modifier = {
+			factor = 0
+			#either has to be the primogeniture heir or the primogeniture heir is someone I like better than my liege
+			NOT = { has_character_flag = will_join_civil_war }
+			FROMFROM = {
+				NOR = {
+					would_be_heir_under_law = { who = ROOT law = primogeniture }
+					heir_under_primogeniture_law = {
+						ROOT = { opinion_diff = { first = PREV second = LIEGE value = 25 as_if_liege = yes } }
+						reverse_opinion = { who = ROOT value = 0 }
+					}
+				}
+			}
+		}
+		modifier = {
+			factor = 2
+			#I like the primogeniture heir a LOT more than my liege
+			FROMFROM = {
+				heir_under_primogeniture_law = {
+					ROOT = { opinion_diff = { first = PREV second = LIEGE value = 40 as_if_liege = yes } }
+					reverse_opinion = { who = ROOT value = 0 }
+				}
+			}
+		}
+		modifier = {
+			factor = 0
+			#either has to be the primogeniture heir or I can't like the current heir a lot more than the primogeniture heir
+			NOT = { has_character_flag = will_join_civil_war }
+			FROMFROM = {
+				NOR = {
+					would_be_heir_under_law = { who = ROOT law = primogeniture }
+					heir_under_primogeniture_law = {
+						PREV = {
+							current_heir = {
+								ROOT = {
+									NOT = { opinion_diff = { first = PREV second = PREVPREVPREV value = 40 as_if_liege = yes } }
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		modifier = {
 			factor = 0.1
+			NOT = { has_character_flag = will_join_civil_war }
 			opinion = { who = LIEGE value = 0 } 
 			NOT = {
 				trait = deceitful
@@ -1626,6 +1826,7 @@ faction_succ_primogeniture = {
 		}
 		modifier = {
 			factor = 0
+			NOT = { has_character_flag = will_join_civil_war }
 			opinion = { who = LIEGE value = 20 } 
 			NOT = {
 				trait = deceitful
@@ -1635,6 +1836,7 @@ faction_succ_primogeniture = {
 		}		
 		modifier = {
 			factor = 0.1
+			NOT = { has_character_flag = will_join_civil_war }
 			opinion = { who = LIEGE value = 20 } 
 			OR = {
 				trait = deceitful
@@ -1644,20 +1846,12 @@ faction_succ_primogeniture = {
 		}		
 		modifier = {
 			factor = 0
+			NOT = { has_character_flag = will_join_civil_war }
 			opinion = { who = LIEGE value = 40 } 
 			OR = {
 				trait = deceitful
 				trait = ambitious
 				trait = envious
-			}
-		}
-		modifier = {
-			factor = 2
-			FROMFROM = {
-				heir_under_primogeniture_law = {
-					ROOT = { opinion_diff = { first = PREV second = LIEGE value = 25 as_if_liege = yes } }
-					reverse_opinion = { who = ROOT value = 0 }
-				}
 			}
 		}
 		modifier = {
@@ -1851,10 +2045,14 @@ faction_succ_gavelkind = {
 
 	# AI creation weight (ROOT = title, FROM = faction creator)
 	chance = {
-		factor = 1	
+		factor = 1
 		modifier = {
 			factor = 0.2
 			FROM = { pacifist = yes }
+		}
+		modifier = {
+			factor = 0
+			FROM = { preparing_invasion = yes }
 		}
 		modifier = {
 			factor = 0
@@ -1862,12 +2060,20 @@ faction_succ_gavelkind = {
 		}
 		modifier = {
 			factor = 0
-			current_heir = { character = FROM }
+			current_heir = {
+				OR = {
+					character = FROM
+					is_married = FROM
+					is_primary_heir = FROM
+					is_friend = FROM
+				}
+			}
 		}
 		modifier = {
 			factor = 0
 			FROM = { primary_title = { is_primary_type_title = yes } }
 		}
+		#holder does not have more than one eligible heir
 		modifier = {
 			factor = 0
 			holder_scope = {
@@ -1889,17 +2095,22 @@ faction_succ_gavelkind = {
 								}
 							}
 						}
-						NOT = { trait = bastard }
+						dynasty = PREV
+						NOR = {
+							trait = bastard
+							trait = disinherited
+							trait = slow
+							trait = imbecile
+							trait = inbred
+							trait = incapable
+							trait = lunatic
+						}
 						count = 2
-					}
-				}
-				ROOT = {
-					current_heir = {
-						is_primary_heir = PREVPREV
 					}
 				}
 			}
 		}
+		#do not switch from Feudal Elective/Elective Gavelkind
 		modifier = {
 			factor = 0
 			OR = {
@@ -1907,6 +2118,7 @@ faction_succ_gavelkind = {
 				has_law = succ_elective_gavelkind
 			}
 		}
+		#cannot be formed by counts except under dukes
 		modifier = {
 			factor = 0
 			OR = {
@@ -1917,7 +2129,9 @@ faction_succ_gavelkind = {
 		modifier = {
 			factor = 0
 			NOR = {
+				#was formerly gavelkind
 				has_title_flag = former_gavelkind
+				#is of an appropriate culture
 				FROM = {
 					OR = {
 						is_tribal = yes
@@ -1926,15 +2140,36 @@ faction_succ_gavelkind = {
 						culture_group = west_germanic
 					}
 				}
+				#holder has another eligible child I like more than the current heir
 				holder_scope = {
 					any_child = {
+						diplomacy = 12
 						OR = {
 							character = FROM
 							is_married = FROM
 							is_friend = FROM
+							is_lover = FROM
+							ROOT = {
+								current_heir = {
+									FROM = {
+										opinion_diff = { first = PREVPREVPREV second = PREV value = 25 as_if_liege = yes }
+										opinion = { who = PREVPREVPREV value = 0 }
+									}
+								}
+							}
 						}
-						NOT = { is_primary_heir = PREV }
-						NOT = { trait = bastard }
+						NOR = {
+							any_heir_title = { title = ROOT }
+							trait = bastard
+							trait = disinherited
+							trait = slow
+							trait = imbecile
+							trait = inbred
+							trait = incapable
+							trait = lunatic
+							trait = content
+							trait = humble
+						}
 						OR = {
 							AND = {
 								is_female = no
@@ -1951,8 +2186,6 @@ faction_succ_gavelkind = {
 								}
 							}
 						}
-						trait = ambitious
-						diplomacy = 12
 					}
 				}
 			}
@@ -1960,6 +2193,7 @@ faction_succ_gavelkind = {
 		modifier = {
 			factor = 0
 			NOR = {
+				#I am a child of the holder who can inherit
 				holder_scope = {
 					FROM = {
 						OR = {
@@ -1967,18 +2201,47 @@ faction_succ_gavelkind = {
 							trait = bastard
 							AND = {
 								is_female = yes
-								is_pretender = no
+								ROOT = {
+									OR = {
+										has_law = agnatic_succession
+										has_law = cognatic_succession
+									}
+								}
+							}
+							AND = {
+								is_female = no
+								ROOT = {
+									OR = {
+										has_law = enatic_succession
+										has_law = enatic_cognatic_succession
+									}
+								}
 							}
 						}
 					}
 				}
+				#any non-heir eligible child of the holder is someone I would support
 				holder_scope = {
 					any_child = {
 						OR = {
 							dynasty = FROM
 							is_married = FROM
 							is_friend = FROM
+							is_lover = FROM
 						}
+						NOR = {
+							any_heir_title = { title = ROOT }
+							trait = bastard
+							trait = disinherited
+							trait = slow
+							trait = imbecile
+							trait = inbred
+							trait = incapable
+							trait = lunatic
+							trait = content
+							trait = humble
+						}
+						reverse_opinion = { who = FROM value = 25 }
 						OR = {
 							AND = {
 								is_female = no
@@ -1995,17 +2258,34 @@ faction_succ_gavelkind = {
 								}
 							}
 						}
-						NOT = { is_primary_heir = PREV }
-						NOT = { trait = bastard }
-						FROM = { opinion_diff = { first = PREV second = LIEGE value = 25 as_if_liege = yes } }
-						reverse_opinion = { who = FROM value = 0 }
 					}
 				}
 			}
 		}
+		# Try to exclude people who should rather support a claimant
 		modifier = {
 			factor = 0
-			FROM = { preparing_invasion = yes }
+			holder_scope = {
+				OR = {
+					NOT = { culture = FROM }
+					NOT = { religion = FROM }
+				}
+				any_demesne_title = {
+					OR = {
+						is_primary_holder_title = yes
+						higher_tier_than = DUKE
+					}
+					FROM = {
+						primary_title = {
+							de_jure_liege_or_above = PREVPREV
+						}
+					}
+					any_claimant = {
+						culture = FROM
+						religion = FROM
+					}
+				}
+			}
 		}
 		modifier = {
 			factor = 0.1
@@ -2168,39 +2448,6 @@ faction_succ_gavelkind = {
 				holder_scope = { is_married = ROOT }
 			}
 		}
-		modifier = {
-			factor = 0
-			NOT = { has_character_flag = will_join_civil_war }
-			liege = {
-				NOT = {
-					any_child = {
-						OR = {
-							AND = {
-								is_female = no
-								FROMFROM = {
-									NOT = { has_law = enatic_succession }
-									NOT = { has_law = enatic_cognatic_succession }
-								}
-							}
-							AND = {
-								is_female = yes
-								FROMFROM = {
-									NOT = { has_law = agnatic_succession }
-									NOT = { has_law = cognatic_succession }
-								}
-							}
-						}
-						NOT = { trait = bastard }
-						count = 2
-					}
-				}
-				FROMFROM = {
-					current_heir = {
-						is_primary_heir = PREVPREV
-					}
-				}
-			}
-		}
 		# Try to exclude people who should rather support a claimant
 		modifier = {
 			factor = 0
@@ -2251,8 +2498,58 @@ faction_succ_gavelkind = {
 				}
 			}
 		}
+		#holder does not have more than one eligible heir
+		modifier = {
+			factor = 0
+			FROMFROM = {
+				holder_scope = {
+					NOT = {
+						any_child = {
+							OR = {
+								AND = {
+									is_female = no
+									ROOT = {
+										NOT = { has_law = enatic_succession }
+										NOT = { has_law = enatic_cognatic_succession }
+									}
+								}
+								AND = {
+									is_female = yes
+									ROOT = {
+										NOT = { has_law = agnatic_succession }
+										NOT = { has_law = cognatic_succession }
+									}
+								}
+							}
+							dynasty = PREV
+							NOR = {
+								trait = bastard
+								trait = disinherited
+								trait = slow
+								trait = imbecile
+								trait = inbred
+								trait = incapable
+								trait = lunatic
+							}
+							count = 2
+						}
+					}
+				}
+			}
+		}
+		#do not switch from Feudal Elective/Elective Gavelkind
+		modifier = {
+			factor = 0
+			FROMFROM = {
+				OR = {
+					has_law = succ_feudal_elective
+					has_law = succ_elective_gavelkind
+				}
+			}
+		}
 		modifier = {
 			factor = 0.1
+			NOT = { has_character_flag = will_join_civil_war }
 			opinion = { who = LIEGE value = 0 } 
 			NOT = {
 				trait = deceitful
@@ -2262,6 +2559,7 @@ faction_succ_gavelkind = {
 		}
 		modifier = {
 			factor = 0
+			NOT = { has_character_flag = will_join_civil_war }
 			opinion = { who = LIEGE value = 20 } 
 			NOT = {
 				trait = deceitful
@@ -2271,6 +2569,7 @@ faction_succ_gavelkind = {
 		}		
 		modifier = {
 			factor = 0.1
+			NOT = { has_character_flag = will_join_civil_war }
 			opinion = { who = LIEGE value = 20 } 
 			OR = {
 				trait = deceitful
@@ -2280,17 +2579,13 @@ faction_succ_gavelkind = {
 		}		
 		modifier = {
 			factor = 0
+			NOT = { has_character_flag = will_join_civil_war }
 			opinion = { who = LIEGE value = 40 } 
 			OR = {
 				trait = deceitful
 				trait = ambitious
 				trait = envious
 			}
-		}
-		modifier = {
-			factor = 2
-			opinion_diff = { first = FROM second = LIEGE value = 25 as_if_liege = yes }
-			reverse_opinion = { who = FROM value = 0 }
 		}
 		modifier = {
 			factor = 0.01
@@ -2514,31 +2809,30 @@ faction_succ_feudal_elective = {
 			holder_scope = { is_married = FROM }
 		}
 		modifier = {
-			factor = 4
-			FROM = {
-				liege = { has_council = yes }
-				is_voter = yes
-			}
+			factor = 2
+			has_title_flag = former_feudal_elective
 		}
 		modifier = {
 			factor = 0
 			NOR = {
 				has_title_flag = former_feudal_elective
 				FROM = {
+					among_most_powerful_vassals = 5
+					trait = ambitious
 					OR = {
 						culture_group = north_germanic
 						culture_group = central_germanic
 						culture_group = west_germanic
-						culture = frankish
 						culture = norman
 						culture = roman
 						culture = nubian
 						culture = somali
 					}
-				}		
+				}
 				FROM = {
+					among_most_powerful_vassals = 5
 					trait = ambitious
-					diplomacy = 12
+					diplomacy = 15
 				}
 			}
 		}
@@ -2577,19 +2871,13 @@ faction_succ_feudal_elective = {
 				any_spouse = { character = FROM }
 			}
 		}
-		# Not for children of the present holder
+		# Not for close dynasty relatives of the present holder
 		modifier = {
 			factor = 0
 			holder_scope = {
-				FROM = { is_child_of = PREV }
-			}
-		}
-		# Not for grandchildren of the present holder
-		modifier = {
-			factor = 0
-			holder_scope = {
-				any_child = {
-					FROM = { is_child_of = PREV }
+				FROM = {
+					is_close_relative = PREV
+					dynasty = PREV
 				}
 			}
 		}
@@ -2629,21 +2917,6 @@ faction_succ_feudal_elective = {
 					any_claimant = {
 						culture = FROM
 						religion = FROM
-					}
-				}
-			}
-		}
-		modifier = {
-			factor = 0
-			FROM = {
-				OR = {
-					AND = {
-						NOT = { leads_faction = faction_succ_feudal_elective }
-						opinion = { who = LIEGE value = 50 } 
-					}
-					AND = {
-						leads_faction = faction_succ_feudal_elective
-						opinion = { who = LIEGE value = 75 } 
 					}
 				}
 			}
@@ -2806,13 +3079,22 @@ faction_succ_feudal_elective = {
 			preparing_invasion = yes
 		}
 		modifier = {
-			factor = 4
-			liege = { has_council = yes }
-			is_voter = yes
-		}
-		modifier = {
 			factor = 2
 			FROMFROM = { has_title_flag = former_feudal_elective }
+		}
+		modifier = {
+			factor = 0.5
+			NOR = {
+				FROMFROM = { has_title_flag = former_feudal_elective }
+				trait = ambitious
+				culture_group = north_germanic
+				culture_group = central_germanic
+				culture_group = west_germanic
+				culture = norman
+				culture = roman
+				culture = nubian
+				culture = somali
+			}
 		}
 		#the liege title is either de jure to my titles or is titular and primary title
 		modifier = {
@@ -2839,22 +3121,15 @@ faction_succ_feudal_elective = {
 				}
 			}
 		}
-		# Not for children of the present holder
+		# Not for close dynasty relatives of the present holder
 		modifier = {
 			factor = 0
+			NOT = { has_character_flag = will_join_civil_war }
 			FROMFROM = {
 				holder_scope = {
-					ROOT = { is_child_of = PREV }
-				}
-			}
-		}
-		# Not for grandchildren of the present holder
-		modifier = {
-			factor = 0
-			FROMFROM = {
-				holder_scope = {
-					any_child = {
-						ROOT = { is_child_of = PREV }
+					ROOT = {
+						is_close_relative = PREV
+						dynasty = PREV
 					}
 				}
 			}
@@ -2862,6 +3137,7 @@ faction_succ_feudal_elective = {
 		# Not for dynasty members under some laws
 		modifier = {
 			factor = 0
+			NOT = { has_character_flag = will_join_civil_war }
 			FROMFROM = {
 				OR = {
 					has_law = succ_seniority
@@ -2900,20 +3176,6 @@ faction_succ_feudal_elective = {
 						value = 25
 						as_if_liege = yes
 					}
-				}
-			}
-		}
-		modifier = {
-			factor = 0
-			NOT = { has_character_flag = will_join_civil_war }
-			OR = {
-				AND = {
-					NOT = { in_faction = faction_succ_feudal_elective }
-					opinion = { who = LIEGE value = 25 } 
-				}
-				AND = {
-					in_faction = faction_succ_feudal_elective
-					opinion = { who = LIEGE value = 50 } 
 				}
 			}
 		}
