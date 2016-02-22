@@ -21,8 +21,8 @@ character_event = {
 	
 	immediate = {
 		random_demesne_title = {
-			limit = { has_title_flag = title_to_change }
-			clr_title_flag = title_to_change
+			limit = { has_title_flag = emf_succ_title }
+			clr_title_flag = emf_succ_title
 			save_event_target_as = changed_title
 		}
 	}
@@ -1325,109 +1325,52 @@ character_event = {
 			}
 			clr_character_flag = vote_is_for_gavelkind
 			event_target:changed_title = {
-				#set flag so we know what the former law was
-				if = {
-					limit = { is_primary_holder_title = yes }
-					clr_title_flag = former_gavelkind
-					clr_title_flag = former_seniority
-					clr_title_flag = former_primogeniture
-					clr_title_flag = former_feudal_elective
-					clr_title_flag = former_tanistry
-					clr_title_flag = former_ultimogeniture
-					if = {
-						limit = { has_law = succ_gavelkind }
-						set_title_flag = former_gavelkind
-					}
-					if = {
-						limit = { has_law = succ_seniority }
-						set_title_flag = former_seniority
-					}
-					if = {
-						limit = { has_law = succ_primogeniture }
-						set_title_flag = former_primogeniture
-					}
-					if = {
-						limit = { has_law = succ_feudal_elective }
-						set_title_flag = former_feudal_elective
-					}
-					if = {
-						limit = { has_law = succ_tanistry }
-						set_title_flag = former_tanistry
-					}
-					if = {
-						limit = { has_law = succ_ultimogeniture }
-						set_title_flag = former_ultimogeniture
-					}
-				}
+				pf_save_old_succ_law_effect = yes
+				save_event_target_as = emf_succ_title
+				holder_scope = { save_event_target_as = emf_succ_changer }
 				
-				#set opinion changes for heirs and pretenders
-				current_heir = { set_character_flag = former_heir }
-				any_character = {
-					limit = { any_pretender_title = { title = event_target:changed_title } }
-					set_character_flag = former_pretender
-				}
-				ROOT = { character_event = { id = Plus.604 days = 1 } }
+				log = "INFO: succ_institute_gavelkind: [emf_succ_changer.GetTitledFirstName] (ID: [emf_succ_changer.GetID]) changing law for the [emf_succ_title.GetFullBaseName]"
 				
-				#actually change the law
+				# Mark current heir and pretenders so that they may be tracked after law change
+				emf_laws_change_succ_save_contenders_effect = yes
+				
+				# Actually change the law now
 				add_law = succ_gavelkind
 				
-				#current heir is unhappy (they have to share) if they were the previous heir
-				current_heir = {
-					if = { 
-						limit = { has_character_flag = former_heir }
-						opinion = {
-							who = ROOT
-							modifier = opinion_succ_law_change
-							months = 240
+				current_heir = { save_event_target_as = emf_heir }
+
+				holder_scope = {
+					# Vassals are slightly upset
+					any_vassal = {
+						limit = {
+							emf_laws_change_succ_affected_vassal_trigger = yes
+							emf_laws_change_succ_vip_trigger = no
+						}
+						emf_laws_change_succ_mild_reaction_effect = yes
+					}
+					# Legitimate children are happy
+					any_child = {
+						limit = {
+							can_inherit_trigger = yes
+							emf_laws_change_succ_vip_trigger = no
+						}
+						emf_laws_change_succ_good_reaction_effect = yes
+					}
+					# Current heir is slightly upset if they were the previous heir (they have to share)
+					event_target:emf_heir = {
+						if = {
+							limit = { character = event_target:emf_former_heir }
+							emf_laws_change_succ_mild_reaction_effect = yes
 						}
 					}
 				}
 				
-				ROOT = {
-					#legitimate children are happy
-					any_child = {
-						limit = {
-							NOR = {
-								trait = bastard
-								trait = monk
-								trait = nun
-								trait = disinherited
-								has_character_flag = former_heir
-								has_character_flag = former_pretender
-								any_heir_title = { title = event_target:changed_title }
-								any_pretender_title = { title = event_target:changed_title }
-								has_opinion_modifier = { who = ROOT modifier = opinion_succ_law_change }
-								has_opinion_modifier = { who = ROOT modifier = opinion_good_succ_law_change }
-								has_opinion_modifier = { who = ROOT modifier = opinion_bad_succ_law_change 	}
-							}
-						}
-						opinion = {
-							who = ROOT
-							modifier = opinion_good_succ_law_change
-							months = 240
-						}
-					}
-					#vassals are slightly upset
-					any_vassal = {
-						limit = {
-							OR = {
-								primary_title = { de_jure_liege_or_above = event_target:changed_title }
-								event_target:changed_title = { is_primary_holder_title = yes }
-								event_target:changed_title = { is_titular = yes }
-							}
-							NOR = {
-								has_opinion_modifier = { who = ROOT modifier = opinion_succ_law_change }
-								has_opinion_modifier = { who = ROOT modifier = opinion_good_succ_law_change }
-								has_opinion_modifier = { who = ROOT modifier = opinion_bad_succ_law_change 	}
-							}
-						}
-						opinion = {
-							who = ROOT
-							modifier = opinion_succ_law_change
-							months = 240
-						}
-					}
-				}
+				# Specfic, event-driven succession law change reactions for the new heir, the former heir,
+				# the former pretenders, and the new pretenders.
+				set_title_flag = emf_succ_title
+				holder_scope = { character_event = { id = Plus.604 } }
+				
+				emf_laws_change_succ_cleanup_effect = yes
 				
 				any_de_jure_vassal_title = {
 					limit = {
@@ -1453,106 +1396,47 @@ character_event = {
 			}			
 			clr_character_flag = vote_is_for_primogeniture
 			event_target:changed_title = {
-				#set flag so we know what the former law was
-				if = {
-					limit = { is_primary_holder_title = yes }
-					clr_title_flag = former_gavelkind
-					clr_title_flag = former_seniority
-					clr_title_flag = former_primogeniture
-					clr_title_flag = former_feudal_elective
-					clr_title_flag = former_tanistry
-					clr_title_flag = former_ultimogeniture
-					if = {
-						limit = { has_law = succ_gavelkind }
-						set_title_flag = former_gavelkind
-					}
-					if = {
-						limit = { has_law = succ_seniority }
-						set_title_flag = former_seniority
-					}
-					if = {
-						limit = { has_law = succ_primogeniture }
-						set_title_flag = former_primogeniture
-					}
-					if = {
-						limit = { has_law = succ_feudal_elective }
-						set_title_flag = former_feudal_elective
-					}
-					if = {
-						limit = { has_law = succ_tanistry }
-						set_title_flag = former_tanistry
-					}
-					if = {
-						limit = { has_law = succ_ultimogeniture }
-						set_title_flag = former_ultimogeniture
-					}
-				}
+				pf_save_old_succ_law_effect = yes
+				save_event_target_as = emf_succ_title
+				holder_scope = { save_event_target_as = emf_succ_changer }
 				
-				#set opinion changes for heirs and pretenders
-				current_heir = { set_character_flag = former_heir }
-				any_character = {
-					limit = { any_pretender_title = { title = event_target:changed_title } }
-					set_character_flag = former_pretender
-				}
-				ROOT = { character_event = { id = Plus.604 days = 1 } }
+				log = "INFO: succ_institute_primogeniture: [emf_succ_changer.GetTitledFirstName] (ID: [emf_succ_changer.GetID]) changing law for the [emf_succ_title.GetFullBaseName]"
 				
-				#actually change the law
+				emf_laws_change_succ_save_contenders_effect = yes
 				add_law = succ_primogeniture
-				
-				#current heir is pleased
-				current_heir = {
-					opinion = {
-						who = ROOT
-						modifier = opinion_good_succ_law_change
-						months = 240
-					}
-				}
-				
-				ROOT = {
-					#legitimate children are upset
-					any_child = {
-						limit = {
-							NOR = {
-								trait = bastard
-								trait = monk
-								trait = nun
-								trait = disinherited
-								has_character_flag = former_heir
-								has_character_flag = former_pretender
-								any_heir_title = { title = event_target:changed_title }
-								any_pretender_title = { title = event_target:changed_title }
-								has_opinion_modifier = { who = ROOT modifier = opinion_succ_law_change }
-								has_opinion_modifier = { who = ROOT modifier = opinion_good_succ_law_change }
-								has_opinion_modifier = { who = ROOT modifier = opinion_bad_succ_law_change 	}
-							}
-						}
-						opinion = {
-							who = ROOT
-							modifier = opinion_bad_succ_law_change
-							months = 240
-						}
-					}
-					#vassals are slightly upset
+				current_heir = { save_event_target_as = emf_heir }
+
+				holder_scope = {
+					# Vassals are slightly upset
 					any_vassal = {
 						limit = {
-							OR = {
-								primary_title = { de_jure_liege_or_above = event_target:changed_title }
-								event_target:changed_title = { is_primary_holder_title = yes }
-								event_target:changed_title = { is_titular = yes }
-							}
-							NOR = {
-								has_opinion_modifier = { who = ROOT modifier = opinion_succ_law_change }
-								has_opinion_modifier = { who = ROOT modifier = opinion_good_succ_law_change }
-								has_opinion_modifier = { who = ROOT modifier = opinion_bad_succ_law_change 	}
-							}
+							emf_laws_change_succ_affected_vassal_trigger = yes
+							emf_laws_change_succ_vip_trigger = no
 						}
-						opinion = {
-							who = ROOT
-							modifier = opinion_succ_law_change
-							months = 240
-						}
+						emf_laws_change_succ_mild_reaction_effect = yes
 					}
+					# Dynasty members are slightly upset
+					any_dynasty_member = {
+						limit = {
+							emf_laws_change_succ_vip_trigger = no
+						}
+						emf_laws_change_succ_mild_reaction_effect = yes
+					}
+					# Legitimate children are angry
+					any_child = {
+						limit = {
+							can_inherit_trigger = yes
+							emf_laws_change_succ_vip_trigger = no
+						}
+						emf_laws_change_succ_bad_reaction_effect = yes
+					}
+					# Heir is happy
+					event_target:emf_heir = { emf_laws_change_succ_good_reaction_effect = yes }
 				}
+				
+				set_title_flag = emf_succ_title
+				holder_scope = { character_event = { id = Plus.604 } }
+				emf_laws_change_succ_cleanup_effect = yes
 				
 				any_de_jure_vassal = {
 					limit = { has_character_flag = voted_on_primogeniture }
@@ -1570,110 +1454,48 @@ character_event = {
 			}			
 			clr_character_flag = vote_is_for_seniority
 			event_target:changed_title = {
-				#set flag so we know what the former law was
-				if = {
-					limit = { is_primary_holder_title = yes }
-					clr_title_flag = former_gavelkind
-					clr_title_flag = former_seniority
-					clr_title_flag = former_primogeniture
-					clr_title_flag = former_feudal_elective
-					clr_title_flag = former_tanistry
-					clr_title_flag = former_ultimogeniture
-					if = {
-						limit = { has_law = succ_gavelkind }
-						set_title_flag = former_gavelkind
-					}
-					if = {
-						limit = { has_law = succ_seniority }
-						set_title_flag = former_seniority
-					}
-					if = {
-						limit = { has_law = succ_primogeniture }
-						set_title_flag = former_primogeniture
-					}
-					if = {
-						limit = { has_law = succ_feudal_elective }
-						set_title_flag = former_feudal_elective
-					}
-					if = {
-						limit = { has_law = succ_tanistry }
-						set_title_flag = former_tanistry
-					}
-					if = {
-						limit = { has_law = succ_ultimogeniture }
-						set_title_flag = former_ultimogeniture
-					}
-				}
+				pf_save_old_succ_law_effect = yes
+				save_event_target_as = emf_succ_title
+				holder_scope = { save_event_target_as = emf_succ_changer }
 				
-				#set opinion changes for heirs and pretenders
-				current_heir = { set_character_flag = former_heir }
-				any_character = {
-					limit = { any_pretender_title = { title = event_target:changed_title } }
-					set_character_flag = former_pretender
-				}
-				ROOT = { character_event = { id = Plus.604 days = 1 } }
-
-				#actually change the law
+				log = "INFO: succ_institute_seniority: [emf_succ_changer.GetTitledFirstName] (ID: [emf_succ_changer.GetID]) changing law for the [emf_succ_title.GetFullBaseName]"
+				
+				emf_laws_change_succ_save_contenders_effect = yes
 				add_law = succ_seniority
-				
-				ROOT = {
-					#legitimate children are angry
-					any_child = {
-						limit = {
-							NOR = {
-								trait = bastard
-								trait = monk
-								trait = nun
-								trait = disinherited
-								any_heir_title = { title = event_target:changed_title }
-								any_pretender_title = { title = event_target:changed_title }
-								has_opinion_modifier = { who = ROOT modifier = opinion_succ_law_change }
-								has_opinion_modifier = { who = ROOT modifier = opinion_good_succ_law_change }
-								has_opinion_modifier = { who = ROOT modifier = opinion_bad_succ_law_change 	}
-							}
-						}
-						opinion = {
-							who = ROOT
-							modifier = opinion_bad_succ_law_change
-							months = 240
-						}
-					}
-					#dynasty members are pleased
-					any_dynasty_member = {
-						limit = {
-							NOR = {
-								has_opinion_modifier = { who = ROOT modifier = opinion_succ_law_change }
-								has_opinion_modifier = { who = ROOT modifier = opinion_good_succ_law_change }
-								has_opinion_modifier = { who = ROOT modifier = opinion_bad_succ_law_change 	}
-							}
-						}
-						opinion = {
-							who = ROOT
-							modifier = opinion_good_succ_law_change
-							months = 240
-						}
-					}
-					#vassals are slightly upset
+				current_heir = { save_event_target_as = emf_heir }
+
+				holder_scope = {
+					# Vassals are slightly upset
 					any_vassal = {
 						limit = {
-							OR = {
-								primary_title = { de_jure_liege_or_above = event_target:changed_title }
-								event_target:changed_title = { is_primary_holder_title = yes }
-								event_target:changed_title = { is_titular = yes }
-							}
-							NOR = {
-								has_opinion_modifier = { who = ROOT modifier = opinion_succ_law_change }
-								has_opinion_modifier = { who = ROOT modifier = opinion_good_succ_law_change }
-								has_opinion_modifier = { who = ROOT modifier = opinion_bad_succ_law_change 	}
-							}
+							emf_laws_change_succ_affected_vassal_trigger = yes
+							emf_laws_change_succ_vip_trigger = no
 						}
-						opinion = {
-							who = ROOT
-							modifier = opinion_succ_law_change
-							months = 240
+						emf_laws_change_succ_mild_reaction_effect = yes
+					}
+					# Dynasty members are happy
+					any_dynasty_member = {
+						limit = {
+							emf_laws_change_succ_vip_trigger = no
 						}
+						emf_laws_change_succ_good_reaction_effect = yes
+					}
+					# Children that can inherit are angry
+					any_child = {
+						limit = {
+							can_inherit_trigger = yes
+							emf_laws_change_succ_vip_trigger = no
+						}
+						emf_laws_change_succ_bad_reaction_effect = yes
 					}
 				}
+				
+				# Specfic, event-driven succession law change reactions for the new heir, the former heir,
+				# the former pretenders, and the new pretenders.
+				set_title_flag = emf_succ_title
+				holder_scope = { character_event = { id = Plus.604 } }
+				
+				emf_laws_change_succ_cleanup_effect = yes
 				
 				any_de_jure_vassal = {
 					limit = { has_character_flag = voted_on_seniority }
@@ -1691,143 +1513,148 @@ character_event = {
 			}			
 			clr_character_flag = vote_is_for_tanistry
 			event_target:changed_title = {
-				#set flag so we know what the former law was
-				if = {
-					limit = { is_primary_holder_title = yes }
-					clr_title_flag = former_gavelkind
-					clr_title_flag = former_seniority
-					clr_title_flag = former_primogeniture
-					clr_title_flag = former_feudal_elective
-					clr_title_flag = former_tanistry
-					clr_title_flag = former_ultimogeniture
-					if = {
-						limit = { has_law = succ_gavelkind }
-						set_title_flag = former_gavelkind
+				pf_save_old_succ_law_effect = yes
+				save_event_target_as = emf_succ_title
+				holder_scope = { save_event_target_as = emf_succ_changer }
+				
+				log = "INFO: succ_institute_tanistry: [emf_succ_changer.GetTitledFirstName] (ID: [emf_succ_changer.GetID]) changing law for the [emf_succ_title.GetFullBaseName]"
+				
+				emf_laws_change_succ_save_contenders_effect = yes
+				add_law = succ_tanistry
+				current_heir = { save_event_target_as = emf_heir }
+
+				# FIXME: I'm just guessing about Tanistry's behavior from the little, imprecise, and likely
+				# inaccurate info on the CKII Wiki.
+
+				holder_scope = {
+					# Vassals are slightly upset
+					any_vassal = {
+						limit = {
+							emf_laws_change_succ_affected_vassal_trigger = yes
+							emf_laws_change_succ_vip_trigger = no
+						}
+						emf_laws_change_succ_mild_reaction_effect = yes
 					}
-					if = {
-						limit = { has_law = succ_seniority }
-						set_title_flag = former_seniority
+					# Elector vassals are happy.
+					# Regarding Tanistry, my assumptions are that empire-tier titles have king- and
+					# duke-tier electors, king-tier titles have duke- and count-tier electors, duke-tier
+					# titles have count- and baron-tier electors, and count-tier titles have baron-tier
+					# electors.
+					any_vassal = {
+						limit = {
+							emf_laws_change_succ_vip_trigger = no
+							OR = {
+								AND = {
+									event_target:emf_succ_title = { tier = EMPEROR }
+									higher_real_tier_than = COUNT
+									OR = {
+										event_target:emf_succ_title = { is_titular = yes }
+										any_demesne_title = {
+											higher_tier_than = COUNT
+											de_jure_liege_or_above = event_target:emf_succ_title
+										}
+									}
+								}
+								AND = {
+									event_target:emf_succ_title = { tier = KING }
+									higher_real_tier_than = BARON
+									OR = {
+										event_target:emf_succ_title = { is_titular = yes }
+										any_demesne_title = {
+											higher_tier_than = BARON
+											de_jure_liege_or_above = event_target:emf_succ_title
+										}
+									}
+								}
+								AND = {
+									event_target:emf_succ_title = { tier = DUKE }
+									OR = {
+										event_target:emf_succ_title = { is_titular = yes }
+										any_demesne_title = {
+											de_jure_liege_or_above = event_target:emf_succ_title
+										}
+									}
+								}
+								AND = {
+									event_target:emf_succ_title = { tier = COUNT }
+									any_demesne_title = {
+										de_jure_liege = event_target:emf_succ_title
+									}
+								}
+							}
+						}
+						emf_laws_change_succ_good_reaction_effect = yes
 					}
-					if = {
-						limit = { has_law = succ_primogeniture }
-						set_title_flag = former_primogeniture
+					# Dynasty members are happy
+					any_dynasty_member = {
+						limit = { 
+							emf_laws_change_succ_vip_trigger = no
+						}
+						emf_laws_change_succ_good_reaction_effect = yes
 					}
-					if = {
-						limit = { has_law = succ_feudal_elective }
-						set_title_flag = former_feudal_elective
+					# Legitimate children are angry
+					any_child = {
+						limit = {
+							can_inherit_trigger = yes
+							emf_laws_change_succ_vip_trigger = no
+						}
+						emf_laws_change_succ_bad_reaction_effect = yes
 					}
-					if = {
-						limit = { has_law = succ_tanistry }
-						set_title_flag = former_tanistry
+					# The former pretenders are upset if not of the ruler's dynasty
+					any_opinion_modifier_target = {
+						limit = {
+							reverse_has_opinion_modifier = { who = PREV modifier = opinion_succ_former_pretender }
+							NOT = { dynasty = event_target:emf_succ_changer }
+						}
+						emf_laws_change_succ_bad_reaction_effect = yes
+						event_target:emf_succ_title = {
+							if = {
+								limit = { NOT = { claimed_by - PREV } }
+								add_weak_claim = PREV
+							}
+						}
+						any_spouse = {
+							limit = {
+								emf_laws_change_succ_vip_trigger = no
+								NOT = { dynasty = event_target:emf_succ_changer }
+							}
+							emf_laws_change_succ_bad_reaction_effect = yes
+						}
+						any_child = {
+							limit = {
+								can_inherit_trigger = yes
+								emf_laws_change_succ_vip_trigger = no
+								NOT = { dynasty = event_target:emf_succ_changer }
+							}
+							emf_laws_change_succ_bad_reaction_effect = yes
+						}
 					}
-					if = {
-						limit = { has_law = succ_ultimogeniture }
-						set_title_flag = former_ultimogeniture
+					# The former heir is upset if not of the ruler's dynasty
+					event_target:emf_former_heir = {
+						if = {
+							limit = { NOT = { dynasty = event_target:emf_succ_changer } }
+							event_target:emf_succ_title = { add_claim = PREV }
+							emf_laws_change_succ_terrible_reaction_effect = yes
+							any_spouse = {
+								limit = {
+									emf_laws_change_succ_vip_trigger = no
+									NOT = { dynasty = event_target:emf_succ_changer }
+								}
+								emf_laws_change_succ_terrible_reaction_effect = yes
+							}
+							any_child = {
+								limit = {
+									can_inherit_trigger = yes
+									emf_laws_change_succ_vip_trigger = no
+									NOT = { dynasty = event_target:emf_succ_changer }
+								}
+								emf_laws_change_succ_terrible_reaction_effect = yes
+							}
+						}
 					}
 				}
 				
-				#set opinion changes for heirs and pretenders
-				current_heir = { set_character_flag = former_heir }
-				any_character = {
-					limit = { any_pretender_title = { title = event_target:changed_title } }
-					set_character_flag = former_pretender
-				}
-				ROOT = { character_event = { id = Plus.604 days = 1 } }
-
-				#actually change the law
-				add_law = succ_tanistry
-
-				any_de_jure_vassal = {
-					limit = {
-						OR = {
-							AND = {
-								tier = baron
-								PREV = { tier = count }
-							}
-							AND = {
-								tier = count
-								PREV = { tier = duke }
-							}
-							higher_tier_than = count
-						}
-					}
-					set_character_flag = dejure_vassal
-				}
-				ROOT = {
-					#all legitimate children are upset
-					any_child = {
-						limit = {
-							NOR = {
-								trait = bastard
-								trait = monk
-								trait = nun
-								trait = disinherited
-								has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
-								has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
-								has_opinion_modifier = { who = PREV modifier = opinion_bad_succ_law_change 	}
-							}
-						}
-						opinion = {
-							who = PREV
-							modifier = opinion_bad_succ_law_change
-							months = 240
-						}
-					}
-					#dynasty members are somewhat upset
-					any_dynasty_member = {
-						limit = {
-							NOR = {
-								has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
-								has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
-								has_opinion_modifier = { who = PREV modifier = opinion_bad_succ_law_change 	}
-							}
-						}
-						opinion = {
-							who = PREV
-							modifier = opinion_succ_law_change
-							months = 240
-						}
-					}
-					#electors are pleased
-					any_vassal = {
-						limit = {
-							has_character_flag = dejure_vassal
-							NOR = {
-								has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
-								has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
-								has_opinion_modifier = { who = PREV modifier = opinion_bad_succ_law_change 	}
-							}
-						}
-						opinion = {
-							who = PREV
-							modifier = opinion_good_succ_law_change
-							months = 240
-						}
-					}
-					#other vassals are slightly upset
-					any_vassal = {
-						limit = {
-							OR = {
-								primary_title = { de_jure_liege_or_above = event_target:changed_title }
-								event_target:changed_title = { is_primary_holder_title = yes }
-								event_target:changed_title = { is_titular = yes }
-							}
-							NOR = {
-								has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
-								has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
-								has_opinion_modifier = { who = PREV modifier = opinion_bad_succ_law_change 	}
-							}
-						}
-						opinion = {
-							who = PREV
-							modifier = opinion_succ_law_change
-							months = 240
-						}
-					}
-				}
-				any_de_jure_vassal = {
-					clr_character_flag = dejure_vassal
-				}
+				emf_laws_change_succ_cleanup_effect = yes
 				
 				any_de_jure_vassal = {
 					limit = { has_character_flag = voted_on_tanistry }
@@ -1845,143 +1672,130 @@ character_event = {
 			}			
 			clr_character_flag = vote_is_for_feudal_elective
 			event_target:changed_title = {
-				#set flag so we know what the former law was
-				if = {
-					limit = { is_primary_holder_title = yes }
-					clr_title_flag = former_gavelkind
-					clr_title_flag = former_seniority
-					clr_title_flag = former_primogeniture
-					clr_title_flag = former_feudal_elective
-					clr_title_flag = former_tanistry
-					clr_title_flag = former_ultimogeniture
-					if = {
-						limit = { has_law = succ_gavelkind }
-						set_title_flag = former_gavelkind
+				pf_save_old_succ_law_effect = yes
+				save_event_target_as = emf_succ_title
+				holder_scope = { save_event_target_as = emf_succ_changer }
+				
+				log = "INFO: succ_institute_feudal_elective: [emf_succ_changer.GetTitledFirstName] (ID: [emf_succ_changer.GetID]) changing law for the [emf_succ_title.GetFullBaseName]"
+				
+				emf_laws_change_succ_save_contenders_effect = yes
+				add_law = succ_feudal_elective
+				current_heir = { save_event_target_as = emf_heir }
+
+				holder_scope = {
+					# Vassals are slightly upset
+					any_vassal = {
+						limit = {
+							emf_laws_change_succ_affected_vassal_trigger = yes
+							emf_laws_change_succ_vip_trigger = no
+						}
+						emf_laws_change_succ_mild_reaction_effect = yes
 					}
-					if = {
-						limit = { has_law = succ_seniority }
-						set_title_flag = former_seniority
+					# Electors are happy
+					any_vassal = {
+						limit = {
+							emf_laws_change_succ_vip_trigger = no
+							OR = {
+								AND = {
+									event_target:emf_succ_title = { tier = EMPEROR }
+									higher_real_tier_than = COUNT
+									OR = {
+										event_target:emf_succ_title = { is_titular = yes }
+										any_demesne_title = {
+											higher_tier_than = COUNT
+											de_jure_liege_or_above = event_target:emf_succ_title
+										}
+									}
+								}
+								AND = {
+									event_target:emf_succ_title = { tier = KING }
+									real_tier = DUKE
+									OR = {
+										event_target:emf_succ_title = { is_titular = yes }
+										any_demesne_title = {
+											tier = DUKE
+											de_jure_liege = event_target:emf_succ_title
+										}
+									}
+								}
+								AND = {
+									event_target:emf_succ_title = { tier = DUKE }
+									real_tier = COUNT
+									OR = {
+										event_target:emf_succ_title = { is_titular = yes }
+										any_demesne_title = {
+											tier = COUNT
+											de_jure_liege = event_target:emf_succ_title
+										}
+									}
+								}
+								AND = {
+									event_target:emf_succ_title = { tier = COUNT }
+									real_tier = BARON
+									any_demesne_title = {
+										de_jure_liege = event_target:emf_succ_title
+									}
+								}
+							}
+						}
+						emf_laws_change_succ_good_reaction_effect = yes
 					}
-					if = {
-						limit = { has_law = succ_primogeniture }
-						set_title_flag = former_primogeniture
+					# Dynasty members are slightly upset
+					any_dynasty_member = {
+						limit = {
+							emf_laws_change_succ_vip_trigger = no
+						}
+						emf_laws_change_succ_mild_reaction_effect = yes
 					}
-					if = {
-						limit = { has_law = succ_feudal_elective }
-						set_title_flag = former_feudal_elective
+					# Legitimate children are angry
+					any_child = {
+						limit = {
+							can_inherit_trigger = yes
+							emf_laws_change_succ_vip_trigger = no
+						}
+						emf_laws_change_succ_bad_reaction_effect = yes
 					}
-					if = {
-						limit = { has_law = succ_tanistry }
-						set_title_flag = former_tanistry
+					# The former pretenders are upset
+					any_opinion_modifier_target = {
+						limit = { reverse_has_opinion_modifier = { who = PREV modifier = opinion_succ_former_pretender } }
+						emf_laws_change_succ_bad_reaction_effect = yes
+						event_target:emf_succ_title = {
+							if = {
+								limit = { NOT = { claimed_by - PREV } }
+								add_weak_claim = PREV
+							}
+						}
+						any_spouse = {
+							limit = { emf_laws_change_succ_vip_trigger = no }
+							emf_laws_change_succ_bad_reaction_effect = yes
+						}
+						any_child = {
+							limit = {
+								can_inherit_trigger = yes
+								emf_laws_change_succ_vip_trigger = no
+							}
+							emf_laws_change_succ_bad_reaction_effect = yes
+						}
 					}
-					if = {
-						limit = { has_law = succ_ultimogeniture }
-						set_title_flag = former_ultimogeniture
+					# The former heir is upset
+					event_target:emf_former_heir = {
+						emf_laws_change_succ_bad_reaction_effect = yes
+						event_target:emf_succ_title = { add_claim = PREV }
+						any_spouse = {
+							limit = { emf_laws_change_succ_vip_trigger = no }
+							emf_laws_change_succ_bad_reaction_effect = yes
+						}
+						any_child = {
+							limit = {
+								can_inherit_trigger = yes
+								emf_laws_change_succ_vip_trigger = no
+							}
+							emf_laws_change_succ_bad_reaction_effect = yes
+						}
 					}
 				}
 				
-				#set opinion changes for heirs and pretenders
-				current_heir = { set_character_flag = former_heir }
-				any_character = {
-					limit = { any_pretender_title = { title = event_target:changed_title } }
-					set_character_flag = former_pretender
-				}
-				ROOT = { character_event = { id = Plus.604 days = 1 } }
-
-				#actually change the law
-				add_law = succ_feudal_elective
-
-				any_de_jure_vassal = {
-					limit = {
-						OR = {
-							AND = {
-								tier = baron
-								PREV = { tier = count }
-							}
-							AND = {
-								tier = count
-								PREV = { tier = duke }
-							}
-							higher_tier_than = count
-						}
-					}
-					set_character_flag = dejure_vassal
-				}
-				ROOT = {
-					#all legitimate children are upset
-					any_child = {
-						limit = {
-							NOR = {
-								trait = bastard
-								trait = monk
-								trait = nun
-								trait = disinherited
-								has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
-								has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
-								has_opinion_modifier = { who = PREV modifier = opinion_bad_succ_law_change 	}
-							}
-						}
-						opinion = {
-							who = PREV
-							modifier = opinion_bad_succ_law_change
-							months = 240
-						}
-					}
-					#dynasty members are somewhat upset
-					any_dynasty_member = {
-						limit = {
-							NOR = {
-								has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
-								has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
-								has_opinion_modifier = { who = PREV modifier = opinion_bad_succ_law_change 	}
-							}
-						}
-						opinion = {
-							who = PREV
-							modifier = opinion_succ_law_change
-							months = 240
-						}
-					}
-					#electors are pleased
-					any_vassal = {
-						limit = {
-							has_character_flag = dejure_vassal
-							NOR = {
-								has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
-								has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
-								has_opinion_modifier = { who = PREV modifier = opinion_bad_succ_law_change 	}
-							}
-						}
-						opinion = {
-							who = PREV
-							modifier = opinion_good_succ_law_change
-							months = 240
-						}
-					}
-					#other vassals are slightly upset
-					any_vassal = {
-						limit = {
-							OR = {
-								primary_title = { de_jure_liege_or_above = event_target:changed_title }
-								event_target:changed_title = { is_primary_holder_title = yes }
-								event_target:changed_title = { is_titular = yes }
-							}
-							NOR = {
-								has_opinion_modifier = { who = PREV modifier = opinion_succ_law_change }
-								has_opinion_modifier = { who = PREV modifier = opinion_good_succ_law_change }
-								has_opinion_modifier = { who = PREV modifier = opinion_bad_succ_law_change 	}
-							}
-						}
-						opinion = {
-							who = PREV
-							modifier = opinion_succ_law_change
-							months = 240
-						}
-					}
-				}
-				any_de_jure_vassal = {
-					clr_character_flag = dejure_vassal
-				}
+				emf_laws_change_succ_cleanup_effect = yes
 
 				any_de_jure_vassal = {
 					limit = { has_character_flag = voted_on_feudal_elective }
@@ -2238,102 +2052,115 @@ character_event = {
 
 #######################################
 # REACTIONS TO SUCCESSION LAW CHANGES
-# Written by Rylock
+# Written by Rylock & zijistark
 #######################################
 
 # Base event fired on the ruler after changing a law
+#
+# Context (which should all be manually cleared when we're done):
+# - Succession law title has flag emf_succ_title
+# - opinion_succ_former_heir points to the former heir
+# - opinion_succ_former_pretender points to the former pretenders
+
 character_event = {
 	id = Plus.604
 	
 	hide_window = yes
 	is_triggered_only = yes
 	
+	trigger = {
+		is_alive = yes
+	}
+	
 	immediate = {
-		random_demesne_title = {
-			limit = { has_title_flag = title_to_change }
-			clr_title_flag = title_to_change
-			save_event_target_as = changed_title
+		save_event_target_as = emf_succ_changer
+		
+		random_demesne_title = { # Save our title...
+			limit = { has_title_flag = emf_succ_title }
+			clr_title_flag = emf_succ_title
+			save_event_target_as = emf_succ_title
 		}
 		
-		log = "performing a check on heirs/pretenders after [Root.GetTitledFirstName] changed the succession law of the [changed_title.GetFullName]"
-		
-		# former heir is now neither heir nor pretender
-		any_character = {
-			limit = {
-				has_character_flag = former_heir
-				NOT = { any_heir_title = { title = event_target:changed_title } }
-				NOT = { any_pretender_title = { title = event_target:changed_title } }
-			}
-			remove_opinion = { who = ROOT modifier = opinion_succ_law_change }
-			remove_opinion = { who = ROOT modifier = opinion_good_succ_law_change }
-			remove_opinion = { who = ROOT modifier = opinion_bad_succ_law_change }
-			character_event = { id = Plus.605 }
+		if = {
+			limit = { NOT = { event_target:emf_succ_title = { always = yes } } }
+			log = "ERROR: Plus.604: Succesion law change title (emf_succ_title) not found in demesne of [Root.GetTitledName] (ID: [Root.GetID]); aborting!"
+			break = yes
 		}
 		
-		# former heir is now pretender
-		any_character = {
-			limit = {
-				has_character_flag = former_heir
-				NOT = { any_heir_title = { title = event_target:changed_title } }
-				NOT = { has_character_flag = former_pretender }
-				any_pretender_title = { title = event_target:changed_title }
-			}
-			remove_opinion = { who = ROOT modifier = opinion_succ_law_change }
-			remove_opinion = { who = ROOT modifier = opinion_good_succ_law_change }
-			remove_opinion = { who = ROOT modifier = opinion_bad_succ_law_change }
-			character_event = { id = Plus.606 }
+		log = "DEBUG: Plus.604: Processing succession law change reactions for the [emf_succ_title.GetFullBaseName] held by [Root.GetTitledFirstName] (ID: [Root.GetID])..."
+		
+		event_target:emf_succ_title = { current_heir = { save_event_target_as = emf_heir } } # ... and its new heir
+		
+		if = {
+			limit = { NOT = { event_target:emf_heir = { always = yes } } }
+			log = "INFO: Plus.604: Succesion law change for the [emf_succ_title.GetFullBaseName] resulted in no known successor."
 		}
 		
-		# former pretender is now neither heir nor pretender
-		any_character = {
-			limit = {
-				has_character_flag = former_pretender
-				NOT = { any_heir_title = { title = event_target:changed_title } }
-				NOT = { any_pretender_title = { title = event_target:changed_title } }
+		random_opinion_modifier_target = { # Save our former heir...
+			limit = { reverse_has_opinion_modifier = { who = PREV modifier = opinion_succ_former_heir } }
+			save_event_target_as = emf_former_heir
+		}
+		
+		if = {
+			limit = { NOT = { event_target:emf_former_heir = { always = yes } } }
+			log = "INFO: Plus.604: No former heir for the [emf_succ_title.GetFullBaseName]."
+		}		
+
+		# Should the former heir have died or somehow not existed, emf_former_heir will be undefined, but that should
+		# work just fine for all of the uses below.		
+		
+		event_target:emf_former_heir = {
+			 # Former heir is now neither heir nor pretender
+			if = {
+				limit = {
+					NOT = { character = event_target:emf_heir }
+					NOT = { any_pretender_title = { title = event_target:emf_succ_title } }
+				}
+				character_event = { id = Plus.605 }
 			}
-			remove_opinion = { who = ROOT modifier = opinion_succ_law_change }
-			remove_opinion = { who = ROOT modifier = opinion_good_succ_law_change }
-			remove_opinion = { who = ROOT modifier = opinion_bad_succ_law_change }
+			
+			# Former heir is now pretender
+			if = {
+				limit = {
+					NOT = { character = event_target:emf_heir }
+					any_pretender_title = { title = event_target:emf_succ_title }
+				}
+				character_event = { id = Plus.606 }
+			}
+		}		
+		
+		# Former pretenders that are now neither heir nor pretender
+		any_opinion_modifier_target = {
+			limit = {
+				reverse_has_opinion_modifier = { who = PREV modifier = opinion_succ_former_pretender }
+				NOT = { character = event_target:emf_heir }
+				NOT = { any_pretender_title = { title = event_target:emf_succ_title } }
+			}
 			character_event = { id = Plus.607 }
-		}
+		}		
 		
-		# the new heir
-		event_target:changed_title = {
-			current_heir = {
-				if = {
-					limit = { NOT = { has_character_flag = former_heir } }
-					remove_opinion = { who = ROOT modifier = opinion_succ_law_change }
-					remove_opinion = { who = ROOT modifier = opinion_good_succ_law_change }
-					remove_opinion = { who = ROOT modifier = opinion_bad_succ_law_change }
-					character_event = { id = Plus.608 }
-				}
+		# The new heir
+		event_target:emf_heir = {
+			if = {
+				limit = { NOT = { character = event_target:emf_former_heir } }
+				character_event = { id = Plus.608 }
 			}
 		}
 		
-		# the new pretenders
+		# The new pretenders
 		any_character = {
 			limit = {
-				NOT = { has_character_flag = former_heir }
-				NOT = { has_character_flag = former_pretender }
-				NOT = { any_heir_title = { title = event_target:changed_title } }
-				any_pretender_title = { title = event_target:changed_title }
+				any_pretender_title = { title = event_target:emf_succ_title }
+				NOR = {
+					character = event_target:emf_former_heir
+					character = event_target:emf_heir
+					reverse_has_opinion_modifier = {
+						who = ROOT
+						modifier = opinion_succ_former_pretender
+					}
+				}
 			}
-			remove_opinion = { who = ROOT modifier = opinion_succ_law_change }
-			remove_opinion = { who = ROOT modifier = opinion_good_succ_law_change }
-			remove_opinion = { who = ROOT modifier = opinion_bad_succ_law_change }
 			character_event = { id = Plus.609 }
-		}
-		
-		#clear the flags
-		any_character = {
-			limit = {
-				OR = {
-					has_character_flag = former_heir
-					has_character_flag = former_pretender
-				}
-			}
-			clr_character_flag = former_heir
-			clr_character_flag = former_pretender
 		}
 	}
 }
@@ -2385,49 +2212,53 @@ character_event = {
 				trait = ambitious
 			}
 		}
-		FROM = {
-			reverse_opinion = {
-				who = ROOT
-				modifier = opinion_bad_succ_law_change
-				months = 240
-			}
-		}
-		event_target:changed_title = {
-			current_heir = {
-				reverse_opinion = {
-					who = ROOT
-					modifier = opinion_resentful
-					multiplier = 2
-					months = 120
-				}
-			}
-		}
+		log = "DEBUG: Plus.605: Former heir [Root.GetTitledName] (ID: [Root.GetID]) is now neither heir nor pretender (gracefully accepts)"
+
+		emf_laws_change_succ_bad_reaction_effect = yes
+		opinion = { who = event_target:emf_heir modifier = opinion_resentful multiplier = 2 months = 240 }
+
+		custom_tooltip = { text = emf_laws_ctt_succ_change_reaction_to_pretenders }
 		any_character = {
-			limit = { any_pretender_title = { title = event_target:changed_title } }
+			limit = { any_pretender_title = { title = event_target:emf_succ_title } }
 			reverse_opinion = { who = ROOT modifier = opinion_resentful months = 240 }
 		}
-		any_character = {
+		if = {
 			limit = {
-				OR = {
-					is_married = ROOT
-					is_child_of = ROOT
+				any_spouse = {
+					NOT = { character = FROM }
+					NOT = { any_child = { character = event_target:emf_heir } }
 				}
+			}
+			custom_tooltip = { text = emf_laws_ctt_succ_change_spouse_reactions }
+		}
+		any_spouse = {
+			limit = {
 				NOT = { character = FROM }
-				NOT = { any_child = { any_heir_title = { title = event_target:changed_title } } }
+				NOT = { any_child = { character = event_target:emf_heir } }
 			}
-			hidden_tooltip = {
-				remove_opinion = { who = FROM modifier = opinion_bad_succ_law_change }
-				remove_opinion = { who = FROM modifier = opinion_good_succ_law_change }
-				remove_opinion = { who = FROM modifier = opinion_succ_law_change }
-			}
-			FROM = {
-				reverse_opinion = { who = PREV modifier = opinion_bad_succ_law_change months = 240 }
-			}
-			event_target:changed_title = {
-				current_heir = {
-					reverse_opinion = { who = PREVPREV modifier = opinion_resentful multiplier = 2 months = 240 }
+			emf_laws_change_succ_bad_reaction_effect = yes
+			opinion = { who = event_target:emf_heir modifier = opinion_resentful multiplier = 2 months = 240 }
+		}
+		if = {
+			limit = {
+				any_child = {
+					NOT = { character = FROM }
+					NOT = { any_child = { character = event_target:emf_heir } }
+					NOT = { any_spouse = { character = event_target:emf_heir } }
+					can_inherit_trigger = yes
 				}
 			}
+			custom_tooltip = { text = emf_laws_ctt_succ_change_child_reactions }
+		}
+		any_child = {
+			limit = {
+				NOT = { character = FROM }
+				NOT = { any_child = { character = event_target:emf_heir } }
+				NOT = { any_spouse = { character = event_target:emf_heir } }
+				can_inherit_trigger = yes
+			}
+			emf_laws_change_succ_bad_reaction_effect = yes
+			opinion = { who = event_target:emf_heir modifier = opinion_resentful multiplier = 2 months = 240 }
 		}
 	}
 	option = {
@@ -2467,51 +2298,55 @@ character_event = {
 				trait = content
 			}
 		}
+		log = "DEBUG: Plus.605: Former heir [Root.GetTitledName] (ID: [Root.GetID]) is now neither heir nor pretender (outraged)"
+
 		set_character_flag = justified_claimant
-		FROM = {
-			reverse_opinion = {
-				who = ROOT
-				modifier = succ_law_disinherit
-				months = 240
-			}
-		}
-		event_target:changed_title = {
-			add_claim = ROOT
-			current_heir = {
-				reverse_opinion = {
-					who = ROOT
-					modifier = opinion_resentful
-					multiplier = 5
-					months = 240
-				}
-			}
-		}
+		opinion = { who = FROM modifier = succ_law_disinherit months = 360 }
+		opinion = { who = event_target:emf_heir modifier = opinion_resentful multiplier = 5 months = 240 }
+		event_target:emf_succ_title = { add_claim = ROOT }		
+		
+		custom_tooltip = { text = emf_laws_ctt_succ_change_reaction_to_pretenders }
 		any_character = {
-			limit = { any_pretender_title = { title = event_target:changed_title } }
+			limit = { any_pretender_title = { title = event_target:emf_succ_title } }
 			reverse_opinion = { who = ROOT modifier = opinion_resentful multiplier = 2 months = 240 }
 		}
-		any_character = {
+		if = {
 			limit = {
-				OR = {
-					is_married = ROOT
-					is_child_of = ROOT
+				any_spouse = {
+					NOT = { character = FROM }
+					NOT = { any_child = { character = event_target:emf_heir } }
 				}
+			}
+			custom_tooltip = { text = emf_laws_ctt_succ_change_spouse_reactions }
+		}
+		any_spouse = {
+			limit = {
 				NOT = { character = FROM }
-				NOT = { any_child = { any_heir_title = { title = event_target:changed_title } } }
+				NOT = { any_child = { character = event_target:emf_heir } }
 			}
-			hidden_tooltip = {
-				remove_opinion = { who = FROM modifier = opinion_bad_succ_law_change }
-				remove_opinion = { who = FROM modifier = opinion_good_succ_law_change }
-				remove_opinion = { who = FROM modifier = opinion_succ_law_change }
-			}
-			FROM = {
-				reverse_opinion = { who = PREV modifier = opinion_bad_succ_law_change multiplier = 2 months = 240 }
-			}
-			event_target:changed_title = {
-				current_heir = {
-					reverse_opinion = { who = PREVPREV modifier = opinion_resentful multiplier = 5 months = 240 }
+			emf_laws_change_succ_terrible_reaction_effect = yes
+			opinion = { who = event_target:emf_heir modifier = opinion_resentful multiplier = 5 months = 240 }
+		}
+		if = {
+			limit = {
+				any_child = {
+					NOT = { character = FROM }
+					NOT = { any_child = { character = event_target:emf_heir } }
+					NOT = { any_spouse = { character = event_target:emf_heir } }
+					can_inherit_trigger = yes
 				}
 			}
+			custom_tooltip = { text = emf_laws_ctt_succ_change_child_reactions }
+		}
+		any_child = {
+			limit = {
+				NOT = { character = FROM }
+				NOT = { any_child = { character = event_target:emf_heir } }
+				NOT = { any_spouse = { character = event_target:emf_heir } }
+				can_inherit_trigger = yes
+			}
+			emf_laws_change_succ_terrible_reaction_effect = yes
+			opinion = { who = event_target:emf_heir modifier = opinion_resentful multiplier = 5 months = 240 }
 		}
 	}
 }
@@ -2563,45 +2398,48 @@ character_event = {
 				trait = ambitious
 			}
 		}
-		FROM = {
-			reverse_opinion = {
-				who = ROOT
-				modifier = opinion_bad_succ_law_change
-				months = 240
-			}
-		}
-		event_target:changed_title = {
-			current_heir = {
-				reverse_opinion = {
-					who = ROOT
-					modifier = opinion_resentful
-					multiplier = 2
-					months = 120
-				}
-			}
-		}
-		hidden_tooltip = {
-			any_character = {
-				limit = {
-					OR = {
-						is_married = ROOT
-						is_child_of = ROOT
-					}
+		log = "DEBUG: Plus.606: Former heir [Root.GetTitledName] (ID: [Root.GetID]) is now merely a pretender (gracefully accepts)"
+
+		emf_laws_change_succ_bad_reaction_effect = yes
+		opinion = { who = event_target:emf_heir modifier = opinion_resentful multiplier = 2 months = 120 }
+
+		if = {
+			limit = {
+				any_spouse = {
 					NOT = { character = FROM }
-					NOT = { any_child = { any_heir_title = { title = event_target:changed_title } } }
-				}
-				remove_opinion = { who = FROM modifier = opinion_bad_succ_law_change }
-				remove_opinion = { who = FROM modifier = opinion_good_succ_law_change }
-				remove_opinion = { who = FROM modifier = opinion_succ_law_change }
-				FROM = {
-					reverse_opinion = { who = PREV modifier = opinion_bad_succ_law_change months = 240 }
-				}
-				event_target:changed_title = {
-					current_heir = {
-						reverse_opinion = { who = PREVPREV modifier = opinion_resentful multiplier = 2 months = 120 }
-					}
+					NOT = { any_child = { character = event_target:emf_heir } }
 				}
 			}
+			custom_tooltip = { text = emf_laws_ctt_succ_change_spouse_reactions }
+		}
+		any_spouse = {
+			limit = {
+				NOT = { character = FROM }
+				NOT = { any_child = { character = event_target:emf_heir } }
+			}
+			emf_laws_change_succ_bad_reaction_effect = yes
+			opinion = { who = event_target:emf_heir modifier = opinion_resentful multiplier = 2 months = 240 }
+		}
+		if = {
+			limit = {
+				any_child = {
+					NOT = { character = FROM }
+					NOT = { any_child = { character = event_target:emf_heir } }
+					NOT = { any_spouse = { character = event_target:emf_heir } }
+					can_inherit_trigger = yes
+				}
+			}
+			custom_tooltip = { text = emf_laws_ctt_succ_change_child_reactions }
+		}
+		any_child = {
+			limit = {
+				NOT = { character = FROM }
+				NOT = { any_child = { character = event_target:emf_heir } }
+				NOT = { any_spouse = { character = event_target:emf_heir } }
+				can_inherit_trigger = yes
+			}
+			emf_laws_change_succ_bad_reaction_effect = yes
+			opinion = { who = event_target:emf_heir modifier = opinion_resentful multiplier = 2 months = 240 }
 		}
 	}
 	option = {
@@ -2641,48 +2479,50 @@ character_event = {
 				trait = content
 			}
 		}
+		log = "DEBUG: Plus.606: Former heir [Root.GetTitledName] (ID: [Root.GetID]) is now merely a pretender (outraged)"
+		
 		set_character_flag = justified_claimant
-		FROM = {
-			reverse_opinion = {
-				who = ROOT
-				modifier = opinion_bad_succ_law_change
-				multiplier = 2
-				months = 240
-			}
-		}
-		event_target:changed_title = {
-			add_claim = ROOT
-			current_heir = {
-				reverse_opinion = {
-					who = ROOT
-					modifier = opinion_resentful
-					multiplier = 5
-					months = 240
-				}
-			}
-		}
-		hidden_tooltip = {
-			any_character = {
-				limit = {
-					OR = {
-						is_married = ROOT
-						is_child_of = ROOT
-					}
+		emf_laws_change_succ_terrible_reaction_effect = yes
+		opinion = { who = event_target:emf_heir modifier = opinion_resentful multiplier = 5 months = 240 }
+		event_target:emf_succ_title = { add_claim = ROOT }		
+
+		if = {
+			limit = {
+				any_spouse = {
 					NOT = { character = FROM }
-					NOT = { any_child = { any_heir_title = { title = event_target:changed_title } } }
-				}
-				remove_opinion = { who = FROM modifier = opinion_bad_succ_law_change }
-				remove_opinion = { who = FROM modifier = opinion_good_succ_law_change }
-				remove_opinion = { who = FROM modifier = opinion_succ_law_change }
-				FROM = {
-					reverse_opinion = { who = PREV modifier = opinion_bad_succ_law_change multiplier = 2 months = 240 }
-				}
-				event_target:changed_title = {
-					current_heir = {
-						reverse_opinion = { who = PREVPREV modifier = opinion_resentful multiplier = 5 months = 240 }
-					}
+					NOT = { any_child = { character = event_target:emf_heir } }
 				}
 			}
+			custom_tooltip = { text = emf_laws_ctt_succ_change_spouse_reactions }
+		}
+		any_spouse = {
+			limit = {
+				NOT = { character = FROM }
+				NOT = { any_child = { character = event_target:emf_heir } }
+			}
+			emf_laws_change_succ_terrible_reaction_effect = yes
+			opinion = { who = event_target:emf_heir modifier = opinion_resentful multiplier = 5 months = 240 }
+		}
+		if = {
+			limit = {
+				any_child = {
+					NOT = { character = FROM }
+					NOT = { any_child = { character = event_target:emf_heir } }
+					NOT = { any_spouse = { character = event_target:emf_heir } }
+					can_inherit_trigger = yes
+				}
+			}
+			custom_tooltip = { text = emf_laws_ctt_succ_change_child_reactions }
+		}
+		any_child = {
+			limit = {
+				NOT = { character = FROM }
+				NOT = { any_child = { character = event_target:emf_heir } }
+				NOT = { any_spouse = { character = event_target:emf_heir } }
+				can_inherit_trigger = yes
+			}
+			emf_laws_change_succ_terrible_reaction_effect = yes
+			opinion = { who = event_target:emf_heir modifier = opinion_resentful multiplier = 5 months = 240 }
 		}
 	}
 }
@@ -2734,30 +2574,44 @@ character_event = {
 				trait = ambitious
 			}
 		}
-		FROM = {
-			reverse_opinion = {
-				who = ROOT
-				modifier = opinion_bad_succ_law_change
-				months = 240
-			}
-		}
-		hidden_tooltip = {
-			any_character = {
-				limit = {
-					OR = {
-						is_married = ROOT
-						is_child_of = ROOT
-					}
+		log = "DEBUG: Plus.607: Former pretender [Root.GetTitledName] (ID: [Root.GetID]) is now neither heir nor pretender (gracefully accepts)"
+		emf_laws_change_succ_bad_reaction_effect = yes
+
+		if = {
+			limit = {
+				any_spouse = {
 					NOT = { character = FROM }
-					NOT = { any_child = { any_heir_title = { title = event_target:changed_title } } }
-				}
-				remove_opinion = { who = FROM modifier = opinion_bad_succ_law_change }
-				remove_opinion = { who = FROM modifier = opinion_good_succ_law_change }
-				remove_opinion = { who = FROM modifier = opinion_succ_law_change }
-				FROM = {
-					reverse_opinion = { who = PREV modifier = opinion_bad_succ_law_change months = 240 }
+					NOT = { any_child = { character = event_target:emf_heir } }
 				}
 			}
+			custom_tooltip = { text = emf_laws_ctt_succ_change_spouse_reactions }
+		}
+		any_spouse = {
+			limit = {
+				NOT = { character = FROM }
+				NOT = { any_child = { character = event_target:emf_heir } }
+			}
+			emf_laws_change_succ_bad_reaction_effect = yes
+		}
+		if = {
+			limit = {
+				any_child = {
+					NOT = { character = FROM }
+					NOT = { any_child = { character = event_target:emf_heir } }
+					NOT = { any_spouse = { character = event_target:emf_heir } }
+					can_inherit_trigger = yes
+				}
+			}
+			custom_tooltip = { text = emf_laws_ctt_succ_change_child_reactions }
+		}
+		any_child = {
+			limit = {
+				NOT = { character = FROM }
+				NOT = { any_child = { character = event_target:emf_heir } }
+				NOT = { any_spouse = { character = event_target:emf_heir } }
+				can_inherit_trigger = yes
+			}
+			emf_laws_change_succ_bad_reaction_effect = yes
 		}
 	}
 	option = {
@@ -2797,52 +2651,55 @@ character_event = {
 				trait = content
 			}
 		}
+		log = "DEBUG: Plus.605: Former pretender [Root.GetTitledName] (ID: [Root.GetID]) is now neither heir nor pretender (outraged)"
+
 		set_character_flag = justified_claimant
-		FROM = {
-			reverse_opinion = {
-				who = ROOT
-				modifier = opinion_bad_succ_law_change
-				multiplier = 2
-				months = 240
-			}
+		emf_laws_change_succ_terrible_reaction_effect = yes
+		event_target:emf_succ_title = { add_weak_claim = ROOT }
+		opinion = { who = event_target:emf_heir modifier = opinion_resentful multiplier = 2 months = 240 }
+
+		custom_tooltip = { text = emf_laws_ctt_succ_change_reaction_to_pretenders }
+		any_character = {
+			limit = { any_pretender_title = { title = event_target:emf_succ_title } }
+			reverse_opinion = { who = ROOT modifier = opinion_resentful months = 240 }
 		}
-		event_target:changed_title = {
-			add_weak_claim = ROOT
-			current_heir = {
-				reverse_opinion = {
-					who = ROOT
-					modifier = opinion_resentful
-					multiplier = 2
-					months = 240
-				}
-			}
-		}
-		hidden_tooltip = {
-			any_character = {
-				limit = { any_pretender_title = { title = event_target:changed_title } }
-				reverse_opinion = { who = ROOT modifier = opinion_resentful months = 240 }
-			}
-			any_character = {
-				limit = {
-					OR = {
-						is_married = ROOT
-						is_child_of = ROOT
-					}
+		if = {
+			limit = {
+				any_spouse = {
 					NOT = { character = FROM }
-					NOT = { any_child = { any_heir_title = { title = event_target:changed_title } } }
-				}
-				remove_opinion = { who = FROM modifier = opinion_bad_succ_law_change }
-				remove_opinion = { who = FROM modifier = opinion_good_succ_law_change }
-				remove_opinion = { who = FROM modifier = opinion_succ_law_change }
-				FROM = {
-					reverse_opinion = { who = PREV modifier = opinion_bad_succ_law_change multiplier = 2 months = 240 }
-				}
-				event_target:changed_title = {
-					current_heir = {
-						reverse_opinion = { who = PREVPREV modifier = opinion_resentful multiplier = 2 months = 240 }
-					}
+					NOT = { any_child = { character = event_target:emf_heir } }
 				}
 			}
+			custom_tooltip = { text = emf_laws_ctt_succ_change_spouse_reactions }
+		}
+		any_spouse = {
+			limit = {
+				NOT = { character = FROM }
+				NOT = { any_child = { character = event_target:emf_heir } }
+			}
+			emf_laws_change_succ_terrible_reaction_effect = yes
+			opinion = { who = event_target:emf_heir modifier = opinion_resentful multiplier = 2 months = 240 }
+		}
+		if = {
+			limit = {
+				any_child = {
+					NOT = { character = FROM }
+					NOT = { any_child = { character = event_target:emf_heir } }
+					NOT = { any_spouse = { character = event_target:emf_heir } }
+					can_inherit_trigger = yes
+				}
+			}
+			custom_tooltip = { text = emf_laws_ctt_succ_change_child_reactions }
+		}
+		any_child = {
+			limit = {
+				NOT = { character = FROM }
+				NOT = { any_child = { character = event_target:emf_heir } }
+				NOT = { any_spouse = { character = event_target:emf_heir } }
+				can_inherit_trigger = yes
+			}
+			emf_laws_change_succ_terrible_reaction_effect = yes
+			opinion = { who = event_target:emf_heir modifier = opinion_resentful multiplier = 2 months = 240 }
 		}
 	}
 }
@@ -2856,31 +2713,45 @@ character_event = {
 	is_triggered_only = yes
 	
 	option = {
-		name = "EXCELLENT"
-		opinion = {
-			who = FROM
-			modifier = opinion_good_succ_law_change
-			multiplier = 2
-			months = 240
-		}
-		hidden_tooltip = {
-			any_character = {
-				limit = {
+		name = EXCELLENT
+		log = "DEBUG: Plus.608: New heir [Root.GetTitledName] (ID: [Root.GetID]) is pleased"
+		emf_laws_change_succ_good_reaction_effect = yes
+		
+		if = {
+			limit = {
+				any_spouse = {
 					NOT = { character = FROM }
-					OR = {
-						is_married = ROOT
-						is_child_of = ROOT
-					}
-				}
-				remove_opinion = { who = FROM modifier = opinion_bad_succ_law_change }
-				remove_opinion = { who = FROM modifier = opinion_good_succ_law_change }
-				remove_opinion = { who = FROM modifier = opinion_succ_law_change }
-				opinion = {
-					who = FROM
-					modifier = opinion_good_succ_law_change
-					months = 240
+					NOT = { any_child = { character = event_target:emf_heir } }
 				}
 			}
+			custom_tooltip = { text = emf_laws_ctt_succ_change_spouse_reactions }
+		}
+		any_spouse = {
+			limit = {
+				NOT = { character = FROM }
+				NOT = { any_child = { character = event_target:emf_heir } }
+			}
+			emf_laws_change_succ_good_reaction_effect = yes
+		}
+		if = {
+			limit = {
+				any_child = {
+					NOT = { character = FROM }
+					NOT = { any_child = { character = event_target:emf_heir } }
+					NOT = { any_spouse = { character = event_target:emf_heir } }
+					can_inherit_trigger = yes
+				}
+			}
+			custom_tooltip = { text = emf_laws_ctt_succ_change_child_reactions }
+		}
+		any_child = {
+			limit = {
+				NOT = { character = FROM }
+				NOT = { any_child = { character = event_target:emf_heir } }
+				NOT = { any_spouse = { character = event_target:emf_heir } }
+				can_inherit_trigger = yes
+			}
+			emf_laws_change_succ_good_reaction_effect = yes
 		}
 	}
 }
@@ -2894,30 +2765,45 @@ character_event = {
 	is_triggered_only = yes
 	
 	option = {
-		name = "EXCELLENT"
-		opinion = {
-			who = FROM
-			modifier = opinion_good_succ_law_change
-			months = 240
-		}
-		hidden_tooltip = {
-			any_character = {
-				limit = {
+		name = EXCELLENT
+		log = "DEBUG: emf_laws.15: New pretender [Root.GetTitledName] (ID: [Root.GetID]) is pleased"
+		emf_laws_change_succ_good_reaction_effect = yes
+		
+		if = {
+			limit = {
+				any_spouse = {
 					NOT = { character = FROM }
-					OR = {
-						is_married = ROOT
-						is_child_of = ROOT
-					}
-				}
-				remove_opinion = { who = FROM modifier = opinion_bad_succ_law_change }
-				remove_opinion = { who = FROM modifier = opinion_good_succ_law_change }
-				remove_opinion = { who = FROM modifier = opinion_succ_law_change }
-				opinion = {
-					who = FROM
-					modifier = opinion_good_succ_law_change
-					months = 240
+					NOT = { any_child = { character = event_target:emf_heir } }
 				}
 			}
+			custom_tooltip = { text = emf_laws_ctt_succ_change_spouse_reactions }
+		}
+		any_spouse = {
+			limit = {
+				NOT = { character = FROM }
+				NOT = { any_child = { character = event_target:emf_heir } }
+			}
+			emf_laws_change_succ_good_reaction_effect = yes
+		}
+		if = {
+			limit = {
+				any_child = {
+					NOT = { character = FROM }
+					NOT = { any_child = { character = event_target:emf_heir } }
+					NOT = { any_spouse = { character = event_target:emf_heir } }
+					can_inherit_trigger = yes
+				}
+			}
+			custom_tooltip = { text = emf_laws_ctt_succ_change_child_reactions }
+		}
+		any_child = {
+			limit = {
+				NOT = { character = FROM }
+				NOT = { any_child = { character = event_target:emf_heir } }
+				NOT = { any_spouse = { character = event_target:emf_heir } }
+				can_inherit_trigger = yes
+			}
+			emf_laws_change_succ_good_reaction_effect = yes
 		}
 	}
 }
