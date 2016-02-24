@@ -53,6 +53,7 @@ NDefines.NDiplomacy.ASK_FOR_CLAIM_INTERACTION_PIETY = 250
 NDefines.NDiplomacy.ASK_FOR_CLAIM_INTERACTION_THRESHOLD_FOR_NO = 75
 NDefines.NDiplomacy.ASK_FOR_CLAIM_INTERACTION_THRESHOLD_FOR_YES = 175
 
+NDefines.NCharacter.NON_AGGRESSION_PACT_BLOCKS_FACTIONS = 0
 NDefines.NCharacter.WRONG_GOV_FORM_TAX_MOD = -0.5
 NDefines.NCharacter.WRONG_GOV_FORM_LEVY_MOD = -0.5
 NDefines.NCharacter.ASSIGN_ACTION_DAYS = 180					-- Days before a Councillor can be assigned a new job in a county
