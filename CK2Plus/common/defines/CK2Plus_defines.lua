@@ -266,12 +266,3 @@ NDefines.NRulerDesigner.COST_GENERAL_OPINION = 0.5
 NDefines.NRulerDesigner.COST_MORALE_OFFENCE = 25.0
 NDefines.NRulerDesigner.COST_MORALE_DEFENCE = 25.0
 NDefines.NRulerDesigner.COST_DEFENCE = 25.0
-
-NDefines.NDiplomacy.MAX_INFAMY_GAIN = 14.5									-- This is the max infamy gained from a single source
-NDefines.NInfamy.INDEPENDENCE_REALM_CHANGE_VALUE = 0						-- How much base value for realm growth/shrink is worth when giving a vassal independence.
-NDefines.NInfamy.INHERITANCE_CHANGE_VALUE = 0								-- How much base value for realm growth/shrink is worth when inheriting titles.
-NDefines.NInfamy.VASSAL_CHANGE_VALUE = 0	 								-- How much base value for realm growth/shrink is worth when inheriting titles.
-NDefines.NInfamy.MIN_INFAMY_DECAY = 0.06									-- The minimum infamy decay regardless of troop strength.
-NDefines.NInfamy.MAX_INFAMY_DECAY = 0.06									-- The maximum infamy decay regardless of troop strength.
-NDefines.NInfamy.MAX_INFAMY_PER_WAR_PROVINCE = 2.5							-- A single province taken in war can give at most this much threat
-NDefines.NInfamy.MIN_INFAMY_PER_WAR_PROVINCE = 2.5							-- A single province taken in war can give at most this much threat
