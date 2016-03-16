@@ -12,16 +12,15 @@ province_event = {
 	
 	trigger = {
 		owner = {
-			NOT = {
-				AND = {
-					independent = no
-					any_liege = {
-						NOT = { culture = PREV }
-					}
-				}
+			NOT = { culture = ROOT }
+			religion = ROOT
+			#does not apply to vassals of a different culture than their liege
+			NAND = {
+				independent = no
+				any_liege = { NOT = { culture = PREV } }
 			}
+			#do not change culture for rulers with papal type succession
 			NOR = {
-				culture = ROOT
 				has_landed_title = k_papal_state
 				has_landed_title = k_papal_chalcedon
 				has_landed_title = k_chalcedonian
@@ -32,117 +31,186 @@ province_event = {
 				has_landed_title = d_manichean
 				has_landed_title = d_fraticelli
 			}
-			religion = ROOT
-			higher_tier_than = BARON
-			NOT = {
-				AND = {
-					ROOT = {
-						culture = saxon
-						region = custom_england  
-					}
+			#english melting pot
+			NAND = {
+				ROOT = {
+					region = custom_england
 					OR = {
-						culture_group = north_germanic
 						culture = norman
 						culture = frankish
 						culture = occitan
+						culture = saxon
+						culture = english
 					}
 				}
+				OR = {
+					culture = norman
+					culture = frankish
+					culture = occitan
+					culture = saxon
+				}
 			}
-			NOT = {
-				AND = {
-					ROOT = {
-						region = custom_sicily
-					}
+			#sicilian melting pot
+			NAND = {
+				ROOT = {
+					region = custom_sicily
 					OR = {
 						culture = greek
-						culture = maghreb_arabic
+						culture_group = arabic
+						culture = norman
+						culture = sicilian
+						culture = sicilian_greek
+						culture = sicilian_arabic
+					}
+				}
+				OR = {
+					culture = greek
+					culture = italian
+					culture_group = arabic
+					culture = norman
+				}
+			}
+			#anglo-norse melting pot
+			NAND = {
+				ROOT = {
+					region = custom_england
+					OR = {
+						culture = saxon
+						culture = norse
+						culture = english_norse
+					}
+				}
+				OR = {
+					culture = saxon
+					culture = norse
+				}
+			}
+			#gallawa melting pot
+			NAND = {
+				ROOT = {
+					OR = {
+						region = custom_scotland
+						region = custom_ireland
+						region = custom_wales
+						region = custom_brittany
+					}
+					OR = {
+						culture_group = north_germanic
+						culture_group = celtic
+						culture = gallawa
+					}
+				}
+				OR = {
+					culture_group = north_germanic
+					culture_group = celtic
+				}
+				NOT = { culture_group = ROOT }
+			}
+			#russian melting pot
+			NAND = {
+				NOT = { has_global_flag = russian_melting_pot }
+				ROOT = {
+					OR = {
+						region = custom_rus
+						region = custom_novgorod
+						region = custom_muscovy
+					}
+					OR = {
+						culture_group = east_slavic
+						culture = norse
+						culture = russian
+					}
+				}
+				OR = {
+					culture_group = east_slavic
+					culture = norse
+				}
+			}
+			#norman melting pot
+			NAND = {
+				ROOT = {
+					region = world_europe_west_francia
+					OR = {
+						culture = norse
+						culture = frankish
+						culture = breton
+						culture = occitan
 						culture = norman
 					}
 				}
-			}
-			NOT = {
-				AND = {
-					NOT = { has_global_flag = russian_melting_pot }
-					ROOT = {
-						OR = {
-							region = custom_rus
-							region = custom_novgorod
-							region = custom_muscovy
-						}
-					}
-					culture_group = east_slavic
-					NOT = { culture = russian }
+				OR = {
+					culture = norse
+					culture = frankish
+					culture = breton
+					culture = occitan
 				}
 			}
-		}
-		OR = {
-			owner = {
-				capital_scope = { province_id = ROOT }
-			}
-			any_neighbor_province = {
-				has_owner = yes
-				ROOT = {
-					owner = { culture = PREVPREV }
-				}
-				owner = {
-					ROOT = {
-						owner = { culture = PREVPREV }
-					}
-				}
-			}
-		}
-		NOT = { # No flipping back to Norse culture before 1150
-			AND = {
-				owner = { culture = norse }
+			#no flipping back to Norse culture before 1150
+			NAND = {
+				NOT = {	has_global_flag = norse_culture_flipping }
 				ROOT = {
 					OR = {
 						culture = swedish
 						culture = norwegian
 						culture = danish
-						culture = norman
+						culture = icelandic
 					}
 				}
-				NOT = {	has_global_flag = norse_culture_flipping }
+				culture = norse
+			}
+		}
+		#either the owner's capital or there is a neighbor province of that culture
+		OR = {
+			owner = { capital_scope = { province_id = ROOT } }
+			any_neighbor_province = {
+				has_owner = yes
+				owner = {
+					ROOT = {
+						owner = {
+							culture = PREVPREV
+							culture = PREVPREVPREV
+						}
+					}
+				}
 			}
 		}
 	}
 
 	mean_time_to_happen = {
 		months = 550
-
 		modifier = {
 			factor = 10
+			owner = { independent = no }
 			NOT = {
 				any_neighbor_province = {
 					has_owner = yes
-					ROOT = {
-						owner = { culture = PREVPREV }
-					}
 					owner = {
 						ROOT = {
-							owner = { culture = PREVPREV }
+							owner = {
+								culture = PREVPREV
+								culture = PREVPREVPREV
+							}
 						}
 					}
 				}
 			}
-			owner = { independent = no }
 		}
 		modifier = {
 			factor = 5
+			owner = { independent = yes }
 			NOT = {
 				any_neighbor_province = {
 					has_owner = yes
-					ROOT = {
-						owner = { culture = PREVPREV }
-					}
 					owner = {
 						ROOT = {
-							owner = { culture = PREVPREV }
+							owner = {
+								culture = PREVPREV
+								culture = PREVPREVPREV
+							}
 						}
 					}
 				}
 			}
-			owner = { independent = yes }
 		}
 		modifier = {
 			factor = 0.80
@@ -417,15 +485,19 @@ province_event = {
 	}
 
 	immediate = {
+		if = {
+			limit = { NOT = { has_province_flag = may_switch_culture } }
+			set_province_flag = may_switch_culture
+			break = yes
+		}
+		clr_province_flag = may_switch_culture
 		save_event_target_as = converted_province
 		add_province_modifier = {
 			name = recent_culture_change
 			duration = -1
 		}
 		owner = {
-			ROOT = {
-				culture = PREV
-			}
+			ROOT = { culture = PREV }
 			if = {
 				limit = { has_ambition = obj_civilize_province }
 				character_event = { id = Plus.334 }
