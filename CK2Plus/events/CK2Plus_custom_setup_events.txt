@@ -48,14 +48,182 @@ character_event = {
 	}	
 }
 
-character_event = { 
+character_event = { # This event deals with the setup of the scenario before conversion
 	id = Plus.2702
 		
 	is_triggered_only = yes
 	hide_window = yes
 	
-	immediate = {
-		any_independent_ruler = {
+	immediate = { 
+		# First deal with the religious heads
+		d_sunni = {
+			destroy_landed_title = THIS
+		}
+		d_shiite = {
+			destroy_landed_title = THIS
+		}
+		if = {
+			limit = { year = 1054 }
+			k_papal_state = { # Distribute the catholic pope's titles
+				owner = {
+					any_vassal = {
+						limit = {
+							higher_tier_than = baron
+						}
+						set_defacto_liege = THIS
+						save_event_target_as = holder_of_papal_lands
+					}
+					any_demesne_title = {
+						limit = {
+							OR = {
+								tier = count
+								tier = duke
+							}
+						}
+						event_target:holder_of_papal_lands = {
+							grant_title_no_opinion = PREV
+						}
+					}
+					any_demesne_title = {
+						limit = {
+							tier = baron
+						}
+						create_character = {
+							random_traits = yes
+							age = 21
+							female = no
+							culture = PREVPREV
+							religion = PREVPREV
+							dynasty = RANDOM
+						}
+						new_character = {
+							grant_title_no_opinion = PREV
+							set_defacto_liege = THIS
+						}
+					}
+				}
+			}
+		}
+		
+		if = {
+			limit = { NOT = { year = 1054 } }
+			k_papal_chalcedon = { # Distribute the chalcedon pope's titles
+				owner = {
+					any_vassal = {
+						limit = {
+							higher_tier_than = baron
+						}
+						set_defacto_liege = THIS
+						save_event_target_as = holder_of_papal_lands
+					}
+					any_demesne_title = {
+						limit = {
+							OR = {
+								tier = count
+								tier = duke
+							}
+						}
+						event_target:holder_of_papal_lands = {
+							grant_title_no_opinion = PREV
+						}
+					}
+					any_demesne_title = {
+						limit = {
+							tier = baron
+						}
+						create_character = {
+							random_traits = yes
+							age = 21
+							female = no
+							culture = PREVPREV
+							religion = PREVPREV
+							dynasty = RANDOM
+						}
+						new_character = {
+							grant_title_no_opinion = PREV
+							set_defacto_liege = THIS
+						}
+					}
+				}
+			}
+		}
+		
+		# Does the HRE exist? If so we have some cleaning up to do. First switch it to the German empire
+		if = {
+			limit = {
+				e_hre = { has_holder = yes }
+			}
+			e_hre = { owner = { save_event_target_as = hre_kaiser } }
+			
+			event_target:hre_kaiser = { # Remove crowned by pope with the generic variant
+				if = {
+					limit = { trait = crowned_by_pope }
+					remove_trait = crowned_by_pope
+					add_trait = crowned
+				}
+			}
+			event_target:hre_kaiser = {
+				set_character_flag = centralize_without_penalties
+			}
+			if = { # Activate e_germany if needed
+				limit = { NOT = { is_title_active = e_germany } }
+				activate_title = { title = e_germany status = yes }
+			}
+			
+			e_germany = { # Copy the HRE's laws to Germany
+				hidden_tooltip = {
+					copy_title_laws = e_hre
+				}
+				gain_title = event_target:hre_kaiser
+				make_primary_title = yes
+			}
+
+			any_title = { # Replace e_hre claims with e_germany claims
+				limit = {
+					rebel = no
+					has_holder = yes
+					is_primary_holder_title = yes
+					holder_scope = { top_liege = { character = event_target:hre_kaiser } }
+				}
+				holder_scope = {
+					if = {
+						limit = { has_weak_claim = e_hre }
+						add_weak_pressed_claim = e_germany
+						remove_claim = e_hre
+					}
+					if = {
+						limit = { has_strong_claim = e_hre }
+						add_pressed_claim = e_germany
+						remove_claim = e_hre
+					}
+					any_realm_character = {
+						if = {
+							limit = { has_weak_claim = e_hre }
+							add_weak_pressed_claim = e_germany
+							remove_claim = e_hre
+						}
+						if = {
+							limit = { has_strong_claim = e_hre }
+							add_pressed_claim = e_germany
+							remove_claim = e_hre
+						}
+					}
+				}
+			}
+			
+			e_hre = { # Migrate over the HRE's de Jure vassals
+				any_direct_de_jure_vassal_title = {
+					de_jure_liege = e_germany
+				}
+				destroy_landed_title = yes
+			}
+			
+			event_target:hre_kaiser = {
+				clr_character_flag = centralize_without_penalties
+			}			
+		}
+		
+		any_independent_ruler = { # Now that the world is set up, convert them all to ARs
 			any_realm_province = {
 				emf_nwo_generate_ancient_religion_provinces = yes
 			}
