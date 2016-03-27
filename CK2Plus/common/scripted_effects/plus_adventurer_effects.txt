@@ -2,57 +2,68 @@
 
 # ROOT = adventurer
 adv_find_adventurer_target_effect = {
-	random_opinion_modifier_target = {
-		limit = {
-			reverse_has_opinion_modifier = { who = ROOT modifier = opinion_claimant_adventure_target }
+	if = {
+		limit = { NOT = { event_target:adventurer_target = { always = yes } } }
+		random_opinion_modifier_target = {
+			limit = {
+				reverse_has_opinion_modifier = { who = PREV modifier = opinion_claimant_adventure_target }
+			}
+			save_event_target_as = adventurer_target
 		}
-		save_event_target_as = adventurer_target
 	}
 }
 
 # ROOT = adventurer
 adv_reset_location_effect = {
 	if = {
-		limit = {
-			NOT = { event_target:current_court = { always = yes } }
-		}
+		limit = { NOT = { event_target:current_court = { always = yes } } }
 		location = { save_event_target_as = current_court }
 	}
 }
 
 # ROOT = adventurer
 adv_find_friendly_court_effect = {
+	# if I have a non-adventurer title, my most friendly court is my own court
+	if = {
+		limit = { any_demesne_title = { adventurer = no } }
+		save_event_target_as = new_court_home
+	}
+	# otherwise...
 	# find a court that supported me first
 	random_opinion_modifier_target = {
 		limit = {
-			is_playable = yes
-			demesne_size = 1
+			NOT = { event_target:new_court_home = { always = yes } }
 			reverse_has_opinion_modifier = { who = ROOT modifier = backed_adventurer }
+			is_playable = yes
+			is_landed = yes
 		}
-		ROOT = { set_character_flag = found_home }
 		save_event_target_as = new_court_home
 	}
 	# failing that, find a court that let me stay
 	random_opinion_modifier_target = {
 		limit = {
-			ROOT = { NOT = { has_character_flag = found_home } }
-			is_playable = yes
-			demesne_size = 1
+			NOT = { event_target:new_court_home = { always = yes } }
 			reverse_has_opinion_modifier = { who = ROOT modifier = let_adventurer_stay }
+			is_playable = yes
+			is_landed = yes
 		}
-		ROOT = { set_character_flag = found_home }
 		save_event_target_as = new_court_home
 	}
 	# failing that, my current location will have to do
 	if = {
-		limit = { NOT = { has_character_flag = found_home } }
+		limit = { NOT = { event_target:new_court_home = { always = yes } } }
 		location = { owner = { save_event_target_as = new_court_home } }
 	}
-	clr_character_flag = found_home
 }
 
 # THIS = adventurer, must be used inside the adventurer's scope
 adv_abandon_adventure_effect = {
+	# free all prisoners
+	any_courtier = {
+		limit = { prisoner = yes }
+		prisoner = no
+	}
+	
 	# move all courtiers to the new court
 	any_courtier = { move_character = event_target:new_court_home }
 	
@@ -73,19 +84,13 @@ adv_abandon_adventure_effect = {
 		unsafe_destroy_landed_title = THIS
 	}
 	move_character = event_target:new_court_home
+	clear_event_target = new_court_home
 }
 
 # THIS = targeted ruler, ROOT = adventurer
 adv_started_war_effect = {
 	reverse_remove_opinion = { who = ROOT modifier = opinion_claimant_adventure_target }
 	remove_opinion = { who = ROOT modifier = opinion_targeted_by_adventurer }
-	random_vassal = {
-		limit = {
-			leads_faction = faction_pretender
-			supported_claimant = { character = ROOT }
-		}
-		letter_event = { id = TOG.1250 days = 2 }
-	}
 	ROOT = {
 		character_event = { id = TOG.1247 days = 1 } # double-check that we're at war
 	}
@@ -106,7 +111,6 @@ adv_buy_troops_effect = {
 			match_max = 2000
 			attrition = 0.25
 			earmark = claimant_adventure
-			merge = yes
 			cannot_inherit = yes
 			reinforces = yes
 		}
