@@ -149,8 +149,6 @@ NDefines.NNomad.MAX_CLANS = 12									-- The maximum amount of clans, regardles
 NDefines.NNomad.TOO_MUCH_COMPETITION = 10						-- Opinion malus if you have too many clans
 NDefines.NNomad.CLANS_WANT_MORE_LAND = 25						-- Opinion malus per province too many held
 
-NDefines.NMilitary.MIN_COMBAT_DAYS = 10							-- Minimum number of days in combat
-NDefines.NMilitary.MERCENARY_MAINTENANCE_FACTOR = 3.0				-- Maintenance factor for NORMAL mercenary units	
 NDefines.NMilitary.MERCENARY_HIRE_COST_FACTOR = 0.2				-- Hire cost factor for mercenary units
 NDefines.NMilitary.HOLY_ORDER_HIRE_COST_FACTOR = 0.5				-- Conversion of nominal gold cost to piety cost when hiring Holy Orders
 NDefines.NMilitary.HOLY_ORDER_DYNASTY_HIRE_COST_FACTOR = 0.25		-- Reduction of cost if the Holy Order is controlled by a dynasty member	
