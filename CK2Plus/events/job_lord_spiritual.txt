@@ -26,39 +26,94 @@
 # 900: The Lord Spiritual converts a province!
 character_event = {
 	id = 900
-	title = "EVTNAME900"
-	desc = "EVTDESC900"
+	title = EVTNAME900
 	picture = GFX_evt_heretic
 	border = GFX_event_normal_frame_religion
+	
+	desc = {
+		text = EVTDESC900
+		trigger = {
+			event_target:convert_province = {
+				owner = { same_realm = ROOT }
+			}
+		}
+	}
+	desc = {
+		text = EVTDESC900_hidden
+		trigger = {
+			event_target:convert_province = {
+				owner = { NOT = { same_realm = ROOT } }
+			}
+		}
+	}
 
 	capable_only = yes
 	prisoner = no
 
 	trigger = {
 		has_job_action = action_inquisition
-		NOT = { location = { religion = ROOT } }
 		liege = {
 			religion = ROOT
 			OR = {
 				ai = no
 				NOT = { religion_group = muslim }
-				ROOT = {
-					location = {
-						ROOT = { is_heresy_of = PREV }
+				ROOT = { location = { is_heresy_of = PREV } }
+				ROOT = { location = { is_parent_religion = PREV } }
+			}
+			OR = {
+				AND = {
+					religion = ROOT
+					ROOT = {
+						location = {
+							NOT = { religion = PREV }
+							owner = { same_realm = PREVPREV }
+						}
 					}
 				}
-				ROOT = {
-					location = {
-						ROOT = { is_parent_religion = PREV }
+				AND = {
+					higher_tier_than = COUNT
+					OR = {
+						independent = yes
+						higher_tier_than = DUKE
+					}
+					OR = {
+						NOT = { religion_group = pagan_group }
+						is_reformed_religion = yes
+					}
+					OR = {
+						NOT = { religion_group = indian_group }
+						ai = no
+					}
+					ROOT = {
+						location = {
+							owner = {
+								independent = yes
+								controls_religion = no
+								religion_group = pagan_group
+								is_reformed_religion = no
+								capital_scope = { province = PREVPREV }
+								NOR = {
+									has_opinion_modifier = { who = PREVPREVPREV modifier = opinion_sent_preacher }
+									rightful_religious_head_scope = { character = PREV }
+									religion = ROOT
+									is_heresy_of = ROOT
+									is_parent_religion = ROOT
+									same_realm = ROOT
+								}
+							}
+						}
 					}
 				}
 			}
 		}
-		location = {
-			owner = { same_realm = ROOT }
-		}
 	}
 
+	immediate = {
+		location = {
+			save_event_target_as = convert_province
+		}
+	}
+	
 	mean_time_to_happen = {
 		months = 750
 		modifier = {
@@ -504,27 +559,16 @@ character_event = {
 	}
 
 	option = {
-		name = "EVTOPTA900"
-		piety = 10
-		if = {
-			limit = {
-				ROOT = {
-					is_heretic = no
-					location = {
-						NOT = { is_heresy_of = ROOT }
-					}
-				}
-			}
-			religion_authority = {
-				modifier = converted_province_to
-			}
-			location = {
-				religion_authority = {
-					modifier = converted_province_from
-				}
+		name = EVTOPTA900 # My hard work has paid off!
+		trigger = {
+			event_target:convert_province = {
+				owner = { same_realm = ROOT }
 			}
 		}
-		location = {
+		piety = 10
+		religion_authority = { modifier = converted_province_to }
+		event_target:convert_province = {
+			religion_authority = { modifier = converted_province_from }
 			religion = ROOT
 			hidden_tooltip = {
 				if = {
@@ -548,6 +592,27 @@ character_event = {
 				}
 			}
 		}
+	}
+	option = {
+		name = EVTOPTA900 # My hard work has paid off!
+		trigger = {
+			event_target:convert_province = {
+				owner = { NOT = { same_realm = ROOT } }
+			}
+		}
+		piety = 25
+		religion_authority = { modifier = converted_province_to }
+		event_target:convert_province = {
+			religion_authority = { modifier = converted_province_from }
+			religion = ROOT
+			hidden_tooltip = {
+				if = {
+					limit = { has_province_modifier = heretic_stronghold }
+					remove_province_modifier = heretic_stronghold
+				}
+				owner = { character_event = { id = 39620 } }
+			}
+		}		
 	}
 }
 
@@ -578,7 +643,7 @@ letter_event = {
 					}
 				}
 			}
-			religion_head = {
+			rightful_religious_head_scope = {
 				opinion = {
 					modifier = opinion_converted_province
 					who = ROOT
@@ -653,6 +718,14 @@ character_event = {
 
 	mean_time_to_happen = {
 		months = 120
+		modifier = {
+			factor = 1000
+			location = {
+				owner = {
+					NOT = { same_realm = ROOT }
+				}
+			}
+		}
 		modifier = {
 			factor = 1.25
 			religion_group = pagan_group
@@ -1045,12 +1118,28 @@ character_event = {
 		}
 		location = {
 			NOT = { religion = ROOT }
-			owner = { same_realm = ROOT }
+			OR = {
+				owner = { same_realm = ROOT }
+				ROOT = { has_character_flag = preacher_hidden }
+			}
 		}
 	}
 
 	mean_time_to_happen = {
 		months = 120
+		modifier = {
+			factor = 1000
+			location = {
+				NOR = {
+					owner = { same_realm = ROOT }
+					ROOT = { has_character_flag = preacher_hidden }
+				}
+			}
+		}
+		modifier = {
+			factor = 0.8
+			has_character_flag = preacher_hidden
+		}
 		modifier = {
 			factor = 2.0
 			liege = {
@@ -1230,9 +1319,6 @@ character_event = {
 
 	option = {
 		name = "EVTOPTA902"
-		trigger = {
-			martial = 10
-		}
 		random_list = {
 			50 = { character_event = { id = 20020 tooltip = "EVTTOOLTIP20020" } }
 			40 = { character_event = { id = 20021 tooltip = "EVTTOOLTIP20021" } }
@@ -1399,7 +1485,14 @@ character_event = {
 
 	mean_time_to_happen = {
 		months = 480
-
+		modifier = {
+			factor = 5000
+			location = {
+				owner = {
+					NOT = { same_realm = ROOT }
+				}
+			}
+		}
 		modifier = {
 			factor = 1.1
 			NOT = { opinion = { who = liege value = -100 } }
@@ -2064,16 +2157,39 @@ character_event = {
 	trigger = {
 		has_job_action = action_inquisition
 		NOT = { has_character_flag = preacher_arrives }
-		location = {
-			owner = {
-				NOT = { character = ROOT }
-				NOT = { is_liege_of = ROOT }
-				NOT = { religion = ROOT }
-				religion_group = pagan_group
-				is_reformed_religion = no
-				NOT = { same_realm = ROOT }
-				controls_religion = no
-				NOT = { rightful_religious_head_scope = { character = PREV } }
+		NOT = { has_character_flag = preacher_hidden }
+		liege = {
+			higher_tier_than = COUNT
+			OR = {
+				independent = yes
+				higher_tier_than = DUKE
+			}
+			OR = {
+				NOT = { religion_group = pagan_group }
+				is_reformed_religion = yes
+			}
+			OR = {
+				NOT = { religion_group = indian_group }
+				ai = no
+			}
+			ROOT = {
+				location = {
+					owner = {
+						independent = yes
+						controls_religion = no
+						religion_group = pagan_group
+						is_reformed_religion = no
+						capital_scope = { province = PREVPREV }
+						NOR = {
+							has_opinion_modifier = { who = PREVPREVPREV modifier = opinion_sent_preacher }
+							rightful_religious_head_scope = { character = PREV }
+							religion = ROOT
+							is_heresy_of = ROOT
+							is_parent_religion = ROOT
+							same_realm = ROOT
+						}
+					}
+				}
 			}
 		}
 	}
@@ -2084,7 +2200,6 @@ character_event = {
 
 	option = {
 		name = EVTOPTA39650
-		set_character_flag = preacher_arrives
 		location = {
 			owner = {
 				character_event = { id = 39600 days = 4 tooltip = EVTTOOLTIP39600 }
@@ -2104,27 +2219,56 @@ character_event = {
 	min_age = 16
 	capable_only = yes
 	prisoner = no
+	has_character_flag = preacher_arrives
 
 	trigger = {
 		has_job_action = action_inquisition
-		has_character_flag = preacher_arrives
-		location = {
-			owner = {
-				NOT = { character = ROOT }
-				NOT = { is_liege_of = ROOT }
-				NOT = { religion = ROOT }
-				religion_group = pagan_group
-				is_reformed_religion = no
-				NOT = { same_realm = ROOT }
-				controls_religion = no
-				at_location = ROOT
-				NOT = { rightful_religious_head_scope = { character = PREV } }
+		liege = {
+			higher_tier_than = COUNT
+			OR = {
+				independent = yes
+				higher_tier_than = DUKE
+			}
+			OR = {
+				NOT = { religion_group = pagan_group }
+				is_reformed_religion = yes
+			}
+			OR = {
+				NOT = { religion_group = indian_group }
+				ai = no
+			}
+			ROOT = {
+				location = {
+					owner = {
+						independent = yes
+						controls_religion = no
+						religion_group = pagan_group
+						is_reformed_religion = no
+						capital_scope = { province = PREVPREV }
+						NOR = {
+							has_opinion_modifier = { who = PREVPREVPREV modifier = opinion_sent_preacher }
+							rightful_religious_head_scope = { character = PREV }
+							religion = ROOT
+							is_heresy_of = ROOT
+							is_parent_religion = ROOT
+							same_realm = ROOT
+						}
+					}
+				}
 			}
 		}
 	}
 
 	mean_time_to_happen = {
 		months = 500
+		modifier = {
+			factor = 1000
+			NOT = { has_character_flag = preacher_arrives }
+		}
+		modifier = {
+			factor = 0.75
+			location = { religion = ROOT }
+		}
 		modifier = {
 			factor = 1.5
 			NOT = { year = 900 }
@@ -2357,27 +2501,53 @@ character_event = {
 	picture = GFX_evt_bishop
 	border = GFX_event_normal_frame_religion
 
+	min_age = 16
+	capable_only = yes
 	prisoner = no
+	has_character_flag = preacher_arrives
 
 	trigger = {
 		has_job_action = action_inquisition
-		has_character_flag = preacher_arrives
-		location = {
-			owner = {
-				NOT = { character = ROOT }
-				NOT = { is_liege_of = ROOT }
-				NOT = { religion = ROOT }
-				religion_group = pagan_group
-				is_reformed_religion = no
-				NOT = { same_realm = ROOT }
-				any_courtier = {
-					age = 14
-					prisoner = no
-					at_location = ROOT
-					NOT = { trait = incapable }
-					ai = yes
-					religion_group = pagan_group
-					is_reformed_religion = no
+		liege = {
+			higher_tier_than = COUNT
+			OR = {
+				independent = yes
+				higher_tier_than = DUKE
+			}
+			OR = {
+				NOT = { religion_group = pagan_group }
+				is_reformed_religion = yes
+			}
+			OR = {
+				NOT = { religion_group = indian_group }
+				ai = no
+			}
+			ROOT = {
+				location = {
+					owner = {
+						independent = yes
+						controls_religion = no
+						religion_group = pagan_group
+						is_reformed_religion = no
+						capital_scope = { province = PREVPREV }
+						NOR = {
+							has_opinion_modifier = { who = PREVPREVPREV modifier = opinion_sent_preacher }
+							rightful_religious_head_scope = { character = PREV }
+							religion = ROOT
+							is_heresy_of = ROOT
+							is_parent_religion = ROOT
+							same_realm = ROOT
+						}
+						any_courtier = {
+							age = 14
+							prisoner = no
+							at_location = ROOT
+							NOT = { trait = incapable }
+							ai = yes
+							religion_group = pagan_group
+							is_reformed_religion = no
+						}
+					}
 				}
 			}
 		}
@@ -2385,6 +2555,14 @@ character_event = {
 
 	mean_time_to_happen = {
 		months = 100
+		modifier = {
+			factor = 1000
+			NOT = { has_character_flag = preacher_arrives }
+		}
+		modifier = {
+			factor = 0.75
+			location = { religion = ROOT }
+		}
 		modifier = {
 			factor = 1.5
 			NOT = { year = 900 }
@@ -2632,19 +2810,45 @@ character_event = {
 	picture = GFX_evt_bishop
 	border = GFX_event_normal_frame_religion
 
+	min_age = 16
+	capable_only = yes
 	prisoner = no
+	has_character_flag = preacher_arrives
 
 	trigger = {
 		has_job_action = action_inquisition
-		has_character_flag = preacher_arrives
-		location = {
-			owner = {
-				NOT = { character = ROOT }
-				NOT = { is_liege_of = ROOT }
-				NOT = { religion = ROOT }
-				religion_group = pagan_group
-				is_reformed_religion = no
-				NOT = { same_realm = ROOT }
+		liege = {
+			higher_tier_than = COUNT
+			OR = {
+				independent = yes
+				higher_tier_than = DUKE
+			}
+			OR = {
+				NOT = { religion_group = pagan_group }
+				is_reformed_religion = yes
+			}
+			OR = {
+				NOT = { religion_group = indian_group }
+				ai = no
+			}
+			ROOT = {
+				location = {
+					owner = {
+						independent = yes
+						controls_religion = no
+						religion_group = pagan_group
+						is_reformed_religion = no
+						capital_scope = { province = PREVPREV }
+						NOR = {
+							has_opinion_modifier = { who = PREVPREVPREV modifier = opinion_sent_preacher }
+							rightful_religious_head_scope = { character = PREV }
+							religion = ROOT
+							is_heresy_of = ROOT
+							is_parent_religion = ROOT
+							same_realm = ROOT
+						}
+					}
+				}
 			}
 		}
 		any_playable_ruler = {
@@ -2660,6 +2864,14 @@ character_event = {
 
 	mean_time_to_happen = {
 		months = 120
+		modifier = {
+			factor = 1000
+			NOT = { has_character_flag = preacher_arrives }
+		}
+		modifier = {
+			factor = 0.75
+			location = { religion = ROOT }
+		}
 		modifier = {
 			factor = 1.1
 			NOT = { opinion = { who = liege value = -100 } }
@@ -2824,10 +3036,55 @@ character_event = {
 	hide_window = yes
 	
 	min_age = 16
+	has_character_flag = preacher_arrives
 	
 	trigger = {
-		has_character_flag = preacher_arrives
-		NOT = { has_job_action = action_inquisition }
+		OR = {
+			NOT = { has_job_action = action_inquisition }
+			NOT = {
+				liege = {
+					religion = ROOT
+					OR = {
+						ai = no
+						NOT = { religion_group = muslim }
+						ROOT = { location = { is_heresy_of = PREV } }
+						ROOT = { location = { is_parent_religion = PREV } }
+					}
+					higher_tier_than = COUNT
+					OR = {
+						independent = yes
+						higher_tier_than = DUKE
+					}
+					OR = {
+						NOT = { religion_group = pagan_group }
+						is_reformed_religion = yes
+					}
+					OR = {
+						NOT = { religion_group = indian_group }
+						ai = no
+					}
+					ROOT = {
+						location = {
+							owner = {
+								independent = yes
+								controls_religion = no
+								religion_group = pagan_group
+								is_reformed_religion = no
+								capital_scope = { province = PREVPREV }
+								NOR = {
+									has_opinion_modifier = { who = PREVPREVPREV modifier = opinion_sent_preacher }
+									rightful_religious_head_scope = { character = PREV }
+									religion = ROOT
+									is_heresy_of = ROOT
+									is_parent_religion = ROOT
+									same_realm = ROOT
+								}
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 	
 	mean_time_to_happen = {
@@ -2836,6 +3093,291 @@ character_event = {
 	
 	immediate = {
 		clr_character_flag = preacher_arrives
+	}
+}
+
+# Clear preacher_hidden flag
+character_event = {
+	id = 39655
+	hide_window = yes
+	
+	min_age = 16
+	has_character_flag = preacher_hidden
+	
+	trigger = {
+		OR = {
+			NOT = { has_job_action = action_inquisition }
+			NOT = {
+				liege = {
+					religion = ROOT
+					OR = {
+						ai = no
+						NOT = { religion_group = muslim }
+						ROOT = { location = { is_heresy_of = PREV } }
+						ROOT = { location = { is_parent_religion = PREV } }
+					}
+					higher_tier_than = COUNT
+					OR = {
+						independent = yes
+						higher_tier_than = DUKE
+					}
+					OR = {
+						NOT = { religion_group = pagan_group }
+						is_reformed_religion = yes
+					}
+					OR = {
+						NOT = { religion_group = indian_group }
+						ai = no
+					}
+					ROOT = {
+						location = {
+							owner = {
+								independent = yes
+								controls_religion = no
+								religion_group = pagan_group
+								is_reformed_religion = no
+								capital_scope = { province = PREVPREV }
+								NOR = {
+									has_opinion_modifier = { who = PREVPREVPREV modifier = opinion_sent_preacher }
+									rightful_religious_head_scope = { character = PREV }
+									religion = ROOT
+									is_heresy_of = ROOT
+									is_parent_religion = ROOT
+									same_realm = ROOT
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	mean_time_to_happen = {
+		days = 1
+	}
+	
+	immediate = {
+		clr_character_flag = preacher_hidden
+	}
+}
+
+# 39656: Ruler finds out that the Chaplain did not return home
+character_event = {
+	id = 39656
+	title = EVTNAME39656
+	desc = EVTDESC39656
+	picture = GFX_evt_bishop
+	border = GFX_event_normal_frame_religion
+	
+	capable_only = yes
+	prisoner = no
+	has_character_flag = preacher_hidden
+
+	trigger = {
+		has_job_action = action_inquisition
+		liege = {
+			religion = ROOT
+			OR = {
+				ai = no
+				NOT = { religion_group = muslim }
+				ROOT = { location = { is_heresy_of = PREV } }
+				ROOT = { location = { is_parent_religion = PREV } }
+			}
+			higher_tier_than = COUNT
+			OR = {
+				independent = yes
+				higher_tier_than = DUKE
+			}
+			OR = {
+				NOT = { religion_group = pagan_group }
+				is_reformed_religion = yes
+			}
+			OR = {
+				NOT = { religion_group = indian_group }
+				ai = no
+			}
+			ROOT = {
+				location = {
+					owner = {
+						independent = yes
+						controls_religion = no
+						religion_group = pagan_group
+						is_reformed_religion = no
+						capital_scope = { province = PREVPREV }
+						NOR = {
+							has_opinion_modifier = { who = PREVPREVPREV modifier = opinion_sent_preacher }
+							rightful_religious_head_scope = { character = PREV }
+							religion = ROOT
+							is_heresy_of = ROOT
+							is_parent_religion = ROOT
+							same_realm = ROOT
+						}
+					}
+				}
+			}
+		}
+	}
+
+	mean_time_to_happen = {
+		months = 120
+		modifier = {
+			factor = 1000
+			NOT = { has_character_flag = preacher_hidden }
+		}
+		modifier = {
+			factor = 0.9
+			NOT = { opinion = { who = liege value = -100 } }
+		}
+		modifier = {
+			factor = 0.9
+			NOT = { opinion = { who = liege value = -75 } }
+		}
+		modifier = {
+			factor = 0.9
+			NOT = { opinion = { who = liege value = -50 } }
+		}
+		modifier = {
+			factor = 0.9
+			NOT = { opinion = { who = liege value = -25 } }
+		}
+		modifier = {
+			factor = 1.05
+			opinion = { who = liege value = 25 }
+		}
+		modifier = {
+			factor = 1.05
+			opinion = { who = liege value = 50 }
+		}
+		modifier = {
+			factor = 1.05
+			opinion = { who = liege value = 75 }
+		}
+		modifier = {
+			factor = 1.05
+			opinion = { who = liege value = 100 }
+		}
+		modifier = {
+			factor = 0.95
+			NOT = { learning = 1 }
+		}
+		modifier = {
+			factor = 0.95
+			NOT = { learning = 2 }
+		}
+		modifier = {
+			factor = 0.95
+			NOT = { learning = 3 }
+		}
+		modifier = {
+			factor = 0.95
+			NOT = { learning = 4 }
+		}
+		modifier = {
+			factor = 0.95
+			NOT = { learning = 5 }
+		}
+		modifier = {
+			factor = 0.95
+			NOT = { learning = 6 }
+		}
+		modifier = {
+			factor = 0.95
+			NOT = { learning = 7 }
+		}
+		modifier = {
+			factor = 0.95
+			NOT = { learning = 8 }
+		}
+		modifier = {
+			factor = 0.95
+			NOT = { learning = 9 }
+		}
+		modifier = {
+			factor = 1.05
+			learning = 11
+		}
+		modifier = {
+			factor = 1.05
+			learning = 12
+		}
+		modifier = {
+			factor = 1.05
+			learning = 13
+		}
+		modifier = {
+			factor = 1.05
+			learning = 14
+		}
+		modifier = {
+			factor = 1.05
+			learning = 15
+		}
+		modifier = {
+			factor = 1.05
+			learning = 16
+		}
+		modifier = {
+			factor = 1.05
+			learning = 17
+		}
+		modifier = {
+			factor = 1.05
+			learning = 18
+		}
+		modifier = {
+			factor = 1.05
+			learning = 19
+		}
+		modifier = {
+			factor = 1.05
+			learning = 20
+		}
+		modifier = {
+			factor = 1.05
+			learning = 21
+		}
+		modifier = {
+			factor = 1.05
+			learning = 22
+		}
+		modifier = {
+			factor = 1.05
+			learning = 23
+		}
+		modifier = {
+			factor = 1.05
+			learning = 24
+		}
+		modifier = {
+			factor = 1.05
+			learning = 25
+		}
+	}
+
+	immediate = {
+		location = {
+			save_event_target_as = convert_province
+		}
+	}
+	
+	option = {
+		name = CURSES
+		event_target:convert_province = {
+			owner = {
+				tooltip = {
+					ROOT = { imprison = PREV }
+				}
+				hidden_tooltip = {
+					character_event = { id = 39624 } # Notify
+				}
+			}
+		}
+		hidden_tooltip = {
+			liege = {
+				character_event = { id = 39625 } # Notify
+			}
+		}
 	}
 }
 
