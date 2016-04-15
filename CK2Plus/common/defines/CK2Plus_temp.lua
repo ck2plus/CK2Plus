@@ -3,7 +3,6 @@ NDefines.NDiplomacy.DEFENSIVE_PACT_THREAT_LIMIT = 0.15						-- The amount of thr
 NDefines.NDiplomacy.DEFENSIVE_PACT_MAX_RANGE = 300							-- At 100% threat characters are able to join defensive pacts against targets of this distance
 NDefines.NDiplomacy.MAX_INFAMY_GAIN = 14.5									-- This is the max infamy gained from a single source
 NDefines.NInfamy.REALM_SIZE_GROWTH_MODIFIER = 5.0							-- The bigger you are, the more dangerous you are, modifier for when nation is shrinking
-NDefines.NInfamy.INDEPENDENCE_REALM_CHANGE_VALUE = 0						-- How much base value for realm growth/shrink is worth when giving a vassal independence.
 NDefines.NInfamy.INHERITANCE_CHANGE_VALUE = 0								-- How much base value for realm growth/shrink is worth when inheriting titles.
 NDefines.NInfamy.VASSAL_CHANGE_VALUE = 0	 								-- How much base value for realm growth/shrink is worth when inheriting titles.
 NDefines.NInfamy.MIN_INFAMY_DECAY = 0.06									-- The minimum infamy decay regardless of troop strength.
