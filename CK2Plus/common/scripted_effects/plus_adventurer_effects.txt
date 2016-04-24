@@ -1,135 +1,92 @@
 # Scripted effects for adventurer events
 
 # ROOT = adventurer
-adv_find_adventurer_target_effect = {
+plus_find_adventurer_target_effect = {
 	if = {
 		limit = { NOT = { event_target:adventurer_target = { always = yes } } }
 		random_opinion_modifier_target = {
-			limit = {
-				reverse_has_opinion_modifier = { who = PREV modifier = opinion_claimant_adventure_target }
-			}
+			limit = { reverse_has_opinion_modifier = { who = PREV modifier = opinion_claimant_adventure_target } }
 			save_event_target_as = adventurer_target
 		}
 	}
 }
 
 # ROOT = adventurer
-adv_reset_location_effect = {
-	if = {
-		limit = { NOT = { event_target:current_court = { always = yes } } }
-		location = { save_event_target_as = current_court }
+plus_clear_adventurer_location_effect = {
+	any_province = {
+		ROOT = { clr_character_flag = adventurer_location_@PREV }
 	}
 }
 
 # ROOT = adventurer
-adv_find_friendly_court_effect = {
-	# if I have a non-adventurer title, my most friendly court is my own court
-	if = {
-		limit = { any_demesne_title = { adventurer = no } }
-		save_event_target_as = new_court_home
-	}
-	# otherwise...
-	# find a court that supported me first
-	random_opinion_modifier_target = {
-		limit = {
-			NOT = { event_target:new_court_home = { always = yes } }
-			reverse_has_opinion_modifier = { who = ROOT modifier = backed_adventurer }
-			is_playable = yes
-			is_landed = yes
-		}
-		save_event_target_as = new_court_home
-	}
-	# failing that, find a court that let me stay
-	random_opinion_modifier_target = {
-		limit = {
-			NOT = { event_target:new_court_home = { always = yes } }
-			reverse_has_opinion_modifier = { who = ROOT modifier = let_adventurer_stay }
-			is_playable = yes
-			is_landed = yes
-		}
-		save_event_target_as = new_court_home
-	}
-	# failing that, my current location will have to do
-	if = {
-		limit = { NOT = { event_target:new_court_home = { always = yes } } }
-		location = { owner = { save_event_target_as = new_court_home } }
+plus_find_adventurer_location_effect = {
+	random_province = {
+		limit = { ROOT = { has_character_flag = adventurer_location_@PREV } }
+		save_event_target_as = adventurer_location
 	}
 }
 
-# THIS = adventurer, must be used inside the adventurer's scope
-adv_abandon_adventure_effect = {
-	# free all prisoners
-	any_courtier = {
-		limit = { prisoner = yes }
-		prisoner = no
-	}
-	
-	# move all courtiers to the new court
-	any_courtier = { move_character = event_target:new_court_home }
-	
-	# remove all adventurer statuses
-	remove_character_modifier = planning_claimant_adventure
-	remove_character_modifier = do_not_disturb
-	clr_character_flag = planning_claimant_adventure
-	clr_character_flag = warned_adventurer_target
-	clr_character_flag = not_interested_in_movements
-	clr_character_flag = found_home
-	any_opinion_modifier_target = {
-		limit = { has_opinion_modifier = { who = PREV modifier = opinion_targeted_by_adventurer } }
-		remove_opinion = { who = PREV modifier = opinion_targeted_by_adventurer }
-		reverse_remove_opinion = { who = PREV modifier = opinion_claimant_adventure_target }
-	}
-	any_demesne_title = {
-		limit = { adventurer = yes }
-		unsafe_destroy_landed_title = THIS
-	}
-	move_character = event_target:new_court_home
-	clear_event_target = new_court_home
-}
-
-# THIS = targeted ruler, ROOT = adventurer
-adv_started_war_effect = {
-	reverse_remove_opinion = { who = ROOT modifier = opinion_claimant_adventure_target }
-	remove_opinion = { who = ROOT modifier = opinion_targeted_by_adventurer }
-	ROOT = {
-		character_event = { id = TOG.1247 days = 1 } # double-check that we're at war
+# ROOT = adventurer
+plus_find_adventurer_origin_effect = {
+	random_province = {
+		limit = { ROOT = { has_character_flag = adventurer_origin_@PREV } }
+		save_event_target_as = adventurer_origin
 	}
 }
 
-# THIS = adventurer, PREV = chosen province location
-adv_buy_troops_effect = {
+# ROOT = adventurer
+plus_find_adventurer_target_title_effect = {
 	if = {
-		limit = { wealth = 50 }
-		wealth = -50
-		spawn_unit = {
-			province = PREV
-			home = PREV
-			owner = THIS
-			match_character = event_target:adventurer_target
-			match_mult = 0.04
-			match_min = 100
-			match_max = 2000
-			attrition = 0.25
-			earmark = claimant_adventure
-			cannot_inherit = yes
-			reinforces = yes
-			merge = yes
-		}
-		spawn_fleet = {
-			province = closest # closest sea zone
-			owner = THIS
-			disband_on_peace = yes
-			merge = yes
-			troops = {
-				galleys = { 20 20 }
-			}
-			earmark = claimant_adventure
+		limit = { NOT = { event_target:adventurer_target_title = { always = yes } } }
+		random_landed_title = {
+			limit = { ROOT = { has_character_flag = adventurer_target_title_@PREV } }
+			save_event_target_as = adventurer_target_title
 		}
 	}
+}
+
+# ROOT = adventurer, THIS = ruler
+plus_travel_to_ruler_effect = {
+	plus_find_adventurer_target_title_effect = yes
+	plus_clear_adventurer_location_effect = yes
+	capital_scope = { ROOT = { set_character_flag = adventurer_location_@PREV } }
+	if = {
+		limit = { plus_closest_to_adventurer_trigger = yes }
+		ROOT = { add_character_modifier = { name = do_not_disturb duration = 5 hidden = yes } }
+		character_event = { id = plus_adventurer.115 days = 5 }
+		break = yes
+	}
+	if = {
+		limit = { plus_close_to_adventurer_trigger = yes }
+		ROOT = { add_character_modifier = { name = do_not_disturb duration = 10 hidden = yes } }
+		character_event = { id = plus_adventurer.115 days = 10 }
+		break = yes
+	}
+	if = {
+		limit = { plus_not_close_to_adventurer_trigger = yes }
+		ROOT = { add_character_modifier = { name = do_not_disturb duration = 15 hidden = yes } }
+		character_event = { id = plus_adventurer.115 days = 15 }
+		break = yes
+	}
+	if = {
+		limit = { plus_far_from_adventurer_trigger = yes }
+		ROOT = { add_character_modifier = { name = do_not_disturb duration = 20 hidden = yes } }
+		character_event = { id = plus_adventurer.115 days = 30 }
+		break = yes
+	}
+	if = {
+		limit = { plus_furthest_from_adventurer_trigger = yes }
+		ROOT = { add_character_modifier = { name = do_not_disturb duration = 25 hidden = yes } }
+		character_event = { id = plus_adventurer.115 days = 60 }
+		break = yes
+	}
+	ROOT = { add_character_modifier = { name = do_not_disturb duration = 30 hidden = yes } }
+	character_event = { id = plus_adventurer.115 days = 90 }
+	break = yes
 }
 
 # ROOT = approached character, FROM = adventurer
-adv_donate_to_adventurer_effect = {
+plus_donate_to_adventurer_effect = {
 	if = {
 		limit = {
 			wealth = 10
@@ -184,6 +141,206 @@ adv_donate_to_adventurer_effect = {
 		}
 		wealth = -150
 		FROM = { wealth = 150 }
+	}
+}
+
+# ROOT = ruler, FROM = adventurer
+plus_adventurer_recruits_demesne = {
+	# Approach the ruler's non-landed courtiers/vassals
+	any_courtier = {
+		limit = {
+			is_ruler = no
+			plus_adventurer_can_approach_vassal_trigger = yes
+		}
+		letter_event = { id = plus_adventurer.118 days = 1 }
+	}
+	any_vassal = {
+		limit = {
+			is_playable = no
+			plus_adventurer_can_approach_vassal_trigger = yes
+		}
+		letter_event = { id = plus_adventurer.118 days = 1 }
+	}
+	# Recruit from the ruler's demesne
+	any_realm_province = {
+		limit = {
+			NOT = { has_province_modifier = adventurer_recruited }
+			county = { is_occupied = no }
+		}
+		province_event = { id = plus_adventurer.119 days = 1 }
+	}
+	# Adventurer moves on after a time
+	if = {
+		limit = {
+			NOT = { num_of_count_titles = 2 }
+		}
+		FROM = {
+			add_character_modifier = { name = do_not_disturb duration = 5 hidden = yes }
+			character_event = { id = plus_adventurer.110 days = 5 }
+		}
+	}
+	if = {
+		limit = {
+			num_of_count_titles = 2
+			NOT = { num_of_count_titles = 3 }
+		}
+		FROM = {
+			add_character_modifier = { name = do_not_disturb duration = 10 hidden = yes }
+			character_event = { id = plus_adventurer.110 days = 10 }
+		}
+	}
+	if = {
+		limit = {
+			num_of_count_titles = 3
+			NOT = { num_of_count_titles = 4 }
+		}
+		FROM = {
+			add_character_modifier = { name = do_not_disturb duration = 15 hidden = yes }
+			character_event = { id = plus_adventurer.110 days = 15 }
+		}
+	}
+	if = {
+		limit = {
+			num_of_count_titles = 4
+			NOT = { num_of_count_titles = 5 }
+		}
+		FROM = {
+			add_character_modifier = { name = do_not_disturb duration = 20 hidden = yes }
+			character_event = { id = plus_adventurer.110 days = 20 }
+		}
+	}
+	if = {
+		limit = {
+			num_of_count_titles = 5
+		}
+		FROM = {
+			add_character_modifier = { name = do_not_disturb duration = 30 hidden = yes }
+			character_event = { id = plus_adventurer.110 days = 30 }
+		}
+	}
+}
+
+# THIS = adventurer, must be used inside the adventurer's scope
+plus_abandon_adventure_effect = {
+	# Free all prisoners
+	any_courtier = {
+		limit = { prisoner = yes }
+		prisoner = no
+	}
+	
+	# Move all courtiers to the new court
+	any_courtier = { move_character = event_target:new_court_home }
+	
+	# Remove all adventurer statuses and flags
+	remove_character_modifier = planning_claimant_adventure
+	remove_character_modifier = do_not_disturb
+	clr_character_flag = planning_claimant_adventure
+	clr_character_flag = warned_adventurer_target
+	clr_character_flag = not_interested_in_movements
+	clr_character_flag = found_home
+	
+	any_province = {
+		PREV = {
+			clr_character_flag = adventurer_location_@PREV
+			clr_character_flag = adventurer_origin_@PREV
+		}
+	}
+	any_landed_title = {
+		PREV = {
+			clr_character_flag = adventurer_target_title_@PREV
+		}
+	}
+	any_opinion_modifier_target = {
+		limit = { has_opinion_modifier = { who = PREV modifier = opinion_targeted_by_adventurer } }
+		remove_opinion = { who = PREV modifier = opinion_targeted_by_adventurer }
+		reverse_remove_opinion = { who = PREV modifier = opinion_claimant_adventure_target }
+	}
+	any_demesne_title = {
+		limit = { adventurer = yes }
+		unsafe_destroy_landed_title = THIS
+	}
+	move_character = event_target:new_court_home
+	clear_event_target = new_court_home
+}
+
+# ROOT = adventurer
+plus_find_friendly_court_effect = {
+	# If I have a non-adventurer title, my most friendly court is my own court
+	if = {
+		limit = { any_demesne_title = { adventurer = no } }
+		save_event_target_as = new_court_home
+	}
+	
+	# Otherwise...
+	# Find a court in my home realm that supported me first
+	random_opinion_modifier_target = {
+		limit = {
+			NOT = { event_target:new_court_home = { always = yes } }
+			reverse_has_opinion_modifier = { who = ROOT modifier = backed_adventurer }
+			same_realm = event_target:adventurer_target
+			is_playable = yes
+			is_landed = yes
+		}
+		save_event_target_as = new_court_home
+	}
+	# Failing that, find a court elsewhere that supported me
+	random_opinion_modifier_target = {
+		limit = {
+			NOT = { event_target:new_court_home = { always = yes } }
+			reverse_has_opinion_modifier = { who = ROOT modifier = backed_adventurer }
+			is_playable = yes
+			is_landed = yes
+		}
+		save_event_target_as = new_court_home
+	}
+	# Failing that, find a court that let me stay
+	random_opinion_modifier_target = {
+		limit = {
+			NOT = { event_target:new_court_home = { always = yes } }
+			reverse_has_opinion_modifier = { who = ROOT modifier = let_adventurer_stay }
+			is_playable = yes
+			is_landed = yes
+		}
+		save_event_target_as = new_court_home
+	}
+	# Failing all that, my current location will have to do
+	if = {
+		limit = { NOT = { event_target:new_court_home = { always = yes } } }
+		event_target:adventurer_location = {
+			owner = { save_event_target_as = new_court_home }
+		}
+	}
+}
+
+# THIS = adventurer, PREV = chosen province location
+plus_adventurer_buy_troops_effect = {
+	if = {
+		limit = { wealth = 50 }
+		wealth = -50
+		spawn_unit = {
+			province = PREV
+			home = PREV
+			owner = THIS
+			match_character = event_target:adventurer_target
+			match_mult = 0.04
+			match_min = 100
+			match_max = 2000
+			attrition = 0.25
+			earmark = claimant_adventure
+			cannot_inherit = yes
+			reinforces = yes
+			merge = yes
+		}
+		spawn_fleet = {
+			province = closest # closest sea zone
+			owner = THIS
+			disband_on_peace = yes
+			merge = yes
+			troops = {
+				galleys = { 20 20 }
+			}
+			earmark = claimant_adventure
+		}
 	}
 }
 
