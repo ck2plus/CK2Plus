@@ -1,4 +1,4 @@
-name="CK2Plus"
+name="Dev CK2Plus"
 path="../../GitHub/CK2Plus/CK2Plus"
 replace_path="history/provinces"
 replace_path="history/titles"
