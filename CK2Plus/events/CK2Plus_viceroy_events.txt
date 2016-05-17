@@ -477,6 +477,7 @@ letter_event = {
 			}
 			modifier = {
 				factor = 0
+				NOT = { trait = lunatic }
 				NOT = { relative_power_to_liege = 0.50 }
 			}
 			modifier = {
@@ -832,6 +833,7 @@ letter_event = {
 			}
 			modifier = {
 				factor = 0
+				NOT = { trait = lunatic }
 				NOT = { relative_power_to_liege = 0.50 }
 			}
 			modifier = {
@@ -1161,6 +1163,7 @@ letter_event = {
 			}
 			modifier = {
 				factor = 0
+				NOT = { trait = lunatic }
 				NOT = { relative_power_to_liege = 0.50 }
 			}
 			modifier = {
@@ -1694,6 +1697,30 @@ letter_event = {
 
 ### MAINTENANCE EVENTS
 
+# Remove exception flag from held titles if a primary title is granted by an imperial liege
+character_event = {
+	id = Plus.3292
+	
+	is_triggered_only = yes
+	hide_window = yes
+	
+	only_playable = yes
+	
+	trigger = {
+		FROM = {
+			is_primary_holder_title = yes
+			higher_tier_than = COUNT
+			NOT = { has_title_flag = viceroy_exemption }
+		}
+		FROMFROM = { has_imperial_government_trigger = yes }
+		vassal_of = FROMFROM
+	}
+	
+	immediate = {
+		any_demesne_title = { clr_title_flag = viceroy_exemption }
+	}
+}
+
 # Exemption flag added upon new primary title being created
 character_event = {
 	id = Plus.3297
@@ -1741,13 +1768,47 @@ character_event = {
 	
 	is_triggered_only = yes
 	hide_window = yes
+	only_rulers = yes
 	
 	trigger = {
+		is_ruler = yes
 		in_revolt = no
 		NOT = { any_liege = { in_revolt = yes } }
 	}
 	
 	immediate = {
+		# Double-check the Imperial Administration law
+		any_demesne_title = {
+			limit = {
+				has_law = imperial_administration
+				OR = {
+					NOT = { tier = EMPEROR }
+					ROOT = { is_feudal = no }
+				}
+			}
+			revoke_law = imperial_administration
+			add_law = late_feudal_administration
+		}
+		
+		# Double-check the has_imperial_administration flag
+		any_demesne_title = {
+			if = {
+				limit = {
+					has_title_flag = has_imperial_administration
+					NOT = { has_law = imperial_administration }
+				}
+				clr_title_flag = has_imperial_administration
+			}
+			if = {
+				limit = {
+					has_law = imperial_administration
+					NOT = { has_title_flag = has_imperial_administration }
+				}
+				set_title_flag = has_imperial_administration
+			}
+		}
+		
+		# Has title with exemption flag but is independent, non-feudal, or top liege not imperial
 		if = {
 			limit = {
 				any_demesne_title = { has_title_flag = viceroy_exemption }
