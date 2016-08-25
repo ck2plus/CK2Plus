@@ -1,4 +1,4 @@
-name = "CK2+ India"
+name = "[CK2+ Extension] Add India"
 path = "mod/CK2Plus_India"
 dependencies = { CK2Plus }
 tags = {
