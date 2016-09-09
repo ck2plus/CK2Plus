@@ -6565,6 +6565,14 @@ character_event = {
 		#save titles to be taken by the new pope
 		any_demesne_title = { set_title_flag = to_new_pope }
 		
+		#Create temp title to keep pope's portrait nice.
+		activate_title = { title = k_papal_chalcedon_dead status = yes }
+		k_papal_chalcedon_dead = {
+			grant_title_no_opinion = PREV
+			make_primary_title = yes
+			copy_title_history = k_papal_chalcedon
+		}
+		
 		#pick successor randomly
 		chalc_cardinal = {
 			limit = {
@@ -6572,9 +6580,45 @@ character_event = {
 				prisoner = no
 				NOT = { trait = incapable }
 			}
-			save_event_target_as = new_pope
+
+			any_demesne_title = { set_title_flag = former_pope_titles }
+			abdicate = yes
+			
+			#remove cardinal status
+			clr_character_flag = is_chalcedonian_cardinal
+			remove_special_character_title = CHALCEDONIAN_CARDINAL
+			remove_trait = chalc_cardinal
+
+			any_title = {
+				limit = { has_title_flag = to_new_pope }
+				clr_title_flag = to_new_pope
+				grant_title_no_opinion = PREV
+			}
+			set_government_type = theocracy_government
+			if = {
+				limit = { has_landed_title = c_roma }
+				c_roma = { PREV = { capital = PREV } }
+			}
+			#remove claims to old titles
+			any_title = {
+				limit = { has_title_flag = former_pope_titles }
+				clr_title_flag = former_pope_titles
+				remove_claim = PREV
+			}
+			
+			#give the proper pope title
+			if = {
+				limit = { has_landed_title = d_pentarch_rome }
+				set_special_character_title = POPE
+				set_character_flag = has_title_pope
+			}
+			
+			#give the pope the papal dynasty, if they have none
+			if = {
+				limit = { dynasty = none }
+				dynasty = 1000037003
+			}
 		}
-		current_heir = { save_event_target_as = interim_pope }
 		
 		#notify the player
 		any_playable_ruler = {
@@ -6586,10 +6630,10 @@ character_event = {
 			character_event = { id = Plus.2296 days = 1 }
 		}
 		
-		#fire the succession event
-		event_target:new_pope = {
-			character_event = { id = Plus.2295 days = 1 }
-		}
+		# this should force the pope to wear a hat
+		set_government_type = theocracy_government
+		
+		d_miaphysite = { owner = { character_event = { id = Plus.2295 days = 1 } } }
 	}
 }
 
@@ -6601,52 +6645,8 @@ character_event = {
 	is_triggered_only = yes
 	
 	immediate = {
-		#step down from old position
-		any_demesne_title = { set_title_flag = former_pope_titles }
-		abdicate = yes
-		
-		#remove cardinal status
-		clr_character_flag = is_chalcedonian_cardinal
-		remove_special_character_title = CHALCEDONIAN_CARDINAL
-		remove_trait = chalc_cardinal
-
-		#usurp the former pope's titles
-		any_title = {
-			limit = { has_title_flag = to_new_pope }
-			clr_title_flag = to_new_pope
-			grant_title_no_opinion = ROOT
-		}
-		set_government_type = theocracy_government
-		if = {
-			limit = { has_landed_title = c_roma }
-			c_roma = { ROOT = { capital = PREV } }
-		}
-		
-		#remove claims to old titles
-		any_title = {
-			limit = { has_title_flag = former_pope_titles }
-			clr_title_flag = former_pope_titles
-			remove_claim = ROOT
-		}
-		
-		#take the "interim" pope back
-		event_target:interim_pope = {
-			transfer_scaled_wealth = { to = ROOT value = all }
-			move_character = ROOT
-		}
-		
-		#give the proper pope title
-		if = {
-			limit = { has_landed_title = d_pentarch_rome }
-			set_special_character_title = POPE
-			set_character_flag = has_title_pope
-		}
-		
-		#give the pope the papal dynasty, if they have none
-		if = {
-			limit = { dynasty = none }
-			dynasty = 1000037003
-		}
+		k_papal_chalcedon_dead = { destroy_landed_title = THIS }
+		activate_title = { title = k_papal_chalcedon_dead status = no }
 	}
 }
 	
