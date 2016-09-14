@@ -5419,6 +5419,144 @@ narrative_event = {
 	}
 }
 
+# Byzantium overrun by iconoclast or monothelite
+narrative_event = {
+	id = Plus.2260
+	title = EVTNAME_Plus_2260
+	desc = EVTDESC_Plus_2260
+	picture = GFX_evt_rival_rulers
+	border = GFX_event_narrative_frame_religion
+	
+	major = yes
+	hide_from = yes
+	show_ROOT = yes
+	
+	only_rulers = yes
+	religion = chalcedonian
+	
+	trigger = {
+		has_landed_title = d_pentarch_rome
+		is_heretic = no
+		war = no
+		year = 850
+		d_pentarch_constantinople = {
+			holder_scope = {
+				war = no
+				OR = {
+					religion = monothelite
+					religion = iconoclast
+				}
+				top_liege = { tier = EMPEROR }
+				NOT = { trait = excommunicated }
+				NOT = { is_inaccessible_trigger = yes }
+			}
+		}
+		NOR = {
+			trait = excommunicated
+			is_inaccessible_trigger = yes
+			has_global_flag = byzantium_overrun
+			k_papal_state = { has_title_flag = schism_happened }
+			has_global_flag = patriarch_supreme_created
+		}
+	}
+	
+	mean_time_to_happen = {
+		years = 25
+		modifier = {
+			factor = 0.5
+			year = 900
+		}
+		modifier = {
+			factor = 0.5
+			year = 950
+		}
+		modifier = {
+			factor = 1.5
+			religion_authority = 0.70
+		}
+		modifier = {
+			factor = 1.5
+			religion_authority = 0.80
+		}
+		modifier = {
+			factor = 1.5
+			religion_authority = 0.90
+		}
+		modifier = {
+			factor = 0.75
+			NOT = { religion_authority = 0.50 }
+		}
+		modifier = {
+			factor = 0.75
+			NOT = { religion_authority = 0.45 }
+		}
+		modifier = {
+			factor = 0.75
+			NOT = { religion_authority = 0.40 }
+		}
+		modifier = {
+			factor = 0.75
+			NOT = { religion_authority = 0.35 }
+		}
+		modifier = {
+			factor = 0.75
+			NOT = { religion_authority = 0.30 }
+		}
+	}
+	
+	immediate = {
+		log = "SCHISM LEAD-UP: BYZANTIUM OVERRUN"
+		set_global_flag = byzantium_overrun
+		# force schism
+		496 = { change_variable = { which = "schism_tracker" value = 10 } }
+		d_pentarch_constantinople = {
+			holder_scope = { save_event_target_as = current_patriarch }
+		}
+	}
+	
+	option = {
+		name = EVTOPTA_Plus_2260
+		trigger = {
+			OR = {
+				AND = {
+					religion = chalcedonian
+					rightful_religious_head_scope = { trait = greek_rites }
+				}
+				religion = monothelite
+				religion = iconoclast
+			}
+		}
+	}
+	option = {
+		name = EVTOPTB_Plus_2260
+		trigger = {
+			religion = chalcedonian
+			rightful_religious_head_scope = { trait = latin_rites }
+		}
+	}
+	option = {
+		name = EVTOPTC_Plus_2260
+		trigger = {
+			religion = chalcedonian
+			NOR = {
+				rightful_religious_head_scope = { trait = greek_rites }
+				rightful_religious_head_scope = { trait = latin_rites }
+			}
+		}
+	}
+	option = {
+		name = EVTOPTD_Plus_2260
+		trigger = {
+			NOT = {
+				religion = chalcedonian
+				religion = monothelite
+				religion = iconoclast
+			}
+			religion_group = christian
+		}
+	}
+}
+
 ### THE SCHISM OCCURS
 
 # Check for the Schism
@@ -5439,8 +5577,20 @@ character_event = {
 				trait = latin_rites
 				d_pentarch_constantinople = {
 					holder_scope = {
-						trait = greek_rites
-						religion = ROOT
+						OR = {
+							AND = {
+								trait = greek_rites
+								religion = ROOT
+							}
+							AND = {
+								has_global_flag = byzantium_overrun
+								religion = monothelite
+							}
+							AND = {
+								has_global_flag = byzantium_overrun
+								religion = iconoclast
+							}
+						}
 					}
 				}
 				496 = { check_variable = { which = "schism_tracker" value = 3.9 } }
@@ -6086,11 +6236,41 @@ province_event = {
 		set_parent_religion = { religion = waldensian parent = catholic }
 		set_parent_religion = { religion = lollard parent = catholic }
 		set_parent_religion = { religion = adoptionist parent = catholic }
-		set_parent_religion = { religion = monothelite parent = orthodox }
-		set_parent_religion = { religion = iconoclast parent = orthodox }
 		if = {
-			limit = { NOT = { is_title_active = d_bogomilist } }
-			set_parent_religion = { religion = bogomilist parent = orthodox }
+			limit = {
+				d_pentarch_constantinople = { religion = iconoclast }
+				has_global_flag = byzantium_overrun
+			}
+			set_parent_religion = { religion = monothelite parent = iconoclast }
+			set_parent_religion = { religion = orthodox parent = iconoclast }
+			if = {
+				limit = { NOT = { is_title_active = d_bogomilist } }
+				set_parent_religion = { religion = bogomilist parent = iconoclast }
+			}
+		}
+		if = {
+			limit = {
+				d_pentarch_constantinople = { religion = monothelite }
+				has_global_flag = byzantium_overrun
+			}
+			set_parent_religion = { religion = iconoclast parent = monothelite }
+			set_parent_religion = { religion = orthodox parent = monothelite }
+			if = {
+				limit = { NOT = { is_title_active = d_bogomilist } }
+				set_parent_religion = { religion = bogomilist parent = monothelite }
+			}
+		}
+		if = {
+			limit = {
+				d_pentarch_constantinople = { religion = chalcedonian }
+				NOT = { has_global_flag = byzantium_overrun }
+			}
+			set_parent_religion = { religion = iconoclast parent = orthodox }
+			set_parent_religion = { religion = monothelite parent = orthodox }
+			if = {
+				limit = { NOT = { is_title_active = d_bogomilist } }
+				set_parent_religion = { religion = bogomilist parent = orthodox }
+			}
 		}
 		
 		# reset catholic/orthodox holy orders
@@ -6178,22 +6358,31 @@ province_event = {
 				}
 			}
 		}
-		d_pentarch_constantinople = {
-			holder_scope = {
-				any_liege = {
-					limit = { tier = EMPEROR }
-					save_event_target_as = new_liege
+		if = {
+			limit = {
+				d_pentarch_constantinople = {
+					religion = chalcedonian
+					NOT = { has_global_flag = byzantium_overrun }
 				}
-				religion = orthodox
-				remove_trait = greek_rites
-				k_orthodox = {
-					gain_title = PREV
-					copy_title_history = d_pentarch_constantinople
+			}
+			d_pentarch_constantinople = {
+				holder_scope = {
+					any_liege = {
+						limit = { tier = EMPEROR }
+						save_event_target_as = new_liege
+					}
+					religion = orthodox
+					remove_trait = greek_rites
+					k_orthodox = {
+						gain_title = PREV
+						copy_title_history = d_pentarch_constantinople
+					}
+					event_target:new_liege = { set_defacto_vassal = PREV }
+					pf_liege_change_effect = yes
 				}
-				event_target:new_liege = { set_defacto_vassal = PREV }
-				pf_liege_change_effect = yes
 			}
 		}
+		
 		k_papal_chalcedon = {
 			unsafe_destroy_landed_title = THIS
 			activate_title = { title = THIS status = no }
