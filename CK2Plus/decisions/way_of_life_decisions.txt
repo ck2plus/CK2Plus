@@ -116,16 +116,27 @@ targetted_decisions = {
 				is_consort = FROM
 				is_married = FROM
 				is_child_of = FROM
-				mother_even_if_dead = { is_child_of = FROM }
-				father_even_if_dead = { is_child_of = FROM }
 			}
-			FROM = {
-				NOT = {
-					is_child_of = ROOT
-					mother_even_if_dead = { is_child_of = ROOT }
-					father_even_if_dead = { is_child_of = ROOT }
+			OR = {
+				AND = {
+					NOT = { is_child_of = FROM }
+					NOT = { mother_even_if_dead = { is_child_of = FROM } }
+					NOT = { father_even_if_dead = { is_child_of = FROM } }
+					FROM = {
+						NOT = { is_child_of = ROOT }
+						NOT = { mother_even_if_dead = { is_child_of = ROOT } }
+						NOT = { father_even_if_dead = { is_child_of = ROOT } }
+					}
 				}
-			}		
+				AND = {
+					religion_group = zoroastrian_group
+					FROM = { religion_group = zoroastrian_group }
+				}
+				AND = {
+					religion = messalian
+					FROM = { religion = messalian }
+				}
+			}
 			OR = {
 				AND = {
 					FROM = { NOT = { trait = homosexual } }
@@ -969,7 +980,7 @@ targetted_decisions = {
 	duel_decision = {
 		is_high_prio = yes
 		
-		filter = rivals
+		#filter = rivals
 		ai_target_filter = rivals
 		
 		from_potential = {
@@ -978,99 +989,224 @@ targetted_decisions = {
 			has_dlc = "Way of Life"
 			has_focus = focus_war
 			has_regent = no
+			is_inaccessible_trigger = no
+
 			OR = {
 				ai = no
-				AND = {
-					is_female = no
-					NOT = { trait = craven }
-					NOT = { trait = content }
-				}
-			}
-			OR = {
+				
 				is_female = no
-				religion_group = pagan_group
-				is_nomadic = yes
-				religion = cathar
-				religion = buddhist
-				religion = bogomilist
-				religion = messalian
-				religion = mazdaki
-				religion = tondrakian
+
+				AND = {
+					is_female = yes
+					OR = {
+						trait = brave
+						religion_group = pagan_group
+						is_nomadic = yes
+						religion = buddhist
+						religion = bogomilist
+						religion = mazdaki
+						religion = tondrakian
+						gender_equality_trigger = yes
+					}
+				}
 			}
 		}
 		
 		potential = {
 			is_adult = yes
 			prisoner = no
-			OR = {
-				is_female = no
-				FROM = { is_female = yes }
-			}
 			NOT = { character = FROM }
-		}
-		
-		allow = {
-			FROM = { ### Valid reason for duel
-				OR = {
-					is_foe = ROOT
-					custom_tooltip = {
-						text = duel_tooltip_excommunicated
-						trait = zealous
-						ROOT = { 
-							trait = excommunicated
-							religion = ROOT
+			is_inaccessible_trigger = no
+
+			OR = {
+				AND = {
+					OR = {
+						is_rival = FROM
+						is_foe = FROM
+						AND = {
+							FROM = { trait = zealous }
+							OR = {	
+								AND = {
+									religion = FROM
+									trait = excommunicated
+								}
+								AND = {
+									FROM = { religion_group = muslim }
+									trait = decadent
+								}
+							}
+						}
+						has_game_rule = {
+							name = dueling
+							value = restricted
 						}
 					}
-					AND = {
-						religion_group = muslim
-						trait = zealous
-						ROOT = {
-							trait = decadent
+					OR = {
+						is_female = no
+
+						#Both FROM and ROOT have gender equality
+						AND = {
+							OR = {
+								trait = brave
+								gender_equality_trigger = yes
+								religion_group = pagan_group
+								is_nomadic = yes
+								religion = buddhist
+								religion = bogomilist
+								religion = tondrakian
+								religion = mazdaki
+								religion = messalian
+								religion = cathar
+							}
+							FROM = {
+								OR = {
+									gender_equality_trigger = yes
+									religion_group = pagan_group
+									is_nomadic = yes
+									religion = buddhist
+									religion = bogomilist
+									religion = tondrakian
+									religion = mazdaki
+									religion = messalian
+									religion = cathar
+								}
+							}
 						}
 					}
 				}
-				NOT = { has_opinion_modifier = { who = ROOT modifier = opinion_fled_duel } }
+				has_game_rule = {
+					name = dueling
+					value = unrestricted
+				}
 			}
-			ROOT = { NOT = { age = 60 } }
+		}
+		
+		allow = {
+			OR = {
+				AND = {
+					#Valid reasons for duel
+					OR = {
+						custom_tooltip = {
+							text = duel_tooltip_rivals
+							is_rival = FROM
+						}
+						custom_tooltip = {
+							text = duel_tooltip_foes
+							is_foe = FROM
+						}
+						custom_tooltip = {
+							text = duel_tooltip_excommunicated
+							religion = FROM
+							FROM = { trait = zealous }
+							trait = excommunicated
+						}
+						custom_tooltip = {
+							text = duel_tooltip_decadent
+							FROM = { religion_group = muslim }
+							FROM = { trait = zealous }
+							trait = decadent
+						}
+						has_game_rule = {
+							name = dueling
+							value = restricted
+						}
+					}
+
+					#Both are healthy
+					custom_tooltip = {
+						text = duel_tooltip_sickness
+						FROM = {
+							NOR = {
+								trait = incapable
+								trait = infirm
+								trait = has_aztec_disease
+								trait = has_small_pox
+								trait = has_measles
+								trait = has_bubonic_plague
+								trait = has_typhus
+								trait = has_typhoid_fever
+								trait = has_tuberculosis
+								trait = leper
+								trait = pneumonic
+							}
+						}
+						ROOT = {
+							NOR = {
+								trait = incapable
+								trait = infirm
+								trait = has_aztec_disease
+								trait = has_small_pox
+								trait = has_measles
+								trait = has_bubonic_plague
+								trait = has_typhus
+								trait = has_typhoid_fever
+								trait = has_tuberculosis
+								trait = leper
+								trait = pneumonic
+								age = 70
+							}
+						}
+					}
+					
+					#Checks gender and some religious stuff
+					custom_tooltip = {
+						text = duel_tooltip_valid_target
+						hidden_tooltip = { ### Not female or challenger religion accepts female warriors
+							 OR = {
+								is_female = no
+
+								#Both FROM and ROOT have gender equality
+								AND = {
+									OR = {
+										trait = brave
+										gender_equality_trigger = yes
+										religion_group = pagan_group
+										is_nomadic = yes
+										religion = buddhist
+										religion = bogomilist
+										religion = tondrakian
+										religion = mazdaki
+										religion = messalian
+										religion = cathar
+									}
+									FROM = {
+										OR = {
+											gender_equality_trigger = yes
+											religion_group = pagan_group
+											is_nomadic = yes
+											religion = buddhist
+											religion = bogomilist
+											religion = tondrakian
+											religion = mazdaki
+											religion = messalian
+											religion = cathar
+										}
+									}
+								}
+							}
+							### Not priest or challenger religion is pagan
+							OR = {
+								is_priest = no
+								FROM = { religion_group = pagan_group }
+							}
+							
+						}
+					}
+				}
+				has_game_rule = {
+					name = dueling
+					value = unrestricted
+				}
+			}
 			custom_tooltip = {
-				text = duel_tooltip_fought_before
+				text = duel_tooltip_challenged_before
 				hidden_tooltip = {
 					NOT = {
 						has_opinion_modifier = { who = FROM modifier = opinion_fought_duel }
 					}
 					FROM = { 
 						NOT = { has_opinion_modifier = { who = ROOT modifier = opinion_fought_duel } }
-					}
-				}
-			}
-			custom_tooltip = {
-				text = duel_tooltip_busy
-				hidden_tooltip = {
-					FROM = {
-						NOT = { has_character_modifier = do_not_disturb }
-						NOT = { war = yes }
-					}
-					NOT = { has_character_modifier = do_not_disturb }
-					NOT = { war = yes }
-				}
-			}
-			custom_tooltip = {
-				text = duel_tooltip_valid_target
-				hidden_tooltip = { ### Not female or challenger religion accepts female warriors
-					OR = {
-						is_female = no
-						FROM = { is_nomadic = yes }
-						FROM = { religion_group = pagan_group }
-						FROM = { religion = cathar }
-						FROM = { religion = buddhist }
-						FROM = { religion = bogomilist }
-						FROM = { religion = messalian }
-						FROM = { religion = mazdaki }
-						FROM = { religion = tondrakian }
-					} ### Not priest or challenger religion is pagan
-					OR = {
-						is_priest = no
-						FROM = { religion_group = pagan_group }
+						NOT = { has_opinion_modifier = { who = ROOT modifier = opinion_fled_duel } } 
 					}
 				}
 			}
@@ -1081,48 +1217,15 @@ targetted_decisions = {
 					NOT = { has_character_modifier = recent_duel_timer }
 				}
 			}
-			ROOT = {
-				custom_tooltip = {
-					text = duel_tooltip_sickness
-					hidden_tooltip = {				
-						NOT = {
-							OR = {
-								trait = incapable
-								trait = infirm
-								trait = has_aztec_disease
-								trait = has_small_pox
-								trait = has_measles
-								trait = has_bubonic_plague
-								trait = has_typhus
-								trait = has_typhoid_fever
-								trait = has_tuberculosis
-								trait = leper
-								trait = pneumonic
-							}
-						}
+			custom_tooltip = {
+				text = duel_tooltip_busy
+				hidden_tooltip = {
+					FROM = {
+						NOT = { has_character_flag = do_not_disturb }
+						NOT = { war = yes }
 					}
-				}
-			}
-			FROM = {
-				custom_tooltip = {
-					text = duel_tooltip_sickness
-					hidden_tooltip = {
-						NOT = {
-							OR = {
-								trait = incapable
-								trait = infirm
-								trait = has_aztec_disease
-								trait = has_small_pox
-								trait = has_measles
-								trait = has_bubonic_plague
-								trait = has_typhus
-								trait = has_typhoid_fever
-								trait = has_tuberculosis
-								trait = leper
-								trait = pneumonic
-							}
-						}
-					}
+					NOT = { has_character_flag = do_not_disturb }
+					NOT = { war = yes }
 				}
 			}
 			is_within_diplo_range = ROOT # CPU HEAVY!
