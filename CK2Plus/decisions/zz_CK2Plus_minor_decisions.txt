@@ -1479,9 +1479,274 @@ targetted_decisions = {
 			factor = 0
 		}
 	}
+	
+	demand_tribute = {
+		filter = all
+		ai_target_filter = self
+
+		only_independent = yes
+		from_potential = {
+			ai = no
+			NOT = { has_character_modifier = holy_truce_timer }
+			NOT = { has_character_modifier = tributary_timer }
+			mercenary = no
+			is_tributary = no
+			has_dlc = "Horse Lords"
+			NOT = { has_character_flag = trying_to_gain_tributary }
+			NOT = { is_vassal_or_below = ROOT }
+			NOT = { is_liege_or_above = ROOT }
+			NOT = {
+				rightful_religious_head_scope = {
+					character = ROOT
+				}
+			}
+			attacking_religious_head_trigger = no
+			NAND = {
+				holy_order = yes
+				religion = ROOT
+			}
+		}
+		potential = {
+			independent = yes
+			NOR = {
+				higher_tier_than = FROM
+				pays_tribute_to = FROM
+				any_liege = {
+					pays_tribute_to = FROM
+				}
+			}
+			NAND = {
+				holy_order = yes
+				religion = FROM
+			}
+			
+			# The attacker needs a border, or be at most one sea zone away from one of the target's counties
+			any_realm_province = {
+				any_neighbor_province = {
+					OR = {
+						owner = { same_realm = FROM }
+						AND = {
+							is_land = no
+							any_neighbor_province = {
+								owner = { same_realm = FROM }
+							}
+						}
+					}
+				}
+			}
+			
+			# The defender is not in any tributary war
+			NOT = {
+				any_war = {
+					using_cb = tributary_cb
+				}
+			}
+		}
+		allow = {
+			FROM = { higher_real_tier_than = COUNT }
+			ROOT = {
+				NOT = { has_non_aggression_pact_with = FROM }
+				NOT = { reverse_has_truce = FROM }
+				NOT = { relative_power = { who = FROM power = 0.9 } }
+			}
+		}
+		effect = {
+			FROM = { character_event = { id = Plus.4000 days = 3} }
+			hidden_tooltip = {
+				FROM = { set_character_flag = trying_to_gain_tributary }
+			}
+		}
+		revoke_allowed = {
+			always = no #Not used in vanilla
+		}
+		ai_will_do = {
+			factor = 0
+		}
+	}
 }
 
 decisions = {
+	demand_tribute_ai = {
+		only_independent = yes
+		only_playable = yes
+		
+		potential = {
+			ai = yes
+			#lets limit this for ai to kings and duke
+			higher_real_tier_than = DUKE
+			#limit to large realms
+			realm_size = 100
+			NOT = { has_character_modifier = holy_truce_timer }
+			NOT = { has_character_modifier = tributary_timer }
+			mercenary = no
+			is_tributary = no
+			has_dlc = "Horse Lords"
+			NOT = { has_character_flag = trying_to_gain_tributary }
+			has_regent = no
+		}
+
+		allow = {
+			NOT = {
+				any_war = {
+					using_cb = tributary_cb
+				}
+			}
+			#this probably shouldn't be here for performance reasons
+			any_independent_ruler = {
+				# weak enough to be target
+				NOT = { relative_power_including_allies_defender = { who = ROOT power = 0.3} }
+				# small realm
+				NOT = { realm_size = 25 }
+				realm_size = 8
+				# not needed
+				NOT = { is_vassal_or_below = ROOT }
+				NOT = { is_liege_or_above = ROOT }
+				#holy order of my religion
+				NAND = {
+					holy_order = yes
+					religion = ROOT
+				}
+				NOR = {
+					higher_tier_than = ROOT
+					pays_tribute_to = ROOT
+					any_liege = {
+						pays_tribute_to = ROOT
+					}
+				}
+				NOT = {
+					any_war = {
+						using_cb = tributary_cb
+					}
+				}
+				ROOT = {
+					NOT = {
+						rightful_religious_head_scope = {
+							character = PREVPREV
+						}
+					}
+				}
+				ROOT = {
+					OR = {
+						is_nomadic = yes
+						religion_group = PREV
+					}
+				}
+				# The AI will not target nomads or tribals (they have no money anyhow)
+				is_nomadic = no
+				is_tribal = no
+				NOT = { has_non_aggression_pact_with = ROOT }
+				NOT = { reverse_has_truce = ROOT }
+				any_realm_province = {
+					any_neighbor_province = {
+						owner = {
+							same_realm = ROOT
+						}
+					}
+				}
+				NOT = {
+					ROOT = {
+						religion_group = pagan_group
+						religion = PREV
+					}
+				}
+				yearly_income = 60
+			}
+		}
+
+		effect = {
+			random_independent_ruler = {
+				limit = {
+					NOT = { relative_power_including_allies_defender = { who = ROOT power = 0.2} }
+					NOT = { realm_size = 25 }
+					realm_size = 8
+					NAND = {
+						holy_order = yes
+						religion = ROOT
+					}
+					NOR = {
+						higher_tier_than = ROOT
+						pays_tribute_to = ROOT
+						any_liege = {
+							pays_tribute_to = ROOT
+						}
+					}
+					NOT = {
+						any_war = {
+							using_cb = tributary_cb
+						}
+					}
+					ROOT = {
+						NOT = {
+							rightful_religious_head_scope = {
+								character = PREVPREV
+							}
+						}
+					}
+					ROOT = {
+						OR = {
+							is_nomadic = yes
+							religion_group = PREV
+						}
+					}
+					# The AI will not target nomads or tribals (they have no money anyhow)
+					is_nomadic = no
+					is_tribal = no
+					NOT = { has_non_aggression_pact_with = ROOT }
+					NOT = { reverse_has_truce = ROOT }
+					any_realm_province = {
+						any_neighbor_province = {
+							owner = {
+								same_realm = ROOT
+							}
+						}
+					}
+					NAND = {
+						religion_group = pagan_group
+						religion = ROOT
+					}
+					yearly_income = 50
+				}
+				log = "Tributary event chain started, attacker is [Root.GetBestName], defender is [This.GetBestName]"
+				character_event = { id = Plus.4001 days = 3}
+			}
+			set_character_flag = trying_to_gain_tributary
+		}
+		ai_will_do = {
+			factor = 1
+			modifier = {
+				factor = 0.05
+				always = yes
+			}
+			modifier = {
+				factor = 4
+				ROOT = { trait = greedy }
+			}
+			modifier = {
+				factor = 0.1
+				trait = content
+			}
+			modifier = {
+				factor = 0
+				ROOT = {
+					is_tribal = yes
+					NOR = {
+						trait = ambitious
+						martial = 15
+					}
+				}
+			}
+			modifier = {
+				factor = 0
+				ROOT = {
+					is_tribal = yes
+					OR = {
+						trait = content
+						NOT = { martial = 8 }
+					}
+				}
+			}
+		}
+	}
 	imperial_coronation = {
 		is_high_prio = yes
 		only_playable = yes
@@ -1558,10 +1823,10 @@ decisions = {
 			hidden_tooltip = {
 				add_character_modifier = {
 					name = do_not_disturb
-					days = 200
+					duration = 200
 					hidden = yes
 				}
-				narrative_event = { id = Plus.1215 days = 30 } # coronation start
+				character_event = { id = Plus.1290 days = 30 } # coronation start
 			}
 		}
 		ai_will_do = {
@@ -1620,10 +1885,10 @@ decisions = {
 			hidden_tooltip = {
 				add_character_modifier = {
 					name = do_not_disturb
-					days = 200
+					duration = 200
 					hidden = yes
 				}
-				narrative_event = { id = Plus.1215 days = 30 } # coronation start
+				character_event = { id = Plus.1290 days = 30 } # coronation start
 			}
 		}
 		ai_will_do = {
@@ -3981,6 +4246,704 @@ decisions = {
 		}
 		ai_will_do = {
 			factor = 1
+		}
+	}
+	
+	create_ibadi_caliphate = {
+		is_high_prio = yes
+		only_independent = yes
+		potential = {
+			religion_group = muslim
+			is_feudal = yes
+			is_female = no
+			demesne_size = 1
+			higher_tier_than = COUNT
+			controls_religion = no
+			dynasty_head = { character = ROOT }
+			religion = ibadi
+			NOT = { is_title_active = d_ibadi }
+			NOR = {
+				trait = decadent
+				any_claim = { controls_religion = yes }
+			}
+		}
+		allow = {
+			war = no
+			has_regent = no
+			NOR = {
+				trait = dynasty_decadence_low
+				trait = dynasty_decadence_med
+				trait = dynasty_decadence_high
+			}
+			religion = ibadi
+			is_heretic = no
+			is_adult = yes
+			OR = {
+				trait = mirza
+				trait = sayyid
+				piety = 1000
+			}
+			NOT = { has_global_flag = shia_caliphate_revolt_ongoing }
+			OR = {
+				AND = {
+					trait = sayyid
+					piety = 1000
+				}
+				custom_tooltip = {
+					text = controls_mecca_medina
+					hidden_tooltip = {
+						719 = { # Mecca
+							owner = {
+								OR = {
+									is_liege_or_above = ROOT
+									character = ROOT
+								}
+							}
+						}
+						718 = { # Medina
+							owner = {
+								OR = {
+									is_liege_or_above = ROOT
+									character = ROOT
+								}
+							}
+						}
+					}
+				}
+				custom_tooltip = {
+					text = controls_jerusalem_damascus_baghdad
+					hidden_tooltip = {
+						774 = { # Jerusalem
+							owner = {
+								OR = {
+									is_liege_or_above = ROOT
+									character = ROOT
+								}
+							}
+						}
+						728 = { # Damascus
+							owner = {
+								OR = {
+									is_liege_or_above = ROOT
+									character = ROOT
+								}
+							}
+						}
+						693 = { # Baghdad
+							owner = {
+								OR = {
+									is_liege_or_above = ROOT
+									character = ROOT
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		effect = {
+			activate_title = { title = d_ibadi status = yes }
+			d_ibadi = { 
+				grant_title_no_opinion = ROOT
+				make_primary_title = yes
+			}
+		}
+		ai_will_do = {
+			factor = 1
+			modifier = {
+				factor = 0.1
+				always = yes
+			}
+			modifier = {
+				factor = 0.5
+				lower_tier_than = KING
+			}
+			modifier = {
+				factor = 0.1
+				trait = humble
+			}
+			modifier = {
+				factor = 0.1
+				trait = content
+			}
+			modifier = {
+				factor = 0.5
+				trait = patient
+			}
+			modifier = {
+				factor = 0.5
+				trait = craven
+			}
+			modifier = {
+				factor = 3
+				trait = zealous
+			}
+			modifier = {
+				factor = 2
+				trait = proud
+			}
+			modifier = {
+				factor = 2
+				trait = ambitious
+			}
+			modifier = {
+				factor = 1.5
+				trait = wroth
+			}
+			modifier = {
+				factor = 1.5
+				trait = brave
+			}
+			modifier = {
+				factor = 0
+				trait = cynical
+			}
+		}
+	}
+
+	create_zikri_caliphate = {
+		is_high_prio = yes
+		only_independent = yes
+		potential = {
+			religion_group = muslim
+			is_feudal = yes
+			is_female = no
+			demesne_size = 1
+			higher_tier_than = COUNT
+			controls_religion = no
+			dynasty_head = { character = ROOT }
+			religion = zikri
+			NOT = { is_title_active = d_zikri }
+			NOR = {
+				trait = decadent
+				any_claim = { controls_religion = yes }
+			}
+		}
+		allow = {
+			war = no
+			has_regent = no
+			NOR = {
+				trait = dynasty_decadence_low
+				trait = dynasty_decadence_med
+				trait = dynasty_decadence_high
+			}
+			is_heretic = no
+			is_adult = yes
+			OR = {
+				trait = mirza
+				trait = sayyid
+				piety = 1000
+			}
+			NOT = { has_global_flag = shia_caliphate_revolt_ongoing }
+			OR = {
+				AND = {
+					trait = sayyid
+					piety = 1000
+				}
+				custom_tooltip = {
+					text = controls_mecca_medina
+					hidden_tooltip = {
+						719 = { # Mecca
+							owner = {
+								OR = {
+									is_liege_or_above = ROOT
+									character = ROOT
+								}
+							}
+						}
+						718 = { # Medina
+							owner = {
+								OR = {
+									is_liege_or_above = ROOT
+									character = ROOT
+								}
+							}
+						}
+					}
+				}
+				custom_tooltip = {
+					text = controls_jerusalem_damascus_baghdad
+					hidden_tooltip = {
+						774 = { # Jerusalem
+							owner = {
+								OR = {
+									is_liege_or_above = ROOT
+									character = ROOT
+								}
+							}
+						}
+						728 = { # Damascus
+							owner = {
+								OR = {
+									is_liege_or_above = ROOT
+									character = ROOT
+								}
+							}
+						}
+						693 = { # Baghdad
+							owner = {
+								OR = {
+									is_liege_or_above = ROOT
+									character = ROOT
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		effect = {
+			activate_title = { title = d_zikri status = yes }
+			d_zikri = { 
+				grant_title_no_opinion = ROOT
+				make_primary_title = yes
+			}
+		}
+		ai_will_do = {
+			factor = 1
+			modifier = {
+				factor = 0.1
+				always = yes
+			}
+			modifier = {
+				factor = 0.5
+				lower_tier_than = KING
+			}
+			modifier = {
+				factor = 0.1
+				trait = humble
+			}
+			modifier = {
+				factor = 0.1
+				trait = content
+			}
+			modifier = {
+				factor = 0.5
+				trait = patient
+			}
+			modifier = {
+				factor = 0.5
+				trait = craven
+			}
+			modifier = {
+				factor = 3
+				trait = zealous
+			}
+			modifier = {
+				factor = 2
+				trait = proud
+			}
+			modifier = {
+				factor = 2
+				trait = ambitious
+			}
+			modifier = {
+				factor = 1.5
+				trait = wroth
+			}
+			modifier = {
+				factor = 1.5
+				trait = brave
+			}
+			modifier = {
+				factor = 0
+				trait = cynical
+			}
+		}
+	}
+
+	create_kharijite_caliphate = {
+		is_high_prio = yes
+		only_independent = yes
+		potential = {
+			religion_group = muslim
+			is_feudal = yes
+			is_female = no
+			demesne_size = 1
+			higher_tier_than = COUNT
+			controls_religion = no
+			dynasty_head = { character = ROOT }
+			religion = kharijite
+			NOT = { is_title_active = d_kharijite }
+			NOR = {
+				trait = decadent
+				any_claim = { controls_religion = yes }
+			}
+		}
+		allow = {
+			war = no
+			has_regent = no
+			NOR = {
+				trait = dynasty_decadence_low
+				trait = dynasty_decadence_med
+				trait = dynasty_decadence_high
+			}
+			is_heretic = no
+			is_adult = yes
+			OR = {
+				trait = mirza
+				trait = sayyid
+				piety = 1000
+			}
+			NOT = { has_global_flag = shia_caliphate_revolt_ongoing }
+			OR = {
+				AND = {
+					trait = sayyid
+					piety = 1000
+				}
+				custom_tooltip = {
+					text = controls_mecca_medina
+					hidden_tooltip = {
+						719 = { # Mecca
+							owner = {
+								OR = {
+									is_liege_or_above = ROOT
+									character = ROOT
+								}
+							}
+						}
+						718 = { # Medina
+							owner = {
+								OR = {
+									is_liege_or_above = ROOT
+									character = ROOT
+								}
+							}
+						}
+					}
+				}
+				custom_tooltip = {
+					text = controls_jerusalem_damascus_baghdad
+					hidden_tooltip = {
+						774 = { # Jerusalem
+							owner = {
+								OR = {
+									is_liege_or_above = ROOT
+									character = ROOT
+								}
+							}
+						}
+						728 = { # Damascus
+							owner = {
+								OR = {
+									is_liege_or_above = ROOT
+									character = ROOT
+								}
+							}
+						}
+						693 = { # Baghdad
+							owner = {
+								OR = {
+									is_liege_or_above = ROOT
+									character = ROOT
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		effect = {
+			activate_title = { title = d_kharijite status = yes }
+			d_kharijite = { 
+				grant_title_no_opinion = ROOT
+				make_primary_title = yes
+			}
+		}
+		ai_will_do = {
+			factor = 1
+			modifier = {
+				factor = 0.1
+				always = yes
+			}
+			modifier = {
+				factor = 0.5
+				lower_tier_than = KING
+			}
+			modifier = {
+				factor = 0.1
+				trait = humble
+			}
+			modifier = {
+				factor = 0.1
+				trait = content
+			}
+			modifier = {
+				factor = 0.5
+				trait = patient
+			}
+			modifier = {
+				factor = 0.5
+				trait = craven
+			}
+			modifier = {
+				factor = 3
+				trait = zealous
+			}
+			modifier = {
+				factor = 2
+				trait = proud
+			}
+			modifier = {
+				factor = 2
+				trait = ambitious
+			}
+			modifier = {
+				factor = 1.5
+				trait = wroth
+			}
+			modifier = {
+				factor = 1.5
+				trait = brave
+			}
+			modifier = {
+				factor = 0
+				trait = cynical
+			}
+		}
+	}
+	
+	create_druze_caliphate = {
+		is_high_prio = yes
+		only_independent = yes
+		potential = {
+			religion_group = muslim
+			is_feudal = yes
+			is_female = no
+			demesne_size = 1
+			higher_tier_than = COUNT
+			controls_religion = no
+			dynasty_head = { character = ROOT }
+			religion = druze
+			NOT = { is_title_active = d_druze }
+			NOR = {
+				trait = decadent
+				any_claim = { controls_religion = yes }
+			}
+		}
+		allow = {
+			war = no
+			has_regent = no
+			NOR = {
+				trait = dynasty_decadence_low
+				trait = dynasty_decadence_med
+				trait = dynasty_decadence_high
+			}
+			is_heretic = no
+			is_adult = yes
+			piety = 1000
+			trait = druze_ajawid
+			num_of_holy_sites = 1
+			higher_tier_than = DUKE
+		}
+		effect = {
+			activate_title = { title = d_druze status = yes }
+			d_druze = { 
+				grant_title_no_opinion = ROOT
+				make_primary_title = yes
+			}
+		}
+		ai_will_do = {
+			factor = 1
+			modifier = {
+				factor = 0.1
+				always = yes
+			}
+			modifier = {
+				factor = 0.5
+				lower_tier_than = KING
+			}
+			modifier = {
+				factor = 0.1
+				trait = humble
+			}
+			modifier = {
+				factor = 0.1
+				trait = content
+			}
+			modifier = {
+				factor = 0.5
+				trait = patient
+			}
+			modifier = {
+				factor = 0.5
+				trait = craven
+			}
+			modifier = {
+				factor = 3
+				trait = zealous
+			}
+			modifier = {
+				factor = 2
+				trait = proud
+			}
+			modifier = {
+				factor = 2
+				trait = ambitious
+			}
+			modifier = {
+				factor = 1.5
+				trait = wroth
+			}
+			modifier = {
+				factor = 1.5
+				trait = brave
+			}
+			modifier = {
+				factor = 0
+				trait = cynical
+			}
+		}
+	}
+	
+	create_hurufi_caliphate = {
+		is_high_prio = yes
+		only_independent = yes
+		potential = {
+			religion_group = muslim
+			is_feudal = yes
+			is_female = no
+			demesne_size = 1
+			higher_tier_than = COUNT
+			controls_religion = no
+			dynasty_head = { character = ROOT }
+			religion = hurufi
+			NOT = { is_title_active = d_hurufi }
+			NOR = {
+				trait = decadent
+				any_claim = { controls_religion = yes }
+			}
+		}
+		allow = {
+			war = no
+			has_regent = no
+			NOR = {
+				trait = dynasty_decadence_low
+				trait = dynasty_decadence_med
+				trait = dynasty_decadence_high
+			}
+			is_heretic = no
+			is_adult = yes
+			OR = {
+				trait = mirza
+				trait = sayyid
+				piety = 1000
+			}
+			NOT = { has_global_flag = shia_caliphate_revolt_ongoing }
+			OR = {
+				AND = {
+					trait = sayyid
+					piety = 1000
+				}
+				custom_tooltip = {
+					text = controls_mecca_medina
+					hidden_tooltip = {
+						719 = { # Mecca
+							owner = {
+								OR = {
+									is_liege_or_above = ROOT
+									character = ROOT
+								}
+							}
+						}
+						718 = { # Medina
+							owner = {
+								OR = {
+									is_liege_or_above = ROOT
+									character = ROOT
+								}
+							}
+						}
+					}
+				}
+				custom_tooltip = {
+					text = controls_jerusalem_damascus_baghdad
+					hidden_tooltip = {
+						774 = { # Jerusalem
+							owner = {
+								OR = {
+									is_liege_or_above = ROOT
+									character = ROOT
+								}
+							}
+						}
+						728 = { # Damascus
+							owner = {
+								OR = {
+									is_liege_or_above = ROOT
+									character = ROOT
+								}
+							}
+						}
+						693 = { # Baghdad
+							owner = {
+								OR = {
+									is_liege_or_above = ROOT
+									character = ROOT
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		effect = {
+			activate_title = { title = d_hurufi status = yes }
+			d_hurufi = { 
+				grant_title_no_opinion = ROOT
+				make_primary_title = yes
+			}
+		}
+		ai_will_do = {
+			factor = 1
+			modifier = {
+				factor = 0.1
+				always = yes
+			}
+			modifier = {
+				factor = 0.5
+				lower_tier_than = KING
+			}
+			modifier = {
+				factor = 0.1
+				trait = humble
+			}
+			modifier = {
+				factor = 0.1
+				trait = content
+			}
+			modifier = {
+				factor = 0.5
+				trait = patient
+			}
+			modifier = {
+				factor = 0.5
+				trait = craven
+			}
+			modifier = {
+				factor = 3
+				trait = zealous
+			}
+			modifier = {
+				factor = 2
+				trait = proud
+			}
+			modifier = {
+				factor = 2
+				trait = ambitious
+			}
+			modifier = {
+				factor = 1.5
+				trait = wroth
+			}
+			modifier = {
+				factor = 1.5
+				trait = brave
+			}
+			modifier = {
+				factor = 0
+				trait = cynical
+			}
 		}
 	}
 }

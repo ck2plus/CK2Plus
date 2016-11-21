@@ -1,0 +1,459 @@
+namespace = Plus
+
+#reserved Plus.4000 to Plus.4049
+
+#######################################
+# TRIBUTARY EVENTS
+# Written by Vukica
+#######################################
+
+##TODO any outcome should result with demanded tributary opinion modifier which should prevent decision taking spam.
+
+#Bounce event, to place Attacker in FROM scope
+character_event = {
+	id = Plus.4000
+	hide_window = yes
+	
+	is_triggered_only = yes
+	
+	immediate = {
+		FROM = { letter_event = { id = Plus.4001 } }
+	}
+}
+
+# FROM: Attacker, ROOT: Defender
+# Demand tribute event
+letter_event = {
+	id = Plus.4001
+	desc = "EVTDESC_Plus_4000"
+	border = GFX_event_letter_frame_war
+	
+	is_triggered_only = yes
+
+	option = { # Accept becoming tributary
+		name = EVTOPT_Plus_4000A
+		FROM = { letter_event = { id = Plus.4002 days = 3 } }
+		ai_chance = {
+			factor = 20
+			modifier = { #lunatic goes to war
+				factor = 0
+				OR = {
+					trait = lunatic
+					trait = rabies
+				}
+			}
+			modifier = { #brave goes to war
+				factor = 0
+				trait = brave
+			}
+			modifier = { #pride goeth before fall
+				factor = 0
+				OR = {
+					has_nickname = nick_the_hammer
+					has_nickname = nick_the_conqueror
+					has_nickname = nick_the_victorious
+					has_nickname = nick_the_brave
+					has_nickname = nick_the_fearless
+					has_nickname = nick_the_glorious
+					has_nickname = nick_the_ruthless
+					has_nickname = nick_the_destroyer
+					has_nickname = nick_the_strong
+					has_nickname = nick_the_magnanimous
+					has_nickname = nick_the_ironside
+					has_nickname = nick_the_lion
+					has_nickname = nick_the_lionheart
+					has_nickname = nick_the_great
+					trait = proud
+					trait = ambitious
+				}
+			}
+			modifier = { #have less than half strength of attacker
+				factor = 2
+				NOT = { relative_power_including_allies_defender = { who = FROM power = 0.5 } }
+			}
+			modifier = { #have less than third strength of attacker
+				factor = 2
+				NOT = { relative_power_including_allies_defender = { who = FROM power = 0.33 } }
+			}
+			modifier = { #have less than tenth strength of attacker
+				factor = 2
+				NOT = { relative_power_including_allies_defender = { who = FROM power = 0.1 } }
+			}
+			modifier = { #craven
+				factor = 2
+				trait = craven
+			}
+			modifier = { #already defending
+				factor = 2
+				is_primary_war_defender = yes
+			}
+			modifier = { #I'm an emperor
+				factor = 0.1
+				tier = EMPEROR
+			}
+			modifier = { #I'm a king
+				factor = 0.1
+				tier = KING
+			}
+			modifier = {
+				factor = 0.5
+				is_nomadic = yes
+			}
+			modifier = {
+				factor = 0.5
+				is_tribal = yes
+			}
+			modifier = {
+				factor = 2
+				NOT = { wealth = 50 }
+				is_republic = yes
+			}
+		}
+	}
+	
+	option = { # Refuse, go to war
+		name = EVTOPT_Plus_4000B
+		FROM = { letter_event = { id = Plus.4003 days = 3 } }
+		ai_chance = {
+			factor = 70
+			modifier = { #craven
+				factor = 0.5
+				trait = craven
+			}
+			modifier = { #attacker is craven
+				factor = 2
+				FROM = { trait = craven }
+			}
+			modifier = { # similar power
+				factor = 2
+				relative_power_including_allies_defender = { who = FROM power = 0.75 }
+			}
+			modifier = {
+				factor = 4
+				NOT = { religion_group = FROM }
+			}
+			modifier = {
+				factor = 2
+				NOT = { de_jure_liege = FROM }
+			}
+		}
+	}
+	
+	option = { # Can't we make a deal?
+		name = EVTOPT_Plus_4000C
+		trigger = {
+			wealth = 50
+		}
+		FROM = { letter_event = { id = Plus.4004 days = 3 } }
+		ai_chance = {
+			factor = 10
+			modifier = { #we can pay
+				factor = 10
+				is_republic = yes
+			}
+			modifier = { #you look too big
+				factor = 4
+				wealth = 200
+				NOT = { relative_power_including_allies_defender = { who = FROM power = 0.5 }}
+			}
+		}
+	}
+}
+
+# FROM: Defender, ROOT: Attacker
+# Accepted tributary status
+letter_event = {
+	id = Plus.4002
+	desc = "EVTDESC_Plus_4002"
+	border = GFX_event_letter_frame_war
+	
+	is_triggered_only = yes
+	
+	immediate = {
+		log = "ROOT is [Root.GetBestName], FROM is [From.GetBestName]"
+		FROM = {
+			save_event_target_as = target_loser
+			prestige = -100
+			imperial_decadence_plus_1_effect = yes
+			pf_glory_minus2_effect = yes
+			custom_tooltip = {
+				text = "REMOVE_PREVIOUS_SUZERAIN"
+				hidden_tooltip = {
+					any_suzerain = {
+						event_target:target_loser = {
+							remove_tributary = PREV
+						}
+					}
+				}
+			}
+		}
+		
+		prestige = 100
+		add_character_modifier = { name = victory_timer duration = 1 hidden = yes }
+		pf_glory_plus2_effect = yes
+		make_tributary = { who = FROM percentage = 0.20 }
+		
+		if  = {
+			limit = {
+				ROOT = {
+					uses_decadence = yes
+				}
+			}
+			ROOT = {
+				decadence = -10
+			}
+		}
+		if  = {
+			limit = {
+				ROOT = {
+					is_nomadic = yes
+				}
+			}
+			ROOT = {
+				clan_title = {
+					ROOT = {
+						any_vassal = {
+							limit = { is_nomadic = yes }
+							clan_title = {
+								clan_opinion = {
+									who = PREVPREVPREV
+									modifier = won_tributary_war
+									years = 5
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		
+		if  = {
+			limit = {
+				ROOT = {
+					is_tribal = yes
+				}
+			}
+			ROOT = {
+				any_vassal = {
+					limit = { is_tribal = yes }
+					opinion = {
+						who = PREV
+						modifier = won_tributary_war
+						years = 5
+					}
+				}
+			}
+		}
+	}
+	
+	option = { #Excellent
+		name = EVTOPT_Plus_4002A
+		clr_character_flag = trying_to_gain_tributary
+		hidden_tooltip = {
+			add_character_modifier = {
+				name = tributary_timer
+				duration = 365
+				hidden = yes
+			}
+		}
+	}
+}
+
+# FROM: Defender, ROOT: Attacker
+# Go to war!
+letter_event = {
+	id = Plus.4003
+	desc = "EVTDESC_Plus_4003"
+	border = GFX_event_letter_frame_war
+	
+	is_triggered_only = yes
+	
+	option = { #Declare war!
+		name = EVTOPT_Plus_4003A
+		ai_chance = {
+			factor = 80
+			modifier = {
+				factor = 0.2
+				trait = craven
+			}
+		}
+		war = {
+			target = FROM
+			casus_belli = tributary_cb
+		}
+		clr_character_flag = trying_to_gain_tributary
+		hidden_tooltip = {
+			add_character_modifier = {
+				name = tributary_timer
+				duration = 365
+				hidden = yes
+			}
+		}
+	}
+	
+	option = { #I was bluffing.
+		name = EVTOPT_Plus_4003B
+		ai_chance = {
+			factor = 20
+			modifier = {
+				factor = 2
+				trait = craven
+			}
+			modifier = { #already defending
+				factor = 2
+				is_primary_war_defender = yes
+			}
+		}
+		prestige = -100
+		if = {
+			limit = { NOT = { trait = craven } }
+			random = {
+				chance = 25
+				add_trait = craven
+			}
+		}
+		clr_character_flag = trying_to_gain_tributary
+		hidden_tooltip = {
+			add_character_modifier = {
+				name = tributary_timer
+				duration = 3650
+				hidden = yes
+			}
+		}
+		FROM = { letter_event = {id = Plus.4005 days = 3 } }
+	}
+}
+
+# FROM: Defender, ROOT: Attacker
+# Offered money instead
+letter_event = {
+	id = Plus.4004
+	desc = "EVTDESC_Plus_4004"
+	border = GFX_event_letter_frame_war
+	
+	is_triggered_only = yes
+	
+	option = { #Agreed
+		name = EVTOPT_Plus_4004A
+		ai_chance = {
+			factor = 75
+			modifier = { #lunatic goes to war
+				factor = 0
+				OR = {
+					trait = lunatic
+					trait = rabies
+				}
+			}
+			modifier = { #brave goes to war
+				factor = 0
+				trait = brave
+			}
+			modifier = { #pride goeth before fall
+				factor = 0
+				OR = {
+					has_nickname = nick_the_hammer
+					has_nickname = nick_the_conqueror
+					has_nickname = nick_the_victorious
+					has_nickname = nick_the_brave
+					has_nickname = nick_the_fearless
+					has_nickname = nick_the_glorious
+					has_nickname = nick_the_ruthless
+					has_nickname = nick_the_destroyer
+					has_nickname = nick_the_strong
+					has_nickname = nick_the_magnanimous
+					has_nickname = nick_the_ironside
+					has_nickname = nick_the_lion
+					has_nickname = nick_the_lionheart
+					has_nickname = nick_the_great
+					trait = proud
+					trait = ambitious
+				}
+			}
+			modifier = { #craven
+				factor = 2
+				trait = craven
+			}
+			modifier = { #already defending
+				factor = 2
+				is_primary_war_defender = yes
+			}
+		}
+		FROM = { transfer_scaled_wealth = { to = ROOT value = 0.25 min = 25 } }
+		FROM = { letter_event = {id = Plus.4006 days = 3 } }
+		prestige = 100
+		FROM = { 
+			opinion = { 
+			modifier = opinion_paid_tribute 
+			who = ROOT 
+			years = 5
+			}
+		}
+		hidden_tooltip = {
+			add_character_modifier = {
+				name = tributary_timer
+				duration = 365
+				hidden = yes
+			}
+		}
+		clr_character_flag = trying_to_gain_tributary
+	}
+	
+	option = { #Nice try.
+		name = EVTOPT_Plus_4004B
+		ai_chance = { # have more than twice the strength
+			factor = 25
+			modifier = {
+				factor = 2
+				FROM = { relative_power_including_allies_defender = { who = ROOT power = 0.5 } }
+			}
+			modifier = { # have three times the strength
+				factor = 2
+				FROM = { relative_power_including_allies_defender = { who = ROOT power = 0.33 } }
+			}
+			modifier = { # get it while it's hots
+				factor = 2
+				FROM = { is_primary_war_defender = yes }
+			}
+		}
+		war = {
+			target = FROM
+			casus_belli = tributary_cb
+		}
+		clr_character_flag = trying_to_gain_tributary
+		hidden_tooltip = {
+			add_character_modifier = {
+				name = tributary_timer
+				duration = 365
+				hidden = yes
+			}
+		}
+	}
+}
+
+# FROM: Attacker, ROOT: Defender
+# Attacker decides not to declare war after all.
+letter_event = {
+	id = Plus.4005
+	desc = "EVTDESC_Plus_4005"
+	border = GFX_event_letter_frame_war
+	
+	is_triggered_only = yes
+
+	option = { #Excellent
+		name = EVTOPT_Plus_4005A
+	}
+}
+
+# FROM: Attacker, ROOT: Defender
+# Attacker decides to accept the deal
+letter_event = {
+	id = Plus.4006
+	desc = "EVTDESC_Plus_4006"
+	border = GFX_event_letter_frame_war
+	
+	is_triggered_only = yes
+
+	option = { #Excellent
+		name = EVTOPT_Plus_4006A
+	}
+}
