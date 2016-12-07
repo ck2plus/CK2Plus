@@ -201,14 +201,20 @@ character_event = {
 		if = {
 			limit = {
 				event_target:viceroy_title = { tier = DUKE }
-				FROM = { vassal_of = ROOT }
+				FROM = { 
+					vassal_of = ROOT
+					de_jure_liege_or_above = ROOT
+				}
 			}
 			reverse_opinion = { who = FROM modifier = opinion_granted_duchy_vice_royalty years = 20 }
 		}
 		if = {
 			limit = {
 				event_target:viceroy_title = { tier = KING }
-				FROM = { vassal_of = ROOT }
+				FROM = {
+					vassal_of = ROOT
+					de_jure_liege_or_above = ROOT
+				}
 			}
 			reverse_opinion = { who = FROM modifier = opinion_granted_kingdom_vice_royalty years = 20 }
 		}
@@ -218,6 +224,11 @@ character_event = {
 	}
 	option = {
 		name = EVTOPTB_Plus_3202 # Refuse
+		trigger = {
+			FROM = {
+				de_jure_liege_or_above = ROOT
+			}
+		}
 		ai_chance = {
 			factor = 30
 			modifier = {
@@ -1699,71 +1710,6 @@ letter_event = {
 
 ### MAINTENANCE EVENTS
 
-# Remove exception flag from held titles if a primary title is granted by an imperial liege
-character_event = {
-	id = Plus.3292
-	
-	is_triggered_only = yes
-	hide_window = yes
-	
-	only_playable = yes
-	
-	trigger = {
-		FROM = {
-			is_primary_holder_title = yes
-			higher_tier_than = COUNT
-			NOT = { has_title_flag = viceroy_exemption }
-		}
-		FROMFROM = { has_imperial_government_trigger = yes }
-		vassal_of = FROMFROM
-	}
-	
-	immediate = {
-		any_demesne_title = { clr_title_flag = viceroy_exemption }
-	}
-}
-
-# Exemption flag added upon new primary title being created
-character_event = {
-	id = Plus.3297
-	
-	is_triggered_only = yes
-	hide_window = yes
-	
-	trigger = {
-		independent = no
-		is_feudal = yes
-		FROM = {
-			is_primary_holder_title = yes
-			NOT = { has_title_flag = viceroy_exemption }
-		}
-		any_demesne_title = { has_title_flag = viceroy_exemption }
-	}
-	
-	immediate = {
-		log = "INFO: [From.GetFullName] ([From.GetID]) created by [Root.GetBestName], requires viceroy_exemption flag"
-		any_demesne_title = { clr_title_flag = viceroy_exemption }
-		FROM = { set_title_flag = viceroy_exemption }
-	}
-}
-
-# Exemption flag is removed upon title being usurped
-character_event = {
-	id = Plus.3298
-	
-	is_triggered_only = yes
-	hide_window = yes
-	
-	trigger = {
-		FROM = { has_title_flag = viceroy_exemption }
-	}
-	
-	immediate = {
-		log = "INFO: [From.GetFullName] ([From.GetID]) usurped by [Root.GetBestName], viceroy_exemption flag removed"
-		FROM = { clr_title_flag = viceroy_exemption }
-	}
-}
-
 # Double-check a ruler's imperial government status
 character_event = {
 	id = Plus.3299
@@ -1809,37 +1755,7 @@ character_event = {
 				set_title_flag = has_imperial_administration
 			}
 		}
-		
-		# Has title with exemption flag but is independent, non-feudal, or top liege not imperial
-		if = {
-			limit = {
-				any_demesne_title = { has_title_flag = viceroy_exemption }
-				OR = {
-					independent = yes
-					top_liege = { has_imperial_government_trigger = no }
-					is_feudal = no
-				}
-				in_revolt = no
-				NOT = { any_liege = { in_revolt = yes } }
-			}
-			any_demesne_title = {
-				limit = { has_title_flag = viceroy_exemption }
-				clr_title_flag = viceroy_exemption
-			}
-		}
-		if = {
-			limit = {
-				is_feudal = yes
-				primary_title = { NOT = { has_title_flag = viceroy_exemption } }
-				any_demesne_title = { has_title_flag = viceroy_exemption }
-				top_liege = { has_imperial_government_trigger = yes }
-				in_revolt = no
-				NOT = { any_liege = { in_revolt = yes } }
-			}
-			log = "INFO: [Root.GetBestName] had [Root.PrimaryTitle.GetID] set to viceroy_exemption, as a non-primary title had the flag set"
-			any_demesne_title = { clr_title_flag = viceroy_exemption }
-			primary_title = { set_title_flag = viceroy_exemption }
-		}
+
 		if = {
 			limit = {
 				has_imperial_government_trigger = yes
@@ -1852,6 +1768,10 @@ character_event = {
 					OR = {
 						NOT = { primary_title = { has_law = imperial_administration } }
 						lower_tier_than = EMPEROR
+						AND = {
+							tier = EMPEROR
+							primary_title = { is_titular = yes }
+						}
 					}
 				}
 				log = "INFO: [Root.GetBestName] was switched to feudal government because [Root.PrimaryTitle.GetID] does not have Imperial Administration law"
@@ -1869,18 +1789,11 @@ character_event = {
 			if = {
 				limit = {
 					independent = no
-					OR = {
-						top_liege = { has_imperial_government_trigger = no }
-						primary_title = { has_title_flag = viceroy_exemption }
-					}
+					top_liege = { has_imperial_government_trigger = no }
 				}
 				if = {
 					limit = { top_liege = { has_imperial_government_trigger = no } }
 					log = "INFO: [Root.GetBestName] was switched to feudal government because [Root.TopLiege.GetBestName] does not have Imperial Government"
-				}
-				if = {
-					limit = { primary_title = { has_title_flag = viceroy_exemption } }
-					log = "INFO: [Root.GetBestName] was switched to feudal government because [Root.PrimaryTitle.GetID] has viceroy_exemption flag"
 				}
 				switch_to_feudal_effect = yes
 			}
@@ -1907,16 +1820,15 @@ character_event = {
 						in_revolt = no
 						NOT = { any_liege = { in_revolt = yes } }
 					}
-					primary_title = { set_title_flag = viceroy_exemption }
+					switch_to_imperial_effect = yes
 				}
 			}
 			if = {
 				limit = {
 					independent = no
 					top_liege = { has_imperial_government_trigger = yes }
-					NOT = { primary_title = { has_title_flag = viceroy_exemption } }
 				}
-				log = "INFO: [Root.GetBestName] was switched to imperial government because [Root.TopLiege.GetBestName] as imperial government and [Root.PrimaryTitle.GetID] does not have the viceroy_exemption flag"
+				log = "INFO: [Root.GetBestName] was switched to imperial government because [Root.TopLiege.GetBestName] has imperial government"
 				switch_to_imperial_effect = yes
 			}
 		}
