@@ -137,7 +137,7 @@ add_trait_diligent_effect = {
 			}
 		}
 		add_trait = diligent
-		hidden_tooltip = { character_event = { id = 38256 } } #notify diligent hära
+		hidden_tooltip = { character_event = { id = 38256 } } #notify diligent
 	}
 }
 
@@ -190,6 +190,19 @@ add_trait_gregarious_effect = {
 		}
 		add_trait = gregarious
 		hidden_tooltip = { character_event = { id = 38265 } }
+	}
+}
+
+add_trait_honest_effect = {
+	if = {
+		limit = {
+			NOR = {
+				trait = honest
+				trait = deceitful
+			}
+		}
+		add_trait = honest
+		hidden_tooltip = { character_event = { id = 38262 } } #Notify Honest
 	}
 }
 
@@ -578,6 +591,30 @@ add_trait_silently_gregarious_effect = {
 	}
 }
 
+add_trait_silently_honest_effect = {
+	if = {
+		limit = {
+			NOR = {
+				trait = honest
+				trait = deceitful
+			}
+		}
+		add_trait = honest
+	}
+}
+
+add_trait_silently_humble_effect = {
+	if = {
+		limit = {
+			NOR = {
+				trait = humble
+				trait = proud
+			}
+		}
+		add_trait = humble
+	}
+}
+
 add_trait_silently_kind_effect = {
 	if = {
 		limit = {
@@ -833,6 +870,13 @@ remove_trait_patient_effect = {
 	}	
 }
 
+remove_trait_proud_effect = {
+	if = {
+		limit = { trait = proud }
+		remove_trait = proud
+	}	
+}
+
 remove_trait_shy_effect = {
 	if = {
 		limit = { trait = shy }
@@ -981,6 +1025,13 @@ remove_trait_silently_patient_effect = {
 	if = {
 		limit = { trait = patient }
 		remove_trait = patient
+	}	
+}
+
+remove_trait_silently_proud_effect = {
+	if = {
+		limit = { trait = proud }
+		remove_trait = proud
 	}	
 }
 
@@ -3254,6 +3305,215 @@ give_ill_effect = {
 	}
 }
 
+#Impregnation and venereal disease handling between event_target:sex_partner and THIS. Used in THIS scope.
+unprotected_sex_effect_event_target = {
+	random = {
+		chance = 50
+		venereal_disease_effect_event_target = yes
+	}
+	random = {
+		chance = 10
+		modifier = {
+			factor = 2
+			is_fertile_trigger = yes
+		}
+		modifier = {
+			factor = 2
+			event_target:sex_partner = { is_fertile_trigger = yes }
+		}
+		modifier = {
+			factor = 0.5
+			is_infertile_trigger = yes
+		}
+		modifier = {
+			factor = 0.5
+			event_target:sex_partner = { is_infertile_trigger = yes }
+		}
+		impregnate_effect_event_target = yes
+	}
+}
+
+#Transfers venereal diseases between event_target:sex_partner and THIS.
+venereal_disease_effect_event_target = {
+	#Great pox and aztec disease for sex_partner
+	if = {
+		limit = {
+			NOR = {
+				event_target:sex_partner = { has_character_flag = developing_illness }
+				event_target:sex_partner = { has_character_flag = disease_not_serious }
+			}
+		}
+
+		if = {
+			limit = { trait = syphilitic }
+			event_target:sex_partner = { give_syphilitic_effect = yes }			
+		}
+		if = {
+			limit = { trait = has_aztec_disease }
+			event_target:sex_partner = { give_has_aztec_disease_effect = yes }			
+		}
+	}
+
+	#Great pox and aztec disease for THIS
+	if = {
+		limit = {
+			NOR = {
+				has_character_flag = developing_illness
+				has_character_flag = disease_not_serious 
+			}
+		}
+
+		if = {
+			limit = { event_target:sex_partner = { trait = syphilitic } }
+			give_syphilitic_effect = yes		
+		}
+		if = {
+			limit = { event_target:sex_partner = { trait = has_aztec_disease } }
+			give_has_aztec_disease_effect = yes		
+		}
+	}
+
+	#Lover's pox
+	if = {
+		limit = { 
+			OR = {
+				trait = lovers_pox 
+				has_character_modifier = minor_disease_herpes 
+			}
+			NOR = { 
+				event_target:sex_partner = { trait = lovers_pox }
+				event_target:sex_partner = { has_character_modifier = minor_disease_herpes }
+			}
+		}
+		hidden_tooltip = { event_target:sex_partner = { character_event = { id = 6359 days = 15 random = 5 } } }
+	}
+	if = {
+		limit = { 
+			OR = {
+				event_target:sex_partner = { trait = lovers_pox }
+				event_target:sex_partner = { has_character_modifier = minor_disease_herpes }
+			}
+			NOR = { 
+				trait = lovers_pox
+				has_character_modifier = minor_disease_herpes
+			}
+		}
+		hidden_tooltip = { character_event = { id = 6359 days = 15 random = 5 } } 
+	}
+}
+
+#Tries to impregnate either event_target:sex_partner or THIS if all conditions are met
+impregnate_effect_event_target = {
+	if = {
+		limit = { is_opposite_sex = FROM }
+
+		#If THIS is a female which can get pregnant
+		if = {
+			limit = {
+				is_female = yes
+				NOT = { age = 45 }
+				is_pregnant = no
+				health = 3
+				event_target:sex_partner = { NOT = { trait = eunuch } }
+			}
+
+			#THIS is not consort/spouse of anyone or is consort/spouse of event_target:sex_partner
+			if = {
+				limit = {
+					OR = {
+						AND = {
+							is_married = no
+							is_consort = no
+						}
+						AND = {
+							is_consort = yes
+							consort = { character = event_target:sex_partner }
+						}
+						AND = {
+							is_married = yes
+							spouse = { character = event_target:sex_partner }
+						}
+					}
+				}
+				event_target:sex_partner = { impregnate = PREV }
+			}
+
+			#THIS is consort/spouse of someone else than event_target:sex_partner
+			if = {
+				limit = { 
+					OR = {
+					 	AND = {
+					 		is_married = yes
+					 		NOT = { spouse = { character = event_target:sex_partner } }
+					 	}
+					 	AND = {
+					 		is_consort = yes
+					 		NOT = { consort = { character = event_target:sex_partner } }
+					 	}
+					}
+				}
+				event_target:sex_partner = { impregnate_cuckoo = PREV }
+			}
+		}
+
+		#If event_target:sex_partner is a female which can get pregnant
+		if = {
+			limit = {
+				event_target:sex_partner = {
+					is_female = yes
+					NOT = { age = 45 }
+					is_pregnant = no
+					health = 3
+					PREV = { NOT = { trait = eunuch } }
+				}
+			}
+
+			#event_target:sex_partner is not consort/spouse of anyone or is consort/spouse of THIS
+			if = {
+				limit = {
+					event_target:sex_partner = {
+						OR = {
+							AND = {
+								is_married = no
+								is_consort = no
+							}
+							AND = {
+								is_consort = yes
+								consort = { character = PREVPREV }
+							}
+							AND = {
+								is_married = yes
+								spouse = { character = PREVPREV }
+							}
+						}
+					}
+				}
+				impregnate = event_target:sex_partner
+			}
+
+			#event_target:sex_partner is consort/spouse of someone else than THIS
+			if = {
+				limit = {
+					event_target:sex_partner = {
+						OR = {
+						 	AND = {
+						 		is_married = yes
+						 		NOT = { spouse = { character = PREVPREV } }
+						 	}
+						 	AND = {
+						 		is_consort = yes
+						 		NOT = { consort = { character = PREVPREV } }
+						 	}
+						}
+					}
+				}
+
+				impregnate_cuckoo = event_target:sex_partner
+			}
+		}
+	}
+}
+
 #Impregnation and venereal disease handling between FROM and ROOT. Used in ROOT scope.
 unprotected_sex_effect = {
 	random = {
@@ -3331,7 +3591,7 @@ venereal_disease_effect = {
 			}
 			NOR = { 
 				FROM = { trait = lovers_pox }
-				FROM = { FROM = { has_character_modifier = minor_disease_herpes } }
+				FROM = { has_character_modifier = minor_disease_herpes }
 			}
 		}
 		hidden_tooltip = { FROM = { character_event = { id = 6359 days = 15 random = 5 } } }
@@ -7165,5 +7425,973 @@ add_sympathy_for_prevs_true_religion_effect = {
 	if = {
 		limit = { PREV = { true_religion_group_indian_group_trigger = yes } }
 		add_trait = sympathy_indian
+	}
+}
+
+add_trait_for_prevs_secret_religion_society_effect = {
+	 if = {
+    	limit = { PREV = { society_member_of = secret_religious_society_catholic } }
+    	add_trait = secretly_catholic
+    }
+    if = {
+    	limit = { PREV = { society_member_of = secret_religious_society_orthodox } }
+    	add_trait = secretly_orthodox
+    }
+    if = {
+    	limit = { PREV = { society_member_of = secret_religious_society_sunni } }
+    	add_trait = secretly_sunni
+    }
+    if = {
+    	limit = { PREV = { society_member_of = secret_religious_society_shiite } }
+    	add_trait = secretly_shiite
+    }
+    if = {
+    	limit = { PREV = { society_member_of = secret_religious_society_jewish } }
+    	add_trait = secretly_jewish
+    }
+    if = {
+    	limit = { PREV = { society_member_of = secret_religious_society_zoroastrian } }
+    	add_trait = secretly_zoroastrian
+    }
+    if = {
+    	limit = { PREV = { society_member_of = secret_religious_society_hinduism } }
+    	add_trait = secretly_hinduism
+    }
+    if = {
+    	limit = { PREV = { society_member_of = secret_religious_society_buddhism } }
+    	add_trait = secretly_buddhism
+    }
+    if = {
+    	limit = { PREV = { society_member_of = secret_religious_society_jain } }
+    	add_trait = secretly_jain
+    }
+    if = {
+    	limit = { PREV = { society_member_of = secret_religious_society_norse_pagan_reformed } }
+    	add_trait = secretly_norse_pagan_reformed
+    }
+    if = {
+    	limit = { PREV = { society_member_of = secret_religious_society_slavic_pagan_reformed } }
+    	add_trait = secretly_slavic_pagan_reformed
+    }
+    if = {
+    	limit = { PREV = { society_member_of = secret_religious_society_tengri_pagan_reformed } }
+    	add_trait = secretly_tengri_pagan_reformed
+    }
+    if = {
+    	limit = { PREV = { society_member_of = secret_religious_society_baltic_pagan_reformed } }
+    	add_trait = secretly_baltic_pagan_reformed
+    }
+    if = {
+    	limit = { PREV = { society_member_of = secret_religious_society_finnish_pagan_reformed } }
+    	add_trait = secretly_finnish_pagan_reformed
+    }
+    if = {
+    	limit = { PREV = { society_member_of = secret_religious_society_west_african_pagan_reformed } }
+    	add_trait = secretly_west_african_pagan_reformed
+    }
+    if = {
+    	limit = { PREV = { society_member_of = secret_religious_society_zun_pagan_reformed } }
+    	add_trait = secretly_zun_pagan_reformed
+    }
+}
+flip_to_secret_religion_effect = {
+	trigger_switch = {
+		on_trigger = trait
+		secretly_catholic = { religion = catholic remove_trait = secretly_catholic }
+		secretly_cathar = { religion = cathar remove_trait = secretly_cathar }
+		secretly_fraticelli = { religion = fraticelli remove_trait = secretly_fraticelli }
+		secretly_waldensian = { religion = waldensian remove_trait = secretly_waldensian }
+		secretly_lollard = { religion = lollard remove_trait = secretly_lollard }
+		secretly_orthodox = { religion = orthodox remove_trait = secretly_orthodox }
+		secretly_bogomilist = { religion = bogomilist remove_trait = secretly_bogomilist }
+		secretly_monothelite = { religion = monothelite remove_trait = secretly_monothelite }
+		secretly_iconoclast = { religion = iconoclast remove_trait = secretly_iconoclast }
+		secretly_paulician = { religion = paulician remove_trait = secretly_paulician }
+		secretly_miaphysite = { religion = miaphysite remove_trait = secretly_miaphysite }
+		secretly_monophysite = { religion = monophysite remove_trait = secretly_monophysite }
+		secretly_nestorian = { religion = nestorian remove_trait = secretly_nestorian }
+		secretly_messalian = { religion = messalian remove_trait = secretly_messalian }
+		secretly_sunni = { religion = sunni remove_trait = secretly_sunni }
+		secretly_zikri = { religion = zikri remove_trait = secretly_zikri }
+		secretly_yazidi = { religion = yazidi remove_trait = secretly_yazidi }
+		secretly_shiite = { religion = shiite remove_trait = secretly_shiite }
+		secretly_druze = { religion = druze remove_trait = secretly_druze }
+		secretly_hurufi = { religion = hurufi remove_trait = secretly_hurufi }
+		secretly_ibadi = { religion = ibadi remove_trait = secretly_ibadi }
+		secretly_kharijite = { religion = kharijite remove_trait = secretly_kharijite }
+		secretly_jewish = { religion = jewish remove_trait = secretly_jewish }
+		secretly_samaritan = { religion = samaritan remove_trait = secretly_samaritan }
+		secretly_karaite = { religion = karaite remove_trait = secretly_karaite }
+		secretly_zoroastrian = { religion = zoroastrian remove_trait = secretly_zoroastrian }
+		secretly_mazdaki = { religion = mazdaki remove_trait = secretly_mazdaki }
+		secretly_manichean = { religion = manichean remove_trait = secretly_manichean }
+		secretly_hinduism = { religion = hindu remove_trait = secretly_hinduism }
+		secretly_buddhism = { religion = buddhist remove_trait = secretly_buddhism }
+		secretly_jain = { religion = jain remove_trait = secretly_jain }
+		secretly_norse_pagan = { religion = norse_pagan remove_trait = secretly_norse_pagan }
+		secretly_norse_pagan_reformed = { religion = norse_pagan_reformed remove_trait = secretly_norse_pagan_reformed }
+		secretly_baltic_pagan = { religion = baltic_pagan remove_trait = secretly_baltic_pagan }
+		secretly_baltic_pagan_reformed = { religion = baltic_pagan_reformed remove_trait = secretly_baltic_pagan_reformed }
+		secretly_finnish_pagan = { religion = finnish_pagan remove_trait = secretly_finnish_pagan }
+		secretly_finnish_pagan_reformed = { religion = finnish_pagan_reformed remove_trait = secretly_finnish_pagan_reformed }
+		secretly_slavic_pagan = { religion = slavic_pagan remove_trait = secretly_slavic_pagan }
+		secretly_slavic_pagan_reformed = { religion = slavic_pagan_reformed remove_trait = secretly_slavic_pagan_reformed }
+		secretly_tengri_pagan = { religion = tengri_pagan remove_trait = secretly_tengri_pagan }
+		secretly_tengri_pagan_reformed = { religion = tengri_pagan_reformed remove_trait = secretly_tengri_pagan_reformed }
+		secretly_aztec = { religion = aztec remove_trait = secretly_aztec }
+		secretly_aztec_reformed = { religion = aztec_reformed remove_trait = secretly_aztec_reformed }
+		secretly_west_african_pagan = { religion = west_african_pagan remove_trait = secretly_west_african_pagan }
+		secretly_west_african_pagan_reformed = { religion = west_african_pagan_reformed remove_trait = secretly_west_african_pagan_reformed }
+		secretly_zun_pagan = { religion = zun_pagan remove_trait = secretly_zun_pagan }
+		secretly_zun_pagan_reformed = { religion = zun_pagan_reformed remove_trait = secretly_zun_pagan_reformed }
+		secretly_hellenic_pagan = { religion = hellenic_pagan remove_trait = secretly_hellenic_pagan }
+		secretly_pagan = { religion = pagan remove_trait = secretly_pagan }
+	}
+}
+
+
+add_prevs_secret_religion_trait_effect = {
+	 if = {
+    	limit = { PREV = { trait = secretly_catholic } }
+    	add_trait = secretly_catholic
+    }
+    if = {
+    	limit = { PREV = { trait = secretly_orthodox } }
+    	add_trait = secretly_orthodox
+    }
+    if = {
+    	limit = { PREV = { trait = secretly_sunni } }
+    	add_trait = secretly_sunni
+    }
+    if = {
+    	limit = { PREV = { trait = secretly_shiite } }
+    	add_trait = secretly_shiite
+    }
+    if = {
+    	limit = { PREV = { trait = secretly_jewish } }
+    	add_trait = secretly_jewish
+    }
+    if = {
+    	limit = { PREV = { trait = secretly_zoroastrian } }
+    	add_trait = secretly_zoroastrian
+    }
+    if = {
+    	limit = { PREV = { trait = secretly_hinduism } }
+    	add_trait = secretly_hinduism
+    }
+    if = {
+    	limit = { PREV = { trait = secretly_buddhism } }
+    	add_trait = secretly_buddhism
+    }
+    if = {
+    	limit = { PREV = { trait = secretly_jain } }
+    	add_trait = secretly_jain
+    }
+    if = {
+    	limit = { PREV = { trait = secretly_norse_pagan_reformed } }
+    	add_trait = secretly_norse_pagan_reformed
+    }
+    if = {
+    	limit = { PREV = { trait = secretly_slavic_pagan_reformed } }
+    	add_trait = secretly_slavic_pagan_reformed
+    }
+    if = {
+    	limit = { PREV = { trait = secretly_tengri_pagan_reformed } }
+    	add_trait = secretly_tengri_pagan_reformed
+    }
+    if = {
+    	limit = { PREV = { trait = secretly_baltic_pagan_reformed } }
+    	add_trait = secretly_baltic_pagan_reformed
+    }
+    if = {
+    	limit = { PREV = { trait = secretly_finnish_pagan_reformed } }
+    	add_trait = secretly_finnish_pagan_reformed
+    }
+    if = {
+    	limit = { PREV = { trait = secretly_west_african_pagan_reformed } }
+    	add_trait = secretly_west_african_pagan_reformed
+    }
+    if = {
+    	limit = { PREV = { trait = secretly_zun_pagan_reformed } }
+    	add_trait = secretly_zun_pagan_reformed
+    }
+}
+
+#Used in different sutiation, there conditions on effect. Flag has precedence over religion.
+add_secret_religion_trait_trigger_is_religion_or_old_religion_flag_clear_flag_after_effect_is_run_this_name_is_a_tribute_to_m_effect = {
+	if = {
+    	limit = { 
+    		OR = {
+    			AND = {
+    				NOT = {
+    					OR = {
+    						has_character_flag = character_was_catholic
+    						has_character_flag = character_was_orthodox
+    						has_character_flag = character_was_sunni
+    						has_character_flag = character_was_shiite
+    						has_character_flag = character_was_jewish
+    						has_character_flag = character_was_zoroastrian
+    						has_character_flag = character_was_hinduism
+    						has_character_flag = character_was_buddhism
+    						has_character_flag = character_was_jain
+    						has_character_flag = character_was_norse_pagan_reformed
+    						has_character_flag = character_was_slavic_pagan_reformed
+    						has_character_flag = character_was_tengri_pagan_reformed
+    						has_character_flag = character_was_baltic_pagan_reformed
+    						has_character_flag = character_was_finnish_pagan_reformed
+    						has_character_flag = character_was_west_african_pagan_reformed
+    						has_character_flag = character_was_zun_pagan_reformed
+    					}
+    				}
+    				religion = catholic
+    			}
+    			has_character_flag = character_was_catholic
+			}
+    	}
+    	add_trait = secretly_catholic	
+    	clr_character_flag = character_was_catholic
+    }
+    if = {
+    	limit = { 
+    		OR = {
+    			AND = {
+    				NOT = {
+    					OR = {
+    						has_character_flag = character_was_catholic
+    						has_character_flag = character_was_orthodox
+    						has_character_flag = character_was_sunni
+    						has_character_flag = character_was_shiite
+    						has_character_flag = character_was_jewish
+    						has_character_flag = character_was_zoroastrian
+    						has_character_flag = character_was_hinduism
+    						has_character_flag = character_was_buddhism
+    						has_character_flag = character_was_jain
+    						has_character_flag = character_was_norse_pagan_reformed
+    						has_character_flag = character_was_slavic_pagan_reformed
+    						has_character_flag = character_was_tengri_pagan_reformed
+    						has_character_flag = character_was_baltic_pagan_reformed
+    						has_character_flag = character_was_finnish_pagan_reformed
+    						has_character_flag = character_was_west_african_pagan_reformed
+    						has_character_flag = character_was_zun_pagan_reformed
+    					}
+    				}
+    				religion = orthodox
+    			}
+    			has_character_flag = character_was_orthodox
+			}
+    	}
+    	add_trait = secretly_orthodox
+    	clr_character_flag = character_was_orthodox
+    }
+    if = {
+    	limit = { 
+    		OR = {
+    			AND = {
+    				NOT = {
+    					OR = {
+    						has_character_flag = character_was_catholic
+    						has_character_flag = character_was_orthodox
+    						has_character_flag = character_was_sunni
+    						has_character_flag = character_was_shiite
+    						has_character_flag = character_was_jewish
+    						has_character_flag = character_was_zoroastrian
+    						has_character_flag = character_was_hinduism
+    						has_character_flag = character_was_buddhism
+    						has_character_flag = character_was_jain
+    						has_character_flag = character_was_norse_pagan_reformed
+    						has_character_flag = character_was_slavic_pagan_reformed
+    						has_character_flag = character_was_tengri_pagan_reformed
+    						has_character_flag = character_was_baltic_pagan_reformed
+    						has_character_flag = character_was_finnish_pagan_reformed
+    						has_character_flag = character_was_west_african_pagan_reformed
+    						has_character_flag = character_was_zun_pagan_reformed
+    					}
+    				}
+    				religion = sunni
+    			}
+    			has_character_flag = character_was_sunni
+			}
+    	}
+    	add_trait = secretly_sunni
+    	clr_character_flag = character_was_sunni
+    }
+    if = {
+    	limit = { 
+    		OR = {
+    			AND = {
+    				NOT = {
+    					OR = {
+    						has_character_flag = character_was_catholic
+    						has_character_flag = character_was_orthodox
+    						has_character_flag = character_was_sunni
+    						has_character_flag = character_was_shiite
+    						has_character_flag = character_was_jewish
+    						has_character_flag = character_was_zoroastrian
+    						has_character_flag = character_was_hinduism
+    						has_character_flag = character_was_buddhism
+    						has_character_flag = character_was_jain
+    						has_character_flag = character_was_norse_pagan_reformed
+    						has_character_flag = character_was_slavic_pagan_reformed
+    						has_character_flag = character_was_tengri_pagan_reformed
+    						has_character_flag = character_was_baltic_pagan_reformed
+    						has_character_flag = character_was_finnish_pagan_reformed
+    						has_character_flag = character_was_west_african_pagan_reformed
+    						has_character_flag = character_was_zun_pagan_reformed
+    					}
+    				}
+    				religion = shiite
+    			}
+    			has_character_flag = character_was_shiite
+			}
+    	}
+    	add_trait = secretly_shiite
+    	clr_character_flag = character_was_shiite
+    }
+    if = {
+    	limit = { 
+    		OR = {
+    			AND = {
+    				NOT = {
+    					OR = {
+    						has_character_flag = character_was_catholic
+    						has_character_flag = character_was_orthodox
+    						has_character_flag = character_was_sunni
+    						has_character_flag = character_was_shiite
+    						has_character_flag = character_was_jewish
+    						has_character_flag = character_was_zoroastrian
+    						has_character_flag = character_was_hinduism
+    						has_character_flag = character_was_buddhism
+    						has_character_flag = character_was_jain
+    						has_character_flag = character_was_norse_pagan_reformed
+    						has_character_flag = character_was_slavic_pagan_reformed
+    						has_character_flag = character_was_tengri_pagan_reformed
+    						has_character_flag = character_was_baltic_pagan_reformed
+    						has_character_flag = character_was_finnish_pagan_reformed
+    						has_character_flag = character_was_west_african_pagan_reformed
+    						has_character_flag = character_was_zun_pagan_reformed
+    					}
+    				}
+    				religion = jewish
+    			}
+    			has_character_flag = character_was_jewish
+			}
+    	}
+    	add_trait = secretly_jewish
+    	clr_character_flag = character_was_jewish
+    }
+    if = {
+    	limit = { 
+    		OR = {
+    			AND = {
+    				NOT = {
+    					OR = {
+    						has_character_flag = character_was_catholic
+    						has_character_flag = character_was_orthodox
+    						has_character_flag = character_was_sunni
+    						has_character_flag = character_was_shiite
+    						has_character_flag = character_was_jewish
+    						has_character_flag = character_was_zoroastrian
+    						has_character_flag = character_was_hinduism
+    						has_character_flag = character_was_buddhism
+    						has_character_flag = character_was_jain
+    						has_character_flag = character_was_norse_pagan_reformed
+    						has_character_flag = character_was_slavic_pagan_reformed
+    						has_character_flag = character_was_tengri_pagan_reformed
+    						has_character_flag = character_was_baltic_pagan_reformed
+    						has_character_flag = character_was_finnish_pagan_reformed
+    						has_character_flag = character_was_west_african_pagan_reformed
+    						has_character_flag = character_was_zun_pagan_reformed
+    					}
+    				}
+    				religion = zoroastrian
+    			}
+    			has_character_flag = character_was_zoroastrian
+			}
+    	}
+    	add_trait = secretly_zoroastrian
+    	clr_character_flag = character_was_zoroastrian
+    }
+    if = {
+    	limit = { 
+    		OR = {
+    			AND = {
+    				NOT = {
+    					OR = {
+    						has_character_flag = character_was_catholic
+    						has_character_flag = character_was_orthodox
+    						has_character_flag = character_was_sunni
+    						has_character_flag = character_was_shiite
+    						has_character_flag = character_was_jewish
+    						has_character_flag = character_was_zoroastrian
+    						has_character_flag = character_was_hinduism
+    						has_character_flag = character_was_buddhism
+    						has_character_flag = character_was_jain
+    						has_character_flag = character_was_norse_pagan_reformed
+    						has_character_flag = character_was_slavic_pagan_reformed
+    						has_character_flag = character_was_tengri_pagan_reformed
+    						has_character_flag = character_was_baltic_pagan_reformed
+    						has_character_flag = character_was_finnish_pagan_reformed
+    						has_character_flag = character_was_west_african_pagan_reformed
+    						has_character_flag = character_was_zun_pagan_reformed
+    					}
+    				}
+    				religion = hindu
+    			}
+    			has_character_flag = character_was_hinduism
+			}
+    	}
+    	add_trait = secretly_hinduism
+    	clr_character_flag = character_was_hinduism
+    }
+    if = {
+    	limit = { 
+    		OR = {
+    			AND = {
+    				NOT = {
+    					OR = {
+    						has_character_flag = character_was_catholic
+    						has_character_flag = character_was_orthodox
+    						has_character_flag = character_was_sunni
+    						has_character_flag = character_was_shiite
+    						has_character_flag = character_was_jewish
+    						has_character_flag = character_was_zoroastrian
+    						has_character_flag = character_was_hinduism
+    						has_character_flag = character_was_buddhism
+    						has_character_flag = character_was_jain
+    						has_character_flag = character_was_norse_pagan_reformed
+    						has_character_flag = character_was_slavic_pagan_reformed
+    						has_character_flag = character_was_tengri_pagan_reformed
+    						has_character_flag = character_was_baltic_pagan_reformed
+    						has_character_flag = character_was_finnish_pagan_reformed
+    						has_character_flag = character_was_west_african_pagan_reformed
+    						has_character_flag = character_was_zun_pagan_reformed
+    					}
+    				}
+    				religion = buddhist
+    			}
+    			has_character_flag = character_was_buddhism
+			}
+    	}
+    	add_trait = secretly_buddhism
+    	clr_character_flag = character_was_buddhism
+    }
+    if = {
+    	limit = { 
+    		OR = {
+    			AND = {
+    				NOT = {
+    					OR = {
+    						has_character_flag = character_was_catholic
+    						has_character_flag = character_was_orthodox
+    						has_character_flag = character_was_sunni
+    						has_character_flag = character_was_shiite
+    						has_character_flag = character_was_jewish
+    						has_character_flag = character_was_zoroastrian
+    						has_character_flag = character_was_hinduism
+    						has_character_flag = character_was_buddhism
+    						has_character_flag = character_was_jain
+    						has_character_flag = character_was_norse_pagan_reformed
+    						has_character_flag = character_was_slavic_pagan_reformed
+    						has_character_flag = character_was_tengri_pagan_reformed
+    						has_character_flag = character_was_baltic_pagan_reformed
+    						has_character_flag = character_was_finnish_pagan_reformed
+    						has_character_flag = character_was_west_african_pagan_reformed
+    						has_character_flag = character_was_zun_pagan_reformed
+    					}
+    				}
+    				religion = jain
+    			}
+    			has_character_flag = character_was_jain
+			}
+    	}
+    	add_trait = secretly_jain
+    	clr_character_flag = character_was_jain
+    }
+    if = {
+    	limit = { 
+    		OR = {
+    			AND = {
+    				NOT = {
+    					OR = {
+    						has_character_flag = character_was_catholic
+    						has_character_flag = character_was_orthodox
+    						has_character_flag = character_was_sunni
+    						has_character_flag = character_was_shiite
+    						has_character_flag = character_was_jewish
+    						has_character_flag = character_was_zoroastrian
+    						has_character_flag = character_was_hinduism
+    						has_character_flag = character_was_buddhism
+    						has_character_flag = character_was_jain
+    						has_character_flag = character_was_norse_pagan_reformed
+    						has_character_flag = character_was_slavic_pagan_reformed
+    						has_character_flag = character_was_tengri_pagan_reformed
+    						has_character_flag = character_was_baltic_pagan_reformed
+    						has_character_flag = character_was_finnish_pagan_reformed
+    						has_character_flag = character_was_west_african_pagan_reformed
+    						has_character_flag = character_was_zun_pagan_reformed
+    					}
+    				}
+    				religion = norse_pagan_reformed
+    			}
+    			has_character_flag = character_was_norse_pagan_reformed
+			}
+    	}
+    	add_trait = secretly_norse_pagan_reformed
+    	clr_character_flag = character_was_norse_pagan_reformed
+    }
+    if = {
+    	limit = { 
+    		OR = {
+    			AND = {
+    				NOT = {
+    					OR = {
+    						has_character_flag = character_was_catholic
+    						has_character_flag = character_was_orthodox
+    						has_character_flag = character_was_sunni
+    						has_character_flag = character_was_shiite
+    						has_character_flag = character_was_jewish
+    						has_character_flag = character_was_zoroastrian
+    						has_character_flag = character_was_hinduism
+    						has_character_flag = character_was_buddhism
+    						has_character_flag = character_was_jain
+    						has_character_flag = character_was_norse_pagan_reformed
+    						has_character_flag = character_was_slavic_pagan_reformed
+    						has_character_flag = character_was_tengri_pagan_reformed
+    						has_character_flag = character_was_baltic_pagan_reformed
+    						has_character_flag = character_was_finnish_pagan_reformed
+    						has_character_flag = character_was_west_african_pagan_reformed
+    						has_character_flag = character_was_zun_pagan_reformed
+    					}
+    				}
+    				religion = slavic_pagan_reformed
+    			}
+    			has_character_flag = character_was_slavic_pagan_reformed
+			}
+    	}
+    	add_trait = secretly_slavic_pagan_reformed
+    	clr_character_flag = character_was_slavic_pagan_reformed
+    }
+    if = {
+    	limit = { 
+    		OR = {
+    			AND = {
+    				NOT = {
+    					OR = {
+    						has_character_flag = character_was_catholic
+    						has_character_flag = character_was_orthodox
+    						has_character_flag = character_was_sunni
+    						has_character_flag = character_was_shiite
+    						has_character_flag = character_was_jewish
+    						has_character_flag = character_was_zoroastrian
+    						has_character_flag = character_was_hinduism
+    						has_character_flag = character_was_buddhism
+    						has_character_flag = character_was_jain
+    						has_character_flag = character_was_norse_pagan_reformed
+    						has_character_flag = character_was_slavic_pagan_reformed
+    						has_character_flag = character_was_tengri_pagan_reformed
+    						has_character_flag = character_was_baltic_pagan_reformed
+    						has_character_flag = character_was_finnish_pagan_reformed
+    						has_character_flag = character_was_west_african_pagan_reformed
+    						has_character_flag = character_was_zun_pagan_reformed
+    					}
+    				}
+    				religion = tengri_pagan_reformed
+    			}
+    			has_character_flag = character_was_tengri_pagan_reformed
+			}
+    	}
+    	add_trait = secretly_tengri_pagan_reformed
+    	clr_character_flag = character_was_tengri_pagan_reformed
+    }
+    if = {
+    	limit = { 
+    		OR = {
+    			AND = {
+    				NOT = {
+    					OR = {
+    						has_character_flag = character_was_catholic
+    						has_character_flag = character_was_orthodox
+    						has_character_flag = character_was_sunni
+    						has_character_flag = character_was_shiite
+    						has_character_flag = character_was_jewish
+    						has_character_flag = character_was_zoroastrian
+    						has_character_flag = character_was_hinduism
+    						has_character_flag = character_was_buddhism
+    						has_character_flag = character_was_jain
+    						has_character_flag = character_was_norse_pagan_reformed
+    						has_character_flag = character_was_slavic_pagan_reformed
+    						has_character_flag = character_was_tengri_pagan_reformed
+    						has_character_flag = character_was_baltic_pagan_reformed
+    						has_character_flag = character_was_finnish_pagan_reformed
+    						has_character_flag = character_was_west_african_pagan_reformed
+    						has_character_flag = character_was_zun_pagan_reformed
+    					}
+    				}
+    				religion = baltic_pagan_reformed
+    			}
+    			has_character_flag = character_was_baltic_pagan_reformed
+			}
+    	}
+    	add_trait = secretly_baltic_pagan_reformed
+    	clr_character_flag = character_was_baltic_pagan_reformed
+    }
+    if = {
+    	limit = { 
+    		OR = {
+    			AND = {
+    				NOT = {
+    					OR = {
+    						has_character_flag = character_was_catholic
+    						has_character_flag = character_was_orthodox
+    						has_character_flag = character_was_sunni
+    						has_character_flag = character_was_shiite
+    						has_character_flag = character_was_jewish
+    						has_character_flag = character_was_zoroastrian
+    						has_character_flag = character_was_hinduism
+    						has_character_flag = character_was_buddhism
+    						has_character_flag = character_was_jain
+    						has_character_flag = character_was_norse_pagan_reformed
+    						has_character_flag = character_was_slavic_pagan_reformed
+    						has_character_flag = character_was_tengri_pagan_reformed
+    						has_character_flag = character_was_baltic_pagan_reformed
+    						has_character_flag = character_was_finnish_pagan_reformed
+    						has_character_flag = character_was_west_african_pagan_reformed
+    						has_character_flag = character_was_zun_pagan_reformed
+    					}
+    				}
+    				religion = finnish_pagan_reformed
+    			}
+    			has_character_flag = character_was_finnish_pagan_reformed
+			}
+    	}
+    	add_trait = secretly_finnish_pagan_reformed
+    	clr_character_flag = character_was_finnish_pagan_reformed
+    }
+    if = {
+    	limit = { 
+    		OR = {
+    			AND = {
+    				NOT = {
+    					OR = {
+    						has_character_flag = character_was_catholic
+    						has_character_flag = character_was_orthodox
+    						has_character_flag = character_was_sunni
+    						has_character_flag = character_was_shiite
+    						has_character_flag = character_was_jewish
+    						has_character_flag = character_was_zoroastrian
+    						has_character_flag = character_was_hinduism
+    						has_character_flag = character_was_buddhism
+    						has_character_flag = character_was_jain
+    						has_character_flag = character_was_norse_pagan_reformed
+    						has_character_flag = character_was_slavic_pagan_reformed
+    						has_character_flag = character_was_tengri_pagan_reformed
+    						has_character_flag = character_was_baltic_pagan_reformed
+    						has_character_flag = character_was_finnish_pagan_reformed
+    						has_character_flag = character_was_west_african_pagan_reformed
+    						has_character_flag = character_was_zun_pagan_reformed
+    					}
+    				}
+    				religion = west_african_pagan_reformed
+    			}
+    			has_character_flag = character_was_west_african_pagan_reformed
+			}
+    	}
+    	add_trait = secretly_west_african_pagan_reformed
+    	clr_character_flag = character_was_west_african_pagan_reformed
+    }
+    if = {
+    	limit = { 
+    		OR = {
+    			AND = {
+    				NOT = {
+    					OR = {
+    						has_character_flag = character_was_catholic
+    						has_character_flag = character_was_orthodox
+    						has_character_flag = character_was_sunni
+    						has_character_flag = character_was_shiite
+    						has_character_flag = character_was_jewish
+    						has_character_flag = character_was_zoroastrian
+    						has_character_flag = character_was_hinduism
+    						has_character_flag = character_was_buddhism
+    						has_character_flag = character_was_jain
+    						has_character_flag = character_was_norse_pagan_reformed
+    						has_character_flag = character_was_slavic_pagan_reformed
+    						has_character_flag = character_was_tengri_pagan_reformed
+    						has_character_flag = character_was_baltic_pagan_reformed
+    						has_character_flag = character_was_finnish_pagan_reformed
+    						has_character_flag = character_was_west_african_pagan_reformed
+    						has_character_flag = character_was_zun_pagan_reformed
+    					}
+    				}
+    				religion = zun_pagan_reformed
+    			}
+    			has_character_flag = character_was_zun_pagan_reformed
+			}
+    	}
+    	add_trait = secretly_zun_pagan_reformed
+    	clr_character_flag = character_was_zun_pagan_reformed
+    }
+}
+
+add_religion_char_flag_effect = {
+	if = {
+    	limit = { religion = catholic }
+    	set_character_flag = character_was_catholic
+    }
+    if = {
+    	limit = { religion = orthodox }
+    	set_character_flag = character_was_orthodox
+    }
+    if = {
+    	limit = { religion = sunni }
+    	set_character_flag = character_was_sunni
+    }
+    if = {
+    	limit = { religion = shiite }
+    	set_character_flag = character_was_shiite
+    }
+    if = {
+    	limit = { religion = jewish }
+    	set_character_flag = character_was_jewish
+    }
+    if = {
+    	limit = { religion = zoroastrian }
+    	set_character_flag = character_was_zoroastrian
+    }
+    if = {
+    	limit = { religion = hindu }
+    	set_character_flag = character_was_hinduism
+    }
+    if = {
+    	limit = { religion = buddhist }
+    	set_character_flag = character_was_buddhism
+    }
+    if = {
+    	limit = { religion = jain }
+    	set_character_flag = character_was_jain
+    }
+    if = {
+    	limit = { religion = norse_pagan_reformed }
+    	set_character_flag = character_was_norse_pagan_reformed
+    }
+    if = {
+    	limit = { religion = slavic_pagan_reformed }
+    	set_character_flag = character_was_slavic_pagan_reformed
+    }
+    if = {
+    	limit = { religion = tengri_pagan_reformed }
+    	set_character_flag = character_was_tengri_pagan_reformed
+    }
+    if = {
+    	limit = { religion = baltic_pagan_reformed }
+    	set_character_flag = character_was_baltic_pagan_reformed
+    }
+    if = {
+    	limit = { religion = finnish_pagan_reformed }
+    	set_character_flag = character_was_finnish_pagan_reformed
+    }
+    if = {
+    	limit = { religion = west_african_pagan_reformed }
+    	set_character_flag = character_was_west_african_pagan_reformed
+    }
+    if = {
+    	limit = { religion = zun_pagan_reformed }
+    	set_character_flag = character_was_zun_pagan_reformed
+    }
+}
+
+clr_religion_char_flag_effect = {
+    clr_character_flag = character_was_catholic
+    clr_character_flag = character_was_orthodox
+    clr_character_flag = character_was_sunni
+    clr_character_flag = character_was_shiite
+    clr_character_flag = character_was_jewish
+    clr_character_flag = character_was_zoroastrian
+    clr_character_flag = character_was_hinduism
+    clr_character_flag = character_was_buddhism
+    clr_character_flag = character_was_jain
+    clr_character_flag = character_was_norse_pagan_reformed
+    clr_character_flag = character_was_slavic_pagan_reformed
+    clr_character_flag = character_was_tengri_pagan_reformed
+    clr_character_flag = character_was_baltic_pagan_reformed
+    clr_character_flag = character_was_finnish_pagan_reformed
+    clr_character_flag = character_was_west_african_pagan_reformed
+    clr_character_flag = character_was_zun_pagan_reformed
+}
+
+event_target_old_religion_from_flag_effect = {
+	if = {
+    	limit = { has_character_flag = character_was_catholic }
+    	random_character = {
+    		limit = { religion = catholic }
+    		save_event_target_as = old_religion
+    	}
+    }
+    if = {
+    	limit = { has_character_flag = character_was_orthodox }
+    	random_character = {
+    		limit = { religion = orthodox }
+    		save_event_target_as = old_religion
+    	}
+    }
+    if = {
+    	limit = { has_character_flag = character_was_sunni }
+    	random_character = {
+    		limit = { religion = sunni }
+    		save_event_target_as = old_religion
+    	}
+    }
+    if = {
+    	limit = { has_character_flag = character_was_shiite }
+    	random_character = {
+    		limit = { religion = shiite }
+    		save_event_target_as = old_religion
+    	}
+    }
+    if = {
+    	limit = { has_character_flag = character_was_jewish }
+    	random_character = {
+    		limit = { religion = jewish }
+    		save_event_target_as = old_religion
+    	}
+    }
+    if = {
+    	limit = { has_character_flag = character_was_zoroastrian }
+    	random_character = {
+    		limit = { religion = zoroastrian }
+    		save_event_target_as = old_religion
+    	}
+    }
+    if = {
+    	limit = { has_character_flag = character_was_hinduism }
+    	random_character = {
+    		limit = { religion = hindu }
+    		save_event_target_as = old_religion
+    	}
+    }
+    if = {
+    	limit = { has_character_flag = character_was_buddhism }
+    	random_character = {
+    		limit = { religion = buddhist }
+    		save_event_target_as = old_religion
+    	}
+    }
+    if = {
+    	limit = { has_character_flag = character_was_jain }
+    	random_character = {
+    		limit = { religion = jain }
+    		save_event_target_as = old_religion
+    	}
+    }
+    if = {
+    	limit = { has_character_flag = character_was_norse_pagan_reformed }
+    	random_character = {
+    		limit = { religion = norse_pagan_reformed }
+    		save_event_target_as = old_religion
+    	}
+    }
+    if = {
+    	limit = { has_character_flag = character_was_slavic_pagan_reformed }
+    	random_character = {
+    		limit = { religion = slavic_pagan_reformed }
+    		save_event_target_as = old_religion
+    	}
+    }
+    if = {
+    	limit = { has_character_flag = character_was_tengri_pagan_reformed }
+    	random_character = {
+    		limit = { religion = tengri_pagan_reformed }
+    		save_event_target_as = old_religion
+    	}
+    }
+    if = {
+    	limit = { has_character_flag = character_was_baltic_pagan_reformed }
+    	random_character = {
+    		limit = { religion = baltic_pagan_reformed }
+    		save_event_target_as = old_religion
+    	}
+    }
+    if = {
+    	limit = { has_character_flag = character_was_finnish_pagan_reformed }
+    	random_character = {
+    		limit = { religion = finnish_pagan_reformed }
+    		save_event_target_as = old_religion
+    	}
+    }
+    if = {
+    	limit = { has_character_flag = character_was_west_african_pagan_reformed }
+    	random_character = {
+    		limit = { religion = west_african_pagan_reformed }
+    		save_event_target_as = old_religion
+    	}
+    }
+    if = {
+    	limit = { has_character_flag = character_was_zun_pagan_reformed }
+    	random_character = {
+    		limit = { religion = zun_pagan_reformed }
+    		save_event_target_as = old_religion
+    	}
+    }
+}
+
+increase_visibility_effect = {
+	custom_tooltip = { text = debug_vis }
+	hidden_effect = {
+		change_variable = { which = visibility_value value = 1 } 
+	}
+	if = {
+		limit = {
+			check_variable = { which = visibility_value value = 10 }
+			NOR = {
+				has_character_modifier = under_suspicion
+				has_character_modifier = known_satanist
+			}
+		}
+		add_character_modifier = {
+			name = under_suspicion duration = -1 #TODO would be more visible with events
+		}
+	}
+	if = {
+		limit = {
+			check_variable = { which = visibility_value value = 20 }
+			NOT = {
+				has_character_modifier = highly_suspect
+			}
+		}
+		remove_character_modifier = under_suspicion
+		add_character_modifier = {
+			name = highly_suspect duration = -1 
+		}
+	}
+}
+
+decrease_visibility_effect = {
+	hidden_effect = {
+		if = {
+			limit = {
+				check_variable = { which = visibility_value value = 1 }
+			}
+		change_variable = { which = visibility_value value = -1 }
+		}
+		if = {
+			limit = {
+				NOT = { check_variable = { which = visibility_value value = 0 } } #safety 
+			}
+			set_variable = { which = visibility_value value = 0 }
+		}
+	}
+	if = {
+		limit = {
+			NOT = { check_variable = { which = visibility_value value = 20 } }
+			has_character_modifier = highly_suspect
+		}
+		remove_character_modifier = highly_suspect
+	}
+	if = {
+		limit = {
+			NOT = { check_variable = { which = visibility_value value = 10 } }
+			has_character_modifier = under_suspicion
+		}
+		remove_character_modifier = under_suspicion
 	}
 }
