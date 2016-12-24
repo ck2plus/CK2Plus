@@ -256,6 +256,7 @@ character_event = {
 }
 
 # Legendary Wisdom
+# on_yearly_pulse
 character_event = {
 	id = WoL.12506
 	desc = EVTDESC_WoL_12506
@@ -273,8 +274,10 @@ character_event = {
 		NOT = { has_character_modifier = wol_legendary_wisdom }
 	}
 	
-	mean_time_to_happen = {
-		months = 280
+	is_triggered_only = yes
+	
+	weight_multiplier = {
+		factor = 1
 	}
 	
 	option = {
@@ -310,8 +313,10 @@ character_event = {
 		NOT = { has_character_modifier = wol_respected_ruler }
 	}
 	
-	mean_time_to_happen = {
-		months = 280
+	is_triggered_only = yes
+	
+	weight_multiplier = {
+		factor = 1
 	}
 	
 	option = {
@@ -326,58 +331,39 @@ character_event = {
 ### The Architect
 
 # Architect (HIDDEN)
-province_event = {
+character_event = {
 	id = WoL.12000
 	hide_window = yes
 	
+	only_playable = yes
+	ai = no
+	
 	trigger = {
-		owner = {
-			ai = no
-			has_focus = focus_rulership
-			is_ruler = yes
-			is_tribal = no
-			is_nomadic = no
-			wealth = 400
-			NOT = { has_character_flag = architect_offer }
-			NOT = { has_character_modifier = in_seclusion }
+		has_focus = focus_rulership
+		is_tribal = no
+		is_nomadic = no
+		wealth = 400
+		NOT = { has_character_flag = architect_offer }
+		NOT = { has_character_modifier = in_seclusion }
+		
+		any_demesne_province = {
+			has_empty_holding = yes
 		}
-		has_empty_holding = yes
+		
 		NOT = { has_global_flag = rulership_castle }
 	}
 	
-	mean_time_to_happen = {
-		months = 280
+	is_triggered_only = yes
+	
+	weight_multiplier = {
+		factor = 1
 	}
 	
 	immediate = {
-		owner = { set_global_flag = rulership_castle }
-		if = {
-			limit = { 
-				owner = { job_treasurer = { stewardship = 5 } }
-			}
-			random_list = {
-				75 = { 
-					owner = { 
-						character_event = { id = WoL.12003 }
-						set_character_flag = architect_offer
-					}
-				}
-				25 = { 
-					owner = { 
-						character_event = { id = WoL.12002 }
-						set_character_flag = architect_offer
-					}
-				}
-			}
-		}
-		if = {
-			limit = {
-				NOT = { owner = { job_treasurer = { stewardship = 5 } } }
-			}
-			owner = {
-				character_event = { id = WoL.12001 }
-				set_character_flag = architect_offer
-			}
+		set_global_flag = rulership_castle
+		random_demesne_province = {
+			limit = { has_empty_holding = yes }
+			province_event = { id = WoL.12012 }
 		}
 	}
 }
@@ -396,6 +382,7 @@ character_event = {
 		wealth = -400
 		custom_tooltip = { text = castle_construction_begins }
 		set_character_flag = building_castle
+		character_event = { id = WoL.12013 days = 1 } # Validation loop
 		FROM = {
 			set_province_flag = castle_province
 		}
@@ -434,6 +421,7 @@ character_event = {
 		wealth = -400
 		custom_tooltip = { text = castle_construction_begins }
 		set_character_flag = building_castle
+		character_event = { id = WoL.12013 days = 1 } # Validation loop
 		FROM = {
 			set_province_flag = castle_province
 		}
@@ -466,6 +454,7 @@ character_event = {
 		wealth = -400
 		custom_tooltip = { text = castle_construction_begins }
 		set_character_flag = building_castle
+		character_event = { id = WoL.12013 days = 1 } # Validation loop
 		FROM = {
 			set_province_flag = castle_province
 		}
@@ -639,19 +628,7 @@ character_event = {
 	picture = GFX_evt_construction_site
 	border = GFX_event_normal_frame_economy
 	
-	ai = no
-	has_character_flag = building_castle
-	
-	trigger = {
-		any_demesne_province = { 
-			has_province_flag = castle_province
-			has_empty_holding = no
-		}	
-	}
-	
-	mean_time_to_happen = {
-		days = 1
-	}
+	is_triggered_only = yes
 	
 	immediate = {
 		clr_character_flag = building_castle
@@ -665,6 +642,66 @@ character_event = {
 	option = {
 		name = EVTOPTA_WoL_12009
 		wealth = 350
+	}
+}
+
+# Province Bounce
+province_event = {
+	id = WoL.12012
+	hide_window = yes
+	
+	is_triggered_only = yes
+	
+	immediate = {
+		FROM = {
+			if = {
+				limit = { 
+					job_treasurer = { stewardship = 5 }
+				}
+				random_list = {
+					75 = { 
+						character_event = { id = WoL.12003 }
+						set_character_flag = architect_offer
+					}
+					25 = { 
+						character_event = { id = WoL.12002 }
+						set_character_flag = architect_offer
+					}
+				}
+			}
+			if = {
+				limit = {
+					NOT = { job_treasurer = { stewardship = 5 } }
+				}
+				character_event = { id = WoL.12001 }
+				set_character_flag = architect_offer
+			}
+		}
+	}
+}
+
+# Architect - Validation Loop
+character_event = {
+	id = WoL.12013
+	hide_window = yes
+	
+	is_triggered_only = yes
+	
+	trigger = {
+		has_character_flag = building_castle
+	}
+	
+	immediate = {
+		random_demesne_province = {
+			limit = {
+				has_province_flag = castle_province
+				has_empty_holding = no
+			}
+			character_event = { id = WoL.12009 } # End construction
+			break = yes
+		}
+		
+		character_event = { id = WoL.12013 days = 1 }
 	}
 }
 
@@ -685,8 +722,10 @@ character_event = {
 		NOT = { trait = depressed }
 	}
 	
-	mean_time_to_happen = {
-		months = 420
+	is_triggered_only = yes
+	
+	weight_multiplier = {
+		factor = 1
 	}
 	
 	option = {
@@ -712,8 +751,10 @@ character_event = {
 		NOT = { trait = stressed }
 	}
 	
-	mean_time_to_happen = {
-		months = 420
+	is_triggered_only = yes
+	
+	weight_multiplier = {
+		factor = 1
 	}
 	
 	option = {
@@ -741,8 +782,10 @@ character_event = {
 		NOT = { has_character_flag = in_seclusion }
 	}
 	
-	mean_time_to_happen = {
-		months = 280
+	is_triggered_only = yes
+	
+	weight_multiplier = {
+		factor = 1
 	}
 	
 	option = {
@@ -752,7 +795,7 @@ character_event = {
 		hidden_tooltip = {
 			random = {
 				chance = 50
-				set_character_flag = peasant_hanged_innocent
+				character_event = { id = WoL.12016 days = 1825 random = 3650 }
 			}
 		}
 	}
@@ -763,7 +806,14 @@ character_event = {
 		hidden_tooltip = {
 			random = {
 				chance = 50
-				set_character_flag = peasant_imprisoned_innocent
+				random_list = {
+					50 = {
+						character_event = { id = WoL.12021 days = 1825 random = 3650 }
+					}
+					50 = {
+						character_event = { id = WoL.12022 days = 1825 random = 3650 }
+					}
+				}
 			}
 		}
 	}
@@ -775,6 +825,7 @@ character_event = {
 			random = {
 				chance = 50
 				set_character_flag = peasant_freed_guilty
+				character_event = { id = WoL.12017 days = 1825 random = 3650 }
 			}
 		}
 	}
@@ -799,22 +850,11 @@ character_event = {
 	picture = GFX_evt_bloody_man
 	border = GFX_event_normal_frame_economy
 
-	min_age = 16
 	capable_only = yes
 	only_playable = yes
 	prisoner = no
-	has_character_flag = peasant_hanged_innocent
 	
-	trigger = {
-	}
-	
-	mean_time_to_happen = {
-		months = 120
-	}
-	
-	immediate = {
-		clr_character_flag = peasant_hanged_innocent
-	}
+	is_triggered_only = yes
 	
 	option = {
 		name = EVTOPTA_WoL_12016
@@ -833,22 +873,11 @@ character_event = {
 	picture = GFX_evt_bloody_man
 	border = GFX_event_normal_frame_economy
 
-	min_age = 16
 	capable_only = yes
 	only_playable = yes
 	prisoner = no
-	has_character_flag = peasant_freed_guilty
 	
-	trigger = {
-	}
-	
-	mean_time_to_happen = {
-		months = 120
-	}
-	
-	immediate = {
-		clr_character_flag = peasant_freed_guilty
-	}
+	is_triggered_only = yes
 	
 	option = {
 		name = EVTOPTA_WoL_12017
@@ -871,7 +900,7 @@ character_event = {
 		hidden_tooltip = {
 			random = {
 				chance = 50
-				set_character_flag = peasant_tortured_innocent
+				character_event = { id = WoL.12020 days = 1825 random = 3650 }
 			}
 		}
 	}
@@ -892,7 +921,7 @@ character_event = {
 		hidden_tooltip = {
 			random = {
 				chance = 50
-				set_character_flag = peasant_tortured_innocent
+				character_event = { id = WoL.12020 days = 1825 random = 3650 }
 			}
 		}
 	}
@@ -905,22 +934,11 @@ character_event = {
 	picture = GFX_evt_bloody_man
 	border = GFX_event_normal_frame_economy
 
-	min_age = 16
 	capable_only = yes
 	only_playable = yes
 	prisoner = no
-	has_character_flag = peasant_tortured_innocent
 	
-	trigger = {
-	}
-	
-	mean_time_to_happen = {
-		months = 120
-	}
-	
-	immediate = {
-		clr_character_flag = peasant_tortured_innocent
-	}
+	is_triggered_only = yes
 	
 	option = {
 		name = EVTOPTA_WoL_12020
@@ -935,22 +953,11 @@ character_event = {
 	picture = GFX_evt_bloody_man
 	border = GFX_event_normal_frame_economy
 
-	min_age = 16
 	capable_only = yes
 	only_playable = yes
 	prisoner = no
-	has_character_flag = peasant_imprisoned_innocent
 	
-	trigger = {
-	}
-	
-	mean_time_to_happen = {
-		months = 120
-	}
-	
-	immediate = {
-		clr_character_flag = peasant_imprisoned_innocent
-	}
+	is_triggered_only = yes
 	
 	option = {
 		name = EVTOPTA_WoL_12021
@@ -965,22 +972,11 @@ character_event = {
 	picture = GFX_evt_bloody_man
 	border = GFX_event_normal_frame_economy
 
-	min_age = 16
 	capable_only = yes
 	only_playable = yes
 	prisoner = no
-	has_character_flag = peasant_imprisoned_innocent
 	
-	trigger = {
-	}
-	
-	mean_time_to_happen = {
-		months = 120
-	}
-	
-	immediate = {
-		clr_character_flag = peasant_imprisoned_innocent
-	}
+	is_triggered_only = yes
 	
 	option = {
 		name = EVTOPTA_WoL_12022
@@ -988,71 +984,79 @@ character_event = {
 	}
 }
 
-### Noble Feud (HIDDEN)
+### Noble Feud (HIDDEN START)
 character_event = {
 	id = WoL.12025
 	hide_window = yes
 	
 	min_age = 16
-	capable_only = yes
-	only_rulers = yes
-	prisoner = no
-	ai = yes
+	only_capable = yes
+	only_playable = yes
 	
 	trigger = {
-		liege = {
-			has_focus = focus_rulership
-			NOT = { trait = incapable }
-			NOT = { is_close_relative = ROOT }
-			NOT = { has_character_flag = noble_feuder }
-			is_adult = yes
-			spouse = { NOT = { character = ROOT } }
-			any_vassal = {
-				is_adult = yes
-				prisoner = no
-				is_ruler = yes
-				NOT = { trait = incapable }
-				NOT = { is_close_relative = PREV }
-				spouse = { NOT = { character = PREV } }
-				NOR = {
-					character = ROOT
-					opinion = { who = ROOT value = -30 }
-					reverse_opinion = { who = ROOT value = -30 }
-					has_character_flag = noble_feuder
-				}
-				ai = yes
-			}
-		}
+		has_focus = focus_rulership
 	}
 	
-	mean_time_to_happen = {
-		months = 280
+	is_triggered_only = yes
+	
+	weight_multiplier = {
+		factor = 1
 	}
 	
 	immediate = {
-		save_event_target_as = feuding_noble_1
-		set_character_flag = noble_feuder
-		liege = {
-			random_vassal = {
-				limit = {
-					is_adult = yes
-					prisoner = no
-					is_ruler = yes
-					NOT = { trait = incapable }
-					NOT = { is_close_relative = PREV }
-					spouse = { NOT = { character = PREV } }
+		random_vassal = {
+			limit = {
+				is_adult = yes
+				prisoner = no
+				is_incapable = no
+				ai = yes
+				NOT = { is_close_relative = ROOT }
+				spouse = { NOT = { character = ROOT } }
+			}
+			save_event_target_as = feuding_noble_1
+			set_character_flag = noble_feuder
+			ROOT = { set_character_flag = noble_feuder_1 }
+		}
+		
+		if = {
+			limit = { NOT = { has_character_flag = noble_feuder_1 } }
+			break = yes
+		}
+		clr_character_flag = noble_feuder_1
+	
+		random_vassal = {
+			limit = {
+				is_adult = yes
+				prisoner = no
+				is_incapable = no
+				ai = yes
+				spouse = {
 					NOR = {
 						character = ROOT
-						opinion = { who = ROOT value = -30 }
-						reverse_opinion = { who = ROOT value = -30 }
+						character = event_target:feuding_noble_1
 					}
-					ai = yes
 				}
-				save_event_target_as = feuding_noble_2
-				set_character_flag = noble_feuder
+				NOR = {
+					character = event_target:feuding_noble_1
+					is_close_relative = ROOT
+					is_close_relative = event_target:feuding_noble_1
+					opinion = { who = event_target:feuding_noble_1 value = -30 }
+					reverse_opinion = { who = event_target:feuding_noble_1 value = -30 }
+				}
 			}
-			character_event = { id = WoL.12026 }
+			save_event_target_as = feuding_noble_2
+			set_character_flag = noble_feuder
+			ROOT = { set_character_flag = noble_feuder_2 }
 		}
+		
+		if = {
+			limit = { NOT = { has_character_flag = noble_feuder_2 } }
+			event_target:feuding_noble_1 = { clr_character_flag = noble_feuder }
+			break = yes
+		}
+		clr_character_flag = noble_feuder_2
+		
+		character_event = { id = WoL.12026 }
 	}
 }
 
@@ -1125,6 +1129,7 @@ character_event = {
 }
 
 ### Farm Fire
+# Fired from 'on_focus_pulse'
 character_event = {
 	id = WoL.12027
 	desc = EVTDESC_WoL_12027
@@ -1149,8 +1154,10 @@ character_event = {
 		}
 	}
 	
-	mean_time_to_happen = {
-		months = 280
+	is_triggered_only = yes
+	
+	weight_multiplier = {
+		factor = 1
 	}
 	
 	immediate = {
@@ -1230,8 +1237,10 @@ character_event = {
 		}
 	}
 	
-	mean_time_to_happen = {
-		months = 280
+	is_triggered_only = yes
+	
+	weight_multiplier = {
+		factor = 1
 	}
 	
 	immediate = {
@@ -1347,8 +1356,10 @@ character_event = {
 		}
 	}
 	
-	mean_time_to_happen = {
-		months = 280
+	is_triggered_only = yes
+	
+	weight_multiplier = {
+		factor = 1
 	}
 	
 	immediate = {
@@ -1422,55 +1433,50 @@ character_event = {
 	
 	min_age = 16
 	capable_only = yes
-	only_rulers = yes
+	only_playable = yes
 	prisoner = no
-	ai = yes
 	
 	trigger = {
-		is_republic = yes
-		liege = {
-			has_focus = focus_rulership
-			NOT = { trait = incapable }
-			NOT = { is_close_relative = ROOT }
-			is_adult = yes
-			spouse = { NOT = { character = ROOT } }
-			any_vassal = {
-				is_adult = yes
-				prisoner = no
-				is_ruler = yes
-				is_republic = no
-				NOT = { trait = incapable }
-				NOT = { is_close_relative = PREV }
-				spouse = { NOT = { character = PREV } }
-				NOT = { character = ROOT }
-				ai = yes
-			}
-		}
+		has_focus = focus_rulership
 	}
 	
-	mean_time_to_happen = {
-		months = 420
+	is_triggered_only = yes
+	
+	weight_multiplier = {
+		factor = 1
 	}
 	
 	immediate = {
-		save_event_target_as = brigands_mayor
-		primary_title = { save_event_target_as = mayor_city }
-		liege = { 
-			random_vassal = {
-				limit = {
-					is_adult = yes
-					prisoner = no
-					is_ruler = yes
-					is_republic = no
-					NOT = { trait = incapable }
-					NOT = { is_close_relative = PREV }
-					spouse = { NOT = { character = PREV } }
-					NOT = { character = ROOT }
-					ai = yes
-				}
-				save_event_target_as = brigands_noble
+		random_vassal = {
+			limit = {
+				is_adult = yes
+				is_republic = yes
+				is_incapable = no
+				prisoner = no
+				is_ruler = yes
+				NOT = { is_close_relative = ROOT }
+				spouse = { NOT = { character = ROOT } }
+				ai = yes
 			}
-			character_event = { id = WoL.12031 }
+			save_event_target_as = brigands_mayor
+			primary_title = { save_event_target_as = mayor_city }
+			
+			ROOT = {
+				random_vassal = {
+					limit = {
+						is_adult = yes
+						prisoner = no
+						is_ruler = yes
+						is_republic = no
+						is_incapable = no
+						NOT = { is_close_relative = PREV }
+						spouse = { NOT = { character = PREV } }
+						ai = yes
+					}
+					save_event_target_as = brigands_noble
+				}
+				character_event = { id = WoL.12031 }
+			}
 		}
 	}
 }
