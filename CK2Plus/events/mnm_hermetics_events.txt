@@ -74,9 +74,11 @@ character_event = {
 		has_any_quest = no
 		NOT = { has_character_modifier = quest_cooldown_timer }
 		NOT = { is_inaccessible_trigger = yes }
+		prisoner = no
 		society = {
 			any_society_member = {
 				NOT = { character = ROOT }
+				prisoner = no
 				is_within_diplo_range = ROOT
 				opinion = { who = ROOT value = 0 }
 			}
@@ -91,6 +93,7 @@ character_event = {
     				random_society_member = {
     					limit = { 	
 							NOT = { character = ROOT }
+							prisoner = no
     						is_within_diplo_range = ROOT
 							opinion = { who = ROOT value = 0 }
     					}
@@ -103,6 +106,7 @@ character_event = {
     				society = {
     					any_society_member = {
     						NOT = { character = ROOT }
+    						prisoner = no
     						is_within_diplo_range = ROOT
 							opinion = { who = ROOT value = 0 }
 							same_realm = ROOT
@@ -113,6 +117,7 @@ character_event = {
     				random_society_member = {
     					limit = { 	
     						NOT = { character = ROOT }
+    						prisoner = no
     						is_within_diplo_range = ROOT
 							opinion = { who = ROOT value = 0 }
 							same_realm = ROOT
@@ -123,7 +128,8 @@ character_event = {
     		}
     		40 = { #Apprentice
     			trigger = {
-    				any_courtier_or_vassal = { has_minor_title =  title_hermetics_apprentice }
+    				any_courtier_or_vassal = { has_minor_title =  title_hermetics_apprentice prisoner = no }
+					society_member_of = hermetics
     			}
     			random_courtier_or_vassal = {
     				limit = { has_minor_title =  title_hermetics_apprentice }
@@ -137,7 +143,7 @@ character_event = {
     	random_list = {
 
     		20 = { #Find an apprentice
-    			trigger = { 
+    			trigger = {
     				NOT = { any_courtier_or_vassal = { has_minor_title =  title_hermetics_apprentice } }
     				ai = no
     			}
@@ -157,10 +163,14 @@ character_event = {
 				event_target:hermetic_collaborator = { character_event = { id = MNM.1120 days = 7 random = 7 } }
 			}
     		15 = { #Find a rare scroll/book/tablet
+				trigger = {
+					is_landed = yes
+				}
     			event_target:hermetic_collaborator = { character_event = { id = MNM.1417 days = 7 random = 7 } }
     		}
 			20 = { #Acquire/gather ingredients
 				trigger = {
+					is_landed = yes
 					NOT = {
 						any_artifact = {
 							has_artifact_flag = ingredient
@@ -191,6 +201,53 @@ character_event = {
     		}
 			10 = { #Observe stars
 				event_target:hermetic_collaborator = { character_event = { id = MNM.1828 days = 7 random = 7 } } 
+			}
+			
+			105 = { # AI bypasses missions at times
+				modifier = {
+					factor = 0
+					ai = no
+				}
+				random_list = {
+					70 = {
+						modifier = {
+							factor = 0.9
+							society_influence >= 30
+						}
+						modifier = {
+							factor = 0.9
+							society_influence >= 40
+						}
+						modifier = {
+							factor = 0.8
+							society_influence >= 50
+						}
+						modifier = {
+							factor = 0.7
+							society_influence >= 70
+						}
+						modifier = {
+							factor = 0.6
+							society_influence >= 80
+						}
+						modifier = {
+							factor = 0.5
+							society_influence >= 90
+						}
+						add_mission_succeed_influence_effect = yes
+					}
+					30 = {
+						add_mission_fail_influence_effect = yes
+					}
+				}
+			}
+			
+			175 = {
+				modifier = {
+					factor = 0
+					ai = no
+				}
+				#Do nothing for AI
 			}
     	}
     }
@@ -238,6 +295,10 @@ character_event = {
 	border = GFX_event_normal_frame_religion
 	
 	is_triggered_only = yes
+
+	trigger = {
+		has_quest = quest_hermetics_build_laboratory
+	}
 
 	option = {
 		name = EVTOPTA_MNM_1101 #In my Castle, hidden away
@@ -1083,7 +1144,7 @@ narrative_event = {
 	title = EVTNAME_MNM_1111
 	desc = EVTDESC_MNM_1111
 	picture = GFX_evt_experiment
-	border = GFX_event_normal_frame_religion
+	border = GFX_event_narrative_frame_religion
 	
 	is_triggered_only = yes
 
@@ -1106,7 +1167,7 @@ narrative_event = {
 	title = EVTNAME_MNM_1112
 	desc = EVTDESC_MNM_1112
 	picture = GFX_evt_experiment
-	border = GFX_event_normal_frame_religion
+	border = GFX_event_narrative_frame_religion
 	
 	is_triggered_only = yes
 
@@ -1255,10 +1316,9 @@ character_event = {
 #Letter from quest giver
 society_quest_event = {
     id = MNM.1121
-    desc = EVTDESC_MNM_1121
-	
+
 	desc = {
-		text = EVTDESC_MNM_1122_normal
+		text = EVTDESC_MNM_1121
 		trigger = { 
 			event_target:hermetic_collaborator = {
 				NOT = { has_minor_title = title_hermetics_apprentice }
@@ -1266,7 +1326,7 @@ society_quest_event = {
 		}
 	}
 	desc = {
-		text = EVTDESC_MNM_1122_rich
+		text = EVTDESC_MNM_1121_apprentice
 		trigger = { 
 			event_target:hermetic_collaborator = {
 				has_minor_title = title_hermetics_apprentice
@@ -1573,13 +1633,10 @@ society_quest_event = {
     option = {
 		name = ACCEPT
 
-		tooltip = { set_quest = quest_hermetics_find_text }
-		hidden_effect = {
-			FROM = {
-				set_quest_target = {
-					id = quest_hermetics_find_text
-					holder = ROOT
-				}
+		FROM = {
+			set_quest_target = {
+				id = quest_hermetics_find_text
+				holder = ROOT
 			}
 		}
 
@@ -1635,7 +1692,7 @@ letter_event = {
     }
 
     immediate = {
-    	set_character_flag = do_not_disturb #todo remove!
+    	set_character_flag = do_not_disturb 
 
     	FROM = { #Chance of having Alexandria as an option
     		random = {
@@ -2392,6 +2449,9 @@ character_event = {
     id = MNM.1434
     hide_window = yes
     is_triggered_only = yes
+
+    trigger = { FROM = { has_quest = quest_hermetics_infiltrate_laboratory } }
+
     immediate = { FROM = { character_event = { id = MNM.1435 } } }
 }
 
@@ -2401,6 +2461,8 @@ character_event = {
     id = MNM.1435
     picture = GFX_evt_eavesdropping 
     border = GFX_event_normal_frame_intrigue
+
+	trigger = { has_quest = quest_hermetics_infiltrate_laboratory }
     
     desc = {
     	trigger = { event_target:infiltration_target = { has_character_flag = very_hidden_lab } }
@@ -2548,6 +2610,8 @@ character_event = {
     picture = GFX_evt_drunk
     border = GFX_event_normal_frame_intrigue
 
+	trigger = { has_quest = quest_hermetics_infiltrate_laboratory }
+
     desc = {
     	trigger = { has_character_flag = bribed_guards }
     	text = EVTDESC_MNM_1436_A
@@ -2687,6 +2751,8 @@ character_event = {
 
     is_triggered_only = yes
 
+    trigger = { has_quest = quest_hermetics_infiltrate_laboratory }
+
     option = { 
         name = EVTOPTA_MNM_1437
 
@@ -2707,6 +2773,8 @@ character_event = {
     border = GFX_event_normal_frame_intrigue
 
     is_triggered_only = yes
+
+	trigger = { has_quest = quest_hermetics_infiltrate_laboratory }
 
     #Steal
     option = { 
@@ -2770,6 +2838,8 @@ character_event = {
     picture = GFX_evt_quarrel
     border = GFX_event_normal_frame_intrigue
 
+	trigger = { has_quest = quest_hermetics_infiltrate_laboratory }
+
     is_triggered_only = yes
 
     option = { 
@@ -2784,6 +2854,8 @@ character_event = {
     id = MNM.1440
     picture = GFX_evt_into_the_dungeon 
     border = GFX_event_normal_frame_intrigue
+
+	trigger = { has_quest = quest_hermetics_infiltrate_laboratory }
 
     desc = {
     	trigger = {
@@ -2820,7 +2892,6 @@ character_event = {
     }
 
     is_triggered_only = yes
-    hide_window = yes
 
     option = { 
         name = EVTOPTA_MNM_1440
@@ -2861,7 +2932,7 @@ character_event = {
         	clr_character_flag = distraction_failed
         	clr_character_flag = guards_wake_up
         	clr_character_flag = caught_stealing
-        	clr_character_flag = caught_caught_destroying
+        	clr_character_flag = caught_destroying
         	FROM  = { clr_character_flag = bad_theft }
         }
         clr_quest = { id = quest_hermetics_infiltrate_laboratory failure = yes }
@@ -3133,39 +3204,18 @@ character_event = {
     	trigger = {  has_character_flag = great_theft }
         name = EVTOPTA_MNM_1441
 
-        #You get artifacts
-        tooltip = {
-	        event_target:infiltration_target = {
-	        	random_artifact = {
-	        		limit = {
-	        			has_artifact_flag = hermetics 
-	    				has_artifact_flag = text
-	        		}
-	        		transfer_artifact = {
-	        			from = PREV
-	        			to = ROOT
-	        		}
-	        	}
-
-	        	if = {
-	        		limit = { 
-	        			any_artifact = {
-	        				has_artifact_flag = hermetics
-							has_artifact_flag = ingredient
-						}
-	        		}
-	        		random_artifact = {
-		        		limit = {
-		        			has_artifact_flag = hermetics 
-		    				has_artifact_flag = ingredient
-		        		}
-		        		transfer_artifact = {
-		        			from = PREV
-		        			to = ROOT
-		        		}
-		        	}
-	        	}
-	        }
+	    custom_tooltip = { text = EVTOPTA_MNM_1441_steal_text }
+     
+    	if = {
+    		limit = { 
+    			event_target:infiltration_target = {
+        			any_artifact = {
+        				has_artifact_flag = hermetics
+						has_artifact_flag = ingredient
+					}
+				}
+    		}
+    		custom_tooltip = { text = EVTOPTA_MNM_1441_steal_ingredient }
         }
 
         #Money and knowledge
@@ -3179,20 +3229,7 @@ character_event = {
         name = EVTOPTA_MNM_1441
 
         #You get artifacts
-        tooltip = {
-	        event_target:infiltration_target = {
-	        	random_artifact = {
-	        		limit = {
-	        			has_artifact_flag = hermetics 
-	    				has_artifact_flag = ingredient
-	        		}
-	        		transfer_artifact = {
-	        			from = PREV
-	        			to = ROOT
-	        		}
-	        	}
-	        }
-        }
+	    custom_tooltip = { text = EVTOPTA_MNM_1441_steal_ingredient }
 
         #Money and knowledge
         transfer_scaled_wealth = { from = event_target:infiltration_target value = 0.25 min = 25 }
@@ -3736,7 +3773,7 @@ character_event = {
 
     after = {
     	hidden_effect = {
-   			character_event = { id = MNM.1201 days = 5 random = 1 }  #todo _M
+   			character_event = { id = MNM.1201 days = 5 random = 1 }
     	}
     }
 }
@@ -3750,6 +3787,7 @@ character_event = { # You see something in the water and react well or poorly to
     trigger = {
     	has_dlc = "Mystics"
     	has_an_omen_modifier_trigger = no
+    	society_member_of = hermetics
     }
 
     desc = {
@@ -4696,8 +4734,8 @@ character_event = { # Scrying vision result: gaining a new title
     }
 }
 
-### For loser of title:
-character_event = { # 1. new holder of title sends event to old holder, if they are still alive (sent from on_new_holder, on_new_holder_inheritance and on_new_holder_usurpation)
+### To handle loss of titles:
+character_event = { # 1. new holder of title (ROOT) sends event to old holder (FROMFROM), if they are still alive (sent from on_new_holder, on_new_holder_inheritance and on_new_holder_usurpation)
     id = MNM.1216
     is_triggered_only = yes
     hide_window = yes
@@ -4708,17 +4746,18 @@ character_event = { # 1. new holder of title sends event to old holder, if they 
 
     immediate = {
     	save_event_target_as = new_holder_target
+    	FROMFROM = { save_event_target_as = old_holder_target }
     	character_event = { id = MNM.1218 days = 1 }
     }
 }
 
-diploresponse_event = { # 1.B: new holder of title sets exception flag, if the title was granted voluntarily (sent from GRANT_LANDED_TITLE_INTERACTION_ACCEPT_EVENT)
+diploresponse_event = { # 1.B: new holder of title gets exception flag, if the title was granted voluntarily (sent from GRANT_LANDED_TITLE_INTERACTION_ACCEPT_EVENT)
     id = MNM.1217
     is_triggered_only = yes
     hide_window = yes
 
     immediate = {
-		set_character_flag = was_granted_title_voluntarily
+		FROM = { set_character_flag = was_granted_title_voluntarily }
     }
 }
 
@@ -4730,7 +4769,7 @@ character_event = { # 2: gating event, to send event or clearing flag for the ne
     immediate = {
     	if = {
     		limit = { NOT = { has_character_flag = was_granted_title_voluntarily } }
-    		FROMFROMFROM = { character_event = { id = MNM.1219 days = 3 } }
+    		event_target:old_holder_target = { character_event = { id = MNM.1219 days = 3 } }
     	}
     	if = {
     		limit = { has_character_flag = was_granted_title_voluntarily }
@@ -5560,7 +5599,7 @@ character_event = { # You prepare the horoscope (for horoscope_maker)
     	hidden_effect = {
     		event_target:horoscope_child = {
     			set_variable = { which = horoscope_destiny_points value = 0 } # to track truthfulness of horoscope
-	    		set_character_flag = horoscope_destiny_revealed # to track and handle horoscope_maker dying (TODO: _M test if necessary, might be handled by event_target anyway)
+	    		set_character_flag = horoscope_destiny_revealed # to track and handle horoscope_maker dying
 	    		character_event = { id = MNM.1297 days = 5 } # Gating event
 	    	}
     	}
@@ -5706,7 +5745,7 @@ character_event = { # Child receives horoscope (for horoscope_child)
         }
         custom_tooltip = { text = EVTOPTA_MNM_1252_TT } #You try to put it out of your mind
     	
-        hidden_effect = { character_event = { id = MNM.1297 days = 10 } } #send gating event before next step... NEW TODO: _M fix this being broken and the next step not sent at all. Wtf liksom.
+        hidden_effect = { character_event = { id = MNM.1297 days = 10 } } #send gating event before next step...
 		set_horoscope_modifier_effect = yes
 
     	trigger = { NOT = { has_character_flag = horoscope_maker_died } }
@@ -6159,7 +6198,7 @@ character_event = { # Parent receives update about how the child is taking to th
         hidden_effect = {
             event_target:horoscope_child = {
             	change_variable = { which = horoscope_destiny_points value = 2 }
-    			character_event = { id = MNM.1297 days = 10 }  #TODO: _M
+    			character_event = { id = MNM.1297 days = 30 }
             }
     	}
     }
@@ -6169,7 +6208,7 @@ character_event = { # Parent receives update about how the child is taking to th
         hidden_effect = {
         	event_target:horoscope_child = {
         		change_variable = { which = horoscope_destiny_points value = -2 }
-    			character_event = { id = MNM.1297 days = 10 }
+    			character_event = { id = MNM.1297 days = 30 }
         	}
     	}
     }
@@ -6521,15 +6560,14 @@ character_event = { # evaluate outcome (for horoscope_child, sends itself again 
 
     		if = {
     			limit = { is_dumb_trigger = no }
-            	change_variable = { which = horoscope_destiny_points value = 1 } #slowly ticking upwards? TODO: _M Make trait or stat dependent or something
+            	change_variable = { which = horoscope_destiny_points value = 1 } #slowly ticking upwards
 			}
 			if = {
     			limit = { is_dumb_trigger = yes }
-            	change_variable = { which = horoscope_destiny_points value = -1 } #slowly ticking downwards? TODO: _M Make trait or stat dependent or something (test with subtract variable instead???)
+            	subtract_variable = { which = horoscope_destiny_points value = 1 } #slowly ticking downwards
 			}
 
-			character_event = { id = MNM.1297 days = 5 random = 1 } #Destiny NOT fulfilled/avoided (send gating event again...)
-			#character_event = { id = MNM.1297 days = 365 random = 100 } #Destiny NOT fulfilled/avoided (send gating event again...) TODO: _M reactive this once tested that it works. (remove line above, if so)
+			character_event = { id = MNM.1297 days = 365 random = 100 } #Destiny NOT fulfilled/avoided (send gating event again...)
         }   
     }
 }
@@ -9679,7 +9717,6 @@ character_event = {
 			years = 10
 		}
 		add_society_currency_minor_effect = yes
-		add_society_influence_minor_effect = yes
 	}
 	option = {
 		name = EVTOPTC_MNM_1626 # Failure
@@ -9691,8 +9728,6 @@ character_event = {
 			name = divine_summoning_failed
 			years = 10
 		}
-		detract_society_currency_minor_effect = yes
-		detract_society_influence_minor_effect = yes
 	}
 	after = {
 		clr_character_flag = divine_summoning_success
@@ -10949,7 +10984,10 @@ character_event = {
 	
 	is_triggered_only = yes
 
-	trigger = { is_society_grandmaster = yes }
+	trigger = { 
+		is_society_grandmaster = yes 
+		NOT = { days_in_society == 0 }
+	}
 	
 	option = { name = EVTOPTA_MNM_1750 }
 }
@@ -12246,6 +12284,7 @@ character_event = {
 				OR = {
 					war = yes
 					trait = incapable
+					NOT = { society_member_of = hermetics }
 				}
 			}
 			character_event = { id = MNM.1926 } # Cancel stargazing due to unforeseen circumstances
@@ -13751,6 +13790,8 @@ character_event = {
 
     is_triggered_only = yes
 
+    trigger = {	society_member_of = hermetics }
+
     option = { #write book on Theurgy
     	name = EVTOPTA_MNM_1600
     	trigger = {
@@ -13839,6 +13880,8 @@ character_event = {
 
 	is_triggered_only = yes
 
+	trigger = {	society_member_of = hermetics }
+
 	option = { #Focus on Rituals/Invocation
 		name = EVTOPTA_MNM_1601
 		trigger = {
@@ -13884,6 +13927,8 @@ character_event = {
 	border = GFX_event_normal_frame_religion
 
 	is_triggered_only = yes
+    
+    trigger = {	society_member_of = hermetics }
 
 	option = { #Focus on Stars
 		name = EVTOPTA_MNM_1602
@@ -13930,6 +13975,8 @@ character_event = {
 	border = GFX_event_normal_frame_religion
 
 	is_triggered_only = yes
+
+    trigger = {	society_member_of = hermetics }
 
 	option = { #Focus on Universal Panacea
 		name = EVTOPTA_MNM_1603
