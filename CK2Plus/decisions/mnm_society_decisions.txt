@@ -143,6 +143,17 @@ society_decisions = { # Society decisions are only evaluated by members of socie
 					same_society_as = ROOT
 				}
 			}
+
+			custom_tooltip = {
+				text = must_have_multiple_rank_4 #Society must allow multiple characters at Rank 4
+				NAND = {
+					society_rank == 3
+					OR = {
+						society_member_of = the_assassins
+						is_devil_worshiper_trigger = yes
+					}
+				}
+			}
 		}
 
 		effect = {
@@ -875,12 +886,13 @@ targeted_decisions = {
 		ai_target_filter = realm
 
 		from_potential = {
+			has_dlc = "Conclave"
 			is_playable = yes
 			is_adult = yes
 			NOT = { trait = incapable }
 			society_rank = {
 				society = the_assassins
-				rank == 4
+				rank >= 2
 			}
 			prisoner = no
 		}
@@ -890,13 +902,20 @@ targeted_decisions = {
 			age = 10
 			is_ruler = yes
 			is_within_diplo_range = FROM
+
 		}
 
 		allow = {
-			NOT = { society_member_of = the_assassins }
-			prisoner = no
-			is_inaccessible_trigger = no
-			NOT = { owes_favor_to = FROM }
+			ROOT = {
+				NOT = { society_member_of = the_assassins }
+				prisoner = no
+				is_inaccessible_trigger = no
+				NOT = { owes_favor_to = FROM }
+			}
+			OR = {
+				FROM = { society_rank == 4 }
+				ROOT = { same_realm = FROM }
+			}
 			FROM = { 
 				has_society_currency_medium_trigger = yes
 				is_inaccessible_trigger = no 
@@ -904,9 +923,27 @@ targeted_decisions = {
 		}
 
 		effect = {
-			hidden_effect = { character_event = { id = MNM.6840 days = 1 } }
-			FROM = { add_favor = ROOT }
 			FROM = { detract_society_currency_medium_effect = yes }
+
+			random_list = {
+				50 = {
+					modifier = {
+						factor = 9
+						FROM = { society_rank == 4 }
+					}
+					modifier = {
+						factor = 3
+						FROM = { society_rank == 3 }
+					}
+					hidden_effect = { character_event = { id = MNM.6840 days = 1 } }
+					FROM = { add_favor = ROOT }
+				}
+				50 = {
+					custom_tooltip = { text = assassins_scare_ruler_fail }
+					hidden_effect = { FROM = { character_event = { id = MNM.6980 days = 1 } } }
+				}
+			}
+			
 		}
 
 		revoke_allowed = {
@@ -1213,7 +1250,10 @@ targeted_decisions = {
 	devil_worshipers_dark_healing = {
 		is_in_society = yes
 		
-		from_potential = {
+		filter = self
+		ai_target_filter = self
+		
+		potential = {
 			has_dlc = "Mystics"
 			is_devil_worshiper_trigger = yes
 			society_rank >= 3
@@ -1222,9 +1262,7 @@ targeted_decisions = {
 				has_character_modifier = dark_healing_recent
 			}
 		}
-		potential = {
-			character = FROM
-		}
+		
 		allow = {
 			has_society_currency_medium_trigger = yes
 			custom_tooltip = {
@@ -1345,11 +1383,13 @@ targeted_decisions = {
 				is_benevolent_trigger = yes
 			}
 			modifier = {
-				factor = 2
-				is_evil_trigger = yes
+				factor = 0.25
+				ROOT = {
+					is_landed = no
+				}
 			}
 			modifier = {
-				factor = 2
+				factor = 3
 				ROOT = {
 					among_most_powerful_vassals = 5
 				}
@@ -2136,7 +2176,14 @@ targeted_decisions = {
 			modifier = {
 				factor = 0.01 #Slow down
 			}
-			#TODO Should have higher factor of you have a mission
+			modifier = {
+				factor = 10
+				NOR = {
+					has_character_modifier = stolen_life_minor
+					has_character_modifier = stolen_life_medium
+					has_character_modifier = stolen_life_major
+				}
+			}
 		}
 		
 		effect = {
@@ -2186,9 +2233,9 @@ targeted_decisions = {
 					    }
 					}
 				}
-				any_quester_targeting_this = { 
+				FROM = {
 					has_quest = quest_devil_worshipers_corrupt_priest
-					character = FROM
+					quest_target = { character = ROOT }
 				}
 			}	
 
@@ -2352,15 +2399,15 @@ targeted_decisions = {
 		}
 
 		allow = {
-			FROM = { has_society_currency_medium_trigger = yes }
+			FROM = { society_currency >= 25 }
 			NOT = { same_society_as = FROM }
 			NOT = { trait = zealous }
 			NOT = { has_character_modifier = recent_induction_attempt }
 		}
 		effect = {
 			FROM = {
-				increase_visibility_effect = yes
-				detract_society_currency_medium_effect = yes
+				increase_visibility_minor_effect = yes
+				change_society_currency = -25
 				character_event = {
 					id = MNM.7121
 					days = 0
