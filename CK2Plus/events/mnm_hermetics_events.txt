@@ -50,11 +50,15 @@ letter_event = {
     border = GFX_event_letter_frame_religion
 
     is_triggered_only = yes
+	
+	immediate = { set_character_flag = society_join_block }
 
     option = {
         name = EVTOPTA_MNM_102
 
 		join_society = hermetics
+		
+		clr_character_flag = society_join_block
     }
 }
 
@@ -1250,6 +1254,18 @@ character_event = {
 			}
 		}
 	}
+
+	after = {
+		#destroy ingredients
+		if = {
+			limit = {
+				any_artifact = {
+		    		has_artifact_flag = ingredient
+	    		}
+			}
+			destroy_random_ingredients_effect = yes
+		}
+	}
 }
 
 # Locals are gossiping 
@@ -1297,6 +1313,22 @@ character_event = {
 		wealth = -25
 		hidden_effect = {
 			change_variable = { which = laboratory_level value = 1 }
+		}
+	}
+
+	after = {
+		#destroy ingredients
+		if = {
+			limit = {
+				OR = {
+					has_a_herb_ingredient_trigger = yes
+					has_an_animal_part_ingredient_trigger = yes
+				}
+			}
+			custom_tooltip = {
+				text = random_ingredients_are_destroyed_tt
+				destroy_random_herb_or_animal_part_ingredients_effect = yes
+			}
 		}
 	}
 }
@@ -1500,21 +1532,21 @@ character_event = {
     	}
 
     	event_target:apprentice_candidate = {
-    		remove_trait = slow_visible
-    		remove_trait = imbecile_visible
+    		remove_trait = slow
+    		remove_trait = imbecile
     		remove_trait = inbred
     		remove_trait = dull
     		remove_trait = zealous
     		remove_trait = cynical
-    		remove_trait = genius_visible
-    		remove_trait = quick_visible
+    		remove_trait = genius
+    		remove_trait = quick
     		remove_trait = shrewd
     		remove_trait = slothful
 
     		#Add great trait
     		random_list = {
-    			10 = { add_trait = genius_visible }
-    			10 = { add_trait = quick_visible }
+    			10 = { add_trait = genius }
+    			10 = { add_trait = quick }
     			10 = { add_trait = shrewd }
     			10 = { trigger = { NOT = { religion_group = muslim } } add_trait = scholar }
     			10 = { trigger = { religion_group = muslim } add_trait = faqih }
@@ -2464,6 +2496,18 @@ character_event = {
 
 	trigger = { has_quest = quest_hermetics_infiltrate_laboratory }
     
+	immediate = {
+		# Will select two ingredients, by prioritizing from the top, until it hits two available ones...
+		select_random_hermetic_ingredient_herb_effect = yes
+		select_random_hermetic_ingredient_animal_part_effect = yes
+		select_random_hermetic_ingredient_powder_effect = yes
+		select_random_hermetic_ingredient_liquid_effect = yes
+		select_random_hermetic_ingredient_herb_effect = yes
+		select_random_hermetic_ingredient_powder_effect = yes
+		select_random_hermetic_ingredient_animal_part_effect = yes
+		select_random_hermetic_ingredient_liquid_effect = yes
+	}
+
     desc = {
     	trigger = { event_target:infiltration_target = { has_character_flag = very_hidden_lab } }
     	text = EVTDESC_MNM_1435_A
@@ -2521,28 +2565,50 @@ character_event = {
         character_event = { id = MNM.1436 days = 7 }
     }
 
-    #Make a sleeping potion
+    #Make a sleeping potion (potentially great effect)
     option = {
+    	tooltip_info = yes
         name = EVTOPTB_MNM_1435
+        custom_tooltip = { text = multiple_ingredient_option_available_tt }
         custom_tooltip = { text = EVTOPTB_MNM_1435_TT }
 
         random_list = {
-        	50 = {
+        	60 = {
         		modifier = { learning = 10 factor = 1.2 }
         		modifier = { learning = 12 factor = 1.2 }
         		modifier = { learning = 14 factor = 1.2 }
         		modifier = { learning = 16 factor = 1.2 }
         		modifier = { learning = 18 factor = 1.2 }
+        		modifier = {
+        			factor = 1.1
+        			has_selected_herb_ingredient_1_trigger = yes
+        		}
+        		modifier = {
+        			factor = 1.1
+        			has_selected_herb_ingredient_2_trigger = yes
+        		}
+        		modifier = {
+        			factor = 1.1
+        			has_selected_animal_part_ingredient_1_trigger = yes
+        		}
+        		modifier = {
+        			factor = 1.1
+        			has_selected_animal_part_ingredient_2_trigger = yes
+        		}
+        		modifier = {
+        			factor = 1.5
+        			selected_ingredient_is_sleep_inducing_trigger = yes
+        		}
         		custom_tooltip = { text = EVTOPTX_MNM_1435_SUCCESS_TT character_event = { id = MNM.1436 days = 7 } }
         	}
-        	50 = {
+        	40 = {
         		modifier = { event_target:infiltration_target = { has_character_flag = hidden_lab } factor = 1.2 }
         		modifier = { event_target:infiltration_target = { has_character_flag = very_hidden_lab } factor = 1.5 }
         		custom_tooltip = { 
 	        		text = EVTOPTX_MNM_1435_FAIL_TT
 	        		hidden_effect = {
 		        		random_list = {
-		        			50 = { 
+		        			50 = {
 		        				character_event = { id = MNM.1436 days = 7 } #You get deteced later, but continue for now
 		        				set_character_flag = guards_wake_up
 		        			}
@@ -2552,6 +2618,64 @@ character_event = {
 		        		}
 	        		}
 	        	}
+        	}
+        }
+
+        destroy_selected_ingredient_1_and_2_effect = yes
+
+        trigger = {
+        	any_artifact = {
+        		count = 2
+        		has_artifact_flag = ingredient
+        	}
+        }
+    }
+
+    #Make a sleeping potion (mild effect)
+    option = {
+    	tooltip_info = yes
+        name = EVTOPTB_MNM_1435_single_ingredient
+        custom_tooltip = { text = ingredient_option_available_tt }
+        custom_tooltip = { text = EVTOPTB_MNM_1435_TT }
+
+        random_list = {
+        	50 = {
+        		modifier = { learning = 10 factor = 1.2 }
+        		modifier = { learning = 12 factor = 1.2 }
+        		modifier = { learning = 14 factor = 1.2 }
+        		modifier = { learning = 16 factor = 1.2 }
+        		modifier = { learning = 18 factor = 1.2 }
+         		modifier = {
+        			factor = 1.2
+        			selected_ingredient_is_sleep_inducing_trigger = yes
+        		}
+        		custom_tooltip = { text = EVTOPTX_MNM_1435_SUCCESS_TT character_event = { id = MNM.1436 days = 7 } }
+        	}
+        	50 = {
+        		modifier = { event_target:infiltration_target = { has_character_flag = hidden_lab } factor = 1.2 }
+        		modifier = { event_target:infiltration_target = { has_character_flag = very_hidden_lab } factor = 1.5 }
+        		custom_tooltip = { 
+	        		text = EVTOPTX_MNM_1435_FAIL_TT
+	        		hidden_effect = {
+		        		random_list = {
+		        			50 = {
+		        				character_event = { id = MNM.1436 days = 7 } #You get deteced later, but continue for now
+		        				set_character_flag = guards_wake_up
+		        			}
+		        			50 = { 
+		        				character_event = { id = MNM.1437 days = 7 } #Hard fail
+		        			}
+		        		}
+	        		}
+	        	}
+        	}
+        }
+
+        destroy_selected_ingredient_1_effect = yes
+
+        trigger = {
+        	any_artifact = {
+        		has_artifact_flag = ingredient
         	}
         }
     }
@@ -2601,6 +2725,10 @@ character_event = {
         	modifier = opinion_very_disappointed
         	years = 10
         }
+    }
+
+    after = {
+    	remove_selection_of_ingredients_effect = yes
     }
 }
 
@@ -3422,6 +3550,7 @@ character_event = {
         			great_laboratory 	= { remove_character_modifier = great_laboratory }
         			best_laboratory 	= { remove_character_modifier = best_laboratory }
         		}
+        		destroy_all_ingredients_effect = yes
         	}        	
         }
 
@@ -3432,7 +3561,12 @@ character_event = {
     	trigger = { has_character_flag = lab_damage }
         name = EVTOPTA_MNM_1443
 
-        tooltip = { event_target:infiltration_target = { scaled_wealth = { value = -0.3 min = -30 } } }
+        tooltip = {
+        	event_target:infiltration_target = {
+        		scaled_wealth = { value = -0.3 min = -30 }
+        		destroy_random_ingredients_effect = yes
+        	}
+        }
 
         add_society_currency_medium_effect = yes
     }
@@ -3494,6 +3628,7 @@ character_event = {
         
         if = {
         	limit = { FROM = { has_character_flag = lab_destruction } } 
+        	destroy_all_ingredients_effect = yes
         	trigger_switch = {
     			on_trigger = has_character_modifier
     			cheap_laboratory 	= { remove_character_modifier = cheap_laboratory }
@@ -3511,7 +3646,8 @@ character_event = {
 
         if = {
         	limit = { FROM = { has_character_flag = lab_damage } } 
-        	scaled_wealth = { value = -0.3 min = -30 } 
+        	scaled_wealth = { value = -0.3 min = -30 }
+        	destroy_random_ingredients_effect = yes
         }
     }
 
@@ -3748,7 +3884,6 @@ character_event = {
 ######## Power: Perform Scrying - what do you want to look for? #######
 character_event = {
     id = MNM.1200
-    desc = EVTDESC_MNM_1200
     picture = GFX_evt_dark_prayer
     border = GFX_event_normal_frame_religion
     is_triggered_only = yes
@@ -3756,6 +3891,26 @@ character_event = {
     trigger = {
     	has_dlc = "Mystics"
     	has_an_omen_modifier_trigger = no
+    }
+
+    desc = {
+    	text = EVTDESC_MNM_1200_A
+    	trigger = {	NOT = { any_artifact = { has_artifact_flag = ingredient	} } }
+    }
+    desc = {
+    	text = EVTDESC_MNM_1200_B
+    	trigger = {	any_artifact = { has_artifact_flag = ingredient	} }
+    }
+
+    immediate = {
+    	if = {
+    		limit = {
+    			any_artifact = {
+					has_artifact_flag = ingredient
+				}
+    		}
+    		select_random_hermetic_ingredient_effect = yes
+    	}
     }
 
     option = { # I want to know about battles to come
@@ -3771,9 +3926,80 @@ character_event = {
         set_character_flag = power_hungry_scrying_flag
     }
 
+    option = { # I am gonna throw some ingredients into the water...
+    	tooltip_info = yes
+
+    	custom_tooltip = { text = ingredient_option_available_tt }
+    	custom_tooltip = { text = EVTOPTD_MNM_1200_tt }
+        name = {
+        	text = EVTOPTD_MNM_1200_herb
+        	trigger = {
+        		any_artifact = {
+        			has_artifact_flag = selected_ingredient
+        			is_ingredient_herb_trigger = yes
+        		}
+        	}
+        }
+        name = {
+        	text = EVTOPTD_MNM_1200_animal_part
+        	trigger = {
+        		any_artifact = {
+        			has_artifact_flag = selected_ingredient
+        			is_ingredient_animal_part_trigger = yes
+        		}
+        	}
+        }
+        name = {
+        	text = EVTOPTD_MNM_1200_powder
+        	trigger = {
+        		any_artifact = {
+        			has_artifact_flag = selected_ingredient
+        			is_ingredient_powder_trigger = yes
+        		}
+        	}
+        }
+        name = {
+        	text = EVTOPTD_MNM_1200_liquid
+        	trigger = {
+        		any_artifact = {
+        			has_artifact_flag = selected_ingredient
+        			is_ingredient_liquid_trigger = yes
+        		}
+        	}
+        }
+        hidden_effect = {
+	        random_list = {
+	        	10 = {
+	        		set_character_flag = battle_focused_scrying_flag
+	        	}
+	        	10 = {
+	        		set_character_flag = relationship_focused_scrying_flag
+	        	}
+	        	10 = {
+	        		set_character_flag = power_hungry_scrying_flag
+	        	}
+	        }
+	        set_character_flag = used_ingredient_flag
+        }
+        destroy_selected_ingredient_1_effect = yes
+
+        ai_chance = { #AI should use ingredients if they can
+			factor = 100
+			modifier = {
+				factor = 50
+				trait = ambitious
+			}
+		}
+
+        trigger = {
+        	any_artifact = { has_artifact_flag = ingredient }
+        }
+    }
+
     after = {
     	hidden_effect = {
    			character_event = { id = MNM.1201 days = 5 random = 1 }
+	    	remove_selection_of_ingredients_effect = yes
     	}
     }
 }
@@ -3837,6 +4063,10 @@ character_event = { # You see something in the water and react well or poorly to
     	}
     	random_list = {
     		30 = {
+    			modifier = {
+					factor = 1.5
+    				has_character_flag = used_ingredient_flag
+				}
     			set_character_flag = positive_reaction_to_scrying_flag
     		}
     		30 = {
@@ -3917,6 +4147,7 @@ character_event = { # You see something in the water and react well or poorly to
 		clr_character_flag = battle_focused_scrying_flag
 		clr_character_flag = relationship_focused_scrying_flag
 		clr_character_flag = power_hungry_scrying_flag
+		clr_character_flag = used_ingredient_flag
     }
 }
 
@@ -3953,12 +4184,12 @@ character_event = { # Gain a leadership trait (fired from on_combat_pulse)
 			trait = craven
 		}
 		modifier = {
-			trait = genius_visible
+			trait = genius
 			factor = 1.5
 		}
 		modifier = {
 			OR = {
-				trait = quick_visible
+				trait = quick
 				trait = shrewd
 			}
 			factor = 1.2
@@ -5066,16 +5297,16 @@ character_event = { # FALLBACK (delayed event): Something good happens
         	hidden_effect = {
 		        #... Find a friend
 				if = {
-					limit = { any_courtier = { NOR = { is_friend = ROOT is_rival = ROOT is_lover = ROOT } } }
+					limit = { any_courtier = { NOR = { is_friend = ROOT is_rival = ROOT is_lover = ROOT } is_adult = yes } }
 
 					random_courtier = {
-						limit = { NOR = { is_friend = ROOT is_rival = ROOT is_lover = ROOT } } 
+						limit = { NOR = { is_friend = ROOT is_rival = ROOT is_lover = ROOT } is_adult = yes } 
 						save_event_target_as = envisioned_friend
 					}
 				}
 				#... Or create a new one
 				if = {
-					limit = { NOT = { any_courtier = { NOR = { is_friend = ROOT is_rival = ROOT is_lover = ROOT } } } }
+					limit = { NOT = { any_courtier = { NOR = { is_friend = ROOT is_rival = ROOT is_lover = ROOT } is_adult = yes } } }
 
 					create_character = {
 						random_traits = yes
@@ -5095,16 +5326,16 @@ character_event = { # FALLBACK (delayed event): Something good happens
     		hidden_effect = {
 		        #... Find a friend
 				if = {
-					limit = { any_courtier = { NOR = { is_friend = ROOT is_rival = ROOT is_lover = ROOT } } }
+					limit = { any_courtier = { NOR = { is_friend = ROOT is_rival = ROOT is_lover = ROOT } is_adult = yes } }
 
 					random_courtier = {
-						limit = { NOR = { is_friend = ROOT is_rival = ROOT is_lover = ROOT } } 
+						limit = { NOR = { is_friend = ROOT is_rival = ROOT is_lover = ROOT } is_adult = yes } 
 						save_event_target_as = envisioned_friend
 					}
 				}
 				#... Or create a new one
 				if = {
-					limit = { NOT = { any_courtier = { NOR = { is_friend = ROOT is_rival = ROOT is_lover = ROOT } } } }
+					limit = { NOT = { any_courtier = { NOR = { is_friend = ROOT is_rival = ROOT is_lover = ROOT } is_adult = yes } } }
 
 					create_character = {
 						random_traits = yes
@@ -5180,6 +5411,12 @@ character_event = { # FALLBACK (delayed event): Something good happens
 			tooltip = {
 				remove_character_modifier = good_battle_omen
 			}
+			capital_scope = {
+				add_province_modifier = {
+					name = proud_hunters_spirit
+					duration = 2920
+				}
+			}
         }
         if = { limit = { has_character_flag = omen_opt_good_relationship }
 			tooltip = {
@@ -5219,6 +5456,12 @@ character_event = { # FALLBACK (delayed event): Something good happens
 		if = { limit = { has_character_flag = omen_opt_bad_battle }
 			tooltip = {
 				remove_character_modifier = bad_battle_omen
+			}
+			capital_scope = {
+				add_province_modifier = {
+					name = proud_hunters_spirit
+					duration = 2920
+				}
 			}
         }
         if = { limit = { has_character_flag = omen_opt_bad_relationship }
@@ -5284,17 +5527,17 @@ character_event = { # FALLBACK (delayed event): Something bad happens
         	hidden_effect = {
 				#... Find a rival
 				if = {
-					limit = { any_courtier = { NOR = { is_friend = ROOT is_rival = ROOT is_lover = ROOT } } }
+					limit = { any_courtier = { NOR = { is_friend = ROOT is_rival = ROOT is_lover = ROOT } is_adult = yes } }
 
 					random_courtier = {
-						limit = { NOR = { is_friend = ROOT is_rival = ROOT is_lover = ROOT } } 
+						limit = { NOR = { is_friend = ROOT is_rival = ROOT is_lover = ROOT } is_adult = yes } 
 						save_event_target_as = envisioned_rival
 					}
 				}
 
 				#... Or create a new one
 				if = {
-					limit = { NOT = { any_courtier = { NOR = { is_friend = ROOT is_rival = ROOT is_lover = ROOT } } } }
+					limit = { NOT = { any_courtier = { NOR = { is_friend = ROOT is_rival = ROOT is_lover = ROOT } is_adult = yes } } }
 
 					create_character = {
 						random_traits = yes
@@ -5314,17 +5557,17 @@ character_event = { # FALLBACK (delayed event): Something bad happens
     		hidden_effect = {
 				#... Find a rival
 				if = {
-					limit = { any_courtier = { NOR = { is_friend = ROOT is_rival = ROOT is_lover = ROOT } } }
+					limit = { any_courtier = { NOR = { is_friend = ROOT is_rival = ROOT is_lover = ROOT } is_adult = yes } }
 
 					random_courtier = {
-						limit = { NOR = { is_friend = ROOT is_rival = ROOT is_lover = ROOT } } 
+						limit = { NOR = { is_friend = ROOT is_rival = ROOT is_lover = ROOT } is_adult = yes } 
 						save_event_target_as = envisioned_rival
 					}
 				}
 
 				#... Or create a new one
 				if = {
-					limit = { NOT = { any_courtier = { NOR = { is_friend = ROOT is_rival = ROOT is_lover = ROOT } } } }
+					limit = { NOT = { any_courtier = { NOR = { is_friend = ROOT is_rival = ROOT is_lover = ROOT } is_adult = yes } } }
 
 					create_character = {
 						random_traits = yes
@@ -6598,7 +6841,168 @@ character_event = {
     }
 }
 
-#Power: Happiness potion
+###Power: Happiness potion
+#Gating event to check amount of/which ingredients used
+character_event = {
+    id = MNM.5115
+    picture = GFX_evt_experiment
+    border = GFX_event_normal_frame_religion
+    is_triggered_only = yes
+
+    desc = {
+    	text = EVTDESC_MNM_5115_self
+    	trigger = { has_character_flag = potion_target_is_self }
+    }
+    desc = {
+    	text = EVTDESC_MNM_5115_other
+    	trigger = { NOT = { has_character_flag = potion_target_is_self } }
+    }
+
+    immediate = {
+    	#Selects two ingredients...
+    	select_random_hermetic_ingredient_effect = yes
+    	select_random_hermetic_ingredient_effect = yes
+    }
+
+    option = { # I will use ingredient 1
+		name = {
+        	text = EVTOPTA_MNM_5115_herb
+        	trigger = { has_selected_herb_ingredient_1_trigger = yes }
+        }
+        name = {
+        	text = EVTOPTA_MNM_5115_animal_part
+        	trigger = { has_selected_animal_part_ingredient_1_trigger = yes }
+        }		
+        name = {
+        	text = EVTOPTA_MNM_5115_powder
+        	trigger = { has_selected_powder_ingredient_1_trigger = yes }
+        }
+        name = {
+        	text = EVTOPTA_MNM_5115_liquid
+        	trigger = { has_selected_liquid_ingredient_1_trigger = yes }
+        }
+		calculate_health_level_of_ingredient_1_effect = yes
+		destroy_selected_ingredient_1_effect = yes
+
+		ai_chance = { factor = 0 }
+
+		trigger = {
+			selected_ingredient_1_and_2_are_same = no
+		}        
+    }
+
+	option = { # I will use ingredient 2
+		name = {
+        	text = EVTOPTB_MNM_5115_herb
+        	trigger = { has_selected_herb_ingredient_2_trigger = yes }
+        }
+        name = {
+        	text = EVTOPTB_MNM_5115_animal_part
+        	trigger = { has_selected_animal_part_ingredient_2_trigger = yes }
+        }		
+        name = {
+        	text = EVTOPTB_MNM_5115_powder
+        	trigger = { has_selected_powder_ingredient_2_trigger = yes }
+        }
+        name = {
+        	text = EVTOPTB_MNM_5115_liquid
+        	trigger = { has_selected_liquid_ingredient_2_trigger = yes }
+        }
+		calculate_health_level_of_ingredient_2_effect = yes
+        destroy_selected_ingredient_2_effect = yes
+
+        ai_chance = { factor = 0 }
+		
+		trigger = {
+        	has_selected_ingredient_2_trigger = yes
+        	selected_ingredient_1_and_2_are_same = no
+        }
+    }
+
+    option = { # I will only use one <ingredient_type_X> (IF DUPLICATE SELECTIONS)
+		name = {
+        	text = EVTOPTC_MNM_5115_herb
+        	trigger = { has_selected_herb_ingredient_1_trigger = yes }
+        }
+        name = {
+        	text = EVTOPTC_MNM_5115_animal_part
+        	trigger = { has_selected_animal_part_ingredient_1_trigger = yes }
+        }		
+        name = {
+        	text = EVTOPTC_MNM_5115_powder
+        	trigger = { has_selected_powder_ingredient_1_trigger = yes }
+        }
+        name = {
+        	text = EVTOPTC_MNM_5115_liquid
+        	trigger = { has_selected_liquid_ingredient_1_trigger = yes }
+        }
+		calculate_health_level_of_ingredient_1_effect = yes
+        destroy_selected_ingredient_1_effect = yes
+
+        ai_chance = { factor = 0 }
+		
+		trigger = {
+        	has_selected_ingredient_2_trigger = yes
+        	selected_ingredient_1_and_2_are_same = yes
+        }        
+    }
+
+    option = { #I will use ingredient 1 and 2
+        name = {
+        	text = EVTOPTD_MNM_5115
+        	trigger = {	selected_ingredient_1_and_2_are_same = no }
+        }
+        name = {
+        	text = EVTOPTD_MNM_5115_duplicate
+        	trigger = {	selected_ingredient_1_and_2_are_same = yes }
+        }
+
+        calculate_health_level_of_ingredient_1_and_2_effect = yes
+        
+        destroy_selected_ingredient_1_and_2_effect = yes
+
+        ai_chance = { factor = 25 }
+
+        trigger = {
+        	has_selected_ingredient_2_trigger = yes
+        }
+    }
+
+    option = { #I'll throw a bit of everything in there!
+        name = EVTOPTE_MNM_5115
+        custom_tooltip = { text = EVTOPTE_MNM_5115_tt }
+
+        calculate_health_level_of_all_ingredients_effect = yes
+
+		destroy_all_ingredients_effect = yes
+
+		ai_chance = { factor = 100 }
+
+    	trigger = {
+        	any_artifact = {
+        		count = 4
+        		has_artifact_flag = ingredient
+        	}
+        }
+    }
+
+    after = {
+    	remove_selection_of_ingredients_effect = yes
+
+    	hidden_effect = {
+    		if = {
+    			limit = { has_character_flag = potion_target_is_self }
+    			character_event = { id = MNM.1400 days = 15 }
+    		}
+    		if = {
+    			limit = { NOT = { has_character_flag = potion_target_is_self } }
+    			clr_character_flag = preparing_potion
+    			event_target:potion_target = { character_event = { id = MNM.1401 days = 10 } }
+    		}
+    		clr_character_flag = potion_target_is_self
+    	}
+    }
+}
 
 #Giving the potion to yourself
 character_event = {
@@ -6627,11 +7031,49 @@ character_event = {
 			remove_character_modifier = apathetic
 		}
 
-		hidden_effect = { 
+		hidden_effect = {
+			clr_character_flag = preparing_potion
 			random = {
-				chance = 20
-				character_event = { id = MNM.1403 days = 150 random = 600 }  
+				chance = 40
+				modifier = {
+					factor = 0.5
+					check_variable = { which = current_potion_quality value = 1 }
+				}
+				modifier = {
+					factor = 0.5
+					check_variable = { which = current_potion_quality value = 2 }
+				}
+				modifier = {
+					factor = 0.5
+					check_variable = { which = current_potion_quality value = 4 }
+				}
+				modifier = {
+					factor = 0.5
+					check_variable = { which = current_potion_quality value = 6 }
+				}
+				modifier = {
+					factor = 1.1
+					NOT = { check_variable = { which = current_potion_quality value = -1 } }
+				}
+				modifier = {
+					factor = 1.2
+					NOT = { check_variable = { which = current_potion_quality value = -2 } }
+				}
+				modifier = {
+					factor = 1.3
+					NOT = { check_variable = { which = current_potion_quality value = -4 } }
+				}
+				modifier = {
+					factor = 1.4
+					NOT = { check_variable = { which = current_potion_quality value = -6 } }
+				}
+				character_event = { id = MNM.1403 days = 150 random = 600 }
 			}
+
+        	set_variable = { # Reset potion quality
+    			which = current_potion_quality
+    			value = 0
+    		}
 		} 
     }
 }
@@ -6729,19 +7171,57 @@ character_event = {
 				remove_character_modifier = apathetic
 			}
 
-			hidden_effect = { 
+			hidden_effect = {
 				random = {
 					chance = 20
+					modifier = {
+						factor = 0.5
+						ROOT = { check_variable = { which = current_potion_quality value = 1 } }
+					}
+					modifier = {
+						factor = 0.5
+						ROOT = { check_variable = { which = current_potion_quality value = 2 } }
+					}
+					modifier = {
+						factor = 0.5
+						ROOT = { check_variable = { which = current_potion_quality value = 4 } }
+					}
+					modifier = {
+						factor = 0.5
+						ROOT = { check_variable = { which = current_potion_quality value = 6 } }
+					}
+					modifier = {
+						factor = 1.1
+						ROOT = { NOT = { check_variable = { which = current_potion_quality value = -1 } } }
+					}
+					modifier = {
+						factor = 1.2
+						ROOT = { NOT = { check_variable = { which = current_potion_quality value = -2 } } }
+					}
+					modifier = {
+						factor = 1.3
+						ROOT = { NOT = { check_variable = { which = current_potion_quality value = -4 } } }
+					}
+					modifier = {
+						factor = 1.4
+						ROOT = { NOT = { check_variable = { which = current_potion_quality value = -6 } } }
+					}
 					character_event = { id = MNM.1403 days = 150 random = 600 }  
 				}
 			} 
     	}
-        
+        hidden_effect = {
+        	set_variable = { # Reset potion quality
+    			which = current_potion_quality
+    			value = 0
+    		}
+    	}
 
         reverse_opinion = {
         	who = FROM
         	modifier = opinion_grateful
         }
+
     }
 }
 
@@ -7267,7 +7747,7 @@ character_event = {
     option = { 
         name = EVTOPTA_MNM_1460
         custom_tooltip = { text = EVTOPTA_MNM_1460_TT }
-        scaled_wealth = { value = -0.5 min = 20 }
+        scaled_wealth = { value = -0.5 min = -20 }
         hidden_effect = { 
         	character_event = { id = MNM.1461 days = 7 } 
         	set_character_flag = gathering_of_the_minds
@@ -8835,7 +9315,7 @@ character_event = {
 		}
 		modifier = {
 			factor = 3.0
-			trait = genius_visible
+			trait = genius
 		}
 		modifier = {
 			factor = 3.0
@@ -8843,7 +9323,7 @@ character_event = {
 		}
 		modifier = {
 			factor = 2.0
-			trait = quick_visible
+			trait = quick
 		}
 		modifier = {
 			factor = 2.0
@@ -8855,11 +9335,11 @@ character_event = {
 		}
 		modifier = {
 			factor = 0.5
-			trait = slow_visible
+			trait = slow
 		}
 		modifier = {
 			factor = 0.1
-			trait = imbecile_visible
+			trait = imbecile
 		}
 		modifier = {
 			factor = 0.25
@@ -8965,12 +9445,54 @@ character_event = {
 				factor = 50
 				trait = mystic
 			}
+			modifier = {
+				factor = 0
+				any_artifact = {
+					has_artifact_flag = ingredient
+				}
+			}
 		}
 		
 		set_character_flag = had_a_divine_summoning
 		
 		FROM = { character_event = { id = MNM.1623 tooltip = EVT_TT_1622 portrait = no } }
 	}
+
+	option = {
+		name = EVTOPTA_MNM_1622_use_ingredients # Send them these ingredients to aid in the ritual!
+		tooltip_info = yes
+        custom_tooltip = { text = ingredient_option_available_tt }
+
+		ai_chance = {
+			factor = 500
+			modifier = {
+				factor = 50
+				trait = ambitious
+			}
+			modifier = {
+				factor = 50
+				trait = mystic
+			}
+		}
+
+		custom_tooltip = {
+			text = ingredients_are_sent_tt
+			hidden_effect = { destroy_random_ingredients_effect = yes }
+		}
+
+		
+		set_character_flag = had_a_divine_summoning
+		set_character_flag = used_ingredients_for_summoning
+		
+		FROM = { character_event = { id = MNM.1623 portrait = no } }
+
+		trigger = {
+			any_artifact = {
+				has_artifact_flag = ingredient
+			}
+		}
+	}
+
 	option = {
 		name = EVTOPTB_MNM_1622 # Even rituals carry danger
 		ai_chance = {
@@ -8998,6 +9520,7 @@ character_event = {
 	is_triggered_only = yes
 	
 	immediate = {
+		destroy_random_ingredients_effect = yes
 		FROM = { character_event = { id = MNM.1624 days = 15 random = 15  } }
 	}
 }
@@ -9063,7 +9586,7 @@ character_event = {
 			limit = {
 				FROM = {
 					has_character_flag = divine_summoning_alchemy
-					learning = 21
+					learning = 25
 				}
 			}
 			random_list = {
@@ -9077,9 +9600,17 @@ character_event = {
 					FROM = { set_character_flag = divine_summoning_alchemy_bonus }
 				}
 				15 = {
+					modifier = {
+						factor = 0.5
+						FROM = { has_character_flag = used_ingredients_for_summoning }
+					}
 					FROM = { set_character_flag = divine_summoning_alchemy_penalty }
 				}
 				5 = {
+					modifier = {
+						factor = 0.5
+						FROM = { has_character_flag = used_ingredients_for_summoning }
+					}
 					FROM = { set_character_flag = divine_summoning_alchemy_bad_penalty }
 				}
 			}
@@ -9088,8 +9619,8 @@ character_event = {
 			limit = {
 				FROM = {
 					has_character_flag = divine_summoning_alchemy
-					learning = 14
-					NOT = { learning = 21 }
+					learning = 20
+					NOT = { learning = 25 }
 				}
 			}
 			random_list = {
@@ -9106,9 +9637,17 @@ character_event = {
 					FROM = { set_character_flag = divine_summoning_alchemy_penalty }
 				}
 				10 = {
+					modifier = {
+						factor = 0.5
+						FROM = { has_character_flag = used_ingredients_for_summoning }
+					}
 					FROM = { set_character_flag = divine_summoning_alchemy_bad_penalty }
 				}
 				5 = {
+					modifier = {
+						factor = 0.5
+						FROM = { has_character_flag = used_ingredients_for_summoning }
+					}
 					FROM = { set_character_flag = divine_summoning_failure }
 				}
 			}
@@ -9117,8 +9656,8 @@ character_event = {
 			limit = {
 				FROM = {
 					has_character_flag = divine_summoning_alchemy
-					learning = 7
-					NOT = { learning = 14 }
+					learning = 15
+					NOT = { learning = 20 }
 				}
 			}
 			random_list = {
@@ -9135,9 +9674,17 @@ character_event = {
 					FROM = { set_character_flag = divine_summoning_alchemy_penalty }
 				}
 				20 = {
+					modifier = {
+						factor = 0.5
+						FROM = { has_character_flag = used_ingredients_for_summoning }
+					}
 					FROM = { set_character_flag = divine_summoning_alchemy_bad_penalty }
 				}
 				10 = {
+					modifier = {
+						factor = 0.5
+						FROM = { has_character_flag = used_ingredients_for_summoning }
+					}
 					FROM = { set_character_flag = divine_summoning_failure }
 				}
 			}
@@ -9146,7 +9693,7 @@ character_event = {
 			limit = {
 				FROM = {
 					has_character_flag = divine_summoning_alchemy
-					NOT = { learning = 7 }
+					NOT = { learning = 15 }
 				}
 			}
 			random_list = {
@@ -9160,9 +9707,17 @@ character_event = {
 					FROM = { set_character_flag = divine_summoning_alchemy_penalty }
 				}
 				25 = {
+					modifier = {
+						factor = 0.5
+						FROM = { has_character_flag = used_ingredients_for_summoning }
+					}
 					FROM = { set_character_flag = divine_summoning_alchemy_bad_penalty }
 				}
 				15 = {
+					modifier = {
+						factor = 0.5
+						FROM = { has_character_flag = used_ingredients_for_summoning }
+					}
 					FROM = { set_character_flag = divine_summoning_failure }
 				}
 			}
@@ -9171,7 +9726,7 @@ character_event = {
 			limit = {
 				FROM = {
 					has_character_flag = divine_summoning_astrology
-					learning = 21
+					learning = 25
 				}
 			}
 			random_list = {
@@ -9185,9 +9740,17 @@ character_event = {
 					FROM = { set_character_flag = divine_summoning_astrology_bonus }
 				}
 				15 = {
+					modifier = {
+						factor = 0.5
+						FROM = { has_character_flag = used_ingredients_for_summoning }
+					}
 					FROM = { set_character_flag = divine_summoning_astrology_penalty }
 				}
 				5 = {
+					modifier = {
+						factor = 0.5
+						FROM = { has_character_flag = used_ingredients_for_summoning }
+					}
 					FROM = { set_character_flag = divine_summoning_astrology_bad_penalty }
 				}
 			}
@@ -9196,8 +9759,8 @@ character_event = {
 			limit = {
 				FROM = {
 					has_character_flag = divine_summoning_astrology
-					learning = 14
-					NOT = { learning = 21 }
+					learning = 20
+					NOT = { learning = 25 }
 				}
 			}
 			random_list = {
@@ -9214,9 +9777,17 @@ character_event = {
 					FROM = { set_character_flag = divine_summoning_astrology_penalty }
 				}
 				10 = {
+					modifier = {
+						factor = 0.5
+						FROM = { has_character_flag = used_ingredients_for_summoning }
+					}
 					FROM = { set_character_flag = divine_summoning_astrology_bad_penalty }
 				}
 				5 = {
+					modifier = {
+						factor = 0.5
+						FROM = { has_character_flag = used_ingredients_for_summoning }
+					}
 					FROM = { set_character_flag = divine_summoning_failure }
 				}
 			}
@@ -9225,8 +9796,8 @@ character_event = {
 			limit = {
 				FROM = {
 					has_character_flag = divine_summoning_astrology
-					learning = 7
-					NOT = { learning = 14 }
+					learning = 15
+					NOT = { learning = 20 }
 				}
 			}
 			random_list = {
@@ -9243,9 +9814,17 @@ character_event = {
 					FROM = { set_character_flag = divine_summoning_astrology_penalty }
 				}
 				20 = {
+					modifier = {
+						factor = 0.5
+						FROM = { has_character_flag = used_ingredients_for_summoning }
+					}
 					FROM = { set_character_flag = divine_summoning_astrology_bad_penalty }
 				}
 				10 = {
+					modifier = {
+						factor = 0.5
+						FROM = { has_character_flag = used_ingredients_for_summoning }
+					}
 					FROM = { set_character_flag = divine_summoning_failure }
 				}
 			}
@@ -9254,7 +9833,7 @@ character_event = {
 			limit = {
 				FROM = {
 					has_character_flag = divine_summoning_astrology
-					NOT = { learning = 7 }
+					NOT = { learning = 15 }
 				}
 			}
 			random_list = {
@@ -9268,9 +9847,17 @@ character_event = {
 					FROM = { set_character_flag = divine_summoning_astrology_penalty }
 				}
 				25 = {
+					modifier = {
+						factor = 0.5
+						FROM = { has_character_flag = used_ingredients_for_summoning }
+					}
 					FROM = { set_character_flag = divine_summoning_astrology_bad_penalty }
 				}
 				15 = {
+					modifier = {
+						factor = 0.5
+						FROM = { has_character_flag = used_ingredients_for_summoning }
+					}
 					FROM = { set_character_flag = divine_summoning_failure }
 				}
 			}
@@ -9279,7 +9866,7 @@ character_event = {
 			limit = {
 				FROM = {
 					has_character_flag = divine_summoning_open_mind
-					learning = 21
+					learning = 25
 				}
 			}
 			random_list = {
@@ -9293,9 +9880,17 @@ character_event = {
 					FROM = { set_character_flag = divine_summoning_open_mind_bonus }
 				}
 				15 = {
+					modifier = {
+						factor = 0.5
+						FROM = { has_character_flag = used_ingredients_for_summoning }
+					}
 					FROM = { set_character_flag = divine_summoning_open_mind_penalty }
 				}
 				5 = {
+					modifier = {
+						factor = 0.5
+						FROM = { has_character_flag = used_ingredients_for_summoning }
+					}
 					FROM = { set_character_flag = divine_summoning_open_mind_bad_penalty }
 				}
 			}
@@ -9304,8 +9899,8 @@ character_event = {
 			limit = {
 				FROM = {
 					has_character_flag = divine_summoning_open_mind
-					learning = 14
-					NOT = { learning = 21 }
+					learning = 20
+					NOT = { learning = 25 }
 				}
 			}
 			random_list = {
@@ -9322,9 +9917,17 @@ character_event = {
 					FROM = { set_character_flag = divine_summoning_open_mind_penalty }
 				}
 				10 = {
+					modifier = {
+						factor = 0.5
+						FROM = { has_character_flag = used_ingredients_for_summoning }
+					}
 					FROM = { set_character_flag = divine_summoning_open_mind_bad_penalty }
 				}
 				5 = {
+					modifier = {
+						factor = 0.5
+						FROM = { has_character_flag = used_ingredients_for_summoning }
+					}
 					FROM = { set_character_flag = divine_summoning_failure }
 				}
 			}
@@ -9333,8 +9936,8 @@ character_event = {
 			limit = {
 				FROM = {
 					has_character_flag = divine_summoning_open_mind
-					learning = 7
-					NOT = { learning = 14 }
+					learning = 15
+					NOT = { learning = 20 }
 				}
 			}
 			random_list = {
@@ -9351,9 +9954,17 @@ character_event = {
 					FROM = { set_character_flag = divine_summoning_open_mind_penalty }
 				}
 				20 = {
+					modifier = {
+						factor = 0.5
+						FROM = { has_character_flag = used_ingredients_for_summoning }
+					}
 					FROM = { set_character_flag = divine_summoning_open_mind_bad_penalty }
 				}
 				10 = {
+					modifier = {
+						factor = 0.5
+						FROM = { has_character_flag = used_ingredients_for_summoning }
+					}
 					FROM = { set_character_flag = divine_summoning_failure }
 				}
 			}
@@ -9362,7 +9973,7 @@ character_event = {
 			limit = {
 				FROM = {
 					has_character_flag = divine_summoning_open_mind
-					NOT = { learning = 7 }
+					NOT = { learning = 15 }
 				}
 			}
 			random_list = {
@@ -9376,9 +9987,17 @@ character_event = {
 					FROM = { set_character_flag = divine_summoning_open_mind_penalty }
 				}
 				25 = {
+					modifier = {
+						factor = 0.5
+						FROM = { has_character_flag = used_ingredients_for_summoning }
+					}
 					FROM = { set_character_flag = divine_summoning_open_mind_bad_penalty }
 				}
 				15 = {
+					modifier = {
+						factor = 0.5
+						FROM = { has_character_flag = used_ingredients_for_summoning }
+					}
 					FROM = { set_character_flag = divine_summoning_failure }
 				}
 			}
@@ -9387,7 +10006,7 @@ character_event = {
 			limit = {
 				FROM = {
 					has_character_flag = divine_summoning_hidden_truth
-					learning = 21
+					learning = 25
 				}
 			}
 			random_list = {
@@ -9401,9 +10020,17 @@ character_event = {
 					FROM = { set_character_flag = divine_summoning_hidden_truth_bonus }
 				}
 				15 = {
+					modifier = {
+						factor = 0.5
+						FROM = { has_character_flag = used_ingredients_for_summoning }
+					}
 					FROM = { set_character_flag = divine_summoning_hidden_truth_penalty }
 				}
 				5 = {
+					modifier = {
+						factor = 0.5
+						FROM = { has_character_flag = used_ingredients_for_summoning }
+					}
 					FROM = { set_character_flag = divine_summoning_hidden_truth_bad_penalty }
 				}
 			}
@@ -9412,8 +10039,8 @@ character_event = {
 			limit = {
 				FROM = {
 					has_character_flag = divine_summoning_hidden_truth
-					learning = 14
-					NOT = { learning = 21 }
+					learning = 20
+					NOT = { learning = 25 }
 				}
 			}
 			random_list = {
@@ -9430,9 +10057,17 @@ character_event = {
 					FROM = { set_character_flag = divine_summoning_hidden_truth_penalty }
 				}
 				10 = {
+					modifier = {
+						factor = 0.5
+						FROM = { has_character_flag = used_ingredients_for_summoning }
+					}
 					FROM = { set_character_flag = divine_summoning_hidden_truth_bad_penalty }
 				}
 				5 = {
+					modifier = {
+						factor = 0.5
+						FROM = { has_character_flag = used_ingredients_for_summoning }
+					}
 					FROM = { set_character_flag = divine_summoning_failure }
 				}
 			}
@@ -9441,8 +10076,8 @@ character_event = {
 			limit = {
 				FROM = {
 					has_character_flag = divine_summoning_hidden_truth
-					learning = 7
-					NOT = { learning = 14 }
+					learning = 15
+					NOT = { learning = 20 }
 				}
 			}
 			random_list = {
@@ -9459,9 +10094,17 @@ character_event = {
 					FROM = { set_character_flag = divine_summoning_hidden_truth_penalty }
 				}
 				20 = {
+					modifier = {
+						factor = 0.5
+						FROM = { has_character_flag = used_ingredients_for_summoning }
+					}
 					FROM = { set_character_flag = divine_summoning_hidden_truth_bad_penalty }
 				}
 				10 = {
+					modifier = {
+						factor = 0.5
+						FROM = { has_character_flag = used_ingredients_for_summoning }
+					}
 					FROM = { set_character_flag = divine_summoning_failure }
 				}
 			}
@@ -9470,7 +10113,7 @@ character_event = {
 			limit = {
 				FROM = {
 					has_character_flag = divine_summoning_hidden_truth
-					NOT = { learning = 7 }
+					NOT = { learning = 15 }
 				}
 			}
 			random_list = {
@@ -9484,14 +10127,23 @@ character_event = {
 					FROM = { set_character_flag = divine_summoning_hidden_truth_penalty }
 				}
 				25 = {
+					modifier = {
+						factor = 0.5
+						FROM = { has_character_flag = used_ingredients_for_summoning }
+					}
 					FROM = { set_character_flag = divine_summoning_hidden_truth_bad_penalty }
 				}
 				15 = {
+					modifier = {
+						factor = 0.5
+						FROM = { has_character_flag = used_ingredients_for_summoning }
+					}
 					FROM = { set_character_flag = divine_summoning_failure }
 				}
 			}
 		}
 		FROM = { character_event = { id = MNM.1626 days = 15 random = 15  } }
+		FROM = { clr_character_flag = used_ingredients_for_summoning }
 	}
 }
 
@@ -9877,19 +10529,19 @@ character_event = {
 				}
 				modifier = {
 					factor = 2
-					trait = genius_visible
+					trait = genius
 				}
 				modifier = {
 					factor = 0.5
-					trait = imbecile_visible
+					trait = imbecile
 				}
 				modifier = {
 					factor = 1.6
-					trait = quick_visible
+					trait = quick
 				}
 				modifier = {
 					factor = 0.7
-					trait = slow_visible
+					trait = slow
 				}
 				modifier = {
 					factor = 0.6
@@ -9963,19 +10615,19 @@ character_event = {
 				}
 				modifier = {
 					factor = 2
-					trait = genius_visible
+					trait = genius
 				}
 				modifier = {
 					factor = 0.5
-					trait = imbecile_visible
+					trait = imbecile
 				}
 				modifier = {
 					factor = 1.6
-					trait = quick_visible
+					trait = quick
 				}
 				modifier = {
 					factor = 0.7
-					trait = slow_visible
+					trait = slow
 				}
 				modifier = {
 					factor = 0.6
@@ -10060,11 +10712,11 @@ character_event = {
 				}
 				modifier = {
 					factor = 0.5
-					trait = genius_visible
+					trait = genius
 				}
 				modifier = {
 					factor = 2
-					trait = imbecile_visible
+					trait = imbecile
 				}
 				modifier = {
 					factor = 2
@@ -10072,11 +10724,11 @@ character_event = {
 				}
 				modifier = {
 					factor = 0.7
-					trait = quick_visible
+					trait = quick
 				}
 				modifier = {
 					factor = 1.6
-					trait = slow_visible
+					trait = slow
 				}
 				modifier = {
 					factor = 1.8
@@ -12151,8 +12803,8 @@ letter_event = {
 			modifier = {
 				factor = 1.5
 				OR = {
-					trait = genius_visible
-					trait = quick_visible
+					trait = genius
+					trait = quick
 				}
 			}
 			modifier = {
@@ -12206,8 +12858,8 @@ letter_event = {
 			modifier = {
 				factor = 2
 				OR = {
-					trait = imbecile_visible
-					trait = slow_visible
+					trait = imbecile
+					trait = slow
 				}
 			}
 			modifier = {
@@ -14435,6 +15087,16 @@ character_event = { # progress event tombola
 				}
 				character_event = { id = MNM.1845 }
 			}
+			30 = { # Use ingredients
+				trigger = {
+					has_a_herb_ingredient_trigger = yes
+					any_artifact = {
+			    		count = 2
+			    		has_artifact_flag = ingredient
+		    		}
+				}
+				character_event = { id = MNM.1855 }
+			}
 		}
 	}
 }
@@ -14563,7 +15225,7 @@ character_event = { # Progress - Productive evening
 		trigger = { trait = slothful }
 		random = {
 			chance = 30
-			remove_trait = slothful
+			remove_trait_slothful_effect = yes
 		}
 	}
 	
@@ -14777,8 +15439,27 @@ character_event = { # Progress - Child wants help to sleep
 			}
 			save_event_target_as = target_child
 		}
-	}
-	
+    	if = {
+    		limit = { has_a_herb_ingredient_trigger = yes }
+    		select_random_hermetic_ingredient_herb_effect = yes
+    		break = yes
+    	}
+    	if = {
+    		limit = { has_an_animal_part_ingredient_trigger = yes }
+    		select_random_hermetic_ingredient_animal_part_effect = yes
+    		break = yes
+    	}
+    	if = {
+    		limit = { has_a_powder_ingredient_trigger = yes }
+    		select_random_hermetic_ingredient_powder_effect = yes
+    		break = yes
+    	}
+    	if = {
+    		limit = { has_a_liquid_ingredient_trigger = yes }
+    		select_random_hermetic_ingredient_liquid_effect = yes
+    	}
+	}	
+
 	option = {
 		name = EVTOPTA_MNM_1842
 		increase_astronomical_insights_modifier_effect = yes
@@ -14806,13 +15487,7 @@ character_event = { # Progress - Child wants help to sleep
 				}
 			}
 		}
-	}
-	
-	option = {
-		name = EVTOPTB_MNM_1842
-	}
-	
-	after = {
+
 		event_target:target_child = {
 			opinion = {
 				who = ROOT
@@ -14820,7 +15495,105 @@ character_event = { # Progress - Child wants help to sleep
 				years = 25
 			}
 		}
+	}
+	
+	option = {
+		name = EVTOPTB_MNM_1842
+
+		event_target:target_child = {
+			opinion = {
+				who = ROOT
+				modifier = opinion_bad_parent
+				years = 25
+			}
+		}
+	}
+	
+	option = { #this will help you sleep (uses ingredient)
+		tooltip_info = yes
+		custom_tooltip = { text = ingredient_option_available_tt }
+
+		name = {
+        	text = EVTOPTC_MNM_1842_herb
+        	trigger = { has_selected_herb_ingredient_1_trigger = yes }
+        }
+        name = {
+        	text = EVTOPTC_MNM_1842_animal_part
+        	trigger = { has_selected_animal_part_ingredient_1_trigger = yes }
+        }		
+        name = {
+        	text = EVTOPTC_MNM_1842_powder
+        	trigger = { has_selected_powder_ingredient_1_trigger = yes }
+        }
+        name = {
+        	text = EVTOPTC_MNM_1842_liquid
+        	trigger = { has_selected_liquid_ingredient_1_trigger = yes }
+        }
+
+        increase_astronomical_insights_modifier_effect = yes
+
+		if = { # if you gave them a herbal tea...
+			limit = {
+				has_selected_herb_ingredient_1_trigger = yes
+			}
+			event_target:target_child = {
+				opinion = {
+					who = ROOT
+					modifier = comforted_opinion
+					years = 5
+				}
+			}
+		}
+
+		if = { # if you gave them animal part broth...
+			limit = {
+				has_selected_animal_part_ingredient_1_trigger = yes
+			}
+			event_target:target_child = {
+				opinion = {
+					who = ROOT
+					modifier = opinion_cheered_up
+					years = 2
+				}
+			}
+		}
+
+		if = { # if you gave them a metal powder...
+			limit = {
+				has_selected_powder_ingredient_1_trigger = yes
+			}
+			event_target:target_child = {
+				add_character_modifier = {
+					modifier = nauseous_from_potion
+					years = 1
+				}
+			}
+		}
+
+		if = { # if you fed them mercury, for instance...
+			limit = {
+				has_selected_liquid_ingredient_1_trigger = yes
+			}
+			event_target:target_child = {
+				add_character_modifier = {
+					modifier = nauseous_from_potion
+					years = 1
+				}
+			}
+		}
+
+		destroy_selected_ingredient_1_effect = yes
+
+        trigger = {
+        	any_artifact = { has_artifact_flag = ingredient }
+        }
+	}
+
+	after = {
 		character_event = { id = MNM.1837 days = 5 }
+		hidden_effect = {
+			remove_selection_of_ingredients_effect = yes
+		}
 	}
 }
 
@@ -14872,6 +15645,26 @@ character_event = { # Progress - Friends upset about missed event
 		random_friend = {
 			save_event_target_as = target_friend
 		}
+
+		if = {
+    		limit = { has_a_herb_ingredient_trigger = yes }
+    		select_random_hermetic_ingredient_herb_effect = yes
+    		break = yes
+    	}
+    	if = {
+    		limit = { has_an_animal_part_ingredient_trigger = yes }
+    		select_random_hermetic_ingredient_animal_part_effect = yes
+    		break = yes
+    	}
+    	if = {
+    		limit = { has_a_powder_ingredient_trigger = yes }
+    		select_random_hermetic_ingredient_powder_effect = yes
+    		break = yes
+    	}
+    	if = {
+    		limit = { has_a_liquid_ingredient_trigger = yes }
+    		select_random_hermetic_ingredient_liquid_effect = yes
+    	}
 	}
 	
 	option = {
@@ -14900,9 +15693,91 @@ character_event = { # Progress - Friends upset about missed event
 			}
 		}
 	}
+
+	option = {
+		tooltip_info = yes
+		custom_tooltip = { text = ingredient_option_available_tt }
+
+		name = {
+        	text = EVTOPTC_MNM_1844_herb
+        	trigger = { has_selected_herb_ingredient_1_trigger = yes }
+        }
+        name = {
+        	text = EVTOPTC_MNM_1844_animal_part
+        	trigger = { has_selected_animal_part_ingredient_1_trigger = yes }
+        }		
+        name = {
+        	text = EVTOPTC_MNM_1844_powder
+        	trigger = { has_selected_powder_ingredient_1_trigger = yes }
+        }
+        name = {
+        	text = EVTOPTC_MNM_1844_liquid
+        	trigger = { has_selected_liquid_ingredient_1_trigger = yes }
+        }
+
+		increase_astronomical_insights_modifier_effect = yes
+
+		if = { # if you gave them a herbal tea...
+			limit = {
+				has_selected_herb_ingredient_1_trigger = yes
+			}
+			event_target:target_friend = {
+				opinion = {
+					who = ROOT
+					modifier = comforted_opinion
+					years = 5
+				}
+			}
+		}
+
+		if = { # if you gave them animal part broth...
+			limit = {
+				has_selected_animal_part_ingredient_1_trigger = yes
+			}
+			event_target:target_friend = {
+				opinion = {
+					who = ROOT
+					modifier = opinion_cheered_up
+					years = 5
+				}
+			}
+		}
+
+		if = { # if you gave them a metal powder...
+			limit = {
+				has_selected_powder_ingredient_1_trigger = yes
+			}
+			event_target:target_friend = {
+				opinion = {
+					who = ROOT
+					modifier = opinion_cheered_up
+					years = 5
+				}
+			}
+		}
+
+		if = { # if you fed them mercury, for instance...
+			limit = {
+				has_selected_liquid_ingredient_1_trigger = yes
+			}
+			event_target:target_friend = {
+				add_character_modifier = {
+					modifier = nauseous_from_potion
+					years = 1
+				}
+			}
+		}
+
+		destroy_selected_ingredient_1_effect = yes
+
+		trigger = {
+        	any_artifact = { has_artifact_flag = ingredient }
+        }
+	}
 	
 	after = {
 		character_event = { id = MNM.1837 days = 5 }
+		remove_selection_of_ingredients_effect = yes
 	}
 }
 
@@ -14966,6 +15841,100 @@ character_event = { # Progress - Absent-mindedness in meetings
 		character_event = { id = MNM.1837 days = 5 }
 	}
 }
+
+# Progress event: use ingredients
+character_event = {
+    id = MNM.1855
+    desc = EVTDESC_MNM_1855
+	picture = GFX_evt_experiment
+	border = GFX_event_normal_frame_religion
+
+    is_triggered_only = yes
+    
+    immediate = {
+    	select_random_hermetic_ingredient_herb_effect = yes
+    	select_random_hermetic_ingredient_animal_part_effect = yes
+    	select_random_hermetic_ingredient_liquid_effect = yes
+    	select_random_hermetic_ingredient_powder_effect = yes
+    }
+
+    option = { # Smoke something...!
+        name = EVTOPTA_MNM_1855
+
+        random = {
+        	chance = 30
+        	increase_astronomical_insights_modifier_effect = yes
+        }
+
+		destroy_selected_ingredient_1_effect = yes
+    
+        trigger = {
+        	has_selected_herb_ingredient_1_trigger = yes
+        }
+    }
+
+    option = { # Cook something...!
+        name = EVTOPTB_MNM_1855
+        
+        random = {
+        	chance = 40
+        	increase_astronomical_insights_modifier_effect = yes
+        }
+
+        destroy_selected_ingredient_2_effect = yes
+        
+        trigger = {
+        	has_selected_animal_part_ingredient_2_trigger = yes
+        }
+    }
+
+    option = { # I'll keep it under my pillow
+        name = EVTOPTC_MNM_1855
+        
+        random = {
+        	chance = 50
+        	increase_astronomical_insights_modifier_effect = yes
+        }
+
+        destroy_selected_ingredient_2_effect = yes
+        
+        trigger = {
+        	has_selected_powder_ingredient_2_trigger = yes
+        }
+    }
+
+    option = { # Combine several somethings...!
+        tooltip_info = yes
+        custom_tooltip = { text = multiple_ingredient_option_available_tt }
+        
+        name = EVTOPTD_MNM_1855
+
+        random_list = {
+        	85 = {
+        		increase_astronomical_insights_modifier_effect = yes
+        	}
+        	15 = {
+        		add_maimed_trait_effect = yes
+        	}
+        }
+
+        destroy_selected_ingredient_1_and_2_effect = yes
+
+        trigger = {
+    		has_selected_liquid_ingredient_2_trigger = yes
+        }
+    }
+
+    option = { #I'd rather not...
+    	name = EVTOPTE_MNM_1855
+    }
+
+    after = {
+		character_event = { id = MNM.1837 days = 5 }
+		remove_selection_of_ingredients_effect = yes
+	}
+}
+
 
 character_event = { # Outcome - Tracking planets
 	id = MNM.1846
@@ -15321,4 +16290,212 @@ long_character_event = {
 		clr_character_flag = comet_failure
 		remove_astronomical_insight_modifier_effect = yes
 	}
+}
+
+###########################################################
+#########    Inherited ingredient set-up event    #########
+###########################################################
+character_event = {
+    id = MNM.5107
+    hide_window = yes
+    is_triggered_only = yes
+
+    trigger = {
+    	FROM = { has_artifact_flag = ingredient } #the artifact inherited must be an ingredient...
+    	NOT = { has_character_flag = dealing_with_inherited_ingredients } #you mustn't already dealing with this...
+    }
+
+    immediate = {
+    	set_character_flag = dealing_with_inherited_ingredients
+    	FROMFROM = { save_event_target_as = previous_ingredient_owner } #does this work on dead folk?
+    	character_event = { id = MNM.5108 }
+    }
+}
+
+#Dealing with inherited ingredients - delays the visible event
+character_event = {
+    id = MNM.5108
+    hide_window = yes
+    is_triggered_only = yes
+
+    immediate = {
+    	if = {
+    		limit = {
+    			ai = yes
+    			FROMFROM = { has_artifact_flag = ingredient }
+    		}
+    		FROMFROM = { destroy_artifact = yes }
+    	}
+    	if = {
+    		limit = {
+    			ai = no
+    			NOT = { has_character_flag = owns_inherited_ingredients }
+    		}
+    		set_character_flag = owns_inherited_ingredients
+    		character_event = { id = MNM.5108 days = 10 } #if this is the first instance of this event, send this event again to check if you ever inherited more than one ingredient...
+    		break = yes
+    	}
+    	if = { #run second time around
+    		limit = {  
+    			ai = no
+    			has_character_flag = owns_inherited_ingredients
+    			any_artifact = {
+    				count = 2
+    				has_artifact_flag = ingredient
+    			}
+    		}
+    		repeat_event = { id = MNM.5109 } #send visible event
+    	}
+    }
+}
+
+#Inherited ingredients - keep or no?
+character_event = {
+    id = MNM.5109
+    picture = GFX_evt_experiment
+    border = GFX_event_normal_frame_religion
+    is_triggered_only = yes
+    
+    desc = {
+    	text = EVTDESC_MNM_5109_hermetic
+    	trigger = {
+    		society_member_of = hermetics
+    	}
+    }
+    desc = {
+    	text = EVTDESC_MNM_5109_other_society
+    	trigger = {
+    		NOT = { society_member_of = hermetics }
+    		is_in_society = yes
+    	}
+    }
+    desc = {
+    	text = EVTDESC_MNM_5109_no_society
+    	trigger = {
+    		is_in_society = no
+    	}
+    }
+    desc = {
+    	text = EVTDESC_MNM_5109_child
+    	trigger = {
+    		NOT = { age = 16 }
+    	}
+    }
+
+    immediate = {
+    	select_random_hermetic_ingredient_effect = yes
+    	select_random_hermetic_ingredient_effect = yes
+    }
+
+    option = {      
+        name = EVTOPTA_MNM_5109
+        destroy_selected_ingredient_1_and_2_effect = yes
+        piety = 25
+        ai_chance = { factor = 5 }
+    }
+    option = {      
+        name = EVTOPTB_MNM_5109
+        destroy_all_ingredients_effect = yes
+        piety = 25
+        prestige = 25
+        ai_chance = { factor = 100 }
+    }
+    option = {
+        name = EVTOPTC_MNM_5109
+    }
+
+    after = {
+    	remove_selection_of_ingredients_effect = yes
+    	clr_character_flag = owns_inherited_ingredients
+    	clr_character_flag = dealing_with_inherited_ingredients
+    }
+}
+
+#Paranoid ward-making (random event, fired from on_society_bi_yearly_pulse)
+character_event = {
+    id = MNM.5110
+    desc = EVTDESC_MNM_5110
+    picture = GFX_evt_shady_meeting
+    border = GFX_event_normal_frame_intrigue
+    is_triggered_only = yes
+    
+    trigger = {
+    	has_dlc = "Mystics"
+    	society_member_of = hermetics
+    	NOT = { has_character_flag = small_defense_against_dark_forces }
+    	NOT = { has_character_flag = medium_defense_against_dark_forces }
+    	NOT = { has_character_flag = large_defense_against_dark_forces }
+
+    	OR = {
+	    	NOT = {
+		    	has_game_rule = {
+					name = supernatural_events
+					value = off
+				}
+			}
+			NOT = {
+		    	has_game_rule = {
+					name = devil_worshipers
+					value = none
+				}
+			}
+    	}
+
+		any_artifact = {
+			count = 3
+			has_artifact_flag = ingredient
+		}
+    }
+
+    immediate = {
+    	select_random_hermetic_ingredient_effect = yes
+    	select_random_hermetic_ingredient_effect = yes
+    }
+
+    option = { #One ingredient is fine
+        name = EVTOPTA_MNM_5110
+        prestige = 15
+        piety = -10
+        destroy_selected_ingredient_1_effect = yes
+
+    	clr_character_flag = small_defense_against_dark_forces
+    	clr_character_flag = medium_defense_against_dark_forces
+    	clr_character_flag = large_defense_against_dark_forces
+        set_character_flag = small_defense_against_dark_forces
+
+        ai_chance = { factor = 10 }
+    }
+    option = { #I want to use both ingredients
+        name = EVTOPTB_MNM_5110
+        prestige = 25
+        piety = -20
+        destroy_selected_ingredient_1_and_2_effect = yes
+
+        clr_character_flag = small_defense_against_dark_forces
+    	clr_character_flag = medium_defense_against_dark_forces
+    	clr_character_flag = large_defense_against_dark_forces
+        set_character_flag = medium_defense_against_dark_forces
+        
+        ai_chance = { factor = 10 }
+    }
+    option = { #I'll cover my quarters in these things!
+        name = EVTOPTC_MNM_5110
+        prestige = 35
+        piety = -30
+        destroy_all_ingredients_effect = yes
+        
+        clr_character_flag = small_defense_against_dark_forces
+    	clr_character_flag = medium_defense_against_dark_forces
+    	clr_character_flag = large_defense_against_dark_forces
+        set_character_flag = large_defense_against_dark_forces
+
+        ai_chance = { factor = 100 }
+    }
+    option = { #this is paranoia!
+        name = EVTOPTD_MNM_5110
+        ai_chance = { factor = 0 }
+    }
+    after = {
+    	remove_selection_of_ingredients_effect = yes
+    }
 }
