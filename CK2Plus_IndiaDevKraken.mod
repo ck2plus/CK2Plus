@@ -1,5 +1,5 @@
 name = "DevCK2Plus India"
-path = "../../GitHub/CK2Plus/CK2Plus_India"
+path = "../../GitKraken/CK2Plus/CK2Plus_India"
 dependencies = { DevCK2Plus }
 tags = {
 	"Add India" 
