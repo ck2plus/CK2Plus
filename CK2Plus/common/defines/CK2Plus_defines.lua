@@ -196,6 +196,9 @@ NDefines.NMilitary.GALLEYS_MAINTENANCE = 50
 NDefines.NMilitary.MAX_RIVER_MOVEMENT_FORT_LEVEL = 15.0
 NDefines.NMilitary.OUTSIDE_LIEGE_LEVY_MULT = 0.35				-- Multiplier to liege levies outside all capital regions
 
+NDefines.NDisease.INFECTION_CHANCE_MODIFIER_TRADEPOST = 0.03
+NDefines.NDisease.INFECTION_CHANCE_MODIFIER_TRADEROUTE = 0.03
+
 NDefines.NTechnology.IDEAL_YEAR_AHEAD_PENALTY_INVEST = 0.4			-- Percent increase in cost pre level ahead of ideal date
 
 NDefines.NAI.DOW_AGGRESSION_FACTOR = 1.0							-- General aggressiveness declarations of war
