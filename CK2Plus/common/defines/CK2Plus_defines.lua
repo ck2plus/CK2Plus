@@ -76,8 +76,8 @@ NDefines.NCharacter.NATURAL_DEATH_CHANCE_AGE_100 = 8160			-- Natural deaths per 
 NDefines.NCharacter.NOT_SPOUSE_FERTILITY_MULT = 0.25			-- Applied to fertility when the two characters are not married
 NDefines.NCharacter.INFANT_DEATH_CHANCE = 0.03					-- Chance of stillbirth / death at birth
 NDefines.NCharacter.TRIBAL_EMPTY_HOLDING_TAX_MULTIPLIER = 0.7
-NDefines.NCharacter.TREASURY_CHANCE_TO_DISAPPEAR_STANDARD = 0.01,	-- Chances that artifacts disappear on inheritance
-NDefines.NCharacter.TREASURY_CHANCE_TO_DISAPPEAR_NO_HEIR = 0.1,		-- Chances that artifacts disappear on inheritance when the dying character doesn't have an heir
+NDefines.NCharacter.TREASURY_CHANCE_TO_DISAPPEAR_STANDARD = 0.01	-- Chances that artifacts disappear on inheritance
+NDefines.NCharacter.TREASURY_CHANCE_TO_DISAPPEAR_NO_HEIR = 0.1		-- Chances that artifacts disappear on inheritance when the dying character doesn't have an heir
 
 NDefines.NTitle.BARON_AS_VASSAL_PRESTIGE = 0.005
 NDefines.NTitle.COUNT_AS_VASSAL_PRESTIGE = 0.025
