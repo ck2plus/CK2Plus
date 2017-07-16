@@ -1544,7 +1544,7 @@ character_event = {
 		if = {
 			limit = { # If this is true, prepare to settle.
 				OR = {
-					wealth = 150
+					wealth = 300
 					had_character_flag = { flag = raiding_adventurer days = 1825 }
 				}
 				any_independent_ruler = {
@@ -1636,13 +1636,33 @@ character_event = {
 			set_can_toggle_looting = yes
 			set_looting = no
 		}
-		clr_character_flag = raiding_adventurer
+		
 		random_independent_ruler = {
 			limit = {
 				has_opinion_modifier = { who = ROOT modifier = opinion_looted }
 				NOT = { realm_levy_diff = { who = ROOT value = 3000 } }
 				demesne_size = 1
+				NOT = { has_character_flag = negotiating_with_adventurer }
+				NOT = { any_realm_province = { has_province_modifier = settled_adventurer } }
 			}
+
+			if = {
+				limit = { higher_real_tier_than = DUKE }
+
+				#Adventurer negotiation complex
+				set_character_flag = negotiating_with_adventurer
+				character_event = { id = ADV.1 }
+
+				#Checks if they should go back to raiding
+				character_event = { id = HL.200 days = 15 }
+
+				break = yes
+			}
+			
+			if = {
+				limit = { NOT = { higher_real_tier_than = DUKE } }	
+				clr_character_flag = raiding_adventurer
+
 			if = {
 				limit = {
 					ROOT = { is_seafarer = yes }
@@ -1746,16 +1766,19 @@ character_event = {
 					}
 				}
 			}
+				if = {
+					limit = { war = yes }
+					break = yes
+				}
 		}
-		if = {
-			limit = {
-				war = no
 			}
+
+			#If neither break succeeded, kill it with fire
+			clr_character_flag = raiding_adventurer
 			log = "[SERIOUS] [Root.GetTitledFirstName] failed to find a target after trying to end his raiding adventure."
 			character_event = { id = HL.199 }
 		}
 	}
-}
 
 character_event = {
 	id = HL.112
@@ -1903,6 +1926,7 @@ character_event = {
 		is_nomadic = yes
 		prisoner = no
 		NOT = { trait = incapable }
+		#NOT = { has_character_flag = raiding_adventurer_nomad }
 	}
 	
 	immediate = {
@@ -2116,8 +2140,27 @@ character_event = {
 		random_independent_ruler = {
 			limit = {
 				has_opinion_modifier = { who = ROOT modifier = opinion_looted }
+				NOT = { realm_levy_diff = { who = ROOT value = 3000 } }
 				demesne_size = 1
+				NOT = { has_character_flag = negotiating_with_adventurer }
+				NOT = { any_realm_province = { has_province_modifier = settled_adventurer } }
 			}
+
+			if = {
+				limit = { higher_real_tier_than = DUKE }
+
+				#Adventurer negotiation complex
+				set_character_flag = negotiating_with_adventurer
+				character_event = { id = ADV.1 }
+
+				break = yes
+			}
+
+			if = {
+				limit = { NOT = { higher_real_tier_than = DUKE } }
+
+				clr_character_flag = raiding_adventurer
+
 			if = {
 				limit = {
 					ROOT = { is_seafarer = yes }
@@ -2221,16 +2264,20 @@ character_event = {
 					}
 				}
 			}
-		}
-		if = {
-			limit = {
-				war = no
+				if = {
+					limit = { war = yes }
+					break = yes
+				}
 			}
-			log = "[SERIOUS] [Root.GetTitledFirstName] failed to find a target after trying to end his raiding adventure."
-			character_event = { id = HL.199 }
 		}
+
+		#If neither break succeeded, kill it with fire
+		clr_character_flag = raiding_adventurer
+		log = "[SERIOUS] [Root.GetTitledFirstName] failed to find a target after trying to end his raiding adventure."
+		character_event = { id = HL.199 }
 	}
 }
+
 
 # Clean-up
 character_event = {
@@ -2320,5 +2367,28 @@ character_event = {
            }
            banish = yes
        }
+	}
+}
+
+#Should adventurer continue to raid?
+character_event = {
+	id = HL.200
+	
+	is_triggered_only = yes
+	
+	hide_window = yes
+
+	#If not at war and still holding an adventurer title... 
+	trigger = {
+	 	war = no
+	 	primary_title = { 
+	 		temporary = yes 
+	 		adventurer = yes
+	 	}
+	}
+
+	#...go forth and adventure!
+	immediate = {
+		character_event = { id = HL.110 }
 	}
 }
