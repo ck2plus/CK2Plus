@@ -11,7 +11,7 @@ NDefines.NInfamy.MAX_INFAMY_PER_WAR_PROVINCE = 2.5							-- A single province ta
 NDefines.NInfamy.MIN_INFAMY_PER_WAR_PROVINCE = 0							-- A single province taken in war can give at most this much threat
 
 --Reduce Effectiveness of Shattered Retreat
-NDefines.NMilitary.SHATTERED_RETREAT_MOVEMENT_MULTIPLIER = 1.1
+NDefines.NMilitary.SHATTERED_RETREAT_MOVEMENT_MULTIPLIER = 2.2
 NDefines.NMilitary.SHATTERED_RETREAT_MORALE_MULTIPLIER = 1.0
 NDefines.NMilitary.SHATTERED_RETREAT_PREFERRED_PROVINCES = 2
 NDefines.NMilitary.SHATTERED_RETREAT_MAX_PROVINCES = 5
