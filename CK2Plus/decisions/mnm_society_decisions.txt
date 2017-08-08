@@ -1596,6 +1596,130 @@ targeted_decisions = {
 		}
 	}
 
+	#Action: jinn recruit
+	jinn_recruit = {
+		is_in_society = yes
+		
+		filter = all
+		ai_target_filter = realm
+
+		from_potential = {
+			is_adult = yes
+			prisoner = no
+			NOT = { trait = incapable }
+			NOT = { has_character_modifier = recruitment_timer }
+			society_member_of = arab_jinn_sorcerors
+			OR = {
+				ai = no
+				NOT = {
+					society_rank = {
+						society = arab_jinn_sorcerors
+						rank == 1
+					}
+				}
+			}
+		}
+		potential = {
+			OR = {
+				FROM = { ai = no }
+				ai = no
+			}
+			OR = {
+				FROM = { ai = yes } # Only checks realm, so by definition in range
+				is_within_diplo_range = FROM
+			}
+			is_adult = yes
+			prisoner = no
+			NOT = { trait = incapable }
+			is_in_society = no
+
+
+			#AI cannot invite other AIs when society is full
+			NAND = {
+				ai = yes
+				FROM = { ai = yes }
+				NOT = { can_join_society = arab_jinn_sorcerors }
+			}
+
+			#Blocks so AI recruits sensible people (who might say no)
+			OR = {
+				FROM = { ai = no }
+				is_friend = FROM
+				is_lover = FROM
+				is_close_relative = FROM
+				trait = trusting
+				has_impious_trait_trigger = yes
+				trait = drunkard
+				trait = possessed
+				trait = lunatic
+				interested_in_society = arab_jinn_sorcerors
+			}
+		}
+		allow = {
+			is_inaccessible_trigger = no
+			custom_tooltip = {
+				text = jinn_recruit_block_tooltip
+				OR = {
+					NOT = { has_character_flag = jinn_attempted_recruitment }
+					interested_in_society = arab_jinn_sorcerors
+				}
+				NOT = { has_character_flag = being_recruited_by_the_jinn }
+			}
+			has_jinn_sorceror_prerequisites = yes
+			FROM = {
+				is_inaccessible_trigger = no
+				custom_tooltip = {
+					text = recruit_delay_timer_tooltip
+					NOT = { has_character_modifier = recruitment_delay_timer }
+				}
+			}
+		}
+		effect = {
+			set_character_flag = jinn_attempted_recruitment
+			set_character_flag = being_recruited_by_the_jinn
+			FROM = {
+				save_event_target_as = satanists_recruiter
+			}
+			hidden_effect = {
+				character_event = { id = MNM.7001 days = 3 } # recruitment chain
+				character_event = { id = MNM.7030 days = 365 } # sends delayed back up, in case recruitment fails somehow
+				FROM = {
+					if = {
+						limit = { ai = yes }
+						add_character_modifier = {
+							name = recruitment_timer
+							days = 730
+							hidden = yes
+						}
+					}
+					add_character_modifier = {
+						name = recruitment_delay_timer
+						days = 90
+						hidden = yes
+					}
+				}
+			}
+		}
+		revoke_allowed = {
+			always = no
+		}
+		ai_will_do = {
+			factor = 1
+			modifier = {
+				factor = 0.01 # slow down
+			}
+			modifier = {
+				factor = 10 # recruit interested parties
+				interested_in_society = arab_jinn_sorcerors
+			}
+			modifier = {
+				factor = 0 # don't recruit characters interested in something else
+				NOT = { interested_in_society = arab_jinn_sorcerors }
+				is_interested_in_any_society = yes
+			}
+		}
+	}
+
 	#Action: trollcrafters recruit
 	trollcrafters_recruit = {
 		is_in_society = yes
@@ -2363,6 +2487,7 @@ targeted_decisions = {
 		}
 	}
 
+	
 	#Action: Sacrifice prisoner
 	prisoner_dark_sacrifice = {
 		only_playable = yes
@@ -2810,6 +2935,13 @@ targeted_decisions = {
 							rank = 1
 						}
 					}
+					AND = {
+						society_member_of = arab_jinn_sorcerors
+						is_society_rank_full = {
+							society = arab_jinn_sorcerors
+							rank = 1
+						}
+					}
 				}
 			}
 		}
@@ -2827,7 +2959,6 @@ targeted_decisions = {
 					}
 					OR = {
 						religion_group = christian
-						religion_group = muslim
 						religion_group = jewish_group
 						religion = zun_pagan
 						religion = zun_pagan_reformed
@@ -2899,6 +3030,15 @@ targeted_decisions = {
 						religion = norse_pagan_reformed
 						secret_religion = norse_pagan
 						secret_religion = norse_pagan_reformed
+					}
+				}
+				AND = {
+					FROM = {
+						society_member_of = arab_jinn_sorcerors
+					}
+					OR = {
+						religion_group = muslim
+						religion = arab_pagan
 					}
 				}
 			}
@@ -3379,6 +3519,14 @@ decisions = {
 						}
 					}
 				}
+				AND = {
+					has_jinn_sorceror_prerequisites = yes
+					NOT = {
+						any_society_member = {
+							society_member_of = arab_jinn_sorcerors
+						}
+					}
+				}
 			}
 		}
 		
@@ -3419,6 +3567,10 @@ decisions = {
 			if = {
 				limit = { has_cult_of_angra_mainyu_prerequisites = yes }
 				join_society = cult_of_angra_mainyu
+			}
+			if = {
+				limit = { has_jinn_sorceror_prerequisites = yes }
+				join_society = arab_jinn_sorcerors
 			}
 			
 			set_society_grandmaster = yes # Set character as Grand Master
@@ -3466,6 +3618,10 @@ decisions = {
 						AND = {
 							PREV = {has_cult_of_angra_mainyu_prerequisites = yes }
 							has_cult_of_angra_mainyu_prerequisites = yes
+						}
+						AND = {
+							PREV = {has_jinn_sorceror_prerequisites = yes }
+							has_jinn_sorceror_prerequisites = yes
 						}
 					}
 				}
