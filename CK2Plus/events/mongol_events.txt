@@ -4685,9 +4685,9 @@ character_event = {
 	border = GFX_event_normal_frame_war
 	
 	only_playable = yes
-	culture = turkish
-
+	
 	trigger = {
+		is_landed = yes
 		war = no
 		OR = {
 			is_nomadic = yes
@@ -4695,6 +4695,12 @@ character_event = {
 				is_tribal = yes
 				NOT = { has_dlc = "Horse Lords" }
 			}
+		}
+		OR = {
+			culture = turkish
+			culture = cuman
+			culture = uyghur
+			culture = karluk
 		}
 		NOT = {
 			has_game_rule = {
@@ -10372,3 +10378,622 @@ character_event = {
 	}
 }
 
+
+##################################
+# Rise of the Sultanate of Rum
+##################################
+
+# A Turkic character wants a foothold in Armenia
+character_event = {
+	id = 60600
+	
+	hide_window = yes # Only fires for unplayable landless characters
+	
+	min_age = 16
+	max_age = 50
+	only_men = yes
+	capable_only = yes
+	prisoner = no
+	
+	culture_group = altaic
+	religion_group = muslim
+	
+	trigger = {
+		OR = { # Pacing mechanic, we don't want too many adventurers to spawn at once
+			had_global_flag = { flag = rum_invader_spawned years = 10 }
+			NOT = {
+				has_global_flag = rum_invader_spawned
+			}
+		}
+	
+		OR = {
+			AND = {
+				diplomacy = 5
+				martial = 9
+				health = 4
+			}
+			has_character_flag = demon_child_non_pagan
+		}
+		
+		father_even_if_dead = { # Is of a noble house
+			always = yes
+		}
+		
+		NOT = { trait = content }
+		NOT = { trait = craven }
+		
+		NOT = {
+			has_game_rule = {
+				name = turkic_invasions
+				value = off
+			}
+		}
+		OR = {
+			AND = {
+				has_game_rule = {
+					name = turkic_invasions
+					value = historical
+				}
+				year = 1000
+				NOT = { year = 1200 }
+			}
+			AND = {
+				has_game_rule = {
+					name = turkic_invasions
+					value = random
+				}
+				year = 809
+				NOT = { year = 1200 }
+			}
+		}
+		
+		NOT = { has_global_flag = rum_spawned }
+		OR = {
+			NOT = { has_global_flag = rum_spawning }
+			had_global_flag = { flag = rum_spawning days = 1460 }
+		}
+		
+		is_ruler = no
+		NOT = { any_spouse = { is_ruler = yes } }
+		
+		NOT = { # Somewhat clunky way of checking that the character does not stand to inherit any titles
+			any_heir_title = {
+				always = yes
+			}
+		}
+		
+		liege = {
+			culture_group = altaic
+			capital_scope = {
+				kingdom = {
+					OR ={
+						title = k_mesopotamia
+						title = k_persia
+						title = k_syria
+						title = k_armenia
+					}
+				}
+			}
+		}
+	}
+	
+	mean_time_to_happen = {
+		months = 120
+		modifier = {
+			factor = 20
+			NOT = { dynasty = 613 } # Seljuk 
+		}
+		modifier = {
+			factor = 0.5
+			culture = turkish
+		}
+		modifier = {
+			factor = 0.5
+			has_character_flag = flag_denied_title
+		}
+		modifier = {
+			factor = 0.01
+			has_character_flag = demon_child_non_pagan
+		}
+		modifier = {
+			factor = 3.0
+			trait = slothful
+		}
+		modifier = {
+			factor = 3.0
+			trait = humble
+		}
+		modifier = {
+			factor = 3.0
+			trait = kind
+		}
+	}
+	
+	immediate = {
+		set_global_flag = rum_invader_spawned
+		random_independent_ruler = {
+			limit = {
+				is_landed = yes
+				independent = yes
+				in_revolt = no
+				ROOT = {
+					liege = {
+						NOT = {
+							war_with = PREVPREV
+						}
+					}
+				}
+				NOT = { same_realm = ROOT }
+				NOT = { religion_group = muslim }
+				any_realm_province = {
+					OR = {
+						kingdom = {
+							title = k_armenia
+						}
+						duchy = {
+							title = d_azerbaijan
+						}
+					}
+				}
+			}
+			
+			random_realm_province = {
+				limit = {
+					OR = {
+						kingdom = {
+							title = k_armenia
+						}
+						duchy = {
+							title = d_azerbaijan
+						}
+					}
+				}
+				
+				save_event_target_as = target_province
+				
+				ROOT = {
+					opinion = {
+						who = PREVPREV
+						years = 3
+						modifier = opinion_duchy_adventure_target
+					}
+					add_character_modifier = {
+						name = planning_duchy_adventure
+						hidden = yes
+						days = 730
+					}
+					character_event = {
+						id = 60603 # Fire the attack
+						days = 730
+					}
+					
+					end_inaccessibility_effect = yes #removes in hiding or in_seclusion
+					set_character_flag = do_not_disturb
+					character_event = { id = 60602 days = 730 } # Safety clear of DND
+					set_global_flag = rum_spawning
+				}
+				PREV = {
+					character_event = {
+						id = 60601 # Warn the target
+					}
+				}
+			}
+		}
+	}
+}
+
+# Warn the target
+character_event = {
+	id = 60601
+	desc = EVTDESC_TOG_1211
+	picture = GFX_evt_mongols
+	border = GFX_event_normal_frame_war
+	
+	is_triggered_only = yes
+	
+	immediate = {
+		opinion = {
+			who = FROM
+			modifier = opinion_targeted_by_adventurer
+			months = 24
+		}
+	}
+	
+	option = {
+		name = EVTOPTA_TOG_1211
+	}
+}
+
+# Safety clear of DND
+character_event = {
+	id = 60602
+	
+	is_triggered_only = yes
+	
+	hide_window = yes
+	
+	immediate = {
+		clr_character_flag = do_not_disturb
+	}
+}
+
+# Launch the attack!
+character_event = {
+	id = 60603
+	
+	hide_window = yes 
+	
+	is_triggered_only = yes
+
+	prisoner = no
+	only_capable = yes
+	
+	trigger = {
+		is_ruler = no
+		NOT = { any_spouse = { is_ruler = yes } }
+		
+		NOT = {
+			any_heir_title = {
+				always = yes
+			}
+		}
+		
+		event_target:target_province = {
+			owner = {
+				top_liege = {
+					is_landed = yes
+					independent = yes
+					NOT = { same_realm = ROOT }
+					NOT = { religion_group = muslim }
+				}
+			}
+		}
+	}
+	
+	immediate = {
+		wealth = 500
+		clr_character_flag = do_not_disturb
+		
+		set_character_flag = rum_creator
+		
+		liege = {
+			character_event = {
+				id = 60604
+				days = 1
+			}
+		}
+		
+		liege = {
+			capital_scope = {
+				event_target:target_province = {
+					top_liege = {
+						ROOT = {
+							set_defacto_liege = ROOT
+							create_title = {
+								tier = DUKE
+								landless = yes
+								temporary = yes
+								adventurer = yes
+								culture = ROOT
+								name = "CLAIMANT_ADVENTURE"
+								holder = ROOT
+							}
+							
+							set_character_flag = duchy_adventurer
+						
+							spawn_unit = {
+								province = PREVPREVPREV
+								home = PREVPREVPREV
+								owner = THIS
+								match_character = PREV
+								match_mult = 0.25
+								match_min = 2000
+								match_max = 10000
+								attrition = 0.25
+							}
+							spawn_unit = {
+								province = PREVPREVPREV
+								home = PREVPREVPREV
+								owner = THIS
+								match_character = PREV
+								match_mult = 0.25
+								match_min = 2000
+								match_max = 10000
+								attrition = 0.25
+							}
+							spawn_unit = {
+								province = PREVPREVPREV
+								home = PREVPREVPREV
+								owner = THIS
+								match_character = PREV
+								match_mult = 0.25
+								match_min = 2000
+								match_max = 10000
+								attrition = 0.25
+							}
+							spawn_unit = {
+								province = PREVPREVPREV
+								home = PREVPREVPREV
+								owner = THIS
+								match_character = PREV
+								match_mult = 0.25
+								match_min = 2000
+								match_max = 10000
+								attrition = 0.25
+								cannot_inherit = yes
+							}
+							spawn_unit = {
+								province = PREVPREVPREV
+								home = PREVPREVPREV
+								owner = THIS
+								match_character = PREV
+								match_mult = 0.25
+								match_min = 2000
+								match_max = 10000
+								attrition = 0.25
+								cannot_inherit = yes
+							}
+							spawn_unit = {
+								province = PREVPREVPREV
+								home = PREVPREVPREV
+								owner = THIS
+								match_character = PREV
+								match_mult = 0.25
+								match_min = 2000
+								match_max = 10000
+								attrition = 0.25
+								cannot_inherit = yes
+							}
+							war = {
+								target = PREV
+								casus_belli = duchy_adventure
+								thirdparty_title = PREVPREV
+								tier = DUKE
+							}
+							remove_opinion = {
+								who = PREV
+								modifier = opinion_duchy_adventure_target
+							}
+						}
+					}
+				}
+			}
+		}
+		
+		# Create some decent commander characters
+		create_random_soldier = {
+			random_traits = yes
+			dynasty = none
+			religion = ROOT
+			culture = ROOT
+			female = no
+			age = 30
+		}
+		create_random_soldier = {
+			random_traits = yes
+			dynasty = none
+			religion = ROOT
+			culture = ROOT
+			female = no
+			age = 25
+		}
+		create_random_soldier = {
+			random_traits = yes
+			dynasty = none
+			religion = ROOT
+			culture = ROOT
+			female = no
+			age = 19
+		}
+		create_random_soldier = {
+			random_traits = yes
+			dynasty = none
+			religion = ROOT
+			culture = ROOT
+			female = no
+			age = 23
+		}
+		
+		clr_global_flag = rum_spawning
+		set_global_flag = rum_spawned
+	}
+}
+
+
+character_event = {
+	id = 60604
+	desc = EVTDESC_TOG_1213
+	picture = GFX_evt_mongols
+	border = GFX_event_normal_frame_war
+	
+	is_triggered_only = yes
+	
+	trigger = {
+		FROM = { is_ruler = yes } # The DoW worked and the adventurer has a temporary title
+	}
+	
+	immediate = {
+		FROM = {
+			add_trait = adventurer
+		}
+		any_liege = {
+			character_event = {
+				id = 60605
+			}
+		}
+	}
+	
+	option = {
+		name = EVTOPTA_TOG_1203
+	}
+}
+
+character_event = {
+	id = 60605
+	desc = EVTDESC_TOG_1214
+	picture = GFX_evt_mongols
+	border = GFX_event_normal_frame_war
+	
+	show_from_from = yes
+	
+	is_triggered_only = yes
+	
+	option = {
+		name = EVTOPTA_TOG_1203
+	}
+}
+
+#######################################
+# Stage 2 (Armenia) and 3 (Anatolia)
+# Fired from CB 'duchy_adventure' or 'kingdom_adventure'
+#######################################
+character_event = {
+	id = 60610
+	
+	is_triggered_only = yes
+	hide_window = yes
+	ai = yes
+	
+	immediate = {
+		if = {
+			limit = {
+				war = no
+				independent = yes
+			}
+			random_independent_ruler = {
+				limit = {
+					is_landed = yes
+					independent = yes
+					in_revolt = no
+					NOT = { reverse_has_truce = ROOT }
+					NOT = { religion_group = muslim }
+					any_realm_province = {
+						kingdom = {
+							title = k_armenia
+						}
+					}
+				}
+				random_realm_province = {
+					limit = {
+						kingdom = {
+							title = k_armenia
+						}
+					}
+					ROOT = {
+						capital_scope = {
+							ROOT = {
+								spawn_unit = {
+									province = PREV
+									home = PREV
+									owner = THIS
+									match_character = PREVPREVPREVPREV
+									match_mult = 0.25
+									match_min = 2000
+									match_max = 10000
+									attrition = 0.25
+								}
+								spawn_unit = {
+									province = PREV
+									home = PREV
+									owner = THIS
+									match_character = PREVPREVPREVPREV
+									match_mult = 0.25
+									match_min = 2000
+									match_max = 10000
+									attrition = 0.25
+								}
+								spawn_unit = {
+									province = PREV
+									home = PREV
+									owner = THIS
+									match_character = PREVPREVPREVPREV
+									match_mult = 0.25
+									match_min = 2000
+									match_max = 10000
+									attrition = 0.25
+								}
+							}
+						}
+						war = {
+							target = PREVPREV
+							casus_belli = kingdom_adventure
+							thirdparty_title = PREV
+							tier = KING
+						}
+						break = yes
+					}
+				}
+			}
+			e_byzantium = {
+				holder_scope = {
+					if = {
+						limit = {
+							NOT = { religion_group = muslim }
+							NOT = { reverse_has_truce = ROOT }
+							any_realm_province = {
+								kingdom = {
+									title = k_anatolia
+								}
+							}
+						}
+						random_realm_province = {
+							limit = {
+								kingdom = {
+									title = k_anatolia
+								}
+							}
+							ROOT = {
+								capital_scope = {
+									ROOT = {
+										spawn_unit = {
+											province = PREV
+											home = PREV
+											owner = THIS
+											match_character = PREVPREVPREVPREV
+											match_mult = 0.25
+											match_min = 2000
+											match_max = 10000
+											attrition = 0.25
+										}
+										spawn_unit = {
+											province = PREV
+											home = PREV
+											owner = THIS
+											match_character = PREVPREVPREVPREV
+											match_mult = 0.25
+											match_min = 2000
+											match_max = 10000
+											attrition = 0.25
+										}
+										spawn_unit = {
+											province = PREV
+											home = PREV
+											owner = THIS
+											match_character = PREVPREVPREVPREV
+											match_mult = 0.25
+											match_min = 2000
+											match_max = 10000
+											attrition = 0.25
+										}
+									}
+								}
+								war = {
+									target = PREVPREV
+									casus_belli = kingdom_adventure
+									thirdparty_title = PREV
+									tier = KING
+								}
+								break = yes
+							}
+						}
+					}
+				}
+			}
+		}
+		
+		repeat_event = { 
+			id = 60610
+			days = 30
+		}
+	}
+}
