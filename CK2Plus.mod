@@ -8,4 +8,4 @@ tags={
 Balance CK2+ CK2plus "Complete Overhaul" Converter Decisions Events Factions Fixes Gameplay Immersion Map NWO }
 picture="ck2plus.jpg"
 # Supported Checksums. Order is always without India then with India
-supported_checksums = { SEON WVAS }
+supported_checksums = { FGRX SDPK }
