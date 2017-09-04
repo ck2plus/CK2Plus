@@ -164,7 +164,6 @@ NDefines.NMilitary.SIEGE_WEALTH_MULTIPLIER = 0.75				-- Wealth gain/loss multipl
 NDefines.NMilitary.CAPITAL_WARSCORE_MULTIPLIER = 1.5			-- Warscore multiplier for capital(this is scaled with SETTLEMENT_WARSCORE_MULTIPLIER)
 NDefines.NMilitary.SETTLEMENT_WARSCORE_MULTIPLIER = 0.5			-- Warscore worth for occupied private demesne
 NDefines.NMilitary.VASSAL_SETTLEMENT_WARSCORE_MULTIPLIER = 0.5	-- Warscore worth for occupied vassals
-NDefines.NMilitary.NAVAL_ATTRITION = 0.02						-- Attrition taken monthly by units loaded on ships
 NDefines.NMilitary.OVERRUN_RATIO = 10							-- Ratio needed for total extermination of enemy units
 NDefines.NMilitary.OCCUPATION_PENALTY_MONTHS = 60					-- This and below are different modifier lengths applied to settlements upon conquest
 NDefines.NMilitary.OCCUPATION_PENALTY_MONTHS_DIFFERENT_RELIGION = 0
