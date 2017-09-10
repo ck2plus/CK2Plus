@@ -94,63 +94,17 @@ character_event = { # Battlefield Duel Start
 		}
 		#Avoid crossing targets
 		NOT = { has_character_modifier = battlefield_fight }
-		any_war = {
-			OR = {
-				AND = {
-					any_attacker = {
-						OR = {
-							character = ROOT
-							any_realm_character = {
-								character = ROOT
-							}
-						}
-					}
-					any_defender = {
-						OR = {
-							AND = {
-								in_battle = yes
-								at_location = ROOT
-								prisoner = no
-								is_alive = yes
-								NOT = { has_character_modifier = battlefield_fight }
-							}
-							any_realm_character = {
-								in_battle = yes
-								at_location = ROOT
-								prisoner = no
-								is_alive = yes
-								NOT = { has_character_modifier = battlefield_fight }
-							}
-						}
-					}
-				}
-				AND = {
-					any_defender = {
-						OR = {
-							character = ROOT
-							any_realm_character = {
-								character = ROOT
-							}
-						}
-					}
-					any_attacker = {
-						OR = {
-							AND = {
-								in_battle = yes
-								at_location = ROOT
-								prisoner = no
-								is_alive = yes
-								NOT = { has_character_modifier = battlefield_fight }
-							}
-							any_realm_character = {
-								in_battle = yes
-								at_location = ROOT
-								prisoner = no
-								is_alive = yes
-								NOT = { has_character_modifier = battlefield_fight }
-							}
-						}
-					}
+		location = {
+			#find a war participating character
+			any_province_character = {
+				war_with = ROOT
+				in_battle = yes
+				prisoner = no
+				is_alive = yes
+				NOT = { has_character_modifier = battlefield_fight }
+				OR = {
+					is_ruler = yes
+					ROOT = { is_ruler = yes }
 				}
 			}
 		}
@@ -165,85 +119,32 @@ character_event = { # Battlefield Duel Start
 		
 		#Target Lock
 		location = {
-			#find a war participating ruler
+			#find a war participating character
 			random_province_character = {
 				limit = {
-					any_war = {
-						OR = {
-							AND = {
-								any_attacker = { character = PREVPREV }
-								any_defender = { character = ROOT }
-							}
-							AND = {
-								any_attacker = { character = ROOT }
-								any_defender = { character = PREVPREV }
-							}
-						}
-					}
+					war_with = ROOT
 					in_battle = yes
-					at_location = ROOT
 					prisoner = no
 					is_alive = yes
-				}
-				save_event_target_as = war_participating_ruler
-				log = "DEBUG.DUEL_ENGINE selecter [war_participating_ruler.GetBestName] as war_participating_ruler"
-			}
-			#find a war participating vassal/courtier
-			random_province_character = {
-				limit = {
-					liege = {
-						any_war = {
-							OR = {
-								AND = {
-									any_attacker = { character = PREVPREV }
-									any_defender = { character = ROOT }
-								}
-								AND = {
-									any_attacker = { character = ROOT }
-									any_defender = { character = PREVPREV }
-								}
-							}
-						}
+					NOT = { has_character_modifier = battlefield_fight }
+					OR = {
+						is_ruler = yes
+						ROOT = { is_ruler = yes }
 					}
-					in_battle = yes
-					at_location = ROOT
-					prisoner = no
-					is_alive = yes
 				}
-				save_event_target_as = war_participating_courtier
-				log = "DEBUG.DUEL_ENGINE selecter [war_participating_courtier.GetBestName] as war_participating_courtier"
+				show_portrait = yes
+				save_event_target_as = battlefield_duel_combatant_2
+				add_character_modifier = {
+					name = battlefield_fight
+					duration = 20
+				}
+				log = "DEBUG.DUEL_ENGINE selected [This.GetBestName] as battlefield_duel_combatant_2"
+				character_event = { id = DuelEngine.501 }
 			}
 		}
-		
-		random_list = {
-			35 = {
-				#skip if ruler is not in battle
-				modifier = {
-					factor = 0
-					event_target:war_participating_ruler = { always = no }
-				}
-				event_target:war_participating_ruler = {
-					save_event_target_as = battlefield_duel_combatant_2
-				}
-				clear_event_target = war_participating_ruler
-			}
-			65 = {
-				#skip if no vassal/courtier is in battle
-				modifier = {
-					factor = 0
-					event_target:war_participating_courtier = { always = no }
-				}
-				event_target:war_participating_courtier = {
-					save_event_target_as = battlefield_duel_combatant_2
-				}
-				clear_event_target = war_participating_courtier
-			}
-		}
-		log = "DEBUG.DUEL_ENGINE selecter [battlefield_duel_combatant_2.GetBestName] as battlefield_duel_combatant_2"
 	}
 	option  = {
 		name = "EVTOPTA_DuelEngine_500"
-		event_target:battlefield_duel_combatant_2 = { character_event = { id = DuelEngine.501 } } #Fight or Run?
 	}
 }
 
@@ -722,6 +623,7 @@ character_event = {
 				}
 			}
 		}
+		log = "DEBUG.DUEL_ENGINE [battlefield_duel_combatant_2.GetBestName] decided to fight [battlefield_duel_combatant_1.GetBestName]"
 		event_target:battlefield_duel_combatant_1 = { character_event = { id = DuelEngine.502 tooltip = "EVTTOOLTIP_DuelEngine_502" } }
 		ai_chance = {
 			factor = 100
@@ -770,6 +672,7 @@ character_event = {
 
 	option = {
 		name = "EVTOPTB_DuelEngine_501"
+		log = "DEBUG.DUEL_ENGINE [battlefield_duel_combatant_2.GetBestName] decided to run from [battlefield_duel_combatant_1.GetBestName]"
 		hidden_tooltip = { event_target:battlefield_duel_combatant_1 = { character_event = { id = DuelEngine.503 } } }
 		if = {
 			limit = {
@@ -928,6 +831,11 @@ character_event = {
 	border = "GFX_event_normal_frame_war"
 
 	is_triggered_only = yes
+	
+	immediate = {
+		log = "DEBUG:DUEL_ENGINE battlefield_duel_combatant_1 [This.GetBestName]"
+		log = "DEBUG:DUEL_ENGINE battlefield_duel_combatant_2 [battlefield_duel_combatant_2.GetBestName]"
+	}
 
 	option = {
 		name = "EVTOPTA_DuelEngine_502"
