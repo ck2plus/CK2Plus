@@ -1,11 +1,11 @@
 What is it?
-===============================================================================
+=====================================================
 As the name implies, CK2+ exists to give you more—more content, more choices, more fun.
 The goal is to offer a deeper and more challenging CK2 experience without straying too far from the original game mechanics or adding overly deterministic events.
 The purpose of this mod is not historical accuracy (although we try to preserve it whenever it’s not detrimental to gameplay), but rather to enrich the medieval sandbox that CK2 offers.
 
 Manual Installation Instructions:
-===============================================================================
+=====================================================
 1) First find your installation directory. This will depend on your OS, and may not be (especially in the case of Windows) the directory where you actually installed CK2 itself:
 Windows: ~\My Documents\Paradox Interactive\Crusader Kings II\mod\
 Linux: ~/.paradoxinteractive/Crusader Kings II/mod/
@@ -21,7 +21,7 @@ Mac: ~/Documents/Paradox Interactive/Crusader Kings II/mod/
 6) Start the CK2 launcher. Check the "CK2Plus" box in the list of mods, and if you want India to be in your game check BOTH "CK2Plus" and "India Expansion". When the title screen comes up make sure the checksum (the four-letter code to the left of the title scree buttons) matches the one listed for that CK2Plus version. If so, you're good to go. If not, you've either made some other alterations, installed some other mods, or made a mistake.
 
 Useful Links
-===============================================================================
+=====================================================
 CK2 Plus Official Forum: https://forum.paradoxplaza.com/forum/index.php?forums/ck2-plus-mod.841/
 CK2 Plus Download Thread: https://forum.paradoxplaza.com/forum/index.php?threads/ck2plus-download-v4-06-6-the-fallen-five.973318/
 CK2 Plus FAQ: https://forum.paradoxplaza.com/forum/index.php?threads/ck2plus-questions-answers.999828/
