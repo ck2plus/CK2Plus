@@ -127,6 +127,6 @@ LangString MUI_FINISHPAGE_TEXT ${LANG_ENGLISH} "To play:$\r$\n \
 - Open CK2 launcher.$\r$\n \
 - Select the mod 'CK2Plus' in the Mod tab of the launcher.$\r$\n \
 - Enjoy !$\r$\n"
-LangString MUI_FINISHPAGE_SHOWREADME_TEXT ${LANG_ENGLISH} "Open the Changelog"
+LangString MUI_FINISHPAGE_SHOWREADME_TEXT ${LANG_ENGLISH} "Open the Readme"
 LangString MUI_FINISHPAGE_LINK ${LANG_ENGLISH} "Go to CK2Plus forum"
 LicenseLangString license ${LANG_ENGLISH} "CK2Plus_misc\installer\CK2PlusReadme.txt"
