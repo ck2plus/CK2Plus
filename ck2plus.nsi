@@ -14,11 +14,17 @@
 ; Mod configuration defined in .mod file, to know which folders to cleanup.
 !define mod_path "CK2Plus"
 !define mod_india_path "CK2Plus_India"
+!tempfile StdOut
+!echo "${StdOut}"
+!system '"git" describe --abbrev=0 --tags > "${stdout}"'
+!searchparse /file  "${StdOut}" "" VERSION_TAG
+!delfile "${StdOut}"
+!undef StdOut
 
 ; The name of the installer
 Name "CK2 Plus Mod"
 ; The file to write
-OutFile "CK2Plus.exe"
+OutFile "CK2Plus_${VERSION_TAG}.exe"
 
 ; The default installation directory
 InstallDir "$DOCUMENTS\Paradox Interactive\Crusader Kings II\mod"
@@ -36,7 +42,7 @@ RequestExecutionLevel admin
 !define MUI_WELCOMEFINISHPAGE_BITMAP_NOSTRETCH
 
 ; ---------------------------
-; Pages: Language -> Welcome -> Directory -> Install -> Finish
+; Pages: Language -> Welcome -> License -> Directory -> Install -> Finish
 ; ---------------------------
 
 !define MUI_WELCOMEPAGE_TITLE $(MUI_WELCOMEPAGE_TITLE)
