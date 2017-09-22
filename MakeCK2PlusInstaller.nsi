@@ -14,9 +14,13 @@
 ; Mod configuration defined in .mod file, to know which folders to cleanup.
 !define mod_path "CK2Plus"
 !define mod_india_path "CK2Plus_India"
+
+; Get git tag
+; if there is a tag on current commit just the tag will be used
+; else use last tag + number of commits since the tag + short commit id.
 !tempfile StdOut
 !echo "${StdOut}"
-!system '"git" describe --abbrev=0 --tags > "${stdout}"'
+!system '"git" describe --tags HEAD > "${StdOut}"'
 !searchparse /file  "${StdOut}" "" VERSION_TAG
 !delfile "${StdOut}"
 !undef StdOut
@@ -30,7 +34,7 @@ OutFile "CK2Plus_${VERSION_TAG}.exe"
 InstallDir "$DOCUMENTS\Paradox Interactive\Crusader Kings II\mod"
 
 ; Request application privileges for Windows Vista/7/8/10
-RequestExecutionLevel admin
+RequestExecutionLevel user
 
 ; ---------------------------
 ; Interface settings (optional)
@@ -62,7 +66,7 @@ RequestExecutionLevel admin
 !define MUI_FINISHPAGE_TEXT $(MUI_FINISHPAGE_TEXT)
 !define MUI_FINISHPAGE_TEXT_LARGE
 !define MUI_FINISHPAGE_SHOWREADME "$INSTDIR\CK2PlusReadme.txt"
-;!define MUI_FINISHPAGE_SHOWREADME_NOTCHECKED
+!define MUI_FINISHPAGE_SHOWREADME_NOTCHECKED
 !define MUI_FINISHPAGE_SHOWREADME_TEXT $(MUI_FINISHPAGE_SHOWREADME_TEXT)
 !define MUI_FINISHPAGE_LINK $(MUI_FINISHPAGE_LINK)
 !define MUI_FINISHPAGE_LINK_LOCATION "https://forum.paradoxplaza.com/forum/index.php?forums/ck2-plus-mod.841/"
@@ -117,10 +121,12 @@ SectionEnd
 ; ---------------------------
 
 LangString MUI_WELCOMEPAGE_TITLE ${LANG_ENGLISH} "CK2 Plus"
-LangString MUI_WELCOMEPAGE_TEXT ${LANG_ENGLISH} "This installer will:$\r$\n \
-1) Remove any previously installed version of the CK2 Plus mod$\r$\n \
-2) Clean the mod gfx cache$\r$\n \
-3) Install CK2 Plus to your mod folder$\r$\n"
+LangString MUI_WELCOMEPAGE_TEXT ${LANG_ENGLISH} "Hello and welcome to Plus!$\r$\n \
+$\r$\n \
+This installer will:$\r$\n \
+- REMOVE ANY PREVIOUS VERSION of Plus$\r$\n \
+- Clean the mod gfx cache$\r$\n \
+- Install CK2 Plus to your mod folder$\r$\n"
 LangString MUI_DIRECTORYPAGE_TEXT_DESTINATION ${LANG_ENGLISH} "Please select your CK2 mod folder"
 LangString MUI_FINISHPAGE_TITLE ${LANG_ENGLISH} "CK2 Plus has been installed"
 LangString MUI_FINISHPAGE_TEXT ${LANG_ENGLISH} "To play:$\r$\n \ 
@@ -129,4 +135,4 @@ LangString MUI_FINISHPAGE_TEXT ${LANG_ENGLISH} "To play:$\r$\n \
 - Enjoy !$\r$\n"
 LangString MUI_FINISHPAGE_SHOWREADME_TEXT ${LANG_ENGLISH} "Open the Readme"
 LangString MUI_FINISHPAGE_LINK ${LANG_ENGLISH} "Go to CK2Plus forum"
-LicenseLangString license ${LANG_ENGLISH} "CK2Plus_misc\installer\CK2PlusReadme.txt"
+LicenseLangString license ${LANG_ENGLISH} "CK2Plus_misc\installer\CK2PlusLicense.txt"
