@@ -12,11 +12,11 @@ CK2 Plus FAQ: https://forum.paradoxplaza.com/forum/index.php?threads/ck2plus-que
 Report a Bug: https://forum.paradoxplaza.com/forum/index.php?threads/ck2plus-report-a-bug.1040671/
 Make a Suggestion: https://forum.paradoxplaza.com/forum/index.php?threads/ck2plus-suggestion-thread.799452/
 
-Disclaimer & Legal:
+Disclaimer:
 ===============================================================================
 This mod for Crusader Kings 2 is offered as is. CK2Plus Team, hereinafter referred to as "modder", takes no responsibility for harm done in using this mod or it's installer.
 Modder makes no guarantee of support or update of this mod. Modder does not take any responsibility for results of further modification.
-This mod can only be distributed on official Paradox Interactive forum by the modder, and any other distribution of the mod, or part of the mod, without an explicit permission by the modder on the official Paradox Interactive forum is strictly forbidden.
+This mod can only be distributed on official Paradox Interactive forum by the modder, and any other distribution of the mod, or part of the mod, without an explicit permission from the modder on the official Paradox Interactive forum is strictly forbidden.
 
 Paradox Interactive Mod Policy: http://www.paradoxplaza.com/mod-static-info-ca.html
 

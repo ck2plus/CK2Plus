@@ -26,7 +26,7 @@
 !undef StdOut
 
 ; The name of the installer
-Name "CK2 Plus Mod"
+Name "CK2Plus Mod"
 ; The file to write
 OutFile "CK2Plus_${VERSION_TAG}.exe"
 
@@ -54,9 +54,14 @@ RequestExecutionLevel user
 !define MUI_WELCOMEPAGE_TEXT $(MUI_WELCOMEPAGE_TEXT)
 !insertmacro MUI_PAGE_WELCOME
 
+!define MUI_PAGE_HEADER_TEXT $(MUI_PAGE_HEADER_TEXT)
+!define MUI_PAGE_HEADER_SUBTEXT $(MUI_PAGE_HEADER_SUBTEXT)
+!define MUI_LICENSEPAGE_TEXT_TOP $(MUI_LICENSEPAGE_TEXT_TOP)
+!define MUI_LICENSEPAGE_TEXT_BOTTOM $(MUI_LICENSEPAGE_TEXT_BOTTOM)
 !insertmacro MUI_PAGE_LICENSE $(license)
 
 !define MUI_DIRECTORYPAGE_TEXT_DESTINATION $(MUI_DIRECTORYPAGE_TEXT_DESTINATION)
+!define MUI_DIRECTORYPAGE_TEXT_TOP $(MUI_DIRECTORYPAGE_TEXT_TOP)
 !insertmacro MUI_PAGE_DIRECTORY
 
 !insertmacro MUI_PAGE_INSTFILES
@@ -120,19 +125,29 @@ SectionEnd
 ; Localization
 ; ---------------------------
 
-LangString MUI_WELCOMEPAGE_TITLE ${LANG_ENGLISH} "CK2 Plus"
+LangString MUI_WELCOMEPAGE_TITLE ${LANG_ENGLISH} "CK2Plus"
 LangString MUI_WELCOMEPAGE_TEXT ${LANG_ENGLISH} "Hello and welcome to Plus!$\r$\n \
 $\r$\n \
 This installer will:$\r$\n \
 - REMOVE ANY PREVIOUS VERSION of Plus$\r$\n \
 - Clean the mod gfx cache$\r$\n \
-- Install CK2 Plus to your mod folder$\r$\n"
+- Install CK2Plus to your mod folder$\r$\n"
 LangString MUI_DIRECTORYPAGE_TEXT_DESTINATION ${LANG_ENGLISH} "Please select your CK2 mod folder"
-LangString MUI_FINISHPAGE_TITLE ${LANG_ENGLISH} "CK2 Plus has been installed"
+LangString MUI_FINISHPAGE_TITLE ${LANG_ENGLISH} "CK2Plus has been installed"
 LangString MUI_FINISHPAGE_TEXT ${LANG_ENGLISH} "To play:$\r$\n \ 
 - Open CK2 launcher.$\r$\n \
 - Select the mod 'CK2Plus' in the Mod tab of the launcher.$\r$\n \
-- Enjoy !$\r$\n"
+- Enjoy !$\r$\n \
+$\r$\n \
+CK2Plus Team"
 LangString MUI_FINISHPAGE_SHOWREADME_TEXT ${LANG_ENGLISH} "Open the Readme"
 LangString MUI_FINISHPAGE_LINK ${LANG_ENGLISH} "Go to CK2Plus forum"
-LicenseLangString license ${LANG_ENGLISH} "CK2Plus_misc\installer\CK2PlusLicense.txt"
+LangString MUI_PAGE_HEADER_TEXT ${LANG_ENGLISH} "Disclaimer"
+LangString MUI_PAGE_HEADER_SUBTEXT ${LANG_ENGLISH} "Please review the disclaimer file before installing CK2Plus mod."
+LangString MUI_LICENSEPAGE_TEXT_TOP ${LANG_ENGLISH} "$\r$\n" ;"Press Page Down to see the rest of the disclaimer" - Our disclaimer fits perfectly
+LangString MUI_LICENSEPAGE_TEXT_BOTTOM ${LANG_ENGLISH} "You must agree to this disclaimer before installing the mod."
+LangString MUI_DIRECTORYPAGE_TEXT_TOP ${LANG_ENGLISH} "Setup will install CK2Plus Mod in the following folder.$\r$\n\
+If this value is changed the game will not be able to locate the mod.$\r$\n\
+$\r$\n\
+WARNING: This action will remove any previous version of CK2Plus from CK2 mod folder!$\r$\n"
+LicenseLangString license ${LANG_ENGLISH} "CK2Plus_misc\installer\CK2PlusDisclaimer.txt"
