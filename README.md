@@ -4,7 +4,7 @@ As the name implies, CK2+ exists to give you more—more content, more choices, mo
 The goal is to offer a deeper and more challenging CK2 experience without straying too far from the original game mechanics or adding overly deterministic events.
 The purpose of this mod is not historical accuracy (although we try to preserve it whenever it’s not detrimental to gameplay), but rather to enrich the medieval sandbox that CK2 offers.
 
-Installation Instructions:
+Manual Installation Instructions:
 ===============================================================================
 1) First find your installation directory. This will depend on your OS, and may not be (especially in the case of Windows) the directory where you actually installed CK2 itself:
 Windows: ~\My Documents\Paradox Interactive\Crusader Kings II\mod\
