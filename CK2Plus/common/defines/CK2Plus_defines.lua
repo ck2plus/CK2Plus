@@ -134,6 +134,7 @@ NDefines.NEconomy.LOOTABLE_GOLD_REGROWTH = 0.01					-- Percent of max lootable g
 NDefines.NEconomy.LOOT_PRESTIGE_MULT = 0.5						-- Whenever you gain loot you also get prestige related to the loot
 NDefines.NEconomy.LOOT_EVERY_X_DAYS = 8							-- Loot every this many days
 NDefines.NEconomy.BUILDING_COST_MULT = 0.5						-- Increases build cost of all buildings
+NDefines.NEconomy.FORT_CONSUMED_IN_SETTLEMENT_CONTRUCTION = 0	-- If set to 1 then fort holdings are consumed by the construction of another holding in the province while giving a discount to the construction cost in return.
 
 NDefines.NDecadence.BASE_EMPEROR_GAIN = 0.25
 NDefines.NDecadence.BASE_KING_GAIN = 0.18
