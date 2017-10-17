@@ -71,6 +71,8 @@
 #child_personality_learning_trigger	Has a child trait with learning bonus.
 #is_learned_trigger					Has a scholarly trait, learning-oriented trait.
 
+#has_any_lifestyle_trait			Has any of the above lifestyle traits.
+
 #Religion
 #has_crusade_trait_trigger			Has a crusade type trait.
 #has_secret_religion_trait_trigger	Has a secret religion trait.
@@ -379,6 +381,25 @@ has_symptom_trigger = {
 	}
 }
 
+has_minor_disease_trigger = {
+	OR = {
+		trait = malaise
+		trait = fatigue
+		trait = abdominal_pain
+		trait = headache
+		trait = rash
+		trait = cramps
+		trait = chest_pain
+		trait = vomiting
+		trait = diarrhea
+		trait = fever
+		trait = cough
+		trait = ill
+		trait = lovers_pox
+		trait = flu
+	}
+}
+
 has_injury_trigger = {
 	OR = {
 		trait = wounded
@@ -538,11 +559,14 @@ child_personality_diplomacy_trigger = {
 ##MARTIAL##
 
 has_education_martial_trigger = {
-	OR = {
-		trait = misguided_warrior
-		trait = tough_soldier
-		trait = skilled_tactician
-		trait = brilliant_strategist
+	custom_tooltip = {
+		text = has_martial_education_tt
+		OR = {
+			trait = misguided_warrior
+			trait = tough_soldier
+			trait = skilled_tactician
+			trait = brilliant_strategist
+		}
 	}
 }
 
@@ -656,6 +680,17 @@ is_learned_trigger = {
 		trait = faqih
 	}
 }
+
+has_any_lifestyle_trait = {
+	OR = {
+		has_lifestyle_diplomacy_trigger = yes
+		has_lifestyle_martial_trigger = yes
+		has_lifestyle_stewardship_trigger = yes
+		has_lifestyle_intrigue_trigger = yes
+		has_lifestyle_learning_trigger = yes
+	}
+}
+
 
 ##RELIGION##
 
@@ -1460,7 +1495,7 @@ physician_good_trigger = {
 	NOT = { has_character_flag = physician_is_quack }
 }
 
-is_inaccessible_trigger = {
+is_inaccessible_trigger = { #Remember to write this "is_inaccessible_trigger = no" when scripting, or the tooltip will be messed up (it reads "Is NOT in Hiding, in Seclusion, or out traveling")
 	custom_tooltip = {
 		text = is_inaccessible_tooltip
 		hidden_tooltip = {
@@ -1469,6 +1504,7 @@ is_inaccessible_trigger = {
 				trait = on_hajj
 				trait = on_pilgrimage
 				trait = on_indian_pilgrimage
+				trait = kow_tow_travels
 				has_character_modifier = in_seclusion
 				has_character_modifier = in_meditation
 				has_character_modifier = doing_penance
@@ -1689,6 +1725,7 @@ death_execution_trigger = {
 		death_reason = death_execution_boar
 		death_reason = death_execution_eaten
 		death_reason = death_execution_aztec_sacrifice
+		death_reason = death_executed_by_chinese_emperor
 	}	
 }
 
@@ -1724,14 +1761,11 @@ death_suicide_trigger = {
 
 block_general_event_trigger = {
 	OR = {	
-		trait = incapable
 		is_adult = no
+		trait = incapable
 		prisoner = yes
 		is_inaccessible_trigger = yes
-		is_alive = no
-		hidden_trigger = {
-			NOT = { always = yes }
-		}
+		hidden_trigger = { is_alive = no }
 	}
 }
 
@@ -2416,18 +2450,21 @@ is_monastic_member_trigger = {
 }
 
 is_ascetic_trigger = {
-	OR = {
-		trait = monk
-		trait = nun
+	custom_tooltip = {
+		text = is_ascetic_tooltip
+		OR = {
+			trait = monk
+			trait = nun
 		trait = desert_father
 		trait = desert_mother
 		trait = perfecti
-		trait = muni
-		trait = aryika
-		trait = bhikkhu
-		trait = bhikkhuni
-		trait = sanyasi
-		trait = sanyasini
+			trait = muni
+			trait = aryika
+			trait = bhikkhu
+			trait = bhikkhuni
+			trait = sanyasi
+			trait = sanyasini
+		}
 	}
 }
 
@@ -3259,6 +3296,12 @@ has_assassins_prerequisites_inferface = {
 		AND = {
 			ai = no
 			NOT = { trait = zealous }
+				any_playable_ruler = {
+					religion = shiite
+					NOT = {
+						distance_from_realm = { value = 300 who = ROOT }
+					}
+				}
 		}
 	}
 	OR = {
@@ -4969,7 +5012,7 @@ china_diplo_interaction_trigger = {
 		NOT = { has_policy = china_isolationist }
 	}
 	conditional_tooltip = { 
-		trigger = { primary_title = { has_title_flag = pretender_chinese_empire } }
+		trigger = { government = chinese_imperial_government }
 		custom_tooltip = { 
 			text = china_offmap_decisions_pretender_emperor_tt
 			always = no
@@ -5057,11 +5100,27 @@ china_offmap_decisions_enabled_trigger = {
 			hidden_trigger  = { NOT = { character = FROM } } #Governor cannot use boon/tributes decisions
 		}
 	}
+	custom_tooltip = {
+		text = china_offmap_boon_decisions_enabled_trigger_raiding_tt
+		FROM = {
+			NOR = {
+				has_character_modifier = china_raid_active
+				has_character_modifier = china_raid_grace_cd
+			}
+		}
+	}
 	hidden_trigger = { has_dlc = "Jade Dragon" }
 	conditional_tooltip = { 
-		trigger = { FROM = { primary_title = { has_title_flag = pretender_chinese_empire } } }
+		trigger = { FROM = { primary_title = { has_title_flag = rebel_general_title } } }
 		custom_tooltip = { 
 			text = china_offmap_decisions_pretender_emperor_tt
+			always = no
+		}
+	}
+	conditional_tooltip = { 
+		trigger = { FROM = { has_character_modifier = failed_invasion_of_china } }
+		custom_tooltip = { 
+			text = china_offmap_decisions_failed_invasion_tt
 			always = no
 		}
 	}
@@ -5078,6 +5137,9 @@ china_offmap_hostile_decisions_enabled_trigger = {
 			show_scope_change = no
 			is_within_diplo_range = FROM
 			hidden_trigger  = { NOT = { character = FROM } } #Governor cannot use boon/tributes decisions
+		}
+		offmap_ruler = {
+			NOT = { dynasty = FROM }
 		}
 	}
 	hidden_trigger = { has_dlc = "Jade Dragon" }
@@ -5149,7 +5211,8 @@ valid_offmap_china_target = {
 	is_within_diplo_range = ROOT
 	is_landed = yes
 	higher_tier_than = BARON
-	NOT = { primary_title = { has_title_flag = pretender_chinese_empire } } #uses special cb to target
+	NOT = { primary_title = { has_title_flag = rebel_general_title } } #uses special cb to target
+	NOT = { offmap_china = { offmap_ruler = { dynasty = PREVPREV } } }
 }
 
 valid_offmap_china_target_location = {
@@ -5315,6 +5378,10 @@ is_blood_relative_of_root_trigger = {
 silk_road_trade_post_trigger = {
 	custom_tooltip = {
 		text = silk_road_province_desc
+				province_id = 775
+				province_id = 633
+				province_id = 664
+				province_id = 644
 	}
 }
 
@@ -5355,6 +5422,219 @@ has_unsafe_religion = {
 		AND = {
 			NOT = { has_dlc = "Jade Dragon" }
 			religion = taoist
+		}
+	}
+}
+
+courtier_from_china_trigger = {
+	custom_tooltip = {
+		text = courtier_from_china_trigger_tt
+		has_character_flag = originated_from_chinese_court
+	}
+}
+
+using_unimportant_cb = {
+	OR = {
+		using_cb = peasant_revolt
+		using_cb = heretic_revolt
+		using_cb = religious_revolt
+		using_cb = liberation_revolt
+	}
+}
+
+death_in_china_trigger = {
+	OR = {
+		death_reason = death_went_to_china
+		death_reason = death_offmap
+		death_reason = death_went_back_to_china
+		death_reason = death_in_china_historic
+	}
+}
+
+death_no_trace_trigger = {
+	OR = {
+		death_reason = death_missing
+		death_reason = death_vanished
+	}
+}
+
+proselytize_convert_independent_trigger = {
+	owner = {
+		FROM = { NOT = { religion_group = pagan_group } }
+		independent = yes
+		NOT = { religion = FROM }
+		religion_group = pagan_group
+		OR = {
+			NOT = { religion = aztec }
+			year = 1350
+		}
+		is_reformed_religion = no
+		capital_scope = {
+			province = ROOT
+		}
+		controls_religion = no
+		FROM = {
+			higher_tier_than = COUNT
+			OR = {
+				independent = yes
+				higher_tier_than = DUKE
+			}
+		}
+		NOT = {
+			has_opinion_modifier = { who = FROM modifier = opinion_sent_preacher }
+		}
+		is_within_diplo_range = FROM
+	}
+}
+
+is_toddler_age_trigger = {
+	age = 0
+ 	NOT = { age = 4 }
+}
+
+is_young_child_age_trigger = {
+	age = 4
+ 	NOT = { age = 9 }
+}
+
+is_child_age_trigger = {
+	age = 9
+ 	NOT = { age = 12 }
+}
+
+is_adolescent_age_trigger = {
+	age = 12
+ 	NOT = { age = 17 }
+}
+
+is_teenager_age_trigger = {
+	age = 13
+ 	NOT = { age = 20 }
+}
+
+is_grown_up_age_trigger = {
+	age = 20
+}
+
+is_senior_age_trigger = {
+	age = 50
+}
+
+# Hardcoded trigger for the Execute Imprisoned interaction. Used for the description warning you of kinslaying
+# Root - The executioner
+# event_target:kinslayer_target - The person being executed
+will_add_kinslayer = {
+	NOT = { religion_group = muslim }
+	OR = {
+		AND = {
+			NOT = { trait = kinslayer }
+			OR = {
+				is_ancestor_of = event_target:kinslayer_target
+				is_descendant_of = event_target:kinslayer_target
+				sibling = event_target:kinslayer_target
+			}
+		}
+		AND = {
+			NOR = { 
+				trait = kinslayer
+				trait = familial_kinslayer
+			}
+			OR = {
+				is_cousin_of = event_target:kinslayer_target
+				is_aunt_uncle_of = event_target:kinslayer_target
+				is_nibling_of = event_target:kinslayer_target
+			}
+		}
+		AND = {
+			NOR = { 
+				trait = kinslayer
+				trait = familial_kinslayer
+				trait = dynastic_kinslayer
+			}
+			is_lowborn = no
+			dynasty = event_target:kinslayer_target
+		}
+	}
+}
+
+# Hardcoded trigger for the Assassinate interaction. Used for triggering whether it can be used at all
+# Root - The person being assassinated
+# From - The person doing the assassination
+assassination_interaction_trigger = {
+	conditional_tooltip = {
+		trigger = {
+			multiplayer = yes
+		}
+		custom_tooltip = {
+			text = MP_GAME_RULE_ALLOWED
+			OR = {
+				ai = yes
+				NOT = {
+					has_game_rule = {
+						name = multiplayer_assassinations
+						value = no_players
+					}
+				}
+			}
+			OR = {
+				NOT = {
+					has_game_rule = {
+						name = multiplayer_assassinations
+						value = no_players_or_relatives
+					}
+				}
+				AND = {
+					ai = yes
+					NOT = {
+						any_close_relative = {
+							ai = no
+							NOT = { character = FROM }
+						}
+					}
+					NOT = {
+						any_spouse = {
+							ai = no
+							NOT = { character = FROM }
+						}
+					}
+					NOT = {
+						liege = {
+							ai = no
+							dynasty = ROOT
+							NOT = { character = FROM }
+						}
+						is_heir = yes
+					}
+				}
+			}
+		}
+	}
+}
+
+#checks whether ROOT has one of the following opinion modifiers with the currently scoped character
+root_has_terrible_opinion_modifier_of_this_trigger = {
+	OR = {
+		reverse_has_opinion_modifier = { who = ROOT modifier = opinion_hate }
+		reverse_has_opinion_modifier = { who = ROOT modifier = opinion_tortured_me }
+		reverse_has_opinion_modifier = { who = ROOT modifier = opinion_mutilated_me }
+		reverse_has_opinion_modifier = { who = ROOT modifier = opinion_imprisoned }
+	}
+}
+
+#for MNM.9000 chain
+the_hunt_for_an_artifact_has_made_enough_progress_trigger = {
+	OR = {
+		AND = {
+			event_target:relic_ruler = { check_variable = { which = relic_score value = 8 } } #15 } } old value
+			event_target:relic_ruler = { has_character_modifier = relic_rumor_minor } 
+		}
+		AND = {
+			event_target:relic_ruler = { check_variable = { which = relic_score value = 14 } } #25 } } old value
+			event_target:relic_ruler = { has_character_modifier = relic_rumor_medium } 
+		}
+		AND = {
+			event_target:relic_ruler = { check_variable = { which = relic_score value = 20 } } #40 } } old value
+			event_target:relic_ruler = { has_character_modifier = relic_rumor_major } 
 		}
 	}
 }
