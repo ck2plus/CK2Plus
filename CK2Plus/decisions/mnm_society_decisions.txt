@@ -1324,14 +1324,72 @@ society_decisions = {
 				}
 			}
 			hidden_effect = {
-				random_society_member = {
+				if = {
 					limit = {
-						same_society_as = ROOT
+						is_society_grandmaster = no
+					}
+					random_society_member = {
+						limit = {
+							same_society_as = ROOT
+							is_society_grandmaster = yes
+						}
+						character_event = {
+							id = MNM.4013
+						}
+					}
+				}
+				else_if = {
+					limit = {
 						is_society_grandmaster = yes
+						any_society_member = {
+							same_society_as = ROOT
+							is_society_grandmaster = no
+						}
 					}
-					character_event = {
-						id = MNM.4013
+					random_society_member = {
+						limit = {
+							same_society_as = ROOT
+							is_society_grandmaster = no
+						}
+						character_event = {
+							id = MNM.4013
+						}
 					}
+				}
+				else = {
+					wealth = -100
+					if = {
+						limit = { NOT = { has_quest = quest_monastic_order_donate_to_charity } }
+						add_society_currency_minor_effect = yes
+					}
+					
+					if = {
+						limit = { has_quest = quest_monastic_order_donate_to_charity }
+						clr_quest = quest_monastic_order_donate_to_charity
+						sound_effect = monastic_orders_donate_charity
+						hidden_effect = { monastic_order_purity_effect = yes }
+						add_society_currency_medium_effect = yes
+					}
+
+					add_character_modifier = {
+						modifier = recently_donated_to_charity
+						days = 360
+					}
+					if = {
+						limit = { NOT = { trait = greedy } }
+						random = {
+							chance = 30
+							add_trait = charitable
+						}
+					}
+					if = {
+						limit = { trait = greedy }
+						random = {
+							chance = 40
+							remove_trait = greedy
+						}
+					}
+					clr_character_flag = donate_to_charity_cooldown
 				}
 			}
 		}
@@ -3379,8 +3437,8 @@ targeted_decisions = {
 	DW_demonic_impregnation = {
 		only_playable = yes
 		
-		filter = court
-		ai_target_filter = court
+		filter = court_including_me
+		ai_target_filter = court_including_me
 		ai_check_interval = 120
 		
 		from_potential = {
@@ -3952,7 +4010,7 @@ targeted_decisions = {
 				set_character_flag = relic_hunter
 				save_event_target_as = relic_hunter
 				FROM = { save_event_target_as = relic_ruler }
-				character_event = { id = MNM.9007 days = 30 }
+				character_event = { id = MNM.9007 days = 30 } # The looping evaluation for progress increase/decrease begins...
 			}
 			if = {
 				limit = { FROM = { check_variable = { which = relic_score value = 1 } } }
@@ -4518,6 +4576,8 @@ decisions = {
 				ai = no
 				higher_tier_than = COUNT
 			}
+			is_landed = yes
+			is_lowborn = no
 		}
 		allow = {
 			hidden_trigger = {
@@ -4527,21 +4587,30 @@ decisions = {
 				}
 			}
 			is_inaccessible_trigger = no
-			wealth = 75
 			OR = {
 				AND = {
 					custom_tooltip = {
 						text = employ_a_smith_no_weapons_tt
 						NOT = { any_artifact = { has_artifact_flag = combat_weapon } }
 					}
-	    			job_marshal = { always = yes }
+					custom_tooltip = {
+						text = has_marshal_tt
+						hidden_tooltip = {
+							job_marshal = { always = yes }
+						}
+					}
 				}
 				AND = {
 					custom_tooltip = {
 						text = employ_a_smith_no_armor_tt
 						NOT = { any_artifact = { has_artifact_flag = armor_set } }
 					}
-	    			job_marshal = { always = yes }
+	    			custom_tooltip = {
+						text = has_marshal_tt
+						hidden_tooltip = {
+							job_marshal = { always = yes }
+						}
+					}
 				}
 				custom_tooltip = {
 					text = employ_a_smith_no_crowns_tt
@@ -4551,21 +4620,22 @@ decisions = {
 			custom_tooltip = {
 				text = employ_a_smith_cooldown_tt
 				hidden_trigger = {
-					OR = {
-						NOT = { has_character_flag = employ_a_smith_cooldown }
-						had_character_flag = { flag = employ_a_smith_cooldown days = 3650 }
+					NOT = {
+						has_character_modifier = employ_a_smith_cd
 					}
 				}
 			}
 		}
 		effect = {
-			wealth = -75
 			custom_tooltip = {
 				text = employ_a_smith_tt
 				hidden_effect = {
 					character_event = { id = MNM.9130 }
-					clr_character_flag = employ_a_smith_cooldown
-					set_character_flag = employ_a_smith_cooldown
+					add_character_modifier = {
+						name = employ_a_smith_cd
+						hidden = yes
+						years = 2
+					}
 				}
 			}
 		}
