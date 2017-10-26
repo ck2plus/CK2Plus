@@ -28,7 +28,7 @@
 ; The name of the installer
 Name "CK2Plus Mod"
 ; The file to write
-OutFile "CK2Plus_${VERSION_TAG}.exe"
+OutFile "CK2Plus_${VERSION_TAG}_installer.exe"
 
 ; The default installation directory
 InstallDir "$DOCUMENTS\Paradox Interactive\Crusader Kings II\mod"
