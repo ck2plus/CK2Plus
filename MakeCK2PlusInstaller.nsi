@@ -30,6 +30,8 @@ Name "CK2Plus Mod"
 ; The file to write
 OutFile "CK2Plus_${VERSION_TAG}.exe"
 
+SetCompressor /SOLID lzma
+
 ; The default installation directory
 InstallDir "$DOCUMENTS\Paradox Interactive\Crusader Kings II\mod"
 
