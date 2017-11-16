@@ -2,6 +2,7 @@ targeted_decisions = {
 	abdicate_rule = {
 		filter = self
 		ai_target_filter = self
+		ai_check_interval = 12
 		only_rulers = yes
 		
 		potential = {
@@ -68,10 +69,6 @@ targeted_decisions = {
 				NOT = { ruled_years = 15 }
 			}
 			modifier = {
-				factor = 0.05
-				always = yes
-			}
-			modifier = {
 				factor = 0
 				NOT = {
 					current_heir = {
@@ -92,6 +89,7 @@ targeted_decisions = {
 	disinherit_child = {
 		filter = dynasty
 		ai_target_filter = dynasty
+		ai_check_interval = 12
 		only_playable = yes
 		only_rulers = yes
 		
@@ -189,10 +187,6 @@ targeted_decisions = {
 		ai_will_do = {
 			factor = 1
 			modifier = {
-				factor = 0.1
-				always = yes
-			}
-			modifier = {
 				factor = 0
 				reverse_opinion = { who = FROM value = 25 }
 				FROM = {
@@ -273,6 +267,7 @@ targeted_decisions = {
 	reconcile_child = {
 		filter = dynasty
 		ai_target_filter = dynasty
+		ai_check_interval = 12
 		only_playable = yes
 		only_rulers = yes
 		
@@ -349,10 +344,6 @@ targeted_decisions = {
 		}
 		ai_will_do = {
 			factor = 1
-			modifier = {
-				factor = 0.1
-				always = yes
-			}
 			modifier = {
 				factor = 0
 				FROM = {
@@ -450,6 +441,7 @@ targeted_decisions = {
 		filter = vassals
 		ai_target_filter = vassals
 		only_rulers = yes
+		ai_check_interval = 12
 		
 		from_potential = {
 			is_ruler = yes
@@ -511,7 +503,7 @@ targeted_decisions = {
 		ai_will_do = {
 			factor = 1
 			modifier = {
-				factor = 0.05
+				factor = 0.5
 				always = yes
 			}
 			modifier = {
@@ -702,6 +694,7 @@ targeted_decisions = {
 		filter = court
 		ai_target_filter = court
 		only_rulers = yes
+		ai_check_interval = 12
 
 		from_potential = {
 			is_ruler = yes
@@ -867,10 +860,6 @@ targeted_decisions = {
 		ai_will_do = {
 			factor = 1
 			modifier = {
-				factor = 0.1
-				always = yes
-			}
-			modifier = {
 				factor = 0
 				FROM = {
 					is_pagan_religion = yes
@@ -916,6 +905,7 @@ targeted_decisions = {
 	demand_conversion_vassal = {
 		filter = vassals
 		ai_target_filter = vassals
+		ai_check_interval = 12
 		only_rulers = yes
 
 		from_potential = {
@@ -1080,10 +1070,6 @@ targeted_decisions = {
 		ai_will_do = {
 			factor = 1
 			modifier = {
-				factor = 0.1
-				always = yes
-			}
-			modifier = {
 				factor = 0
 				FROM = {
 					is_pagan_religion = yes
@@ -1216,6 +1202,7 @@ targeted_decisions = {
 		filter = spouse
 		ai_target_filter = spouse
 		only_rulers = yes
+		ai_check_interval = 60
 		
 		from_potential = {
 			ai = yes
@@ -1372,7 +1359,7 @@ targeted_decisions = {
 		ai_will_do = {
 			factor = 1
 			modifier = {
-				factor = 0.01
+				factor = 0.5
 				always = yes
 			}
 			modifier = {
@@ -1459,6 +1446,7 @@ targeted_decisions = {
 		filter = court
 		ai_target_filter = court
 		only_rulers = yes
+		ai_check_interval = 12
 		
 		from_potential = {
 			is_ruler = yes
@@ -1488,10 +1476,6 @@ targeted_decisions = {
 		}
 		ai_will_do = {
 			factor = 1
-			modifier = {
-				factor = 0.1
-				always = yes
-			}
 			modifier = {
 				factor = 4
 				FROM = { trait = zealous }
@@ -1563,7 +1547,77 @@ targeted_decisions = {
 			factor = 0
 		}
 	}
-	
+
+	seek_protection = {
+		filter = all
+		ai_target_filter = self
+		
+		only_independent = yes
+		
+		from_potential = {
+			ai = no
+			NOT = { has_character_flag = seeking_protection }
+			NOT = { is_vassal_or_below = ROOT }
+			NOT = { is_liege_or_above = ROOT }
+			NOT = {
+				rightful_religious_head_scope = {
+					character = ROOT
+				}
+			}
+			attacking_religious_head_trigger = no
+			war = no
+		}
+		potential = {
+			# The "attacker" needs a border, or be at most one sea zone away from one of the target's counties
+			any_realm_province = {
+				any_neighbor_province = {
+					OR = {
+						owner = { same_realm = FROM }
+						AND = {
+							is_land = no
+							any_neighbor_province = {
+								owner = { same_realm = FROM }
+							}
+						}
+					}
+				}
+			}
+			OR = {
+				NOT = { has_character_flag = sought_protection_by_@FROM }
+				had_character_flag = { flag = sought_protection_by_@FROM days = 1825 }
+			}
+			war = no
+			NOT = { character = FROM }
+		}
+		allow = {
+			FROM = {
+				has_dlc = "Horse Lords"
+				higher_real_tier_than = BARON
+				independent = yes
+				is_tributary = no
+				NOT = { higher_real_tier_than = ROOT }
+			}
+			ROOT = {
+				relative_power = { who = FROM power = 3 }
+				independent = yes
+				is_tributary = no
+			}
+		}
+		effect = {
+			FROM = { character_event = { id = Plus.4040 days = 3 } }
+			hidden_tooltip = {
+				set_character_flag = sought_protection_by_@FROM
+				FROM = { set_character_flag = seeking_protection }
+			}
+		}
+		revoke_allowed = {
+			always = no #Not used in vanilla
+		}
+		ai_will_do = {
+			factor = 0
+		}
+	}
+
 	demand_tribute = {
 		filter = all
 		ai_target_filter = self
@@ -1653,8 +1707,170 @@ targeted_decisions = {
 		}
 	}
 	
+	vassalize_tributary = {
+		filter = all
+		ai_target_filter = self
+
+		only_independent = yes
+		from_potential = {
+			ai = no
+			independent = yes
+			NOT = { has_character_modifier = holy_truce_timer }
+			NOT = { has_character_modifier = tributary_timer }
+			mercenary = no
+			is_tributary = no
+			has_dlc = "Horse Lords"
+			NOT = { has_character_flag = trying_to_vassalize_tributary }
+			NOT = {
+				rightful_religious_head_scope = {
+					character = ROOT
+				}
+			}
+			attacking_religious_head_trigger = no
+			NAND = {
+				holy_order = yes
+				religion = ROOT
+			}
+			is_feudal = yes
+		}
+		potential = {
+			independent = yes
+			pays_tribute_to = FROM
+			OR = {
+				is_tributary = { type = forced }
+				is_tributary = { type = voluntary }
+			}			
+
+			war = no
+			NOT = { character = FROM }
+		}
+		allow = {
+			FROM = { higher_real_tier_than = COUNT }
+			ROOT = {
+				NOT = { has_non_aggression_pact_with = FROM }
+				NOT = { reverse_has_truce = FROM }
+				lower_tier_than = FROM
+			}
+			war = no
+			custom_tooltip = {
+				text = TRIBUTARY_FOR_30_YEARS
+				hidden_tooltip = {
+					primary_title = { check_variable = { which = "tributary_years" value = 30 } }
+				}
+			}
+			FROM = {
+				conditional_tooltip = {
+					trigger = {
+						tier = COUNT
+					}
+					prestige = 200
+				}
+				conditional_tooltip = {
+					trigger = {
+						tier = DUKE
+					}
+					prestige = 500
+				}
+				conditional_tooltip = {
+					trigger = {
+						tier = KING
+					}
+					prestige = 1200
+				}
+				conditional_tooltip = {
+					trigger = {
+						tier = EMPEROR
+					}
+					prestige = 2000
+				}
+			}
+		}
+		effect = {
+			FROM = {
+				if = {
+					limit = { tier = COUNT }
+					prestige = -200
+				}
+				else_if = {
+					limit = { tier = DUKE }
+					prestige = -500
+				}
+				else_if = {
+					limit = { tier = KING }
+					prestige = -1200
+				}
+				else_if = {
+					limit = { tier = EMPEROR }
+					prestige = -2000
+				}	
+				character_event = { id = Plus.4020 days = 3 }
+			}
+			hidden_tooltip = {
+				FROM = { set_character_flag = trying_to_vassalize_tributary }
+			}
+		}
+		revoke_allowed = {
+			always = no #Not used in vanilla
+		}
+		ai_will_do = {
+			factor = 0
+		}
+	}
+	
+	release_as_protectorate = {
+		filter = vassals
+		ai_target_filter = self
+		
+		from_potential = {
+			tier = EMPEROR
+			has_imperial_government_trigger = yes
+			primary_title = { is_titular = no }
+			NOT = { has_character_modifier = holy_truce_timer }
+			NOT = { has_character_modifier = tributary_timer }
+		}
+
+		potential = {
+			NOT = { de_jure_liege_or_above = FROM }
+			higher_real_tier_than = COUNT
+			has_imperial_government_trigger = yes
+		}
+		
+		allow = {
+			war = no
+			FROM = { war = no }
+		}
+		
+        effect = {
+			FROM = {
+				if = {
+					limit = { tier = COUNT }
+					prestige = -200
+				}
+				else_if = {
+					limit = { tier = DUKE }
+					prestige = -500
+				}
+				else_if = {
+					limit = { tier = KING }
+					prestige = -1200
+				}
+				else_if = {
+					limit = { tier = EMPEROR }
+					prestige = -2000
+				}	
+				character_event = { id = Plus.4551 days = 3 }
+			}
+        }
+		revoke_allowed = {
+			always = no
+		}		
+		ai_will_do = {
+			factor = 0
+		}
+	}
+	
 	prune_family_tree = {
-		filter = dynasty #Filter characters targetted by the player
+		filter = dynasty_including_me #Filter characters targetted by the player
 		ai_target_filter = self #Filter for characters targetted by the AI
 		
 		only_rulers = yes
@@ -1764,7 +1980,7 @@ targeted_decisions = {
 						NOT = {
 							any_courtier_or_vassal = {
 								liege = { character = ROOT }
-								has_minor_title = title_court_educator
+								is_court_educator_trigger = yes
 								NOT = { character = ROOT }
 							}
 						}
@@ -1775,7 +1991,7 @@ targeted_decisions = {
 					hidden_tooltip = {
 						any_courtier_or_vassal = {
 							liege = { character = ROOT }
-							has_minor_title = title_court_educator
+							is_court_educator_trigger = yes
 							NOT = { character = ROOT }
 							has_prev_education_trigger = no
 						}
@@ -1817,6 +2033,98 @@ targeted_decisions = {
 			hidden_tooltip = {
 				add_character_modifier = { name = being_reeducated duration = -1 }
 				character_event = { id = Plus.1763 }
+			}
+		}
+		ai_will_do = {
+			factor = 0
+		}
+	}
+	
+	rename_character_self = {
+		filter = self
+		ai_target_filter = self
+		
+		only_rulers = yes
+
+		potential = {
+			ai = no
+			higher_real_tier_than = COUNT
+			NOR = {
+				has_character_flag = changed_name_once
+				has_character_flag = renaming_character
+			}
+		}
+		allow = {
+			war = no
+			prisoner = no
+			has_regent = no
+			is_inaccessible_trigger = no
+		}
+		effect = {
+			set_character_flag = renaming_character
+			character_event = { id = Plus.1800 }
+		}
+		revoke_allowed = {
+			always = no
+		}
+		ai_will_do = {
+			factor = 0
+		}
+	}
+
+	transfer_vassal_to_tributary = {
+		filter = all #we could really use a "tributary" filter here.
+		ai_target_filter = none
+		third_party_filter = vassals
+		
+		potential = {
+			independent = yes
+			is_tributary = { suzerain = FROM }
+		}
+		from_potential = {
+			ai = no
+			independent = yes
+			any_tributary = { always = yes }
+		}
+		third_party_potential = {
+			FROMFROM = {
+				NOT = { de_jure_liege_or_above = ROOT }
+				higher_real_tier_than = BARON
+				lower_tier_than = ROOT
+			}
+		}
+		allow = {
+			war = no
+			FROM = { war = no }
+		}
+		third_party_allow = {
+			FROMFROM = { war = no }
+		}
+		third_party_score = {
+			factor = 1
+			modifier = {
+				factor = 2
+				FROMFROM = { tier = DUKE }
+			}
+			modifier = {
+				factor = 3
+				FROMFROM = {
+					num_of_duke_titles = 2
+					tier = DUKE
+				}
+			}
+			modifier = {
+				factor = 4
+				FROMFROM = { tier = KING }
+			}
+		}
+		effect = {
+			FROMFROM = {
+				primary_title = { set_defacto_liege = ROOT }
+			}
+			opinion = {
+				who = FROM
+				modifier = opinion_vassal_transfer
 			}
 		}
 		ai_will_do = {
@@ -1977,6 +2285,7 @@ decisions = {
 
 	give_to_charity = {
 		only_rulers = yes
+		ai_check_interval = 12
 		potential = {
 			is_ruler = yes
 			has_regent = no
@@ -2025,10 +2334,7 @@ decisions = {
 		}
 		ai_will_do = {
 			factor = 1
-			modifier = {
-				factor = 0.1
-				always = yes
-			}
+
 			modifier = {
 				factor = 0
 				piety = 0
@@ -2110,6 +2416,7 @@ decisions = {
 
 	reclaim_titles_divorce = {
 		is_high_prio = yes
+		ai_check_interval = 12
 		potential = {
 			has_character_flag = usurped_by_husband
 			OR = {
@@ -2193,12 +2500,15 @@ decisions = {
 					character_event = { id = FemRule.310 tooltip = REGAIN_TITLES_DIVORCE }
 				}
 			}
+		}	
+		ai_will_do = {
+			factor = 1
 		}
 	}
 
 	usurp_husband = {
 		is_high_prio = yes
-		
+		ai_check_interval = 12
 		potential = {
 			is_female = yes
 			has_character_flag = usurped_by_husband
@@ -2251,6 +2561,9 @@ decisions = {
 					letter_event = { id = FemRule.312 }
 				}
 			}
+		}
+		ai_will_do = {
+			factor = 1
 		}
 	}
 	
@@ -2599,6 +2912,7 @@ decisions = {
 	
 	ai_take_loan = {
 		only_rulers = yes
+		ai_check_interval = 6
 		potential = {
 			ai = yes
 			is_ruler = yes
@@ -2647,6 +2961,7 @@ decisions = {
 	
 	ai_repay_loan = {
 		only_rulers = yes
+		ai_check_interval = 12
 		potential = {
 			ai = yes
 			is_ruler = yes
@@ -3692,6 +4007,7 @@ decisions = {
 
 	ai_request_holy_war = {	
 		only_independent = yes
+		ai_check_interval = 12
 		potential = {
 			ai = yes
 			is_nomadic = no
@@ -3878,7 +4194,7 @@ decisions = {
 		ai_will_do = {
 			factor = 1
 			modifier = {
-				factor = 0.05
+				factor = 0.5
 				always = yes
 			}
 			modifier = {
@@ -3906,6 +4222,7 @@ decisions = {
 
 	claim_caliphate = {
 		is_high_prio = yes
+		ai_check_interval = 12
 		
 		potential = {
 			religion_group = muslim
@@ -3955,10 +4272,7 @@ decisions = {
 		}
 		ai_will_do = {
 			factor = 1
-			modifier = {
-				factor = 0.1
-				always = yes
-			}
+
 			modifier = {
 				factor = 0.5
 				lower_tier_than = KING
@@ -4092,160 +4406,10 @@ decisions = {
 			factor = 1
 		}
 	}
-	
-	create_ibadi_caliphate = {
-		is_high_prio = yes
-		only_independent = yes
-		potential = {
-			religion_group = muslim
-			is_feudal = yes
-			is_female = no
-			demesne_size = 1
-			higher_tier_than = COUNT
-			controls_religion = no
-			dynasty_head = { character = ROOT }
-			religion = ibadi
-			NOT = { is_title_active = d_ibadi }
-			NOR = {
-				trait = decadent
-				any_claim = { controls_religion = yes }
-			}
-		}
-		allow = {
-			war = no
-			has_regent = no
-			NOR = {
-				trait = dynasty_decadence_low
-				trait = dynasty_decadence_med
-				trait = dynasty_decadence_high
-			}
-			religion = ibadi
-			is_heretic = no
-			is_adult = yes
-			OR = {
-				trait = mirza
-				trait = sayyid
-				piety = 1000
-			}
-			OR = {
-				AND = {
-					trait = sayyid
-					piety = 1000
-				}
-				custom_tooltip = {
-					text = controls_mecca_medina
-					hidden_tooltip = {
-						719 = { # Mecca
-							owner = {
-								OR = {
-									is_liege_or_above = ROOT
-									character = ROOT
-								}
-							}
-						}
-						718 = { # Medina
-							owner = {
-								OR = {
-									is_liege_or_above = ROOT
-									character = ROOT
-								}
-							}
-						}
-					}
-				}
-				custom_tooltip = {
-					text = controls_jerusalem_damascus_baghdad
-					hidden_tooltip = {
-						774 = { # Jerusalem
-							owner = {
-								OR = {
-									is_liege_or_above = ROOT
-									character = ROOT
-								}
-							}
-						}
-						728 = { # Damascus
-							owner = {
-								OR = {
-									is_liege_or_above = ROOT
-									character = ROOT
-								}
-							}
-						}
-						693 = { # Baghdad
-							owner = {
-								OR = {
-									is_liege_or_above = ROOT
-									character = ROOT
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-		effect = {
-			activate_title = { title = d_ibadi status = yes }
-			d_ibadi = { 
-				grant_title_no_opinion = ROOT
-				make_primary_title = yes
-			}
-		}
-		ai_will_do = {
-			factor = 1
-			modifier = {
-				factor = 0.1
-				always = yes
-			}
-			modifier = {
-				factor = 0.5
-				lower_tier_than = KING
-			}
-			modifier = {
-				factor = 0.1
-				trait = humble
-			}
-			modifier = {
-				factor = 0.1
-				trait = content
-			}
-			modifier = {
-				factor = 0.5
-				trait = patient
-			}
-			modifier = {
-				factor = 0.5
-				trait = craven
-			}
-			modifier = {
-				factor = 3
-				trait = zealous
-			}
-			modifier = {
-				factor = 2
-				trait = proud
-			}
-			modifier = {
-				factor = 2
-				trait = ambitious
-			}
-			modifier = {
-				factor = 1.5
-				trait = wroth
-			}
-			modifier = {
-				factor = 1.5
-				trait = brave
-			}
-			modifier = {
-				factor = 0
-				trait = cynical
-			}
-		}
-	}
 
-	create_zikri_caliphate = {
+	create_caliphate = {
 		is_high_prio = yes
+		ai_check_interval = 12
 		only_independent = yes
 		potential = {
 			religion_group = muslim
@@ -4255,8 +4419,28 @@ decisions = {
 			higher_tier_than = COUNT
 			controls_religion = no
 			dynasty_head = { character = ROOT }
-			religion = zikri
-			NOT = { is_title_active = d_zikri }
+			OR = {
+				AND = {
+					religion = hurufi
+					NOT = { is_title_active = d_hurufi }
+				}
+				AND = {
+					religion = druze
+					NOT = { is_title_active = d_druze }
+				}
+				AND = {
+					religion = kharijite
+					NOT = { is_title_active = d_kharijite }
+				}
+				AND = {
+					religion = zikri
+					NOT = { is_title_active = d_zikri }
+				}
+				AND = {
+					religion = ibadi
+					NOT = { is_title_active = d_ibadi }
+				}
+			}
 			NOR = {
 				trait = decadent
 				any_claim = { controls_religion = yes }
@@ -4273,11 +4457,22 @@ decisions = {
 			is_heretic = no
 			is_adult = yes
 			OR = {
+				religion = druze
 				trait = mirza
 				trait = sayyid
 				piety = 1000
 			}
 			OR = {
+				NOT = { religion = druze }
+				AND = {
+					piety = 1000
+					trait = druze_ajawid
+					num_of_holy_sites = 1 
+					higher_tier_than = DUKE 
+				}
+			}
+			OR = {
+				religion = druze
 				AND = {
 					trait = sayyid
 					piety = 1000
@@ -4335,411 +4530,47 @@ decisions = {
 			}
 		}
 		effect = {
-			activate_title = { title = d_zikri status = yes }
-			d_zikri = { 
-				grant_title_no_opinion = ROOT
-				make_primary_title = yes
-			}
-		}
-		ai_will_do = {
-			factor = 1
-			modifier = {
-				factor = 0.1
-				always = yes
-			}
-			modifier = {
-				factor = 0.5
-				lower_tier_than = KING
-			}
-			modifier = {
-				factor = 0.1
-				trait = humble
-			}
-			modifier = {
-				factor = 0.1
-				trait = content
-			}
-			modifier = {
-				factor = 0.5
-				trait = patient
-			}
-			modifier = {
-				factor = 0.5
-				trait = craven
-			}
-			modifier = {
-				factor = 3
-				trait = zealous
-			}
-			modifier = {
-				factor = 2
-				trait = proud
-			}
-			modifier = {
-				factor = 2
-				trait = ambitious
-			}
-			modifier = {
-				factor = 1.5
-				trait = wroth
-			}
-			modifier = {
-				factor = 1.5
-				trait = brave
-			}
-			modifier = {
-				factor = 0
-				trait = cynical
-			}
-		}
-	}
-
-	create_kharijite_caliphate = {
-		is_high_prio = yes
-		only_independent = yes
-		potential = {
-			religion_group = muslim
-			is_feudal = yes
-			is_female = no
-			demesne_size = 1
-			higher_tier_than = COUNT
-			controls_religion = no
-			dynasty_head = { character = ROOT }
-			religion = kharijite
-			NOT = { is_title_active = d_kharijite }
-			NOR = {
-				trait = decadent
-				any_claim = { controls_religion = yes }
-			}
-		}
-		allow = {
-			war = no
-			has_regent = no
-			NOR = {
-				trait = dynasty_decadence_low
-				trait = dynasty_decadence_med
-				trait = dynasty_decadence_high
-			}
-			is_heretic = no
-			is_adult = yes
-			OR = {
-				trait = mirza
-				trait = sayyid
-				piety = 1000
-			}
-			OR = {
-				AND = {
-					trait = sayyid
-					piety = 1000
-				}
-				custom_tooltip = {
-					text = controls_mecca_medina
-					hidden_tooltip = {
-						719 = { # Mecca
-							owner = {
-								OR = {
-									is_liege_or_above = ROOT
-									character = ROOT
-								}
-							}
-						}
-						718 = { # Medina
-							owner = {
-								OR = {
-									is_liege_or_above = ROOT
-									character = ROOT
-								}
-							}
-						}
+			trigger_switch = {
+				on_trigger = religion
+				hurufi = {
+					activate_title = { title = d_hurufi status = yes }
+					d_hurufi = { 
+						grant_title_no_opinion = ROOT
+						make_primary_title = yes
 					}
 				}
-				custom_tooltip = {
-					text = controls_jerusalem_damascus_baghdad
-					hidden_tooltip = {
-						774 = { # Jerusalem
-							owner = {
-								OR = {
-									is_liege_or_above = ROOT
-									character = ROOT
-								}
-							}
-						}
-						728 = { # Damascus
-							owner = {
-								OR = {
-									is_liege_or_above = ROOT
-									character = ROOT
-								}
-							}
-						}
-						693 = { # Baghdad
-							owner = {
-								OR = {
-									is_liege_or_above = ROOT
-									character = ROOT
-								}
-							}
-						}
+				ibadi = {
+					activate_title = { title = d_ibadi status = yes }
+					d_ibadi = { 
+						grant_title_no_opinion = ROOT
+						make_primary_title = yes
+					}
+				}
+				zikri = {
+					activate_title = { title = d_zikri status = yes }
+					d_zikri = { 
+						grant_title_no_opinion = ROOT
+						make_primary_title = yes
+					}
+				}
+				druze = {
+					activate_title = { title = d_druze status = yes }
+					d_druze = { 
+						grant_title_no_opinion = ROOT
+						make_primary_title = yes
+					}
+				}
+				kharijite = {
+					activate_title = { title = d_kharijite status = yes }
+					d_kharijite = { 
+						grant_title_no_opinion = ROOT
+						make_primary_title = yes
 					}
 				}
 			}
 		}
-		effect = {
-			activate_title = { title = d_kharijite status = yes }
-			d_kharijite = { 
-				grant_title_no_opinion = ROOT
-				make_primary_title = yes
-			}
-		}
 		ai_will_do = {
 			factor = 1
-			modifier = {
-				factor = 0.1
-				always = yes
-			}
-			modifier = {
-				factor = 0.5
-				lower_tier_than = KING
-			}
-			modifier = {
-				factor = 0.1
-				trait = humble
-			}
-			modifier = {
-				factor = 0.1
-				trait = content
-			}
-			modifier = {
-				factor = 0.5
-				trait = patient
-			}
-			modifier = {
-				factor = 0.5
-				trait = craven
-			}
-			modifier = {
-				factor = 3
-				trait = zealous
-			}
-			modifier = {
-				factor = 2
-				trait = proud
-			}
-			modifier = {
-				factor = 2
-				trait = ambitious
-			}
-			modifier = {
-				factor = 1.5
-				trait = wroth
-			}
-			modifier = {
-				factor = 1.5
-				trait = brave
-			}
-			modifier = {
-				factor = 0
-				trait = cynical
-			}
-		}
-	}
-	
-	create_druze_caliphate = {
-		is_high_prio = yes
-		only_independent = yes
-		potential = {
-			religion_group = muslim
-			is_feudal = yes
-			is_female = no
-			demesne_size = 1
-			higher_tier_than = COUNT
-			controls_religion = no
-			dynasty_head = { character = ROOT }
-			religion = druze
-			NOT = { is_title_active = d_druze }
-			NOR = {
-				trait = decadent
-				any_claim = { controls_religion = yes }
-			}
-		}
-		allow = {
-			war = no
-			has_regent = no
-			NOR = {
-				trait = dynasty_decadence_low
-				trait = dynasty_decadence_med
-				trait = dynasty_decadence_high
-			}
-			is_heretic = no
-			is_adult = yes
-			piety = 1000
-			trait = druze_ajawid
-			num_of_holy_sites = 1
-			higher_tier_than = DUKE
-		}
-		effect = {
-			activate_title = { title = d_druze status = yes }
-			d_druze = { 
-				grant_title_no_opinion = ROOT
-				make_primary_title = yes
-			}
-		}
-		ai_will_do = {
-			factor = 1
-			modifier = {
-				factor = 0.1
-				always = yes
-			}
-			modifier = {
-				factor = 0.5
-				lower_tier_than = KING
-			}
-			modifier = {
-				factor = 0.1
-				trait = humble
-			}
-			modifier = {
-				factor = 0.1
-				trait = content
-			}
-			modifier = {
-				factor = 0.5
-				trait = patient
-			}
-			modifier = {
-				factor = 0.5
-				trait = craven
-			}
-			modifier = {
-				factor = 3
-				trait = zealous
-			}
-			modifier = {
-				factor = 2
-				trait = proud
-			}
-			modifier = {
-				factor = 2
-				trait = ambitious
-			}
-			modifier = {
-				factor = 1.5
-				trait = wroth
-			}
-			modifier = {
-				factor = 1.5
-				trait = brave
-			}
-			modifier = {
-				factor = 0
-				trait = cynical
-			}
-		}
-	}
-	
-	create_hurufi_caliphate = {
-		is_high_prio = yes
-		only_independent = yes
-		potential = {
-			religion_group = muslim
-			is_feudal = yes
-			is_female = no
-			demesne_size = 1
-			higher_tier_than = COUNT
-			controls_religion = no
-			dynasty_head = { character = ROOT }
-			religion = hurufi
-			NOT = { is_title_active = d_hurufi }
-			NOR = {
-				trait = decadent
-				any_claim = { controls_religion = yes }
-			}
-		}
-		allow = {
-			war = no
-			has_regent = no
-			NOR = {
-				trait = dynasty_decadence_low
-				trait = dynasty_decadence_med
-				trait = dynasty_decadence_high
-			}
-			is_heretic = no
-			is_adult = yes
-			OR = {
-				trait = mirza
-				trait = sayyid
-				piety = 1000
-			}
-			OR = {
-				AND = {
-					trait = sayyid
-					piety = 1000
-				}
-				custom_tooltip = {
-					text = controls_mecca_medina
-					hidden_tooltip = {
-						719 = { # Mecca
-							owner = {
-								OR = {
-									is_liege_or_above = ROOT
-									character = ROOT
-								}
-							}
-						}
-						718 = { # Medina
-							owner = {
-								OR = {
-									is_liege_or_above = ROOT
-									character = ROOT
-								}
-							}
-						}
-					}
-				}
-				custom_tooltip = {
-					text = controls_jerusalem_damascus_baghdad
-					hidden_tooltip = {
-						774 = { # Jerusalem
-							owner = {
-								OR = {
-									is_liege_or_above = ROOT
-									character = ROOT
-								}
-							}
-						}
-						728 = { # Damascus
-							owner = {
-								OR = {
-									is_liege_or_above = ROOT
-									character = ROOT
-								}
-							}
-						}
-						693 = { # Baghdad
-							owner = {
-								OR = {
-									is_liege_or_above = ROOT
-									character = ROOT
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-		effect = {
-			activate_title = { title = d_hurufi status = yes }
-			d_hurufi = { 
-				grant_title_no_opinion = ROOT
-				make_primary_title = yes
-			}
-		}
-		ai_will_do = {
-			factor = 1
-			modifier = {
-				factor = 0.1
-				always = yes
-			}
 			modifier = {
 				factor = 0.5
 				lower_tier_than = KING

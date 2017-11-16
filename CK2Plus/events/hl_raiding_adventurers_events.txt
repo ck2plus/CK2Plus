@@ -355,6 +355,7 @@ character_event = {
 					}
 					clear_event_target = home_title
 					set_character_flag = raiding_adventurer
+					change_variable = { which = global_raiding_adventurer_spawn_by_courtier_MTTH value = 1 }
 					if = {
 						limit = {
 							event_target:previous_liege = {
@@ -1538,17 +1539,19 @@ character_event = {
 	}
 	
 	immediate = {
-		log = "Ping event for raiding adventurer: [Root.GetBestName]."
+#		log = "Ping event for raiding adventurer: [Root.GetBestName]."
 		if = {
 			limit = { # If this is true, prepare to settle.
 				OR = {
-					wealth = 150
+					wealth = 300
 					had_character_flag = { flag = raiding_adventurer days = 1825 }
 				}
 				any_independent_ruler = {
 					has_opinion_modifier = { who = ROOT modifier = opinion_looted }
 					NOT = { realm_levy_diff = { who = ROOT value = 3000 } }
 					demesne_size = 1
+					NOT = { has_character_flag = negotiating_with_adventurer }
+					NOT = { any_realm_province = { has_province_modifier = settled_adventurer } }
 				}
 			}
 			random_list = {
@@ -1630,128 +1633,195 @@ character_event = {
 	hide_window = yes
 	
 	immediate = {
-		any_army = {
-			set_can_toggle_looting = yes
-			set_looting = no
-		}
-		clr_character_flag = raiding_adventurer
 		random_independent_ruler = {
 			limit = {
 				has_opinion_modifier = { who = ROOT modifier = opinion_looted }
 				NOT = { realm_levy_diff = { who = ROOT value = 3000 } }
 				demesne_size = 1
+				NOT = { has_character_flag = negotiating_with_adventurer }
+				NOT = { any_realm_province = { has_province_modifier = settled_adventurer } }
 			}
+
 			if = {
 				limit = {
-					ROOT = { is_seafarer = yes }
+					higher_real_tier_than = DUKE
+					OR = {
+						any_demesne_province = {
+							is_capital = no 
+							num_of_settlements = 1
+							NOT = {
+								has_province_modifier = nomad_agitation
+							}
+							OR = {
+								AND = {
+									ROOT = { is_seafarer = yes }
+									port = yes
+								}
+								ROOT = { is_seafarer = no }
+								NOT = { any_demesne_province = { port = yes } }
+							}
+						}
+						any_vassal = {
+							any_demesne_province = {
+								is_capital = no 
+								num_of_settlements = 1
+								NOT = {
+									has_province_modifier = nomad_agitation
+								}
+								OR = {
+									AND = {
+										ROOT = { is_seafarer = yes }
+										port = yes
+									}
+									ROOT = { is_seafarer = no }
+									NOT = { any_demesne_province = { port = yes } }
+								}
+							}
+						}
+					}
 				}
-				random_realm_province = {
-					limit = {
-						port = yes
-						OR = {
-							region = custom_livonia
-							region = custom_novgorod
-							region = custom_muscovy
-							region = custom_rus
-							duchy = { title = d_normandy }
-						}
-					}
-					ROOT = {
-						unsafe_war = {
-							target = PREVPREV
-							casus_belli = duchy_adventure
-							thirdparty_title = PREV
-							tier = DUKE
-						}
-						PREVPREV = {
-							character_event = { id = HL.112 }
-						}
-					}
-					break = yes
+
+				#Adventurer negotiation complex
+				set_character_flag = negotiating_with_adventurer
+				character_event = { id = ADV.1 }
+
+				#Checks if they should go back to raiding
+				ROOT = {
+					character_event = { id = HL.200 days = 65 }
 				}
-				random_realm_province = {
-					limit = {
-						port = yes
-					}
-					ROOT = {
-						unsafe_war = {
-							target = PREVPREV
-							casus_belli = duchy_adventure
-							thirdparty_title = PREV
-							tier = DUKE
-						}
-						PREVPREV = {
-							character_event = { id = HL.112 }
-						}
-					}
-					break = yes
-				}
-				random_realm_province = {
-					limit = {
-						any_neighbor_province = {
-							NOT = { owner = { same_realm = PREVPREVPREV } }
-						}
-					}
-					ROOT = {
-						unsafe_war = {
-							target = PREVPREV
-							casus_belli = duchy_adventure
-							thirdparty_title = PREV
-							tier = DUKE
-						}
-						PREVPREV = {
-							character_event = { id = HL.112 }
-						}
-					}
-					break = yes
-				}
-			}
-			if = {
-				limit = {
-					ROOT = { is_seafarer = no }
-				}
-				random_realm_province = {
-					limit = {
-						any_neighbor_province = {
-							NOT = { owner = { same_realm = PREVPREVPREV } }
-						}
-					}
-					ROOT = {
-						unsafe_war = {
-							target = PREVPREV
-							casus_belli = duchy_adventure
-							thirdparty_title = PREV
-							tier = DUKE
-						}
-						PREVPREV = {
-							character_event = { id = HL.112 }
-						}
-					}
-					break = yes
-				}
+
+				break = yes
 			}
 			
-			random_realm_province = {
-				ROOT = {
-					unsafe_war = {
-						target = PREVPREV
-						casus_belli = duchy_adventure
-						thirdparty_title = PREV
-						tier = DUKE
+			if = {
+				limit = { NOT = { higher_real_tier_than = DUKE } }	
+				clr_character_flag = raiding_adventurer			
+				if = {
+					limit = {
+						ROOT = { is_seafarer = yes }
 					}
-					PREVPREV = {
-						character_event = { id = HL.112 }
+					random_realm_province = {
+						limit = {
+							port = yes
+							OR = {
+								region = custom_livonia
+								region = custom_novgorod
+								region = custom_muscovy
+								region = custom_rus
+								duchy = { title = d_normandy }
+							}
+						}
+						ROOT = {
+							unsafe_war = {
+								target = PREVPREV
+								casus_belli = duchy_adventure
+								thirdparty_title = PREV
+								tier = DUKE
+							}
+							any_army = {
+								set_can_toggle_looting = yes
+								set_looting = no
+							}
+							PREVPREV = {
+								character_event = { id = HL.112 }
+							}
+						}
+						break = yes
 					}
+					random_realm_province = {
+						limit = {
+							port = yes
+						}
+						ROOT = {
+							unsafe_war = {
+								target = PREVPREV
+								casus_belli = duchy_adventure
+								thirdparty_title = PREV
+								tier = DUKE
+							}
+							PREVPREV = {
+								character_event = { id = HL.112 }
+							}
+						}
+						break = yes
+					}
+					random_realm_province = {
+						limit = {
+							any_neighbor_province = {
+								NOT = { owner = { same_realm = PREVPREVPREV } }
+							}
+						}
+						ROOT = {
+							unsafe_war = {
+								target = PREVPREV
+								casus_belli = duchy_adventure
+								thirdparty_title = PREV
+								tier = DUKE
+							}
+							any_army = {
+								set_can_toggle_looting = yes
+								set_looting = no
+							}
+							PREVPREV = {
+								character_event = { id = HL.112 }
+							}
+						}
+						break = yes
+					}
+				}
+				if = {
+					limit = {
+						ROOT = { is_seafarer = no }
+					}
+					random_realm_province = {
+						limit = {
+							any_neighbor_province = {
+								NOT = { owner = { same_realm = PREVPREVPREV } }
+							}
+						}
+						ROOT = {
+							unsafe_war = {
+								target = PREVPREV
+								casus_belli = duchy_adventure
+								thirdparty_title = PREV
+								tier = DUKE
+							}
+							any_army = {
+								set_can_toggle_looting = yes
+								set_looting = no
+							}
+							PREVPREV = {
+								character_event = { id = HL.112 }
+							}
+						}
+						break = yes
+					}
+				}
+			
+				random_realm_province = {
+					ROOT = {
+						unsafe_war = {
+							target = PREVPREV
+							casus_belli = duchy_adventure
+							thirdparty_title = PREV
+							tier = DUKE
+						}
+						PREVPREV = {
+							character_event = { id = HL.112 }
+						}
+					}
+				}
+				if = {
+					limit = { war = yes }
+					break = yes
 				}
 			}
 		}
-		if = {
-			limit = {
-				war = no
-			}
-			log = "[SERIOUS] [Root.GetTitledFirstName] failed to find a target after trying to end his raiding adventure."
-			character_event = { id = HL.199 }
-		}
+
+		#If neither break succeeded, kill it with fire
+		clr_character_flag = raiding_adventurer
+		log = "[SERIOUS] [Root.GetTitledFirstName] failed to find a target after trying to end his raiding adventure."
+		character_event = { id = HL.199 }		
 	}
 }
 
@@ -1901,6 +1971,7 @@ character_event = {
 		is_nomadic = yes
 		prisoner = no
 		NOT = { trait = incapable }
+		#NOT = { has_character_flag = raiding_adventurer_nomad }
 	}
 	
 	immediate = {
@@ -1972,6 +2043,7 @@ character_event = {
 		}
 		
 		set_character_flag = raiding_adventurer
+		change_variable = { which = global_raiding_adventurer_spawn_by_displacement value = 1 }
 		
 		any_army = {
 			set_can_toggle_looting = yes
@@ -2099,7 +2171,7 @@ character_event = {
 	}
 	
 	immediate = {
-		log = "[Root.GetTitledFirstName] stopped raiding while being a raiding adventurer."
+#		log = "[Root.GetTitledFirstName] stopped raiding while being a raiding adventurer."
 		character_event = { id = HL.199 }
 	}
 }
@@ -2114,121 +2186,210 @@ character_event = {
 		random_independent_ruler = {
 			limit = {
 				has_opinion_modifier = { who = ROOT modifier = opinion_looted }
+				NOT = { realm_levy_diff = { who = ROOT value = 3000 } }
 				demesne_size = 1
+				NOT = { has_character_flag = negotiating_with_adventurer }
+				NOT = { any_realm_province = { has_province_modifier = settled_adventurer } }
 			}
+
 			if = {
 				limit = {
-					ROOT = { is_seafarer = yes }
+					higher_real_tier_than = DUKE
+					OR = {
+						any_demesne_province = {
+							is_capital = no 
+							num_of_settlements = 1
+							NOT = {
+								has_province_modifier = nomad_agitation
+							}
+							OR = {
+								AND = {
+									ROOT = { is_seafarer = yes }
+									port = yes
+								}
+								ROOT = { is_seafarer = no }
+								NOT = { any_demesne_province = { port = yes } }
+							}
+						}
+						any_vassal = {
+							any_demesne_province = {
+								is_capital = no 
+								num_of_settlements = 1
+								NOT = {
+									has_province_modifier = nomad_agitation
+								}
+								OR = {
+									AND = {
+										ROOT = { is_seafarer = yes }
+										port = yes
+									}
+									ROOT = { is_seafarer = no }
+									NOT = { any_demesne_province = { port = yes } }
+								}
+							}
+						}
+					}
 				}
-				random_realm_province = {
-					limit = {
-						port = yes
-						OR = {
-							region = custom_livonia
-							region = custom_novgorod
-							region = custom_muscovy
-							region = custom_rus
-							duchy = { title = d_normandy }
-						}
-					}
-					ROOT = {
-						unsafe_war = {
-							target = PREVPREV
-							casus_belli = duchy_adventure
-							thirdparty_title = PREV
-							tier = DUKE
-						}
-						PREVPREV = {
-							character_event = { id = HL.112 }
-						}
-					}
-					break = yes
-				}
-				random_realm_province = {
-					limit = {
-						port = yes
-					}
-					ROOT = {
-						unsafe_war = {
-							target = PREVPREV
-							casus_belli = duchy_adventure
-							thirdparty_title = PREV
-							tier = DUKE
-						}
-						PREVPREV = {
-							character_event = { id = HL.112 }
-						}
-					}
-					break = yes
-				}
-				random_realm_province = {
-					limit = {
-						any_neighbor_province = {
-							NOT = { owner = { same_realm = PREVPREVPREV } }
-						}
-					}
-					ROOT = {
-						unsafe_war = {
-							target = PREVPREV
-							casus_belli = duchy_adventure
-							thirdparty_title = PREV
-							tier = DUKE
-						}
-						PREVPREV = {
-							character_event = { id = HL.112 }
-						}
-					}
-					break = yes
-				}
-			}
-			if = {
-				limit = {
-					ROOT = { is_seafarer = no }
-				}
-				random_realm_province = {
-					limit = {
-						any_neighbor_province = {
-							NOT = { owner = { same_realm = PREVPREVPREV } }
-						}
-					}
-					ROOT = {
-						unsafe_war = {
-							target = PREVPREV
-							casus_belli = duchy_adventure
-							thirdparty_title = PREV
-							tier = DUKE
-						}
-						PREVPREV = {
-							character_event = { id = HL.112 }
-						}
-					}
-					break = yes
-				}
-			}
-			
-			random_realm_province = {
+
+				#Adventurer negotiation complex
+				set_character_flag = negotiating_with_adventurer
+				character_event = { id = ADV.1 }
+				
+				change_variable = { which = global_adventurer_negotiations value = 1 }
 				ROOT = {
-					unsafe_war = {
-						target = PREVPREV
-						casus_belli = duchy_adventure
-						thirdparty_title = PREV
-						tier = DUKE
+					export_to_variable = { 
+						which = logging_adventurer_wealth
+						value = wealth
 					}
-					PREVPREV = {
-						character_event = { id = HL.112 }
+					log = "[This.GetBestName] starts to negotiate with [Prev.GetBestName]."
+					log = "[This.GetBestName] currently has [This.logging_adventurer_wealth.GetValue] ducats."
+				}
+
+				break = yes
+			}
+
+			if = {
+				limit = { NOT = { higher_real_tier_than = DUKE } }
+
+				clr_character_flag = raiding_adventurer
+
+				if = {
+					limit = {
+						ROOT = { is_seafarer = yes }
 					}
+					random_realm_province = {
+						limit = {
+							port = yes
+							OR = {
+								region = custom_livonia
+								region = custom_novgorod
+								region = custom_muscovy
+								region = custom_rus
+								duchy = { title = d_normandy }
+							}
+						}
+						ROOT = {
+							unsafe_war = {
+								target = PREVPREV
+								casus_belli = duchy_adventure
+								thirdparty_title = PREV
+								tier = DUKE
+							}
+							any_army = {
+								set_can_toggle_looting = yes
+								set_looting = no
+							}
+							PREVPREV = {
+								character_event = { id = HL.112 }
+							}
+						}
+						break = yes
+					}
+					random_realm_province = {
+						limit = {
+							port = yes
+						}
+						ROOT = {
+							unsafe_war = {
+								target = PREVPREV
+								casus_belli = duchy_adventure
+								thirdparty_title = PREV
+								tier = DUKE
+							}
+							any_army = {
+								set_can_toggle_looting = yes
+								set_looting = no
+							}
+							PREVPREV = {
+								character_event = { id = HL.112 }
+							}
+						}
+						break = yes
+					}
+					random_realm_province = {
+						limit = {
+							any_neighbor_province = {
+								NOT = { owner = { same_realm = PREVPREVPREV } }
+							}
+						}
+						ROOT = {
+							unsafe_war = {
+								target = PREVPREV
+								casus_belli = duchy_adventure
+								thirdparty_title = PREV
+								tier = DUKE
+							}
+							any_army = {
+								set_can_toggle_looting = yes
+								set_looting = no
+							}
+							PREVPREV = {
+								character_event = { id = HL.112 }
+							}
+						}
+						break = yes
+					}
+				}
+				if = {
+					limit = {
+						ROOT = { is_seafarer = no }
+					}
+					random_realm_province = {
+						limit = {
+							any_neighbor_province = {
+								NOT = { owner = { same_realm = PREVPREVPREV } }
+							}
+						}
+						ROOT = {
+							unsafe_war = {
+								target = PREVPREV
+								casus_belli = duchy_adventure
+								thirdparty_title = PREV
+								tier = DUKE
+							}
+							any_army = {
+								set_can_toggle_looting = yes
+								set_looting = no
+							}
+							PREVPREV = {
+								character_event = { id = HL.112 }
+							}
+						}
+						break = yes
+					}
+				}
+				
+				random_realm_province = {
+					ROOT = {
+						unsafe_war = {
+							target = PREVPREV
+							casus_belli = duchy_adventure
+							thirdparty_title = PREV
+							tier = DUKE
+						}
+						any_army = {
+							set_can_toggle_looting = yes
+							set_looting = no
+						}
+						PREVPREV = {
+							character_event = { id = HL.112 }
+						}
+					}
+				}
+				if = {
+					limit = { war = yes }
+					break = yes
 				}
 			}
 		}
-		if = {
-			limit = {
-				war = no
-			}
-			log = "[SERIOUS] [Root.GetTitledFirstName] failed to find a target after trying to end his raiding adventure."
-			character_event = { id = HL.199 }
-		}
+
+		#If neither break succeeded, kill it with fire
+		clr_character_flag = raiding_adventurer
+		log = "[SERIOUS] [Root.GetTitledFirstName] failed to find a target after trying to end his raiding adventure."
+		character_event = { id = HL.199 }
 	}
 }
+
 
 # Clean-up
 character_event = {
@@ -2239,7 +2400,7 @@ character_event = {
 	hide_window = yes
 	
 	immediate = {
-		log = "Cleaning up adventurer: [Root.GetTitledFirstName]."
+#		log = "Cleaning up adventurer: [Root.GetTitledFirstName]."
 		clr_character_flag = raiding_adventurer
 		disband_event_forces = yes
 		clan_title = {
@@ -2320,3 +2481,27 @@ character_event = {
        }
 	}
 }
+
+#Should adventurer continue to raid?
+character_event = {
+	id = HL.200
+	
+	is_triggered_only = yes
+	
+	hide_window = yes
+
+	#If not at war and still holding an adventurer title... 
+	trigger = {
+	 	war = no
+	 	primary_title = { 
+	 		temporary = yes 
+	 		adventurer = yes
+	 	}
+	}
+
+	#...go forth and adventure!
+	immediate = {
+		character_event = { id = HL.110 }
+	}
+}
+

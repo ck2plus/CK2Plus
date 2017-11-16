@@ -21,18 +21,45 @@ character_event = {
 	
 	trigger = {
 		is_playable = yes
-		any_independent_ruler = {
-			pays_tribute_to = ROOT
+		any_tributary = {
+			NOR = {
+				is_tributary = { type = imperial }
+				is_tributary = { type = permanent }
+				is_tributary = { type = offmap }
+				is_tributary = { type = nomadic }
+			}
 		}
 	}
 	
 	immediate = {
 		current_heir = { save_event_target_as = new_suzerain }
-		any_independent_ruler = {
+		any_tributary = {
 			limit = {
 				NOT = { character = event_target:new_suzerain }
-				pays_tribute_to = ROOT
+				is_tributary = {
+					type = forced
+				}
 			}
+			set_character_flag = is_forced_tributary
+			character_event = { id = Plus.417 days = 1 } # renew tribute status
+		}
+		any_tributary = {
+			limit = {
+				NOT = { character = event_target:new_suzerain }
+				OR = {
+					is_tributary = { type = voluntary }
+					is_tributary = { type = default }
+				}
+			}
+			set_character_flag = is_voluntary_tributary
+			character_event = { id = Plus.417 days = 1 } # renew tribute status
+		}
+		any_tributary = {
+			limit = {
+				NOT = { character = event_target:new_suzerain }
+				is_tributary = { type = protectorate }
+			}
+			set_character_flag = is_protectorate
 			character_event = { id = Plus.417 days = 1 } # renew tribute status
 		}
 	}
@@ -48,6 +75,9 @@ character_event = {
 	
 	option = {
 		name = EXCELLENT
+		clr_character_flag = is_forced_tributary
+		clr_character_flag = is_voluntary_tributary
+		clr_character_flag = is_protectorate
 	}
 }
 
@@ -61,6 +91,9 @@ character_event = {
 	
 	option = {
 		name = EVTOPTA_Plus_415
+		clr_character_flag = is_forced_tributary
+		clr_character_flag = is_voluntary_tributary
+		clr_character_flag = is_protectorate
 	}
 }
 
@@ -83,6 +116,14 @@ character_event = {
 		name = EVTOPTA_Plus_417 # Accept tribute status
 		ai_chance = {
 			factor = 50
+			modifier = {
+				factor = 1.2
+				has_character_flag = is_voluntary_tributary
+			}
+			modifier = {
+				factor = 2
+				has_character_flag = is_protectorate
+			}
 			modifier = {
 				factor = 3
 				war = yes
@@ -122,9 +163,32 @@ character_event = {
 				dynasty_head = { character = event_target:new_suzerain}
 			}
 		}
-		event_target:new_suzerain = {
-			tooltip = { make_tributary = { who = ROOT percentage = 0.4 } }
-			hidden_tooltip = { character_event = { id = Plus.418 } }
+		if = {
+			limit = {
+				has_character_flag = is_voluntary_tributary
+			}
+			event_target:new_suzerain = {
+				tooltip = { make_tributary = { who = ROOT tributary_type = voluntary } }
+				hidden_tooltip = { character_event = { id = Plus.418 } }
+			}
+		}
+		if = {
+			limit = {
+				has_character_flag = is_forced_tributary
+			}
+			event_target:new_suzerain = {
+				tooltip = { make_tributary = { who = ROOT tributary_type = forced } }
+				hidden_tooltip = { character_event = { id = Plus.418 } }
+			}
+		}
+		if = {
+			limit = {
+				has_character_flag = is_protectorate
+			}
+			event_target:new_suzerain = {
+				tooltip = { make_tributary = { who = ROOT tributary_type = protectorate } }
+				hidden_tooltip = { character_event = { id = Plus.418 } }
+			}
 		}
 	}
 	option = {
@@ -214,7 +278,18 @@ character_event = {
 	
 	option = {
 		name = EVTOPTA_Plus_418 # Accept tribute
-		make_tributary = { who = FROM percentage = 0.4 }
+		if = {
+			limit = { FROM = { has_character_flag = is_voluntary_tributary } }
+			make_tributary = { who = FROM tributary_type = voluntary }
+		}
+		if = {
+			limit = { FROM = { has_character_flag = is_forced_tributary } }
+			make_tributary = { who = FROM tributary_type = forced }
+		}
+		if = {
+			limit = { FROM = { has_character_flag = is_protectorate } }
+			make_tributary = { who = FROM tributary_type = protectorate }
+		}
 		FROM = {
 			hidden_tooltip = { character_event = { id = Plus.414 } }
 		}
@@ -240,6 +315,14 @@ character_event = {
 		name = EVTOPTA_Plus_416 # Let them go
 		ai_chance = {
 			factor = 50
+			modifier = {
+				factor = 2
+				FROM = { has_character_flag = is_protectorate }
+			}
+			modifier = {
+				factor = 1.2
+				FROM = { has_character_flag = is_voluntary_tributary }
+			}
 			modifier = {
 				factor = 3
 				war = yes
@@ -278,11 +361,17 @@ character_event = {
 			}
 		}
 		opinion = { who = FROM modifier = opinion_outraged years = 10 }
+		FROM = {
+			clr_character_flag = is_forced_tributary
+			clr_character_flag = is_voluntary_tributary
+			clr_character_flag = is_protectorate
+		}
 	}
 	option = {
 		name = EVTOPTB_Plus_416 # Attack them
 		trigger = {
 			FROM = { NOT = { higher_tier_than = ROOT } }
+			FROM = { NOT = { has_character_flag = is_protectorate } }
 		}
 		ai_chance = {
 			factor = 50
@@ -319,6 +408,10 @@ character_event = {
 				NOT = { any_realm_province = { any_neighbor_province = { owner = { same_realm = FROM } } } }
 			}
 		}
+		FROM = {
+			clr_character_flag = is_forced_tributary
+			clr_character_flag = is_voluntary_tributary
+		}
 		set_character_flag = trying_to_gain_tributary
 		war = {
 			target = FROM
@@ -336,9 +429,21 @@ character_event = {
 	is_triggered_only = yes
 	
 	immediate = {
-		event_target:abdicate_heir = {
-			make_tributary = { who = ROOT percentage = 0.4 }
+		if = {
+			limit = { has_character_flag = is_voluntary_tributary }
+			event_target:abdicate_heir = { make_tributary = { who = ROOT tributary_type = voluntary } }
 		}
+		if = {
+			limit = { has_character_flag = is_forced_tributary }
+			event_target:abdicate_heir = { make_tributary = { who = ROOT tributary_type = forced } }
+		}
+		if = {
+			limit = { has_character_flag = is_protectorate }
+			event_target:abdicate_heir = { make_tributary = { who = ROOT tributary_type = protectorate } }
+		}
+		clr_character_flag = is_voluntary_tributary
+		clr_character_flag = is_forced_tributary
+		clr_character_flag = is_protectorate
 	}
 }
 
