@@ -233,6 +233,8 @@ NDefines.NMilitary.OUTSIDE_LIEGE_LEVY_MULT = 0.35				-- Multiplier to liege levi
 NDefines.NDisease.INFECTION_CHANCE_MODIFIER_TRADEPOST = 0.03
 NDefines.NDisease.INFECTION_CHANCE_MODIFIER_TRADEROUTE = 0.03
 
+NDefines.NGraphics.CITY_SPRAWL_AMOUNT = 0.75						-- Size of cities, higher gives larger cities
+
 NDefines.NTechnology.IDEAL_YEAR_AHEAD_PENALTY_INVEST = 0.4			-- Percent increase in cost pre level ahead of ideal date
 
 NDefines.NAI.DOW_AGGRESSION_FACTOR = 1.0							-- General aggressiveness declarations of war
