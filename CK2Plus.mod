@@ -7,4 +7,4 @@ replace_path="history/technology"
 tags={ 
 Balance CK2+ CK2plus "Complete Overhaul" Converter Decisions Events Factions Fixes Gameplay Immersion Map NWO }
 picture="ck2plus.jpg"
-supported_checksums = { TSQI }
+supported_checksums = { GYUK }
