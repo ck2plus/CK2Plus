@@ -6884,14 +6884,20 @@ character_event = {
 	
 	trigger = {
 		always = no
+		NOT = { has_character_flag = nigerian_prince_chain }
 		NOT = { has_character_modifier = ai_austerity } #no loans etc
 		scaled_wealth = { value = 0.5 min = 50 } #actually has some money
 		capital_scope = {
-			NOT = { region = world_africa_west }
+			NOT = { region = world_central_africa }
 		}
 		any_independent_ruler = {
-			capital_scope = { region = world_africa_west }
+			capital_scope = { region = world_central_africa }
 			NOT =  { same_realm = event_target:wealthy_target }
+			ai = no
+		}
+		OR = {
+			higher_real_tier_than = DUKE
+			num_of_duke_titles = 2
 		}
 	}
 	
@@ -6924,11 +6930,13 @@ character_event = {
 	}
 	
 	immediate = {
+		set_character_flag = nigerian_prince_chain
 		save_event_target_as = wealthy_target
 		random_independent_ruler = {
 			limit = {
-				capital_scope = { region = world_africa_west }
+				capital_scope = { region = world_central_africa }
 				NOT =  { same_realm = event_target:wealthy_target }
+				ai = no
 			}
 			save_event_target_as = nigerian_prince_host
 			create_character = {
@@ -6962,9 +6970,17 @@ letter_event = {
 	
 	option = { # How terrible, I must help him immediately!
 		name = EVTOPTA_Plus_1806
-		# Send money, 99% fake. Can cause diplomatic incident and the hunt for the "prince"
+		custom_tooltip = {
+			text = REPLY_TO_NIGERIAN_PRINCE
+			hidden_tooltip = {
+				letter_event = { id = Plus.1807 days = 30 random = 10 }
+			}
+		}
+		# Send money, 99% fake. Can cause a hunt for the "prince"
+		ai_chance = {
+			factor = 0
+		}
 	}
-
 	option = { # I'm not falling for that, but I know who might...
 		name = EVTOPTB_Plus_1806
 		trigger = {
@@ -6979,11 +6995,27 @@ letter_event = {
 				NOT = { same_realm = event_target:nigerian_prince_host }
 			}
 		}
+		ai_chance = {
+			factor = 1
+			modifier = {
+				factor = 0
+				NOT = { any_rival = { ai = no } }
+			}
+		}
 		#Frame rival. 20% chance that it's not a fake, so rival might actually get cash. If that happens they might stop hating you.
 	}
 	option = { # Great idea!
 		name = EVTOPTC_Plus_1806
 		
+		trigger = {
+			NOR = {
+				trait = honest
+				trait = just
+			}
+		}
+		ai_chance = {
+			factor = 1
+		}
 		# Become nigerian prince, and send the scam to someone else.
 	}
 	option = { # Throw the letter away
@@ -7003,6 +7035,164 @@ letter_event = {
 			clear_event_target = nigerian_prince_host
 			clear_event_target = wealthy_target
 		}
+		ai_chance = {
+			factor = 10
+		}
 		#Chain ends. No fun.
+	}
+}
+
+### Fell for it
+# Nigerian Prince sends the second letter asking for money
+letter_event = {
+	id = Plus.1807
+	desc = EVTDESC_Plus_1807
+	border = GFX_event_letter_frame_economy
+	
+	is_triggered_only = yes
+	hide_from = yes
+	
+	option = { # Send the money immediately!
+		name = EVTOPTA_Plus_1807
+		transfer_scaled_wealth = { to = event_target:nigerian_prince value = -0.5 min = 50 }
+		hidden_tooltip = {
+			random_list = {
+				99 = { #Scam
+					character_event = { id = Plus.1808 days = 60 random = 15 }
+				}
+				1 = { # ... it was for real. Huge payday!
+					character_event = { id = Plus.1809 days = 45 random = 10 }
+				}
+			}
+		}
+	}
+}
+
+## Scam
+# Realized it was a scam
+character_event = {
+	id = Plus.1808
+	desc = EVTDESC_Plus_1808
+	picture = picture = "GFX_evt_spymaster"
+	
+	is_triggered_only = yes
+	hide_from = yes
+	
+	option = { # Easy come, easy go.
+		name = EVTOPTA_Plus_1808
+		random = {
+			chance = 25
+			add_trait = arbitrary
+		}
+		hidden_tooltip = {
+			event_target:nigerian_prince = {
+				death = { death_reason = death_missing }
+			}
+			clear_event_target = nigerian_prince
+			clear_event_target = nigerian_prince_host
+			clear_event_target = wealthy_target
+		}
+	}
+	
+	option = { # Ask Spymaster to find out who is behind this.
+		name = EVTOPTB_Plus_1808
+		trigger = {
+			job_spymaster = { always = yes }
+		}
+		job_spymaster = { character_event = { id = Plus.1809 days = 3 } }
+	}
+}
+
+# Spymaster asked to help find the "nigerian prince"
+character_event = {
+	id = Plus.1809
+	desc = EVTDESC_Plus_1809
+	picture = picture = "GFX_evt_spymaster"
+	
+	is_triggered_only = yes
+	
+	immediate = {
+		random_list = {
+			95 = { #Culprit is an in-realm baron
+				event_target:nigerian_prince = {
+					death = { death_reason = death_missing }
+				}
+				clear_event_target = nigerian_prince
+				clear_event_target = nigerian_prince_host
+				random_realm_lord = {
+					limit = {
+						tier = BARON
+						NOT = { dynasty = event_target:wealthy_target }
+					}
+					save_event_target_as = nigerian_prince
+				}
+				clear_event_target = wealthy_target
+			}
+			5 = { # Culprit is an actual nigerian prince
+				clear_event_target = nigerian_prince_host
+				clear_event_target = wealthy_target
+			}
+		}
+	}
+	
+	option = { # Blame it on a random rich landowner
+		name = EVTOPTA_Plus_1809
+		hidden_tooltip = {
+			event_target:nigerian_prince = {
+				death = { death_reason = death_missing }
+			}
+			clear_event_target = nigerian_prince
+			clear_event_target = nigerian_prince_host
+			clear_event_target = wealthy_target
+		}
+		liege = { character_event = { id = Plus.1810 days = 30 random = 10 } }
+	}
+	option = { # The blackadder option
+		name = EVTOPTB_Plus_1809
+		tooltip_info = intrigue
+		trigger = {
+			intrigue = 10
+			OR = {
+				trait = intricate_webweaver
+				trait = elusive_shadow
+			}
+		}
+		prestige = 100
+		tooltip = { liege = { opinion = { who = ROOT modifier = opinion_grateful years = 5 } } }
+		liege = { character_event = { id = Plus.1811 days = 30 random = 10 } }
+	}
+}
+
+# Notify liege of finding the "prince" at a nearby farm
+character_event = {
+	id = Plus.1810
+	desc = EVTDESC_Plus_1810
+	picture = picture = "GFX_evt_spymaster"
+	
+	is_triggered_only = yes
+	
+	option = {
+		name = CURSES
+	}
+}
+
+# Spymaster finds the culprit
+character_event = {
+	id = Plus.1811
+	desc = EVTDESC_Plus_1811
+	picture = picture = "GFX_evt_spymaster"
+	
+	is_triggered_only = yes
+	
+	immediate = { event_target:nigerian_prince = { move_character = ROOT } }
+	
+	option = { #Arrest him!
+		name = EVTOPTA_Plus_174
+		opinion = { who = ROOT modifier = opinion_grateful years = 5 }
+		opinion = { who = event_target:nigerian_prince modifier = devious_plotter years = 10 }
+		wealth = event_target:nigerian_prince
+		event_target:nigerian_prince = { clear_wealth = yes }
+		imprison = event_target:nigerian_prince
+		clear_event_target = nigerian_prince
 	}
 }
