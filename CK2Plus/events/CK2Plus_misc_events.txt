@@ -6894,7 +6894,7 @@ character_event = {
 		any_independent_ruler = {
 			capital_scope = { region = world_central_africa }
 			NOT =  { same_realm = event_target:wealthy_target }
-			ai = no
+			ai = yes
 		}
 		OR = {
 			higher_real_tier_than = DUKE
@@ -6934,12 +6934,6 @@ character_event = {
 		set_character_flag = nigerian_prince_chain
 		save_event_target_as = wealthy_target
 		random_independent_ruler = {
-			limit = {
-				capital_scope = { region = world_central_africa }
-				NOT =  { same_realm = event_target:wealthy_target }
-				ai = no
-			}
-			save_event_target_as = nigerian_prince_host
 			create_character = {
 				random_traits = no
 				culture = hausa
@@ -6952,11 +6946,11 @@ character_event = {
 				trait = arbitrary
 			}
 			new_character = {
-				set_character_flag = ai_flag_refuse_marriage
-				save_event_target_as = nigerian_prince
-				event_target:wealthy_target = { letter_event = { id = Plus.1806 } }# Send the letter
+				save_event_target_as = random_hausa_name
+				death = { death_reason = death_missing } 
 			}
 		}
+		letter_event = { id = Plus.1806 }
 	}
 }
 
@@ -6975,35 +6969,18 @@ letter_event = {
 			text = REPLY_TO_NIGERIAN_PRINCE
 			hidden_tooltip = {
 				letter_event = { id = Plus.1807 days = 30 random = 10 }
+				if = {
+					limit = {
+						has_character_flag = framed_rival
+					}
+					event_target:nigerian_prince = { character_event = { id = Plus.1812 days = 10 } }
+				}
 			}
 		}
 		# Send money, 99% fake. Can cause a hunt for the "prince"
 		ai_chance = {
 			factor = 0
 		}
-	}
-	option = { # I'm not falling for that, but I know who might...
-		name = EVTOPTB_Plus_1806
-		trigger = {
-			NOR = {
-				trait = imbecile		
-				trait = slow
-				trait = inbred
-			}
-			num_of_rivals = 1
-			any_rival = {
-				is_ruler = yes
-				NOT = { same_realm = event_target:nigerian_prince_host }
-			}
-		}
-		ai_chance = {
-			factor = 1
-			modifier = {
-				factor = 0
-				NOT = { any_rival = { ai = no } }
-			}
-		}
-		#Frame rival. 20% chance that it's not a fake, so rival might actually get cash. If that happens they might stop hating you.
 	}
 	option = { # Great idea!
 		name = EVTOPTC_Plus_1806
@@ -7013,11 +6990,36 @@ letter_event = {
 				trait = honest
 				trait = just
 			}
+			ai = no
+			num_of_rivals = 1
+			any_rival = {
+				NOT = { has_character_flag = nigerian_prince_chain }
+				NOT = { has_character_modifier = ai_austerity } #no loans etc
+				NOT = { has_character_flag = framed_rival }
+				scaled_wealth = { value = 0.5 min = 50 } #actually has some money
+			}
 		}
 		ai_chance = {
-			factor = 1
+			factor = 0
 		}
-		# Become nigerian prince, and send the scam to someone else.
+		hidden_tooltip = {
+			clear_event_target = wealthy_target
+			save_event_target_as = nigerian_prince
+			random_rival = {
+				limit = {
+					NOT = { has_character_flag = nigerian_prince_chain }
+					NOT = { has_character_modifier = ai_austerity } #no loans etc
+					NOT = { has_character_flag = framed_rival }
+					scaled_wealth = { value = 0.5 min = 50 } #actually has some money
+				}
+				set_character_flag = nigerian_prince_chain
+				set_character_flag = framed_rival
+				save_event_target_as = wealthy_target
+			}
+		}
+		event_target:wealthy_target = {
+			letter_event = { id = Plus.1806 days = 3 }
+		}
 	}
 	option = { # Throw the letter away
 		name = EVTOPTD_Plus_1806
@@ -7029,12 +7031,9 @@ letter_event = {
 			}
 		}
 		hidden_tooltip = {
-			event_target:nigerian_prince = {
-				death = { death_reason = death_missing }
-			}
 			clear_event_target = nigerian_prince
-			clear_event_target = nigerian_prince_host
 			clear_event_target = wealthy_target
+			clear_event_target = random_hausa_name
 		}
 		ai_chance = {
 			factor = 10
@@ -7043,8 +7042,7 @@ letter_event = {
 	}
 }
 
-### Fell for it
-# Nigerian Prince sends the second letter asking for money
+### Fell for it - Nigerian Prince sends the second letter asking for money
 letter_event = {
 	id = Plus.1807
 	desc = EVTDESC_Plus_1807
@@ -7055,22 +7053,44 @@ letter_event = {
 	
 	option = { # Send the money immediately!
 		name = EVTOPTA_Plus_1807
-		transfer_scaled_wealth = { to = event_target:nigerian_prince value = -0.5 min = 50 }
+		hidden_tooltip = {
+			if = {
+				limit = { event_target:nigerian_prince = { always = yes } }
+				transfer_scaled_wealth = { to = event_target:nigerian_prince value = -0.5 min = 50 }
+				event_target:nigerian_prince = { character_event = { id = Plus.1813 } }
+			}
+			else = {
+				scaled_wealth = { value = -0.5 min = 50 }
+			}
+		}
+		tooltip = { scaled_wealth = { value = -0.5 min = 50 } }
 		hidden_tooltip = {
 			random_list = {
 				99 = { #Scam
 					character_event = { id = Plus.1808 days = 60 random = 15 }
 				}
 				1 = { # ... it was for real. Huge payday!
-					character_event = { id = Plus.1809 days = 45 random = 10 }
+					modifier = {
+						factor = 0
+						has_character_flag = framed_rival
+					}
+					modifier = {
+						factor = 10
+						NOT = {
+							has_game_rule = {
+								name = supernatural_events
+								value = off
+							}
+						}
+					}
+					letter_event = { id = Plus.1815 days = 45 random = 10 }
 				}
 			}
 		}
 	}
 }
 
-## Scam
-# Realized it was a scam
+## Scam - Realised it was a scam
 character_event = {
 	id = Plus.1808
 	desc = EVTDESC_Plus_1808
@@ -7085,13 +7105,14 @@ character_event = {
 			chance = 25
 			add_trait = arbitrary
 		}
+		random = {
+			chance = 25
+			add_trait = content
+		}
 		hidden_tooltip = {
-			event_target:nigerian_prince = {
-				death = { death_reason = death_missing }
-			}
-			clear_event_target = nigerian_prince
-			clear_event_target = nigerian_prince_host
 			clear_event_target = wealthy_target
+			clear_event_target = nigerian_prince
+			clear_event_target = random_hausa_name
 		}
 	}
 	
@@ -7113,38 +7134,14 @@ character_event = {
 	is_triggered_only = yes
 	
 	immediate = {
-		random_list = {
-			95 = { #Culprit is an in-realm baron
-				event_target:nigerian_prince = {
-					death = { death_reason = death_missing }
-				}
-				clear_event_target = nigerian_prince
-				clear_event_target = nigerian_prince_host
-				random_realm_lord = {
-					limit = {
-						tier = BARON
-						NOT = { dynasty = event_target:wealthy_target }
-					}
-					save_event_target_as = nigerian_prince
-				}
-				clear_event_target = wealthy_target
-			}
-			5 = { # Culprit is an actual nigerian prince
-				clear_event_target = nigerian_prince_host
-				clear_event_target = wealthy_target
-			}
-		}
+		
 	}
 	
 	option = { # Blame it on a random rich landowner
 		name = EVTOPTA_Plus_1809
 		hidden_tooltip = {
-			event_target:nigerian_prince = {
-				death = { death_reason = death_missing }
-			}
-			clear_event_target = nigerian_prince
-			clear_event_target = nigerian_prince_host
 			clear_event_target = wealthy_target
+			clear_event_target = random_hausa_name
 		}
 		liege = { character_event = { id = Plus.1810 days = 30 random = 10 } }
 	}
@@ -7152,15 +7149,59 @@ character_event = {
 		name = EVTOPTB_Plus_1809
 		tooltip_info = intrigue
 		trigger = {
-			intrigue = 10
+			intrigue = 12
 			OR = {
 				trait = intricate_webweaver
 				trait = elusive_shadow
 			}
 		}
+		hidden_tooltip = {
+			random_list = {
+				90 = { #Culprit is an in-realm baron
+					random_realm_lord = {
+						limit = {
+							tier = BARON
+							NOT = { dynasty = event_target:wealthy_target }
+						}
+						save_event_target_as = nigerian_prince
+					}
+					liege = { character_event = { id = Plus.1811 days = 30 random = 10 } }
+				}
+				5 = { #Rival did it!
+					modifier = {
+						factor = 0
+						NOT = { event_target:wealthy_target = { has_character_flag = framed_rival } }
+					}
+					if = {
+						limit = { event_target:wealthy_target = { ai = yes } }
+						liege = { character_event = { id = Plus.1811 days = 30 random = 10 } }
+					}
+					else = {
+						liege = { character_event = { id = Plus.1814 days = 30 random = 10 } }
+					}
+				}
+				5 = { # Find an actual nigerian prince
+					create_character = {
+						random_traits = no
+						culture = hausa
+						religion = ROOT
+						dynasty = random
+						female = no
+						age = 35
+						trait = elusive_shadow
+						trait = quick
+						trait = arbitrary
+					}
+					new_character = {
+						set_character_flag = ai_flag_refuse_marriage
+						save_event_target_as = nigerian_prince
+					}
+					liege = { character_event = { id = Plus.1811 days = 30 random = 10 } }
+				}
+			}
+		}
 		prestige = 100
 		tooltip = { liege = { opinion = { who = ROOT modifier = opinion_grateful years = 5 } } }
-		liege = { character_event = { id = Plus.1811 days = 30 random = 10 } }
 	}
 }
 
@@ -7174,6 +7215,7 @@ character_event = {
 	
 	option = {
 		name = CURSES
+		scaled_wealth = { value = 0.1 min = 10 max = 30 }
 	}
 }
 
@@ -7185,15 +7227,94 @@ character_event = {
 	
 	is_triggered_only = yes
 	
-	immediate = { event_target:nigerian_prince = { move_character = ROOT } }
+	immediate = {
+		event_target:nigerian_prince = {
+			move_character = ROOT
+		}
+	}
 	
 	option = { #Arrest him!
 		name = EVTOPTA_Plus_174
 		opinion = { who = ROOT modifier = opinion_grateful years = 5 }
 		opinion = { who = event_target:nigerian_prince modifier = devious_plotter years = 10 }
-		wealth = event_target:nigerian_prince
+		if = { #Maybe there's some money left
+			limit = {
+				event_target:nigerian_prince = {
+					wealth = 15
+				}
+			}
+			wealth = event_target:nigerian_prince
+		}
+		else = {
+			scaled_wealth = { value = 0.15 min = 15 max = 50 }
+		}
 		event_target:nigerian_prince = { clear_wealth = yes }
 		imprison = event_target:nigerian_prince
 		clear_event_target = nigerian_prince
+		clear_event_target = wealthy_target
+		clear_event_target = random_hausa_name
+	}
+}
+
+# Notify "prince" that target fell for it.
+character_event = {
+	id = Plus.1812
+	desc = EVTDESC_Plus_1812
+	picture = "GFX_evt_spymaster"
+	
+	is_triggered_only = yes
+	
+	option = {
+		name = EVTOPTA_Plus_157
+	}
+}
+
+# Notify "prince" that target paid
+character_event = {
+	id = Plus.1813
+	desc = EVTDESC_Plus_1813
+	picture = "GFX_evt_spymaster"
+	
+	is_triggered_only = yes
+	
+	option = {
+		name = EVTOPTA_FemRule_150
+		tooltip = {
+			event_target:wealthy_target = {
+				transfer_scaled_wealth = { to = event_target:nigerian_prince value = -0.5 min = 50 }
+			}
+		}
+	}
+}
+
+# Spymaster finds the culprit - player rival
+character_event = {
+	id = Plus.1814
+	desc = EVTDESC_Plus_1814
+	picture = "GFX_evt_spymaster"
+	
+	is_triggered_only = yes
+
+	option = { # Gives arrest reason if possible
+		name = CURSES
+		opinion = { who = ROOT modifier = opinion_grateful years = 5 }
+		opinion = { who = event_target:nigerian_prince modifier = devious_plotter years = 10 }
+		clear_event_target = nigerian_prince
+		clear_event_target = wealthy_target
+	}
+}
+
+# Not a scam
+letter_event = {
+	id = Plus.1815
+	desc = EVTDESC_Plus_1815
+	border = GFX_event_letter_frame_economy
+	
+	is_triggered_only = yes
+	hide_from = yes
+	
+	option = {
+		name = OK
+		scaled_wealth = { value = 2 min = 75 }
 	}
 }
