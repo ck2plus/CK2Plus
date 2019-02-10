@@ -1,0 +1,142 @@
+In 2.9, a new crusade system was added for Catholics and Fraticellis.
+This system divides the Crusade into three distinct phases:
+* Preparation, where people pledge support for the Crusade
+* The war itself, which works much like before
+* The handout, where the victors divide the spoils
+
+A large amount of script functionality has been added to support this system.
+
+== Various mechanics ==
+Pledged Crusaders will not start wars. The player can of course still start wars if they so please.
+Pledged participants are called in when the Crusade war starts, with no option to refuse.
+
+Only one new-system Crusade can be ongoing at any given time, as this simplifies a lot of the defender-side logic. That means that if two religions have the new system, if one of them calls a Crusade the other will have to wait for it to end before they can call their own.
+
+The AI will not join Crusades on either side via the old-style "ask to join Crusade" logic, but instead via pledging in script. Note that it might still join due to alliances and similar.
+
+The main attacker (rel head) and defender cannot be pledged for either side since they're in the war regardless.
+
+== Crusade target mechanics ==
+The Pope picks the initial target as they would in an old-style Crusade.
+If the target is no longer legal due to the CB invalidating during preparation, the Pope picks a new target with the same logic.
+If the target character dies, their heir takes over as the target if possible.
+
+== Change Crusade target ==
+The player can ask the Pope to change the Crusade target at the cost of Piety. The AI will never use this.
+The following defines affect the interaction to change the Crusade target:
+
+	CHANGE_CRUSADE_TARGET_INTERACTION_MONEY = 0,
+	CHANGE_CRUSADE_TARGET_INTERACTION_PIETY = 250,
+	CHANGE_CRUSADE_TARGET_INTERACTION_PRESTIGE = 0,
+	CHANGE_CRUSADE_TARGET_INTERACTION_MUST_HAVE_COST = 1,				-- Is having prestige/piety >= cost required for this action?
+	CHANGE_CRUSADE_TARGET_INTERACTION_ENABLED = 1,						-- Should this action be used at all?
+Note that the piety cost doubles each time the target is changed, to prevent endless back and forth in multiplayer. If the target invalidates, the last person to change it gets their Piety back, and the cost halves.
+	
+
+== Triggers ==
+The following triggers have been added. Unless otherwise mentioned, it has to be used in a religion or any character of that religion.
+is_preparing_crusade = yes				# Checks if a Crusade is being prepared
+crusade_preparation_strength > 0.5		# Checks how strong the rel head plus all pledged Crusaders is compared to the target and the pledged defenders
+crusade_preparation_time_elapsed > 5	# Checks how many days the Crusade has been in the process of preparing
+crusade_preparation_time_remaining < 5	# Checks how many days there are left until the Crusade launches
+crusade_war_has_started = yes			# Checks if the Crusade war has started
+has_pledged_crusade_participation = yes	# Checks if the scoped character has pledged to join the Crusade when it launches
+crusade_gold_pot > 1000					# Checks how the gold Crusade pot compares to the given value. "gold" can be replaced with prestige/piety/artifact
+uses_new_crusade = yes					# Checks if the current religion/character's religion uses the new Crusade system
+has_pledged_crusade_defense = yes		# Checks if the scoped character has pledged to defend against the incoming Crusade on this religion
+is_crusade_target = yes					# Checks if the scoped character is being targeted by a Crusade (including old-style crusades)
+crusade_defense_strength > 0.5			# Checks how strong the target plus all pledged defenders are compared to the attackers. ONLY works when scoped to the defending religion or characters of that religion
+is_religion_crusade_target = yes		# Checks if the scoped religion or the scoped character's religion has a new-style Crusade targeting it
+
+== Effects ==
+The following effects have been added. Unless otherwise mentioned, tit has to be used in a religion or any character of that religion.
+
+set_crusade_target = { character = scope title = scope }	# Sets what character and title the Crusade should target
+lock_crusade_target	= yes				# Prevents using the interaction to change the Crusade target. Can still be changed in script. = no to unlock
+set_official_crusade_recipient = scope	# Sets who the Pope wants to get the target kingdom
+cancel_crusade = yes					# Cancels the Crusade
+set_crusade_pot_multiplier = 0.5		# Makes the scoped character's contributions to the Crusade count for less/more. Effective retroactively
+set_crusade_beneficiary = scope			# Sets who the pledged character wants to get land when the Crusade wins	
+pledge_crusade_participation = yes		# Pledges the scoped character to join the Crusade. = no to unpledge
+add_to_crusade_gold_pot = 1000			# Adds the given amount of gold to the Crusade pot. Also works with negative numbers. "gold" can be replaced with prestige/piety/artifact
+distribute_crusade_pot = {				# Divvies up the Crusade pot
+	amount = 0.5						# How much of the pot to give out. Default 1 for 100%
+	type = gold							# What part of the pot to give out. If not set, gives from all four types
+	who = ROOT							# Who to give it to. If not set, divides it between the Crusade participants
+}
+distribute_crusade_target_title = yes	# Hands out the target. See section "title distribution"
+set_crusader_king = ROOT				# Sets the given person as the person to receive the kingdom, for the purposes of pot and title distribution
+pledge_crusade_defense = yes			# Pledges the current character to defend against the incoming Crusade
+
+== Scopes ==
+The following scopes have been added. Unless otherwise mentioned, it has to be used in a religion or any character of that religion.
+
+crusade_beneficiary						# Scopes to the beneficiary of the scoped character
+crusade_target_title					# Scopes to the title targeted by the Crusade
+crusade_target_char						# Scopes to the character targeted by the Crusade
+any/random_crusade_participant			# Scopes to anyone who has pledged participation
+official_crusade_recipient				# Scopes to who the Pope wants to get the kingdom
+any/random_crusade_defender				# Scopes to the characters who have pledged to defend against the Crusade. Only works in characters of the defending religion/the religion itself, *not* in the attacking religion
+crusader_king							# Scopes to the character set to receive the target title (using set_crusader_king)
+crusade_religion_targeting_us			# Scopes to the religion that has a Crusade targeting the scoped religion/scoped character's religion
+
+== On-actions ==
+There's a bunch of associated on-actions. You can find documentation for them in 00_on_actions.txt.
+
+== UI ==
+The UI interacts with script in a number of places.
+
+The "pledge_button" uses the scripted triggers unpledge_crusade_trigger and pledge_crusade_trigger for whether to be enabled. It runs the effects unpledge_crusade_effect and pledge_crusade_effect. ROOT is the player.
+For characters of the defending religion, these scripted effects/triggers are prefixed with "defender_".
+
+The "select_beneficiary" button uses the targeted decision "select_crusade_beneficiary". It lists anyone who meets both the potential and allow. ROOT is the target, FROM is the player. It is only enabled if the player has pledged support.
+
+The "select_target" button uses the logic described in the Change Crusade Target section.
+
+The "contribute_to_pot" button uses the scripted trigger contribute_to_pot_trigger for whether to be enabled. It runs the effect contribute_to_pot_effect. ROOT is the player.
+
+The "select_receiver_stance" button uses the scripted trigger select_crusade_receiver_stance_trigger for whether to be enabled. It runs the effect select_crusade_receiver_stance_effect. ROOT is the player.
+
+
+== Defines ==
+See the defines.lua file for detailed documentation:
+NDefines::NMilitary::NEW_CRUSADE_START_DELAY
+NDefines::NMilitary::NEW_CRUSADE_START_DELAY_RANDOM
+NDefines::NMilitary::CRUSADE_MINIMUM_CONTRIBUTION
+NDefines::NMilitary::CRUSADE_MAX_POT_SHARE
+NDefines::NMilitary::CRUSADER_KING_POT_SHARE
+NDefines::NMilitary::CRUSADER_KING_ARTIFACTS
+NDefines::NMilitary::CRUSADERS_GET_EXTRA_ARTIFACTS
+
+== Pot distribution ==
+Using the distribute_crusade_pot effect, you can divvy up part or all of the pot between the Crusade participants.
+When the Crusade has not yet launched, all participants will be considered to have contributed equally.
+If the war is ongoing/ending, the participation in the war is instead used.
+This gets multiplied by the character's pot multiplier (set by the effect set_crusade_pot_multiplier). If not set, the multiplier is one.
+Anyone with a score lower than CRUSADE_MINIMUM_CONTRIBUTION gets excluded. This does not apply if the war has not begun.
+Everyone is capped at CRUSADE_MAX_POT_SHARE. E.G., if 1 person is at 50% and 2 at 25%, and the cap is 40%, the first person would get 40% while the other two get 30% each.
+CRUSADER_KING_POT_SHARE is reserved for the person that is to get the Crusader Kingdom. If there is no Crusader King set, this part of the pot will simply vanish.
+All values are truncated. E.G., 3% of 110 gold will give 3 gold, not 3.3. The leftover from this truncation gets given to the Crusader King to ensure the total remains consistent.
+Gold, piety, and prestige are distributed proportionally to contribution after accounting for the multipliers, the cap, the Crusader King, and the minimum.
+
+Artifacts are given out in contribution order instead. The minimum still applies.
+The Crusader King gets CRUSADER_KING_ARTIFACTS first. The first CRUSADERS_GET_EXTRA_ARTIFACTS participants get one each, assuming there's enough artifacts in the pot.
+The remainder is then given out in contribution order, ignoring the Crusader King but including the first CRUSADERS_GET_EXTRA_ARTIFACTS participants. It loops around if there's more artifacts than participants above the minimum.
+When given an artifact, the scripted effect crusade_give_artifact_effect is called with the participant as ROOT.
+
+== Title distribution ==
+The title handout is mostly hardcoded, but does interact some with script.
+It is initiated by calling distribute_crusade_target_title = yes on any character of the religion (or in the religion scope itself).
+The Crusader King should be set before calling. If not set, the religious head will be used as a backup.
+The participants are sorted by contribution as long as they are above CRUSADE_MINIMUM_CONTRIBUTION. Their beneficiaries are made into a list in that order. Any participant with no beneficiary defined is skipped.
+The Crusader King gets the target kingdom if non-existent or in the target realm. If this isn't feasible, a dynamic kingdom is created using the CRUSADER_KINGDOM_NAME loc key. They also get the capital duchy and province if those are in the realm; otherwise an arbitrary duchy and province.
+All duchies with at least one province in the part of the kingdom held by the target get given out (unless held by someone outside the target realm) in order of contribution, with the beneficiary also getting the capital province (unless outside the target, in which case they get an arbitrary one in the duchy).
+Whatever counties remain are then handed out to the remaining beneficiaries. They get vassalized by the appropriate duke in the Crusader Kingdom if one exists, otherwise by the Crusader King.
+Whatever secondary castles exist get handed out to the remaining beneficiaries. They get vassalized by the appropriate count.
+If there's fewer beneficiaries than titles, any extra titles get given to their appropriate liege if one exists, or otherwise to the Crusader King.
+
+If you want to ensure someone does not get a title, remove them as a beneficiary. If you want to move them in the rankings, give the participant a higher or lower contribution multiplier.
+
+If the primary holding in a county isn't a castle, it will be replaced by one if one exists in the county and is in the same realm. If there's no castle but a tribal holding, that'll become the primary.
+The Crusader King's first county will get a castle built and set as primary if it has no castle.
+
