@@ -172,7 +172,7 @@ character_event = {
 						trait = strong
 						trait = genius
 						trait = quick
-						trait = fair
+						has_fair_trait_trigger = yes
 						trait = robust
 						trait = shrewd
 						trait = architect
@@ -215,7 +215,7 @@ character_event = {
 						trait = strong
 						trait = genius
 						trait = quick
-						trait = fair
+						has_fair_trait_trigger = yes
 						trait = robust
 						trait = shrewd
 						trait = architect
@@ -1655,8 +1655,14 @@ character_event = {
         if = {
         	limit = {
         		OR = {
-	        		NOT = { diplomacy = 5 }
-	        		NOT = { intrigue = 5 }
+        			calc_true_if = { 
+						amount = 3
+		        		NOT = { diplomacy = 8 }
+	        			NOT = { martial = 8 }
+	        			NOT = { intrigue = 8 }
+	        			NOT = { stewardship = 8 }
+	        			NOT = { learning = 8 }
+        			}
 	        		is_dumb_trigger = yes
 	        		has_bottom_tier_education_trait_trigger = yes
         		}
@@ -1666,10 +1672,15 @@ character_event = {
         if = {
         	limit = {
 	        	OR = {
-					diplomacy = 8
-	        		intrigue = 8
+	        		calc_true_if = { 
+						amount = 3
+		        		diplomacy = 12
+	        			martial = 12
+	        			intrigue = 12
+	        			stewardship = 12
+	        			learning = 12
+	        		}
 					has_medium_education_trait_trigger = yes
-					trait = proud
 	        	}
         	}
 			set_character_flag = good_book_potential
@@ -1677,11 +1688,16 @@ character_event = {
         if = {
         	limit = {
         		OR = {
-        			diplomacy = 15
-        			intrigue = 15
-					trait = elusive_shadow
-					trait = grey_eminence
+        			calc_true_if = { 
+						amount = 3
+        				diplomacy = 20
+	        			martial = 20
+	        			intrigue = 20
+	        			stewardship = 20
+	        			learning = 20
+	        		}
         			is_smart_trigger = yes
+					has_top_tier_education_trait_trigger = yes
         		}
         	}
 			set_character_flag = great_book_potential
@@ -2086,9 +2102,17 @@ character_event = { #Progress event type 3!  #deal with writer's block (risk doi
         name = EVTOPTA_JD_10063
         custom_tooltip = { text = EVTOPTA_JD_10063_TT }
 
-        random = {
-			chance = 25
-        	add_maimed_trait_effect = yes
+        random_list = {
+        	45 = {
+        		add_trait = wounded
+				hidden_tooltip = { character_event = { id = 38280 } }
+        	}
+        	5 = {
+        		add_maimed_trait_effect = yes
+        	}
+        	55 = {
+        		#Nothing happens!
+        	}
 		}
 		custom_tooltip = { text = higher_quality_of_book_TT }
 		set_higher_quality_of_book_flags_effect = yes
@@ -2096,11 +2120,15 @@ character_event = { #Progress event type 3!  #deal with writer's block (risk doi
     option = { # Drink something poisonous...?
         name = EVTOPTB_JD_10063
         custom_tooltip = { text = EVTOPTB_JD_10063_TT }
-        random = {
-			chance = 90
-	 		add_trait = vomiting
-			set_character_flag = disease_not_serious
-	 		hidden_effect = { character_event = { id = RIP.11005 days = 10 random = 30 } }
+        random_list = {
+        	99 = {
+		 		add_trait = vomiting
+				set_character_flag = disease_not_serious
+		 		hidden_effect = { character_event = { id = HFP.14005 days = 10 random = 30 } } #remove vomiting
+        	}
+			1 = {
+				death = { death_reason = death_drank_poison }
+			}
 		}
 
 		show_portrait = event_target:my_doctor
@@ -2149,20 +2177,6 @@ character_event = { #Progress event type 4!  #stay up all night or not
     desc = {
     	text = EVTDESC_JD_10064_dynasty
     	trigger = { has_character_flag = writing_about_dynasty }
-    }
-
-    immediate = {
-    	hidden_effect = {
-	    	if = {
-	    		limit = {
-	    			any_courtier_or_vassal = { has_minor_title = title_court_physician }
-	    		}
-	    		random_courtier_or_vassal = {
-	    			limit = { has_minor_title = title_court_physician }
-	    			save_event_target_as = my_doctor
-	    		}
-	    	}
-    	}
     }
 
     option = { # Stay up all night
@@ -2329,8 +2343,20 @@ character_event = { #Outcome: Book is finished! It went Great/Good/Decent!
     }
 
     immediate = {
-    	#Evaluates how it's gone, from stats, traits, and choices. The flags unlock quality-level of book (or eliminates a level). Relevant event_targets (spouse/lover?) are saved, for loc (custom book names and descs) and opinion bonuses.
     	hidden_effect = {
+    		#Fallback in case flags have cleared somehow...
+			if = {
+				limit = {
+					NOR = {
+						has_character_flag = decent_book_potential
+		        		has_character_flag = good_book_potential
+		        		has_character_flag = great_book_potential
+					}
+				}
+				set_character_flag = decent_book_potential
+			}
+
+	    	#Evaluates how it's gone, from stats, traits, and choices. The flags unlock quality-level of book (or eliminates a level). Relevant event_targets (spouse/lover?) are saved, for loc (custom book names and descs) and opinion bonuses.
 	    	trigger_switch = {
 	    		on_trigger = has_character_flag
 	    		writing_about_battle = {
@@ -2349,7 +2375,10 @@ character_event = { #Outcome: Book is finished! It went Great/Good/Decent!
 							}
 							additive_modifier = {
 								value = 10
-								NOT = { combat_rating = 1 }
+								OR = {
+									is_the_worst_duelist_trigger = yes
+									is_terrible_duelist_trigger = yes
+								}
 							}
 							additive_modifier = {
 								value = 10
@@ -2407,11 +2436,7 @@ character_event = { #Outcome: Book is finished! It went Great/Good/Decent!
 	    					}
 	    					additive_modifier = {
 								value = 10
-								NOT = { combat_rating = 3 }
-							}
-							additive_modifier = {
-								value = 10
-								NOT = { combat_rating = 3 }
+								duelist_skill_is_medium_group_trigger = yes
 							}
 							additive_modifier = {
 								value = 10
@@ -2549,15 +2574,15 @@ character_event = { #Outcome: Book is finished! It went Great/Good/Decent!
 							}
 							additive_modifier = {
 								value = 10
-								combat_rating = 1
+								duelist_skill_is_high_group_trigger = yes
+							}
+							additive_modifier = {
+								value = 10
+								is_the_best_duelist_trigger = yes
 							}
 							additive_modifier = {
 								value = 10
 								NOT = { can_have_more_leadership_traits = yes }
-							}
-							additive_modifier = {
-								value = 10
-								combat_rating = 3
 							}
 							additive_modifier = {
 								value = 10
@@ -2669,6 +2694,13 @@ character_event = { #Outcome: Book is finished! It went Great/Good/Decent!
 										any_rival = {
 											root_attraction_trigger = yes
 											is_adult = yes
+											OR = {
+												ROOT = { has_religion_feature = religion_feature_zun }
+												ROOT = { has_religion_feature = religion_holy_family }
+												ROOT = { religion = messalian }
+												ROOT = { religion = zoroastrian }
+												NOT = { is_close_relative = ROOT }
+											}
 										}
 										NOT = {
 											any_artifact = {
@@ -3404,6 +3436,7 @@ character_event = { #Outcome: Book is finished! It went Great/Good/Decent!
 										value = 20
 										OR = {
 											trait = viking
+											trait = pirate
 											trait = ravager
 											trait = seaking
 											trait = sea_queen
@@ -3597,7 +3630,7 @@ character_event = { #Outcome: Book is finished! It went Great/Good/Decent!
 									}
 									additive_modifier = {
 										value = 10
-										trait = fair
+										has_fair_trait_trigger = yes
 									}
 									trigger = {
 										NOT = {
@@ -4659,10 +4692,115 @@ character_event = { #Outcome: Book is finished! It went Great/Good/Decent!
 									}
 			    				}
 			    				10 = {
+			    					add_artifact = the_legendary_dynasty_warrior #about you!
+			    					new_artifact = {
+			    						set_name = the_legendary_dynasty_warrior_root
+			    					}
+			    					additive_modifier = {
+										value = 10
+										trait = brave
+									}
+									additive_modifier = {
+										value = 10
+										is_member_of_any_warrior_lodge_trigger = yes
+									}
+									additive_modifier = {
+										value = 10
+										prestige = 500
+									}
+									trigger = {
+										any_owned_bloodline = {
+											has_bloodline_flag = legendary_warrior_lodge_bloodline
+											founder = { character = ROOT }
+										}
+			    						NOT = {
+											any_artifact = {
+												artifact_type = the_legendary_dynasty_warrior
+												original_owner = { character = ROOT }
+											}
+										}
+									}
+			    				}
+			    				10 = {
+			    					random_owned_bloodline = {
+			    						limit = { has_bloodline_flag = legendary_warrior_lodge_bloodline }
+				    					founder = { save_event_target_as = warrior_relative }
+				    				}
+			    					add_artifact = the_legendary_dynasty_warrior #about a relative
+			    					new_artifact = {
+			    						set_name = the_legendary_dynasty_warrior_not_root
+			    						set_description = the_legendary_dynasty_warrior_desc_not_root
+			    					}
+			    					additive_modifier = {
+										value = 10
+										trait = brave
+									}
+									additive_modifier = {
+										value = 10
+										is_member_of_any_warrior_lodge_trigger = yes
+									}
+									additive_modifier = {
+										value = 10
+										prestige = 500
+									}
+									trigger = {
+										any_owned_bloodline = {
+											has_bloodline_flag = legendary_warrior_lodge_bloodline
+											founder = { NOT = { character = ROOT } }
+										}
+			    						NOT = {
+											any_artifact = {
+												artifact_type = the_legendary_dynasty_warrior
+												original_owner = { character = ROOT }
+											}
+										}
+									}
+			    				}
+			    				10 = {
+			    					random_owned_bloodline = {
+			    						limit = { has_bloodline_flag = saintly_bloodline }
+				    					founder = { save_event_target_as = saintly_relative }
+				    				}
+			    					add_artifact = the_saintly_relative
+			    					new_artifact = {
+			    						set_name = the_saintly_relative_1 #contains event-target, so need to be "set"
+			    						set_description = the_saintly_relative_desc
+			    					}
+
+			    					additive_modifier = {
+										value = 10
+										trait = zealous
+									}
+									additive_modifier = {
+										value = 10
+										is_christian_monastic_member_trigger = yes
+									}
+									additive_modifier = {
+										value = 10
+										trait = celibate
+									}
+									trigger = {
+										any_owned_bloodline = {
+											has_bloodline_flag = saintly_bloodline
+											founder = { religion = ROOT }
+										}
+			    						NOT = {
+											any_artifact = {
+												artifact_type = the_saintly_relative
+												original_owner = { character = ROOT }
+											}
+										}
+									}
+			    				}
+			    				10 = {
 			    					add_artifact = the_secret_history_of_culture
 			    					additive_modifier = {
 										value = 10
 										trait = proud
+									}
+									additive_modifier = {
+										value = 10
+										culture = mongol
 									}
 									trigger = {
 			    						NOT = {
@@ -5092,7 +5230,9 @@ character_event = { #
 							}
 						}
 					}
-					destroy_artifact = event_target:chinese_artifact
+					event_target:chinese_artifact = {
+						destroy_artifact = yes
+					}
 					add_chinese_artifact_effect = yes
 				}
 				
