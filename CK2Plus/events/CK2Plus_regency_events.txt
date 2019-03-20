@@ -1,0 +1,291 @@
+namespace = Plus
+
+#reserved Plus.5100 to Plus.5199
+
+#######################################
+# REGENCY EVENTS
+# Written by Vukica
+#######################################
+
+## Ruler with a regency has too many titles, regent must help to bleed off the titles
+
+# Hidden start event
+character_event = {
+	id = Plus.5100
+
+	only_rulers = yes
+	max_age = 16
+	war = no
+	ai = yes
+	
+	is_triggered_only = yes
+	hide_window = yes
+
+	trigger = {
+		has_regent = yes
+		always = no
+		higher_tier_than = COUNT
+		OR = {
+			over_max_demesne_size = 1
+			AND = {
+				higher_tier_than = DUKE
+				num_of_duke_titles = 3
+			}
+		}
+	}
+	
+	immediate = {
+		save_event_target_as = regency_ruler
+		regent = {
+			save_event_target_as = regency_regent
+			character_event = { id = Plus.5101 }
+		}
+	}
+}
+
+# Regent is asked to help out with titles
+character_event = {
+	id = Plus.5101
+	desc = EVTDESC_Plus_5101
+
+	picture = GFX_event_normal_frame_economy
+	is_triggered_only = yes
+	
+	option = { # OK, let's deal with counties.
+		name = EVTOPTA_Plus_5001
+		trigger = {
+			event_target:regency_ruler = { over_max_demesne_size = 1 }
+		}
+		event_target:regency_ruler = {
+			character_event = { id = Plus.5102 }
+		}
+	}
+}
+
+character_event  = {
+	id = Plus.5102
+	
+	hide_window = yes
+	is_triggered_only = yes
+	
+	immediate = {
+		capital_scope = { #Search continuous territory from the capital
+			duchy = { save_event_target_as = capital_duchy }
+			kingdom = { save_event_target_as = capital_kingdom }
+			empire = { save_event_target_as = capital_empire }
+			save_event_target_as = capital_province #used in is_capital_province trigger
+		}
+		while = {
+			limit = { over_max_demesne_size = 1 }
+			
+			capital_scope = { #Search continuous territory from the capital
+				set_province_flag = continuous_territory
+			}
+			
+			while = { # Mark all provinces in continuous territory
+				limit = {
+					any_demesne_province = {
+						OR = {
+							AND = {
+								has_province_flag = continuous_territory
+								any_neighbor_province = {
+									NOT = { has_province_flag = continuous_territory }
+									owner = { character = ROOT }
+								}
+							}
+							AND = {
+								NOT = { has_province_flag = continuous_territory }
+								any_neighbor_province = {
+									has_province_flag = continuous_territory
+									owner = { character = ROOT }
+								}
+							}
+						}
+					}
+				}
+				random_demesne_province = {
+					limit = {
+						has_province_flag = continuous_territory
+						any_neighbor_province = {
+							NOT = { has_province_flag = continuous_territory }
+							owner = { character = ROOT }
+						}
+					}
+					any_neighbor_province = {
+						limit = {
+							NOT = { has_province_flag = continuous_territory }
+							owner = { character = ROOT }
+						}
+						set_province_flag = continuous_territory
+					}
+				}
+			}
+			any_demesne_province = { # Mark provinces which are not in continuous territory
+				limit = {
+					NOT = { has_province_flag = continuous_territory }
+				}
+				set_province_flag = non_continuous_territory
+				log = "DEBUG [This.GetName] is in non continuous territory"
+			}
+			any_demesne_province = { # Clear flags from continuous territory check
+				clr_province_flag = continuous_territory
+			}
+			any_demesne_province = { # Mark provinces not belonging to the same de jure empire.
+				limit = { NOT = { empire = { title = event_target:capital_empire } } is_capital = no }
+				set_province_flag = non_capital_empire_territory
+				log = "DEBUG [This.GetName] is in non in dejure empire"
+			}
+			any_demesne_province = { # Mark provinces not belonging to the same de jure kingdom
+				limit = { NOT = { kingdom = { title = event_target:capital_kingdom } } is_capital = no }
+				set_province_flag = non_capital_kingdom_territory
+				log = "DEBUG [This.GetName] is in non in dejure kingdom"
+			}
+			any_demesne_province = { # Mark provinces not belonging to the same de jure duchy
+				limit = { NOT = { duchy = { title = event_target:capital_duchy } } is_capital = no }
+				set_province_flag = non_capital_duchy_territory
+				log = "DEBUG [This.GetName] is in non in dejure duchy"
+			}
+	
+			if = { # non continuous territory
+				limit = {
+					any_demesne_province = { has_province_flag = non_continuous_territory }
+				}
+				random_demesne_province = {
+					limit = { has_province_flag = non_continuous_territory }
+					save_event_target_as = province_to_give_out
+					log = "DEBUG ready to give out [This.GetName] non_continuous_territory"
+				}
+			} else_if = { # not in capital empire and not bordering capital
+				limit = {
+					any_demesne_province = {
+						has_province_flag = non_capital_empire_territory
+						any_neighbor_province = { is_capital_province = no }
+					}
+				}
+				random_demesne_province = {
+					limit = { has_province_flag = non_capital_empire_territory }
+					save_event_target_as = province_to_give_out
+					log = "DEBUG ready to give out [This.GetName] non_capital_empire_territory"
+				}
+			} else_if = { # not in capital empire
+				limit = {
+					any_demesne_province = { has_province_flag = non_capital_empire_territory }
+				}
+				random_demesne_province = {
+					limit = { has_province_flag = non_capital_empire_territory }
+					save_event_target_as = province_to_give_out
+					log = "DEBUG ready to give out [This.GetName] non_capital_empire_territory"
+				}
+			} else_if = { # not in capital kingdom and not bordering capital
+				limit = {
+					any_demesne_province = {
+						has_province_flag = non_capital_kingdom_territory
+						any_neighbor_province = { is_capital_province = no }
+					}
+				}
+				random_demesne_province = {
+					limit = { has_province_flag = non_capital_kingdom_territory }
+					save_event_target_as = province_to_give_out
+					log = "DEBUG ready to give out [This.GetName] non_capital_kingdom_territory"
+				}
+			} else_if = { # not in capital kingdom
+				limit = {
+					any_demesne_province = { has_province_flag = non_capital_kingdom_territory }
+				}
+				random_demesne_province = {
+					limit = { has_province_flag = non_capital_kingdom_territory }
+					save_event_target_as = province_to_give_out
+					log = "DEBUG ready to give out [This.GetName] non_capital_kingdom_territory"
+				}
+			} else_if = { # not in capital duchy and not bordering capital
+				limit = {
+					any_demesne_province = {
+						has_province_flag = non_capital_duchy_territory
+						any_neighbor_province = { is_capital_province = no }
+					}
+				}
+				random_demesne_province = {
+					limit = { has_province_flag = non_capital_duchy_territory }
+					save_event_target_as = province_to_give_out
+					log = "DEBUG ready to give out [This.GetName] non_capital_duchy_territory"
+				}
+			} else_if = { # not in capital duchy
+				limit = { any_demesne_province = { has_province_flag = non_capital_duchy_territory } }
+				random_demesne_province = {
+					limit = { has_province_flag = non_capital_duchy_territory }
+					save_event_target_as = province_to_give_out
+					log = "DEBUG ready to give out [This.GetName] non_capital_duchy_territory"
+				}
+			} else_if = { #not bordering capital
+				limit = {
+					any_demesne_province = {
+						is_capital_province = no
+						any_neighbor_province = { is_capital_province = no }
+					}
+				}
+				random_demesne_province = {
+					limit = {
+						is_capital_province = no
+						any_neighbor_province = { is_capital_province = no }
+					}
+					save_event_target_as = province_to_give_out
+					log = "DEBUG ready to give out [This.GetName] because it's not adjacent to capital"
+				}
+			} else = { # not capital
+				random_demesne_province = {
+					limit = { is_capital_province = no }
+					save_event_target_as = province_to_give_out
+					log = "DEBUG ready to give out [This.GetName] nothing else left"
+				}
+			}
+			
+			random_courtier = {
+				save_event_target_as = one_lucky_vassal
+			}
+			random_vassal = {
+				limit = {
+					NOT = { over_max_demesne_size = 1 }
+					government = ROOT
+				}
+				save_event_target_as = one_lucky_vassal
+			}
+			event_target:province_to_give_out = {
+				clr_province_flag = non_continuous_territory
+				clr_province_flag = non_capital_empire_territory
+				clr_province_flag = non_capital_kingdom_territory
+				clr_province_flag = non_capital_duchy_territory
+				county = {
+					grant_title = event_target:one_lucky_vassal
+				}
+			}
+			clear_event_target = one_lucky_vassal #temp vassal
+			clear_event_target = province_to_give_out
+			
+			any_demesne_province = {
+				clr_province_flag = non_continuous_territory
+				clr_province_flag = non_capital_empire_territory
+				clr_province_flag = non_capital_kingdom_territory
+				clr_province_flag = non_capital_duchy_territory
+			}
+			
+			# Find character to give the title to
+			# 1) De jure liege if other than ROOT
+			# 2) Regent, if greedy, arbitraty, deceitful or has a claim
+			# 3) Claimant:
+			#		a) Councilor
+			#		b) Powerful vassal
+			#		c) Dynasty member
+			#		c) Vassal
+			# 4) Non-claimant:
+			#		a) Councilor
+			#		b) Powerful vassal
+			#		c) Dynasty member
+			#		c) Vassal
+			# 5) Create new vassal (same as NHV)
+		}
+		clear_event_target = capital_duchy
+		clear_event_target = capital_kingdom
+		clear_event_target = capital_empire
+		clear_event_target = capital_province
+	}
+}

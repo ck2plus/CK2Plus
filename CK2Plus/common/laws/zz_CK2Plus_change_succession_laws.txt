@@ -1,0 +1,2032 @@
+# DO NOT ALTER THE NAME OR NUMBER OF THESE!
+
+succession_laws = {
+	succ_institute_gavelkind = {
+		oldest_child_opinion = -5
+		child_opinion = 15
+		dynasty_opinion = 5
+		vassal_opinion = 5
+
+		potential = {
+			e_placeholder = { has_title_flag = startup }
+			NOT = { has_law = succ_gavelkind }
+			OR = {
+				NOR = {
+					has_law = succ_elective_gavelkind
+					has_law = succ_feudal_elective
+					has_law = succ_tanistry
+				}
+				is_titular = yes
+			}
+			emf_laws_succ_basic_potential_trigger = yes
+			holder_scope = {
+				OR = {
+					is_feudal = yes
+					is_tribal = yes
+				}
+				NOT = { religion = celtic_pagan }
+				in_revolt = no
+				NOT = { has_character_flag = voting_on_succession_law }
+			}
+			NOT = { holder_scope = { government = confucian_bureaucracy } }
+		}
+		allow = {
+			holder_scope = { NOT = { has_character_flag = liege_forced_succ_law } }
+			emf_laws_change_succ_prestige_cost_trigger = yes
+		}
+		effect = {
+			emf_laws_change_succ_basic_effect = yes
+			tooltip = { succession = gavelkind }
+			
+			hidden_tooltip = {
+				save_event_target_as = emf_succ_title
+				holder_scope = { save_event_target_as = emf_succ_changer }
+				
+				current_inheritance_laws_effect = yes
+				log = "---> [emf_succ_changer.GetTitledFirstName] (ID: [emf_succ_changer.GetID]) changing law for [emf_succ_title.GetID] to Gavelkind"
+				
+				# Mark current heir and pretenders so that they may be tracked after law change
+				emf_laws_change_succ_save_contenders_effect = yes
+				
+				# Actually change the law now
+				add_law = succ_gavelkind
+				
+				current_heir = { save_event_target_as = emf_heir }
+
+				holder_scope = {
+					# Vassals are slightly upset
+					any_vassal = {
+						limit = {
+							emf_laws_change_succ_affected_vassal_trigger = yes
+							emf_laws_change_succ_vip_trigger = no
+						}
+						emf_laws_change_succ_mild_reaction_effect = yes
+					}
+					# Legitimate children are happy
+					any_child = {
+						limit = {
+							can_inherit_trigger = yes
+							emf_laws_change_succ_vip_trigger = no
+						}
+						emf_laws_change_succ_good_reaction_effect = yes
+					}
+					# Current heir is slightly upset if they were the previous heir (they have to share)
+					event_target:emf_heir = {
+						if = {
+							limit = { character = event_target:emf_former_heir }
+							emf_laws_change_succ_mild_reaction_effect = yes
+						}
+					}
+				}
+				
+				# Specfic, event-driven succession law change reactions for the new heir, the former heir,
+				# the former pretenders, and the new pretenders.
+				set_title_flag = emf_succ_title
+				holder_scope = { character_event = { id = Plus.604 } }
+				
+				emf_laws_change_succ_cleanup_effect = yes
+			}
+		}
+		ai_will_do = {
+			factor = 0
+		}
+	}
+	
+	succ_institute_elective_gavelkind = {
+		child_opinion = 15
+		dynasty_opinion = 5
+
+		potential = {
+			e_placeholder = { has_title_flag = startup }
+			NOT = { has_law = succ_elective_gavelkind }
+			OR = {
+				NOR = {
+					has_law = succ_feudal_elective
+					has_law = succ_tanistry
+				}
+				is_titular = yes
+			}
+			emf_laws_succ_basic_potential_trigger = yes
+			holder_scope = {
+				NOT = { religion = celtic_pagan }
+				OR = {
+					is_feudal = yes
+					is_tribal = yes
+				}
+				in_revolt = no
+				NOT = { has_character_flag = voting_on_succession_law }
+			}
+			rebel = no
+			NOT = { holder_scope = { government = confucian_bureaucracy } }
+		}
+		allow = {
+			holder_scope = { NOT = { has_character_flag = liege_forced_succ_law } }
+			emf_laws_change_succ_prestige_cost_trigger = yes
+		}
+		effect = {
+			emf_laws_change_succ_basic_effect = yes
+			tooltip = { succession = elective_gavelkind }
+			
+			hidden_tooltip = {
+				save_event_target_as = emf_succ_title
+				holder_scope = { save_event_target_as = emf_succ_changer }
+				
+				current_inheritance_laws_effect = yes
+				log = "---> [emf_succ_changer.GetTitledFirstName] (ID: [emf_succ_changer.GetID]) changing law for [emf_succ_title.GetID] to Elective Gavelkind"
+
+				emf_laws_change_succ_save_contenders_effect = yes
+				add_law = succ_elective_gavelkind
+				current_heir = { save_event_target_as = emf_heir }
+
+				holder_scope = {
+					# Vassals are slightly upset
+					any_vassal = {
+						limit = {
+							emf_laws_change_succ_affected_vassal_trigger = yes
+							emf_laws_change_succ_vip_trigger = no
+						}
+						emf_laws_change_succ_mild_reaction_effect = yes
+					}
+					# Dynasty members are happy
+					any_dynasty_member = {
+						limit = {
+							emf_laws_change_succ_vip_trigger = no
+						}
+						emf_laws_change_succ_good_reaction_effect = yes
+					}
+					# The former pretenders are upset if not of the ruler's dynasty
+					any_opinion_modifier_target = {
+						limit = {
+							reverse_has_opinion_modifier = { who = PREV modifier = opinion_succ_former_pretender }
+							NOT = { dynasty = event_target:emf_succ_changer }
+						}
+						emf_laws_change_succ_bad_reaction_effect = yes
+						event_target:emf_succ_title = {
+							if = {
+								limit = { NOT = { claimed_by = PREV } }
+								add_weak_claim = PREV
+							}
+						}
+						any_spouse = {
+							limit = {
+								emf_laws_change_succ_vip_trigger = no
+								NOT = { dynasty = event_target:emf_succ_changer }
+							}
+							emf_laws_change_succ_bad_reaction_effect = yes
+						}
+						any_child = {
+							limit = {
+								can_inherit_trigger = yes
+								emf_laws_change_succ_vip_trigger = no
+								NOT = { dynasty = event_target:emf_succ_changer }
+							}
+							emf_laws_change_succ_bad_reaction_effect = yes
+						}
+					}
+					# The former heir is upset if not of the ruler's dynasty
+					event_target:emf_former_heir = {
+						if = {
+							limit = { NOT = { dynasty = event_target:emf_succ_changer } }
+							event_target:emf_succ_title = { add_claim = PREV }
+							emf_laws_change_succ_terrible_reaction_effect = yes
+							any_spouse = {
+								limit = {
+									emf_laws_change_succ_vip_trigger = no
+									NOT = { dynasty = event_target:emf_succ_changer }
+								}
+								emf_laws_change_succ_terrible_reaction_effect = yes
+							}
+							any_child = {
+								limit = {
+									can_inherit_trigger = yes
+									emf_laws_change_succ_vip_trigger = no
+									NOT = { dynasty = event_target:emf_succ_changer }
+								}
+								emf_laws_change_succ_terrible_reaction_effect = yes
+							}
+						}
+					}
+				}
+				
+				emf_laws_change_succ_cleanup_effect = yes
+			}
+		}
+		ai_will_do = {
+			factor = 0
+		}
+	}
+
+	succ_institute_seniority = {
+		oldest_child_opinion = -15
+		child_opinion = -10
+		dynasty_opinion = 10
+		vassal_opinion = -5
+
+		potential = {
+			e_placeholder = { has_title_flag = startup }
+			NOT = { has_law = succ_seniority }
+			OR = {
+				NOR = {
+					has_law = succ_elective_gavelkind
+					has_law = succ_feudal_elective
+					has_law = succ_tanistry
+				}
+				is_titular = yes
+			}
+			emf_laws_succ_basic_potential_trigger = yes
+			holder_scope = {
+				OR = {
+					is_merchant_republic = no
+					primary_title = {
+						NOT = { title = PREVPREV }
+					}
+				}
+				OR = {
+					is_republic = no
+					is_patrician = yes
+				}
+				OR = {
+					is_feudal = yes
+					is_patrician = yes
+				}
+				NOT = { religion_group = indian_group }
+				NOT = { religion = celtic_pagan }
+				OR = {
+					is_pagan_religion = no
+					is_reformed_pagan_religion = yes
+					is_tribal = no
+					has_global_flag = ancient_religions
+				}
+				NOT = { has_character_flag = voting_on_succession_law }
+			}
+			OR = {
+				NOT = { tier = baron }
+				holder_scope = { is_patrician = yes }
+			}
+			NOT = { holder_scope = { government = confucian_bureaucracy } }
+		}
+		allow = {
+			holder_scope = { NOT = { has_character_flag = liege_forced_succ_law } }
+			emf_laws_change_succ_prestige_cost_trigger = yes
+			OR = {
+				emf_laws_crownlaw_title_medium_ca_plus_trigger = yes
+				emf_laws_holder_has_late_adminstration_plus_trigger = yes
+				emf_laws_holder_liege_has_late_adminstration_plus_trigger = yes
+				custom_tooltip = {
+					text = emf_laws_ctt_patrician_not_primary_title
+					holder_scope = {
+						is_patrician = yes
+						OR = {
+							is_merchant_republic = no
+							PREV = {
+								is_primary_holder_title = no
+							}
+							NOR = {
+								in_revolt = yes
+								succ_law_title = {
+									title = PREVPREV
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		effect = {
+			emf_laws_change_succ_basic_effect = yes
+			tooltip = { succession = seniority }
+			
+			hidden_tooltip = {
+				save_event_target_as = emf_succ_title
+				holder_scope = { save_event_target_as = emf_succ_changer }
+				
+				current_inheritance_laws_effect = yes
+				log = "---> [emf_succ_changer.GetTitledFirstName] (ID: [emf_succ_changer.GetID]) changing law for [emf_succ_title.GetID] to Seniority"
+				
+				emf_laws_change_succ_save_contenders_effect = yes
+				add_law = succ_seniority
+				current_heir = { save_event_target_as = emf_heir }
+
+				holder_scope = {
+					# Vassals are slightly upset
+					any_vassal = {
+						limit = {
+							emf_laws_change_succ_affected_vassal_trigger = yes
+							emf_laws_change_succ_vip_trigger = no
+						}
+						emf_laws_change_succ_mild_reaction_effect = yes
+					}
+					# Dynasty members are happy
+					any_dynasty_member = {
+						limit = {
+							emf_laws_change_succ_vip_trigger = no
+						}
+						emf_laws_change_succ_good_reaction_effect = yes
+					}
+					# Children that can inherit are angry
+					any_child = {
+						limit = {
+							can_inherit_trigger = yes
+							emf_laws_change_succ_vip_trigger = no
+						}
+						emf_laws_change_succ_bad_reaction_effect = yes
+					}
+				}
+				
+				# Specfic, event-driven succession law change reactions for the new heir, the former heir,
+				# the former pretenders, and the new pretenders.
+				set_title_flag = emf_succ_title
+				holder_scope = { character_event = { id = Plus.604 } }
+				
+				emf_laws_change_succ_cleanup_effect = yes
+			}
+		}
+		ai_will_do = {
+			factor = 0
+		}
+	}
+
+	succ_institute_primogeniture = {
+		oldest_child_opinion = 10
+		youngest_child_opinion = -15
+		child_opinion = -10
+		dynasty_opinion = -5
+		
+		potential = {
+			e_placeholder = { has_title_flag = startup }
+			NOT = { has_law = succ_primogeniture }
+			OR = {
+				NOR = {
+					has_law = succ_elective_gavelkind
+					has_law = succ_feudal_elective
+					has_law = succ_tanistry
+				}
+				is_titular = yes
+			}
+			OR = {
+				AND = {
+					holder_scope = {
+						NOT = { religion_group = muslim }
+						NOT = { religion = celtic_pagan }
+						is_merchant_republic = no
+						is_patrician = no
+						OR = {
+							independent = yes
+							NOT = { any_liege = { holy_order = yes } }
+						}
+						OR = {
+							is_pagan_religion = no
+							is_reformed_pagan_religion = yes
+							religion = bon
+							is_tribal = no
+							has_global_flag = ancient_religions
+						}
+						NOT = { has_character_flag = voting_on_succession_law }
+					}
+					OR = {
+						is_landless_type_title = no
+						is_tribal_type_title = yes
+						temporary = yes
+					}
+					is_primary_type_title = no
+					OR = {
+						AND = {
+							tier = baron
+							is_feudal = yes
+						}
+						holder_scope = { is_feudal = yes }
+					}
+				}
+			}
+			NOT = { holder_scope = { government = confucian_bureaucracy } }
+		}
+		allow = {
+			holder_scope = { NOT = { has_character_flag = liege_forced_succ_law } }
+			emf_laws_change_succ_prestige_cost_trigger = yes
+			OR = {
+				emf_laws_crownlaw_title_high_ca_plus_trigger = yes
+				emf_laws_holder_has_late_adminstration_plus_trigger = yes
+				emf_laws_holder_liege_has_late_adminstration_plus_trigger = yes
+			}
+		}
+		effect = {
+			emf_laws_change_succ_basic_effect = yes
+			tooltip = { succession = primogeniture }
+			hidden_tooltip = {
+				save_event_target_as = emf_succ_title
+				holder_scope = { save_event_target_as = emf_succ_changer }
+				
+				current_inheritance_laws_effect = yes
+				log = "---> [emf_succ_changer.GetTitledFirstName] (ID: [emf_succ_changer.GetID]) changing law for [emf_succ_title.GetID] to Primogeniture"
+				
+				emf_laws_change_succ_save_contenders_effect = yes
+				add_law = succ_primogeniture
+				current_heir = { save_event_target_as = emf_heir }
+
+				holder_scope = {
+					# Vassals are slightly upset
+					any_vassal = {
+						limit = {
+							emf_laws_change_succ_affected_vassal_trigger = yes
+							emf_laws_change_succ_vip_trigger = no
+						}
+						emf_laws_change_succ_mild_reaction_effect = yes
+					}
+					# Dynasty members are slightly upset
+					any_dynasty_member = {
+						limit = {
+							emf_laws_change_succ_vip_trigger = no
+						}
+						emf_laws_change_succ_mild_reaction_effect = yes
+					}
+					# Legitimate children are angry
+					any_child = {
+						limit = {
+							can_inherit_trigger = yes
+							emf_laws_change_succ_vip_trigger = no
+						}
+						emf_laws_change_succ_bad_reaction_effect = yes
+					}
+					# Heir is happy
+					event_target:emf_heir = { emf_laws_change_succ_good_reaction_effect = yes }
+				}
+				
+				set_title_flag = emf_succ_title
+				holder_scope = { character_event = { id = Plus.604 } }
+				emf_laws_change_succ_cleanup_effect = yes
+			}
+		}
+		ai_will_do = {
+			factor = 0
+		}
+	}
+
+	succ_institute_feudal_elective = {
+		oldest_child_opinion = -15
+		child_opinion = -5
+		dynasty_opinion = -5
+		vassal_opinion = 10
+
+		potential = {
+			e_placeholder = { has_title_flag = startup }
+			NOT = { has_law = succ_feudal_elective }
+			OR = {
+				NOR = {
+					has_law = succ_elective_gavelkind
+					has_law = succ_tanistry
+				}
+				is_titular = yes
+			}
+			emf_laws_succ_basic_potential_trigger = yes
+			holder_scope = {
+				NOT = { religion_group = indian_group }
+				NOT = { religion = celtic_pagan }
+				OR = {
+					is_pagan_religion = no
+					is_reformed_pagan_religion = yes
+					is_tribal = no
+					has_global_flag = ancient_religions
+				}
+				is_feudal = yes
+				NOT = { has_character_flag = voting_on_succession_law }
+			}			
+			NOT = { tier = baron }
+			NOT = { holder_scope = { government = confucian_bureaucracy } }
+		}
+		allow = {
+			holder_scope = { NOT = { has_character_flag = liege_forced_succ_law } }
+			emf_laws_change_succ_prestige_cost_trigger = yes
+		}
+		effect = {
+			emf_laws_change_succ_basic_effect = yes
+			tooltip = { succession = feudal_elective }
+			
+			hidden_tooltip = {
+				save_event_target_as = emf_succ_title
+				holder_scope = { save_event_target_as = emf_succ_changer }
+				
+				current_inheritance_laws_effect = yes
+				log = "---> [emf_succ_changer.GetTitledFirstName] (ID: [emf_succ_changer.GetID]) changing law for [emf_succ_title.GetID] to Feudal Elective"
+				
+				emf_laws_change_succ_save_contenders_effect = yes
+				add_law = succ_feudal_elective
+				current_heir = { save_event_target_as = emf_heir }
+
+				holder_scope = {
+					# Vassals are slightly upset
+					any_vassal = {
+						limit = {
+							emf_laws_change_succ_affected_vassal_trigger = yes
+							emf_laws_change_succ_vip_trigger = no
+						}
+						emf_laws_change_succ_mild_reaction_effect = yes
+					}
+					# Electors are happy
+					any_vassal = {
+						limit = {
+							emf_laws_change_succ_vip_trigger = no
+							OR = {
+								AND = {
+									event_target:emf_succ_title = { tier = EMPEROR }
+									higher_real_tier_than = COUNT
+									OR = {
+										event_target:emf_succ_title = { is_titular = yes }
+										any_demesne_title = {
+											higher_tier_than = COUNT
+											de_jure_liege_or_above = event_target:emf_succ_title
+										}
+									}
+								}
+								AND = {
+									event_target:emf_succ_title = { tier = KING }
+									real_tier = DUKE
+									OR = {
+										event_target:emf_succ_title = { is_titular = yes }
+										any_demesne_title = {
+											tier = DUKE
+											de_jure_liege = event_target:emf_succ_title
+										}
+									}
+								}
+								AND = {
+									event_target:emf_succ_title = { tier = DUKE }
+									real_tier = COUNT
+									OR = {
+										event_target:emf_succ_title = { is_titular = yes }
+										any_demesne_title = {
+											tier = COUNT
+											de_jure_liege = event_target:emf_succ_title
+										}
+									}
+								}
+								AND = {
+									event_target:emf_succ_title = { tier = COUNT }
+									real_tier = BARON
+									any_demesne_title = {
+										de_jure_liege = event_target:emf_succ_title
+									}
+								}
+							}
+						}
+						emf_laws_change_succ_good_reaction_effect = yes
+					}
+					# Dynasty members are slightly upset
+					any_dynasty_member = {
+						limit = {
+							emf_laws_change_succ_vip_trigger = no
+						}
+						emf_laws_change_succ_mild_reaction_effect = yes
+					}
+					# Legitimate children are angry
+					any_child = {
+						limit = {
+							can_inherit_trigger = yes
+							emf_laws_change_succ_vip_trigger = no
+						}
+						emf_laws_change_succ_bad_reaction_effect = yes
+					}
+					# The former pretenders are upset
+					any_opinion_modifier_target = {
+						limit = { reverse_has_opinion_modifier = { who = PREV modifier = opinion_succ_former_pretender } }
+						emf_laws_change_succ_bad_reaction_effect = yes
+						event_target:emf_succ_title = {
+							if = {
+								limit = { NOT = { claimed_by = PREV } }
+								add_weak_claim = PREV
+							}
+						}
+						any_spouse = {
+							limit = { emf_laws_change_succ_vip_trigger = no }
+							emf_laws_change_succ_bad_reaction_effect = yes
+						}
+						any_child = {
+							limit = {
+								can_inherit_trigger = yes
+								emf_laws_change_succ_vip_trigger = no
+							}
+							emf_laws_change_succ_bad_reaction_effect = yes
+						}
+					}
+					# The former heir is upset
+					event_target:emf_former_heir = {
+						emf_laws_change_succ_bad_reaction_effect = yes
+						event_target:emf_succ_title = { add_claim = PREV }
+						any_spouse = {
+							limit = { emf_laws_change_succ_vip_trigger = no }
+							emf_laws_change_succ_bad_reaction_effect = yes
+						}
+						any_child = {
+							limit = {
+								can_inherit_trigger = yes
+								emf_laws_change_succ_vip_trigger = no
+							}
+							emf_laws_change_succ_bad_reaction_effect = yes
+						}
+					}
+				}
+				
+				emf_laws_change_succ_cleanup_effect = yes
+			}
+		}
+		ai_will_do = {
+			factor = 0
+		}
+	}
+
+	succ_institute_tanistry = {
+		oldest_child_opinion = -20
+		child_opinion = -10
+		dynasty_opinion = 5
+		vassal_opinion = 5
+
+		potential = {
+			e_placeholder = { has_title_flag = startup }
+			NOT = { has_law = succ_tanistry }
+			OR = {
+				NOR = {
+					has_law = succ_elective_gavelkind
+					has_law = succ_feudal_elective
+				}
+				is_titular = yes
+			}
+			emf_laws_succ_basic_potential_trigger = yes
+			holder_scope = {
+				NOT = { religion_group = indian_group }
+				OR = {
+					is_feudal = yes
+					is_tribal = yes
+				}
+				OR = {
+					culture_group = celtic
+					religion = celtic_pagan
+				}
+				NOT = { has_character_flag = voting_on_succession_law }
+			}
+			NOT = { tier = baron }
+			NOT = { holder_scope = { government = confucian_bureaucracy } }
+		}
+		allow = {
+			holder_scope = { NOT = { has_character_flag = liege_forced_succ_law } }
+			emf_laws_change_succ_prestige_cost_trigger = yes
+		}
+		effect = {
+			emf_laws_change_succ_basic_effect = yes
+			tooltip = { succession = tanistry }
+			
+			hidden_tooltip = {
+				save_event_target_as = emf_succ_title
+				holder_scope = { save_event_target_as = emf_succ_changer }
+				
+				current_inheritance_laws_effect = yes
+				log = "---> [emf_succ_changer.GetTitledFirstName] (ID: [emf_succ_changer.GetID]) changing law for [emf_succ_title.GetID] to Tanistry"
+				
+				emf_laws_change_succ_save_contenders_effect = yes
+				add_law = succ_tanistry
+				current_heir = { save_event_target_as = emf_heir }
+
+				# FIXME: I'm just guessing about Tanistry's behavior from the little, imprecise, and likely
+				# inaccurate info on the CKII Wiki.
+
+				holder_scope = {
+					# Vassals are slightly upset
+					any_vassal = {
+						limit = {
+							emf_laws_change_succ_affected_vassal_trigger = yes
+							emf_laws_change_succ_vip_trigger = no
+						}
+						emf_laws_change_succ_mild_reaction_effect = yes
+					}
+					# Elector vassals are happy.
+					# Regarding Tanistry, my assumptions are that empire-tier titles have king- and
+					# duke-tier electors, king-tier titles have duke- and count-tier electors, duke-tier
+					# titles have count- and baron-tier electors, and count-tier titles have baron-tier
+					# electors.
+					any_vassal = {
+						limit = {
+							emf_laws_change_succ_vip_trigger = no
+							OR = {
+								AND = {
+									event_target:emf_succ_title = { tier = EMPEROR }
+									higher_real_tier_than = COUNT
+									OR = {
+										event_target:emf_succ_title = { is_titular = yes }
+										any_demesne_title = {
+											higher_tier_than = COUNT
+											de_jure_liege_or_above = event_target:emf_succ_title
+										}
+									}
+								}
+								AND = {
+									event_target:emf_succ_title = { tier = KING }
+									higher_real_tier_than = BARON
+									OR = {
+										event_target:emf_succ_title = { is_titular = yes }
+										any_demesne_title = {
+											higher_tier_than = BARON
+											de_jure_liege_or_above = event_target:emf_succ_title
+										}
+									}
+								}
+								AND = {
+									event_target:emf_succ_title = { tier = DUKE }
+									OR = {
+										event_target:emf_succ_title = { is_titular = yes }
+										any_demesne_title = {
+											de_jure_liege_or_above = event_target:emf_succ_title
+										}
+									}
+								}
+								AND = {
+									event_target:emf_succ_title = { tier = COUNT }
+									any_demesne_title = {
+										de_jure_liege = event_target:emf_succ_title
+									}
+								}
+							}
+						}
+						emf_laws_change_succ_good_reaction_effect = yes
+					}
+					# Dynasty members are happy
+					any_dynasty_member = {
+						limit = { 
+							emf_laws_change_succ_vip_trigger = no
+						}
+						emf_laws_change_succ_good_reaction_effect = yes
+					}
+					# Legitimate children are angry
+					any_child = {
+						limit = {
+							can_inherit_trigger = yes
+							emf_laws_change_succ_vip_trigger = no
+						}
+						emf_laws_change_succ_bad_reaction_effect = yes
+					}
+					# The former pretenders are upset if not of the ruler's dynasty
+					any_opinion_modifier_target = {
+						limit = {
+							reverse_has_opinion_modifier = { who = PREV modifier = opinion_succ_former_pretender }
+							NOT = { dynasty = event_target:emf_succ_changer }
+						}
+						emf_laws_change_succ_bad_reaction_effect = yes
+						event_target:emf_succ_title = {
+							if = {
+								limit = { NOT = { claimed_by = PREV } }
+								add_weak_claim = PREV
+							}
+						}
+						any_spouse = {
+							limit = {
+								emf_laws_change_succ_vip_trigger = no
+								NOT = { dynasty = event_target:emf_succ_changer }
+							}
+							emf_laws_change_succ_bad_reaction_effect = yes
+						}
+						any_child = {
+							limit = {
+								can_inherit_trigger = yes
+								emf_laws_change_succ_vip_trigger = no
+								NOT = { dynasty = event_target:emf_succ_changer }
+							}
+							emf_laws_change_succ_bad_reaction_effect = yes
+						}
+					}
+					# The former heir is upset if not of the ruler's dynasty
+					event_target:emf_former_heir = {
+						if = {
+							limit = { NOT = { dynasty = event_target:emf_succ_changer } }
+							event_target:emf_succ_title = { add_claim = PREV }
+							emf_laws_change_succ_terrible_reaction_effect = yes
+							any_spouse = {
+								limit = {
+									emf_laws_change_succ_vip_trigger = no
+									NOT = { dynasty = event_target:emf_succ_changer }
+								}
+								emf_laws_change_succ_terrible_reaction_effect = yes
+							}
+							any_child = {
+								limit = {
+									can_inherit_trigger = yes
+									emf_laws_change_succ_vip_trigger = no
+									NOT = { dynasty = event_target:emf_succ_changer }
+								}
+								emf_laws_change_succ_terrible_reaction_effect = yes
+							}
+						}
+					}
+				}
+				
+				emf_laws_change_succ_cleanup_effect = yes
+			}
+		}
+		ai_will_do = {
+			factor = 0
+		}
+	}
+
+	succ_institute_ultimogeniture = {
+		youngest_child_opinion = 10
+		oldest_child_opinion = -15
+		child_opinion = -10
+		dynasty_opinion = -5
+		
+		potential = {
+			e_placeholder = { has_title_flag = startup }
+			NOT = { has_law = succ_ultimogeniture }
+			OR = {
+				NOR = {
+					has_law = succ_elective_gavelkind
+					has_law = succ_feudal_elective
+					has_law = succ_tanistry
+				}
+				is_titular = yes
+			}
+			emf_laws_succ_basic_potential_trigger = yes
+			holder_scope = {
+				OR = {
+					is_pagan_religion = no
+					is_reformed_pagan_religion = yes
+					is_tribal = no
+					culture = mongol
+					religion = bon
+					has_global_flag = ancient_religions
+				}
+				NOT = { religion = celtic_pagan }
+				is_merchant_republic = no
+				is_patrician = no
+				NOT = { has_character_flag = voting_on_succession_law }
+			}
+			OR = {
+				AND = {
+					tier = baron
+					is_feudal = yes
+				}
+				holder_scope = { is_feudal = yes }
+			}
+			NOT = { holder_scope = { government = confucian_bureaucracy } }
+		}
+		allow = {
+			holder_scope = { NOT = { has_character_flag = liege_forced_succ_law } }
+			emf_laws_change_succ_prestige_cost_trigger = yes
+			OR = {
+				emf_laws_no_crown_law_title_trigger = yes
+				emf_laws_crownlaw_title_high_ca_plus_trigger = yes
+				emf_laws_holder_has_late_adminstration_plus_trigger = yes
+				emf_laws_holder_liege_has_late_adminstration_plus_trigger = yes
+			}
+		}
+		effect = {
+			emf_laws_change_succ_basic_effect = yes
+			tooltip = { succession = ultimogeniture }
+			
+			hidden_tooltip = {
+				save_event_target_as = emf_succ_title
+				holder_scope = { save_event_target_as = emf_succ_changer }
+				
+				current_inheritance_laws_effect = yes
+				log = "---> [emf_succ_changer.GetTitledFirstName] (ID: [emf_succ_changer.GetID]) changing law for [emf_succ_title.GetID] to Ultimogeniture"
+				
+				emf_laws_change_succ_save_contenders_effect = yes
+				add_law = succ_ultimogeniture
+				current_heir = { save_event_target_as = emf_heir }
+
+				holder_scope = {
+					# Vassals are slightly upset
+					any_vassal = {
+						limit = {
+							emf_laws_change_succ_affected_vassal_trigger = yes
+							emf_laws_change_succ_vip_trigger = no
+						}
+						emf_laws_change_succ_mild_reaction_effect = yes
+					}
+					# Dynasty members are slightly upset
+					any_dynasty_member = {
+						limit = {
+							emf_laws_change_succ_vip_trigger = no
+						}
+						emf_laws_change_succ_mild_reaction_effect = yes
+					}
+					# Legitimate children are angry
+					any_child = {
+						limit = {
+							can_inherit_trigger = yes
+							emf_laws_change_succ_vip_trigger = no
+						}
+						emf_laws_change_succ_bad_reaction_effect = yes
+					}
+					# Heir is happy
+					event_target:emf_heir = { emf_laws_change_succ_good_reaction_effect = yes }
+				}
+				
+				set_title_flag = emf_succ_title
+				holder_scope = { character_event = { id = Plus.604 } }
+				emf_laws_change_succ_cleanup_effect = yes
+			}
+		}
+		ai_will_do = {
+			factor = 0
+		}
+	}
+
+	succ_elective_to_gavelkind = {
+		oldest_child_opinion = -10
+		child_opinion = 15
+		dynasty_opinion = 5
+		vassal_opinion = 5
+
+		potential = {
+			e_placeholder = { has_title_flag = startup }
+			OR = {
+				has_law = succ_elective_gavelkind
+				has_law = succ_feudal_elective
+				has_law = succ_tanistry
+			}
+			is_titular = no
+			emf_laws_succ_basic_potential_trigger = yes
+			holder_scope = {
+				OR = {
+					is_feudal = yes
+					is_tribal = yes
+				}
+				NOT = { religion = celtic_pagan }
+				in_revolt = no
+				NOT = { has_character_flag = voting_on_succession_law }
+			}
+			NOT = { holder_scope = { government = confucian_bureaucracy } }
+		}
+		allow = {
+			holder_scope = { NOT = { has_character_flag = liege_forced_succ_law } }
+			emf_laws_change_succ_prestige_cost_trigger = yes
+		}
+		effect = {
+			emf_laws_change_succ_prestige_cost_effect = yes
+			holder_scope = { pf_tradition_minus2_effect = yes }
+			custom_tooltip = { text = CUSTOMTOOLTIP7 }
+			hidden_tooltip = {
+				current_inheritance_laws_effect = yes
+				log = "---> [emf_succ_changer.GetTitledFirstName] (ID: [emf_succ_changer.GetID]) holding vote to change [emf_succ_title.GetID] to Gavelkind"
+				
+				set_title_flag = emf_succ_title
+				holder_scope = {
+					set_character_flag = voting_on_succession_law
+					set_character_flag = vote_is_for_gavelkind
+					set_variable = { which = "succession_law_vote" value = 1 }
+					character_event = { id = Plus.600 }
+				}
+			}
+		}
+		ai_will_do = {
+			factor = 0
+		}
+	}
+
+	succ_elective_to_seniority = {
+		oldest_child_opinion = -15
+		child_opinion = -10
+		dynasty_opinion = 10
+		vassal_opinion = -5
+
+		potential = {
+			e_placeholder = { has_title_flag = startup }
+			OR = {
+				has_law = succ_elective_gavelkind
+				has_law = succ_feudal_elective
+				has_law = succ_tanistry
+			}
+			is_titular = no
+			emf_laws_succ_basic_potential_trigger = yes
+			holder_scope = {
+				OR = {
+					is_merchant_republic = no
+					primary_title = {
+						NOT = { title = PREVPREV }
+					}
+				}
+				OR = {
+					is_republic = no
+					is_patrician = yes
+				}
+				OR = {
+					is_feudal = yes
+					is_patrician = yes
+				}
+				NOT = { religion_group = indian_group }
+				NOT = { religion = celtic_pagan }
+				OR = {
+					is_pagan_religion = no
+					is_reformed_pagan_religion = yes
+					is_tribal = no
+					has_global_flag = ancient_religions
+				}
+				NOT = { has_character_flag = voting_on_succession_law }
+			}
+			OR = {
+				NOT = { tier = baron }
+				holder_scope = { is_patrician = yes }
+			}
+			NOT = { holder_scope = { government = confucian_bureaucracy } }
+		}
+		allow = {
+			holder_scope = { NOT = { has_character_flag = liege_forced_succ_law } }
+			emf_laws_change_succ_prestige_cost_trigger = yes
+			OR = {
+				emf_laws_crownlaw_title_medium_ca_plus_trigger = yes
+				emf_laws_holder_has_late_adminstration_plus_trigger = yes
+				emf_laws_holder_liege_has_late_adminstration_plus_trigger = yes
+				custom_tooltip = {
+					text = emf_laws_ctt_patrician_not_primary_title
+					holder_scope = {
+						is_patrician = yes
+						OR = {
+							is_merchant_republic = no
+							PREV = {
+								is_primary_holder_title = no
+							}
+							NOR = {
+								in_revolt = yes
+								succ_law_title = {
+									title = PREVPREV
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		effect = {
+			emf_laws_change_succ_prestige_cost_effect = yes
+			holder_scope = { pf_tradition_minus2_effect = yes }
+			custom_tooltip = { text = CUSTOMTOOLTIP7 }
+			hidden_tooltip = {
+				current_inheritance_laws_effect = yes
+				log = "---> [emf_succ_changer.GetTitledFirstName] (ID: [emf_succ_changer.GetID]) holding vote to change [emf_succ_title.GetID] to Seniority"
+				
+				set_title_flag = emf_succ_title
+				holder_scope = {
+					set_character_flag = voting_on_succession_law
+					set_character_flag = vote_is_for_seniority
+					set_variable = { which = "succession_law_vote" value = 1 }
+					character_event = { id = Plus.600 }
+				}
+			}
+		}
+		ai_will_do = {
+			factor = 0
+		}
+	}
+
+	succ_elective_to_primogeniture = {
+		oldest_child_opinion = 15
+		youngest_child_opinion = -15
+		child_opinion = -10
+		
+		potential = {
+			e_placeholder = { has_title_flag = startup }
+			OR = {
+				has_law = succ_elective_gavelkind
+				has_law = succ_feudal_elective
+				has_law = succ_tanistry
+			}
+			is_titular = no
+			OR = {
+				AND = {
+					holder_scope = {
+						NOT = { religion_group = muslim }
+						NOT = { religion = celtic_pagan }
+						is_merchant_republic = no
+						is_patrician = no
+						OR = {
+							independent = yes
+							NOT = { any_liege = { holy_order = yes } }
+						}
+						OR = {
+							is_pagan_religion = no
+							is_reformed_pagan_religion = yes
+							religion = bon
+							is_tribal = no
+							has_global_flag = ancient_religions
+						}
+						NOT = { has_character_flag = voting_on_succession_law }
+					}
+					OR = {
+						is_landless_type_title = no
+						is_tribal_type_title = yes
+						temporary = yes
+					}
+					is_primary_type_title = no
+					OR = {
+						AND = {
+							tier = baron
+							is_feudal = yes
+						}
+						holder_scope = { is_feudal = yes }
+					}
+				}
+			}
+			NOT = { holder_scope = { government = confucian_bureaucracy } }
+		}
+		allow = {
+			holder_scope = { NOT = { has_character_flag = liege_forced_succ_law } }
+			emf_laws_change_succ_prestige_cost_trigger = yes
+			OR = {
+				emf_laws_crownlaw_title_high_ca_plus_trigger = yes
+				emf_laws_holder_has_late_adminstration_plus_trigger = yes
+				emf_laws_holder_liege_has_late_adminstration_plus_trigger = yes
+			}
+		}
+		effect = {
+			emf_laws_change_succ_prestige_cost_effect = yes
+			holder_scope = { pf_tradition_minus2_effect = yes }
+			custom_tooltip = { text = CUSTOMTOOLTIP7 }
+			hidden_tooltip = {
+				current_inheritance_laws_effect = yes
+				log = "---> [emf_succ_changer.GetTitledFirstName] (ID: [emf_succ_changer.GetID]) holding vote to change [emf_succ_title.GetID] to Primogeniture"
+				
+				set_title_flag = emf_succ_title
+				holder_scope = {
+					set_character_flag = voting_on_succession_law
+					set_character_flag = vote_is_for_primogeniture
+					set_variable = { which = "succession_law_vote" value = 1 }
+					character_event = { id = Plus.600 }
+				}
+			}
+		}
+		ai_will_do = {
+			factor = 0
+		}
+	}
+
+	succ_elective_to_tanistry = {
+		oldest_child_opinion = -20
+		child_opinion = -10
+		dynasty_opinion = 5
+		vassal_opinion = 5
+
+		potential = {
+			e_placeholder = { has_title_flag = startup }
+			OR = {
+				has_law = succ_elective_gavelkind
+				has_law = succ_feudal_elective
+			}
+			is_titular = no
+			emf_laws_succ_basic_potential_trigger = yes
+			holder_scope = {
+				NOT = { religion_group = indian_group }
+				OR = {
+					is_feudal = yes
+					is_tribal = yes
+				}
+				OR = {
+					culture_group = celtic
+					religion = celtic_pagan
+				}
+				NOT = { has_character_flag = voting_on_succession_law }
+			}
+			NOT = { tier = baron }
+			NOT = { holder_scope = { government = confucian_bureaucracy } }
+		}
+		allow = {
+			holder_scope = { NOT = { has_character_flag = liege_forced_succ_law } }
+			emf_laws_change_succ_prestige_cost_trigger = yes
+		}
+		effect = {
+			emf_laws_change_succ_prestige_cost_effect = yes
+			holder_scope = { pf_tradition_minus2_effect = yes }
+			custom_tooltip = { text = CUSTOMTOOLTIP7 }
+			hidden_tooltip = {
+				current_inheritance_laws_effect = yes
+				log = "---> [emf_succ_changer.GetTitledFirstName] (ID: [emf_succ_changer.GetID]) holding vote to change [emf_succ_title.GetID] to Tanistry"
+				
+				set_title_flag = emf_succ_title
+				holder_scope = {
+					set_character_flag = voting_on_succession_law
+					set_character_flag = vote_is_for_tanistry
+					set_variable = { which = "succession_law_vote" value = 1 }
+					character_event = { id = Plus.600 }
+				}
+			}
+		}
+		ai_will_do = {
+			factor = 0
+		}
+	}
+	
+	succ_elective_to_feudal_elective = {
+		oldest_child_opinion = -15
+		child_opinion = -5
+		dynasty_opinion = -5
+		vassal_opinion = 10
+
+		potential = {
+			e_placeholder = { has_title_flag = startup }
+			OR = {
+				has_law = succ_elective_gavelkind
+				has_law = succ_tanistry
+			}
+			is_titular = no
+			emf_laws_succ_basic_potential_trigger = yes
+			holder_scope = {
+				NOT = { religion_group = indian_group }
+				NOT = { religion = celtic_pagan }
+				OR = {
+					is_pagan_religion = no
+					is_reformed_pagan_religion = yes
+					is_tribal = no
+					has_global_flag = ancient_religions
+				}
+				is_feudal = yes
+				NOT = { has_character_flag = voting_on_succession_law }
+			}			
+			NOT = { tier = baron }
+			NOT = { holder_scope = { government = confucian_bureaucracy } }
+		}
+		allow = {
+			holder_scope = { NOT = { has_character_flag = liege_forced_succ_law } }
+			emf_laws_change_succ_prestige_cost_trigger = yes
+		}
+		effect = {
+			emf_laws_change_succ_prestige_cost_effect = yes
+			holder_scope = { pf_tradition_minus2_effect = yes }
+			custom_tooltip = { text = CUSTOMTOOLTIP7 }
+			hidden_tooltip = {
+				current_inheritance_laws_effect = yes
+				log = "---> [emf_succ_changer.GetTitledFirstName] (ID: [emf_succ_changer.GetID]) holding vote to change [emf_succ_title.GetID] to Feudal Elective"
+				
+				set_title_flag = emf_succ_title
+				holder_scope = {
+					set_character_flag = voting_on_succession_law
+					set_character_flag = vote_is_for_feudal_elective
+					set_variable = { which = "succession_law_vote" value = 1 }
+					character_event = { id = Plus.600 }
+				}
+			}
+		}
+		ai_will_do = {
+			factor = 0
+		}
+	}
+}
+
+gender_laws = {
+	institute_cognatic_succession = {
+		potential = {
+			e_placeholder = { has_title_flag = startup }
+			OR = {
+				has_law = agnatic_succession
+				has_law = true_cognatic_succession
+			}
+			holder_scope = {
+				OR = {
+					independent = yes
+					NOT = { any_liege = { holy_order = yes } }
+					is_merchant_republic = yes
+				}
+				NOT = { has_character_flag = voting_on_succession_law }
+			}
+			OR = {
+				AND = {
+					tier = baron
+					is_theocracy = no
+					is_republic = no
+				}
+				holder_scope = {
+					is_theocracy = no
+					is_republic = no
+				}
+			}
+			is_primary_type_title = no
+			NOT = { has_global_flag = gender_equality }
+		}
+		allow = {
+			emf_laws_change_succ_prestige_cost_trigger = yes
+		}
+		effect = {
+			custom_tooltip = { text = ALLOWS_MATRILINEAL_MARRIAGES }
+			emf_laws_change_succ_prestige_cost_effect = yes
+			holder_scope = { pf_tradition_minus2_effect = yes }
+			pf_save_old_gender_law_effect = yes
+			custom_tooltip = { text = CUSTOMTOOLTIP12 }
+
+			hidden_tooltip = {
+				set_allows_matrilineal_marriage = yes
+				if = {
+					limit = { has_law = true_cognatic_succession }
+					holder_scope = { set_character_flag = coming_from_true_cognatic }
+				}
+				if = {
+					limit = { has_law = agnatic_succession }
+					holder_scope = { set_character_flag = coming_from_agnatic }
+				}
+				save_event_target_as = emf_succ_title
+				holder_scope = { save_event_target_as = emf_succ_changer }
+				
+				current_inheritance_laws_effect = yes
+				log = "---> [emf_succ_changer.GetTitledFirstName] (ID: [emf_succ_changer.GetID]) changing gender law for [emf_succ_title.GetID] to Agnatic-Cognatic"				
+				
+				# Mark current heir and pretenders so that they may be tracked after law change
+				emf_laws_change_succ_save_contenders_effect = yes
+				
+				# Actually change the law now
+				add_law = cognatic_succession				
+				
+				current_heir = { save_event_target_as = emf_heir }
+				
+				holder_scope = {
+					# Changing from Agnatic to Cognatic
+					if = {
+						limit = { has_character_flag = coming_from_agnatic }
+						# Male vassals are upset, female vassals are slightly upset
+						any_vassal = {
+							limit = {
+								emf_laws_change_succ_affected_vassal_trigger = yes
+								emf_laws_change_succ_vip_trigger = no
+							}
+							if = {
+								limit = { is_female = no }
+								emf_laws_change_succ_bad_reaction_effect = yes
+							}
+							if = {
+								limit = { is_female = yes }
+								emf_laws_change_succ_mild_reaction_effect = yes
+							}
+						}
+						# Male children/dynasty members are upset, female children/dynasty members are happy
+						any_child = {
+							limit = {
+								can_inherit_trigger = yes
+								emf_laws_change_succ_vip_trigger = no
+							}
+							if = {
+								limit = { is_female = no }
+								emf_laws_change_succ_bad_reaction_effect = yes
+							}
+							if = {
+								limit = { is_female = yes }
+								emf_laws_change_succ_good_reaction_effect = yes
+							}
+						}
+						any_dynasty_member = {
+							limit = {
+								can_inherit_trigger = yes
+								emf_laws_change_succ_vip_trigger = no
+							}
+							if = {
+								limit = { is_female = no }
+								emf_laws_change_succ_bad_reaction_effect = yes
+							}
+							if = {
+								limit = { is_female = yes }
+								emf_laws_change_succ_good_reaction_effect = yes
+							}
+						}
+					}
+					# Changing from True Cognatic to Cognatic
+					if = {
+						limit = { has_character_flag = coming_from_true_cognatic }
+						# Female vassals are upset, male vassals are slightly upset
+						any_vassal = {
+							limit = {
+								emf_laws_change_succ_affected_vassal_trigger = yes
+								emf_laws_change_succ_vip_trigger = no
+							}
+							if = {
+								limit = { is_female = yes }
+								emf_laws_change_succ_bad_reaction_effect = yes
+							}
+							if = {
+								limit = { is_female = no }
+								emf_laws_change_succ_mild_reaction_effect = yes
+							}
+						}
+						# Female children/dynasty members are upset, male children/dynasty members are happy
+						any_child = {
+							limit = {
+								can_inherit_trigger = yes
+								emf_laws_change_succ_vip_trigger = no
+							}
+							if = {
+								limit = { is_female = yes }
+								emf_laws_change_succ_bad_reaction_effect = yes
+							}
+							if = {
+								limit = { is_female = no }
+								emf_laws_change_succ_good_reaction_effect = yes
+							}
+						}
+						any_dynasty_member = {
+							limit = {
+								can_inherit_trigger = yes
+								emf_laws_change_succ_vip_trigger = no
+							}
+							if = {
+								limit = { is_female = yes }
+								emf_laws_change_succ_bad_reaction_effect = yes
+							}
+							if = {
+								limit = { is_female = no }
+								emf_laws_change_succ_good_reaction_effect = yes
+							}
+						}
+					}
+					clr_character_flag = coming_from_agnatic
+					clr_character_flag = coming_from_true_cognatic
+				}
+				
+				# Specfic, event-driven succession law change reactions for the new heir, the former heir,
+				# the former pretenders, and the new pretenders.
+				set_title_flag = emf_succ_title
+				holder_scope = { character_event = { id = Plus.604 } }
+				
+				emf_laws_change_succ_cleanup_effect = yes
+			}
+		}
+		ai_will_do = {
+			factor = 0
+		}
+	}
+	
+	institute_agnatic_succession = {
+		female_dynasty_opinion = -5
+
+		potential = {
+			e_placeholder = { has_title_flag = startup }
+			has_law = cognatic_succession
+			holder_scope = { NOT = { has_character_flag = voting_on_succession_law } }
+			NOT = { has_global_flag = gender_equality }
+		}
+		allow = {
+			emf_laws_change_succ_prestige_cost_trigger = yes
+		}
+		effect = {
+			custom_tooltip = { text = DISALLOWS_MATRILINEAL_MARRIAGES }
+			emf_laws_change_succ_prestige_cost_effect = yes
+			holder_scope = { pf_tradition_minus2_effect = yes }
+			pf_save_old_gender_law_effect = yes
+			custom_tooltip = { text = CUSTOMTOOLTIP11 }
+			
+			hidden_tooltip = {
+				set_allows_matrilineal_marriage = no
+				save_event_target_as = emf_succ_title
+				holder_scope = { save_event_target_as = emf_succ_changer }
+				
+				current_inheritance_laws_effect = yes
+				log = "---> [emf_succ_changer.GetTitledFirstName] (ID: [emf_succ_changer.GetID]) changing gender law for [emf_succ_title.GetID] to Agnatic"
+				
+				# Mark current heir and pretenders so that they may be tracked after law change
+				emf_laws_change_succ_save_contenders_effect = yes
+				
+				# Actually change the law now
+				add_law = agnatic_succession				
+				
+				current_heir = { save_event_target_as = emf_heir }
+				
+				holder_scope = {
+					# Female vassals are upset, male vassals are slightly upset
+					any_vassal = {
+						limit = {
+							emf_laws_change_succ_affected_vassal_trigger = yes
+							emf_laws_change_succ_vip_trigger = no
+						}
+						if = {
+							limit = { is_female = yes }
+							emf_laws_change_succ_bad_reaction_effect = yes
+						}
+						if = {
+							limit = { is_female = no }
+							emf_laws_change_succ_mild_reaction_effect = yes
+						}
+					}
+					# Female children/dynasty members are upset, male children/dynasty members are happy
+					any_child = {
+						limit = {
+							can_inherit_trigger = yes
+							emf_laws_change_succ_vip_trigger = no
+						}
+						if = {
+							limit = { is_female = yes }
+							emf_laws_change_succ_bad_reaction_effect = yes
+						}
+						if = {
+							limit = { is_female = no }
+							emf_laws_change_succ_good_reaction_effect = yes
+						}
+					}
+					any_dynasty_member = {
+						limit = {
+							can_inherit_trigger = yes
+							emf_laws_change_succ_vip_trigger = no
+						}
+						if = {
+							limit = { is_female = yes }
+							emf_laws_change_succ_bad_reaction_effect = yes
+						}
+						if = {
+							limit = { is_female = no }
+							emf_laws_change_succ_good_reaction_effect = yes
+						}
+					}
+				}
+			
+				# Specfic, event-driven succession law change reactions for the new heir, the former heir,
+				# the former pretenders, and the new pretenders.
+				set_title_flag = emf_succ_title
+				holder_scope = { character_event = { id = Plus.604 } }
+				
+				emf_laws_change_succ_cleanup_effect = yes
+			}
+		}
+		ai_will_do = {
+			factor = 0
+		}
+	}
+	
+	institute_true_cognatic_succession = {
+		male_dynasty_opinion = -5
+		female_dynasty_opinion = 5
+
+		potential = {
+			e_placeholder = { has_title_flag = startup }
+			OR = {
+				has_law = cognatic_succession
+				has_law = enatic_cognatic_succession
+			}
+			holder_scope = {
+				NOT = { has_character_flag = voting_on_succession_law }
+			}
+			OR = {
+				AND = {
+					tier = baron
+					is_theocracy = no
+					is_republic = no
+				}
+				holder_scope = {
+					is_theocracy = no
+					is_republic = no
+				}
+			}
+			is_primary_type_title = no
+		}
+		allow = {
+			OR = {
+				holder_scope = { has_law = female_council_law_4 }
+				has_game_rule = {
+					name = gender
+					value = all
+				}
+				has_game_rule = {
+					name = gender
+					value = plus
+				}
+			}
+			emf_laws_change_succ_prestige_cost_trigger = yes
+		}
+		effect = {
+			emf_laws_change_succ_prestige_cost_effect = yes
+			holder_scope = { pf_tradition_minus2_effect = yes }
+			pf_save_old_gender_law_effect = yes
+			custom_tooltip = { text = CUSTOMTOOLTIP13 }
+
+			hidden_tooltip = {
+				set_allows_matrilineal_marriage = yes
+				if = {
+					limit = { has_law = cognatic_succession }
+					holder_scope = { set_character_flag = coming_from_cognatic }
+				}
+				if = {
+					limit = { has_law = enatic_cognatic_succession }
+					holder_scope = { set_character_flag = coming_from_enatic_cognatic }
+				}
+				save_event_target_as = emf_succ_title
+				holder_scope = { save_event_target_as = emf_succ_changer }
+				
+				current_inheritance_laws_effect = yes
+				log = "---> [emf_succ_changer.GetTitledFirstName] (ID: [emf_succ_changer.GetID]) changing gender law for [emf_succ_title.GetID] to True Cognatic"			
+				
+				# Mark current heir and pretenders so that they may be tracked after law change
+				emf_laws_change_succ_save_contenders_effect = yes
+				
+				# Actually change the law now
+				add_law = true_cognatic_succession				
+				
+				current_heir = { save_event_target_as = emf_heir }
+				
+				holder_scope = {
+					# Changing from Agnatic-Cognatic to True Cognatic
+					if = {
+						limit = { has_character_flag = coming_from_cognatic }
+						# Male vassals are upset, female vassals are slightly upset
+						any_vassal = {
+							limit = {
+								emf_laws_change_succ_affected_vassal_trigger = yes
+								emf_laws_change_succ_vip_trigger = no
+							}
+							if = {
+								limit = { is_female = no }
+								emf_laws_change_succ_bad_reaction_effect = yes
+							}
+							if = {
+								limit = { is_female = yes }
+								emf_laws_change_succ_mild_reaction_effect = yes
+							}
+						}
+						# Male children/dynasty members are upset, female children/dynasty members are happy
+						any_child = {
+							limit = {
+								can_inherit_trigger = yes
+								emf_laws_change_succ_vip_trigger = no
+							}
+							if = {
+								limit = { is_female = no }
+								emf_laws_change_succ_bad_reaction_effect = yes
+							}
+							if = {
+								limit = { is_female = yes }
+								emf_laws_change_succ_good_reaction_effect = yes
+							}
+						}
+						any_dynasty_member = {
+							limit = {
+								can_inherit_trigger = yes
+								emf_laws_change_succ_vip_trigger = no
+							}
+							if = {
+								limit = { is_female = no }
+								emf_laws_change_succ_bad_reaction_effect = yes
+							}
+							if = {
+								limit = { is_female = yes }
+								emf_laws_change_succ_good_reaction_effect = yes
+							}
+						}
+					}
+					# Changing from Enatic-Cognatic to True Cognatic
+					if = {
+						limit = { has_character_flag = coming_from_enatic_cognatic }
+						# Female vassals are upset, male vassals are slightly upset
+						any_vassal = {
+							limit = {
+								emf_laws_change_succ_affected_vassal_trigger = yes
+								emf_laws_change_succ_vip_trigger = no
+							}
+							if = {
+								limit = { is_female = yes }
+								emf_laws_change_succ_bad_reaction_effect = yes
+							}
+							if = {
+								limit = { is_female = no }
+								emf_laws_change_succ_mild_reaction_effect = yes
+							}
+						}
+						# Female children/dynasty members are upset, male children/dynasty members are happy
+						any_child = {
+							limit = {
+								can_inherit_trigger = yes
+								emf_laws_change_succ_vip_trigger = no
+							}
+							if = {
+								limit = { is_female = yes }
+								emf_laws_change_succ_bad_reaction_effect = yes
+							}
+							if = {
+								limit = { is_female = no }
+								emf_laws_change_succ_good_reaction_effect = yes
+							}
+						}
+						any_dynasty_member = {
+							limit = {
+								can_inherit_trigger = yes
+								emf_laws_change_succ_vip_trigger = no
+							}
+							if = {
+								limit = { is_female = yes }
+								emf_laws_change_succ_bad_reaction_effect = yes
+							}
+							if = {
+								limit = { is_female = no }
+								emf_laws_change_succ_good_reaction_effect = yes
+							}
+						}
+					}
+					clr_character_flag = coming_from_cognatic
+					clr_character_flag = coming_from_enatic_cognatic
+				}
+				
+				# Specfic, event-driven succession law change reactions for the new heir, the former heir,
+				# the former pretenders, and the new pretenders.
+				set_title_flag = emf_succ_title
+				holder_scope = { character_event = { id = Plus.604 } }
+				
+				emf_laws_change_succ_cleanup_effect = yes
+			}
+		}
+		ai_will_do = {
+			factor = 0
+		}
+	}
+	
+	institute_enatic_succession = {
+		male_dynasty_opinion = -15
+		female_dynasty_opinion = 10
+
+		potential = {
+			e_placeholder = { has_title_flag = startup }
+			has_law = enatic_cognatic_succession
+			holder_scope = {
+				ai = no
+				NOT = { has_character_flag = voting_on_succession_law }
+			}
+			OR = {
+				AND = {
+					tier = baron
+					OR = {
+						is_feudal = yes
+						is_tribal = yes
+					}
+				}
+				holder_scope = { is_feudal = yes }
+				holder_scope = { is_tribal = yes }
+			}
+			is_primary_type_title = no
+			NOT = { has_global_flag = gender_equality }
+		}
+		allow = {
+			OR = {
+				has_law = female_council_law_4
+				has_game_rule = {
+					name = gender
+					value = all
+				}
+				has_game_rule = {
+					name = gender
+					value = plus
+				}
+			}
+			emf_laws_change_succ_prestige_cost_trigger = yes
+		}
+		effect = {
+			emf_laws_change_succ_prestige_cost_effect = yes
+			holder_scope = { pf_tradition_minus2_effect = yes }
+			pf_save_old_gender_law_effect = yes
+			custom_tooltip = { text = CUSTOMTOOLTIP15 }
+			
+			hidden_tooltip = {
+				set_allows_matrilineal_marriage = yes
+				save_event_target_as = emf_succ_title
+				holder_scope = { save_event_target_as = emf_succ_changer }
+				
+				current_inheritance_laws_effect = yes
+				log = "---> [emf_succ_changer.GetTitledFirstName] (ID: [emf_succ_changer.GetID]) changing gender law for [emf_succ_title.GetID] to Enatic"
+				
+				# Mark current heir and pretenders so that they may be tracked after law change
+				emf_laws_change_succ_save_contenders_effect = yes
+				
+				# Actually change the law now
+				add_law = enatic_succession				
+				
+				current_heir = { save_event_target_as = emf_heir }
+				
+				holder_scope = {
+					# Male vassals are upset, female vassals are slightly upset
+					any_vassal = {
+						limit = {
+							emf_laws_change_succ_affected_vassal_trigger = yes
+							emf_laws_change_succ_vip_trigger = no
+						}
+						if = {
+							limit = { is_female = no }
+							emf_laws_change_succ_bad_reaction_effect = yes
+						}
+						if = {
+							limit = { is_female = yes }
+							emf_laws_change_succ_mild_reaction_effect = yes
+						}
+					}
+					# Male children/dynasty members are upset, female children/dynasty members are happy
+					any_child = {
+						limit = {
+							can_inherit_trigger = yes
+							emf_laws_change_succ_vip_trigger = no
+						}
+						if = {
+							limit = { is_female = no }
+							emf_laws_change_succ_bad_reaction_effect = yes
+						}
+						if = {
+							limit = { is_female = yes }
+							emf_laws_change_succ_good_reaction_effect = yes
+						}
+					}
+					any_dynasty_member = {
+						limit = {
+							can_inherit_trigger = yes
+							emf_laws_change_succ_vip_trigger = no
+						}
+						if = {
+							limit = { is_female = no }
+							emf_laws_change_succ_bad_reaction_effect = yes
+						}
+						if = {
+							limit = { is_female = yes }
+							emf_laws_change_succ_good_reaction_effect = yes
+						}
+					}
+				}
+			
+				# Specfic, event-driven succession law change reactions for the new heir, the former heir,
+				# the former pretenders, and the new pretenders.
+				set_title_flag = emf_succ_title
+				holder_scope = { character_event = { id = Plus.604 } }
+				
+				emf_laws_change_succ_cleanup_effect = yes
+			}
+		}
+		ai_will_do = {
+			factor = 0
+		}
+	}
+	
+	institute_enatic_cognatic_succession = {
+		male_dynasty_opinion = -10
+		female_dynasty_opinion = 10
+
+		potential = {
+			e_placeholder = { has_title_flag = startup }
+			OR = {
+				has_law = true_cognatic_succession
+				has_law = enatic_succession
+			}
+			holder_scope = {
+				NOT = { has_character_flag = voting_on_succession_law }
+			}
+			OR = {
+				AND = {
+					tier = baron
+					OR = {
+						is_feudal = yes
+						is_tribal = yes
+					}
+				}
+				holder_scope = { is_feudal = yes }
+				holder_scope = { is_tribal = yes }
+			}
+			is_primary_type_title = no
+			NOT = { has_global_flag = gender_equality }
+		}
+		allow = {
+			OR = {
+				has_law = female_council_law_4
+				has_game_rule = {
+					name = gender
+					value = all
+				}
+				has_game_rule = {
+					name = gender
+					value = plus
+				}
+			}
+			emf_laws_change_succ_prestige_cost_trigger = yes
+		}
+		effect = {
+			emf_laws_change_succ_prestige_cost_effect = yes
+			holder_scope = { pf_tradition_minus2_effect = yes }
+			pf_save_old_gender_law_effect = yes
+			custom_tooltip = { text = CUSTOMTOOLTIP14 }
+
+			hidden_tooltip = {
+				set_allows_matrilineal_marriage = yes
+				if = {
+					limit = { has_law = true_cognatic_succession }
+					holder_scope = { set_character_flag = coming_from_true_cognatic }
+				}
+				if = {
+					limit = { has_law = enatic_succession }
+					holder_scope = { set_character_flag = coming_from_enatic }
+				}
+				save_event_target_as = emf_succ_title
+				holder_scope = { save_event_target_as = emf_succ_changer }
+				
+				current_inheritance_laws_effect = yes
+				log = "---> [emf_succ_changer.GetTitledFirstName] (ID: [emf_succ_changer.GetID]) changing gender law for [emf_succ_title.GetID] to Enatic-Cognatic"				
+				
+				# Mark current heir and pretenders so that they may be tracked after law change
+				emf_laws_change_succ_save_contenders_effect = yes
+				
+				# Actually change the law now
+				add_law = enatic_cognatic_succession				
+				
+				current_heir = { save_event_target_as = emf_heir }
+				
+				holder_scope = {
+					# Changing from True Cognatic to Enatic-Cognatic
+					if = {
+						limit = { has_character_flag = coming_from_true_cognatic }
+						# Male vassals are upset, female vassals are slightly upset
+						any_vassal = {
+							limit = {
+								emf_laws_change_succ_affected_vassal_trigger = yes
+								emf_laws_change_succ_vip_trigger = no
+							}
+							if = {
+								limit = { is_female = no }
+								emf_laws_change_succ_bad_reaction_effect = yes
+							}
+							if = {
+								limit = { is_female = yes }
+								emf_laws_change_succ_mild_reaction_effect = yes
+							}
+						}
+						# Male children/dynasty members are upset, female children/dynasty members are happy
+						any_child = {
+							limit = {
+								can_inherit_trigger = yes
+								emf_laws_change_succ_vip_trigger = no
+							}
+							if = {
+								limit = { is_female = no }
+								emf_laws_change_succ_bad_reaction_effect = yes
+							}
+							if = {
+								limit = { is_female = yes }
+								emf_laws_change_succ_good_reaction_effect = yes
+							}
+						}
+						any_dynasty_member = {
+							limit = {
+								can_inherit_trigger = yes
+								emf_laws_change_succ_vip_trigger = no
+							}
+							if = {
+								limit = { is_female = no }
+								emf_laws_change_succ_bad_reaction_effect = yes
+							}
+							if = {
+								limit = { is_female = yes }
+								emf_laws_change_succ_good_reaction_effect = yes
+							}
+						}
+					}
+					# Changing from Enatic to Enatic-Cognatic
+					if = {
+						limit = { has_character_flag = coming_from_enatic }
+						# Female vassals are upset, male vassals are slightly upset
+						any_vassal = {
+							limit = {
+								emf_laws_change_succ_affected_vassal_trigger = yes
+								emf_laws_change_succ_vip_trigger = no
+							}
+							if = {
+								limit = { is_female = yes }
+								emf_laws_change_succ_bad_reaction_effect = yes
+							}
+							if = {
+								limit = { is_female = no }
+								emf_laws_change_succ_mild_reaction_effect = yes
+							}
+						}
+						# Female children/dynasty members are upset, male children/dynasty members are happy
+						any_child = {
+							limit = {
+								can_inherit_trigger = yes
+								emf_laws_change_succ_vip_trigger = no
+							}
+							if = {
+								limit = { is_female = yes }
+								emf_laws_change_succ_bad_reaction_effect = yes
+							}
+							if = {
+								limit = { is_female = no }
+								emf_laws_change_succ_good_reaction_effect = yes
+							}
+						}
+						any_dynasty_member = {
+							limit = {
+								can_inherit_trigger = yes
+								emf_laws_change_succ_vip_trigger = no
+							}
+							if = {
+								limit = { is_female = yes }
+								emf_laws_change_succ_bad_reaction_effect = yes
+							}
+							if = {
+								limit = { is_female = no }
+								emf_laws_change_succ_good_reaction_effect = yes
+							}
+						}
+					}
+					clr_character_flag = coming_from_true_cognatic
+					clr_character_flag = coming_from_enatic
+				}
+				
+				# Specfic, event-driven succession law change reactions for the new heir, the former heir,
+				# the former pretenders, and the new pretenders.
+				set_title_flag = emf_succ_title
+				holder_scope = { character_event = { id = Plus.604 } }
+				
+				emf_laws_change_succ_cleanup_effect = yes
+			}
+		}
+		ai_will_do = {
+			factor = 0
+		}
+	}
+}
+

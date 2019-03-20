@@ -1,0 +1,697 @@
+
+namespace = emf_nomad
+
+#######################################
+# EMF NOMAD EVENTS
+# submitted by zijistark
+#######################################
+
+# emf_nomad.0 [Settling Nomad]
+#
+# Invoked by nomad settlement decisions, prior to conversion to non-nomadic
+# government. Determines how many provinces in the new realm will be "settled"
+# (converted to culture & religion of nomad). Marks provinces that are part
+# of our non-nomadic subrealm or demesne for emf_nomad.1 & emf_nomad.5.
+character_event = {
+	id = emf_nomad.0
+	hide_window = yes
+	is_triggered_only = yes
+
+	immediate = {
+		set_variable = { which = n_convert value = 0 }
+		if = {
+			limit = { population_and_manpower = 5000 }
+			change_variable = { which = n_convert value = 1 }
+		}
+		if = {
+			limit = { population_and_manpower = 10000 }
+			change_variable = { which = n_convert value = 1 }
+		}
+		if = {
+			limit = { population_and_manpower = 15000 }
+			change_variable = { which = n_convert value = 1 }
+		}
+		if = {
+			limit = { population_and_manpower = 20000 }
+			change_variable = { which = n_convert value = 1 }
+		}
+		if = {
+			limit = { population_and_manpower = 25000 }
+			change_variable = { which = n_convert value = 1 }
+		}
+		if = {
+			limit = { population_and_manpower = 30000 }
+			change_variable = { which = n_convert value = 1 }
+		}
+		if = {
+			limit = { population_and_manpower = 35000 }
+			change_variable = { which = n_convert value = 1 }
+		}
+		if = {
+			limit = { population_and_manpower = 40000 }
+			change_variable = { which = n_convert value = 1 }
+		}
+		if = {
+			limit = { population_and_manpower = 45000 }
+			change_variable = { which = n_convert value = 1 }
+		}
+		if = {
+			limit = { population_and_manpower = 50000 }
+			change_variable = { which = n_convert value = 1 }
+		}
+		if = {
+			limit = { population_and_manpower = 55000 }
+			change_variable = { which = n_convert value = 1 }
+		}
+		if = {
+			limit = { population_and_manpower = 60000 }
+			change_variable = { which = n_convert value = 1 }
+		}
+		if = {
+			limit = { population_and_manpower = 65000 }
+			change_variable = { which = n_convert value = 1 }
+		}
+		if = {
+			limit = { population_and_manpower = 70000 }
+			change_variable = { which = n_convert value = 1 }
+		}
+		if = {
+			limit = { population_and_manpower = 75000 }
+			change_variable = { which = n_convert value = 1 }
+		}
+		if = {
+			limit = { population_and_manpower = 80000 }
+			change_variable = { which = n_convert value = 1 }
+		}
+		if = {
+			limit = { population_and_manpower = 85000 }
+			change_variable = { which = n_convert value = 1 }
+		}
+		if = {
+			limit = { population_and_manpower = 90000 }
+			change_variable = { which = n_convert value = 1 }
+		}
+		if = {
+			limit = { population_and_manpower = 95000 }
+			change_variable = { which = n_convert value = 1 }
+		}
+
+		any_realm_province = {
+			limit = {
+				owner = {
+					OR = {
+						character = ROOT
+						AND = {
+							is_liege_or_above = ROOT # Is below us, but...
+							NOR = { # Isn't nomadic and has no other nomadic liege
+								is_nomadic = yes
+								any_liege = {
+									NOT = { character = ROOT }
+									is_nomadic = yes
+								}
+							}
+						}
+					}
+				}
+			}
+			set_province_flag = emf_old_khan_claim
+		}
+	}
+}
+
+# emf_nomad.1 [Settling Ex-Nomad]
+#
+# Continuation of emf_nomad.0, invoked after change to non-nomadic government.
+character_event = {
+	id = emf_nomad.1
+	hide_window = yes
+	is_triggered_only = yes
+
+	immediate = {
+
+		# "Press" our settlement claim upon provinces that the settlement
+		# hard-code did in fact give us.
+		any_realm_province = {
+			clr_province_flag = emf_old_khan_claim
+		}
+
+		# Settle new capital ...
+
+		capital_scope = {
+			religion = ROOT
+			culture = ROOT
+			set_province_flag = emf_nomad_settled
+		}
+
+		# Settle up to `n_convert` provinces with our religion/culture via
+		# "cluster-blobbing" technique, starting at new capital ...
+
+		character_event = { id = emf_nomad.2 }
+
+		any_realm_province = {
+			clr_province_flag = emf_nomad_settled
+		}
+
+		set_variable = { which = n_convert value = 0 }
+
+		# Find previous nomadic title holder
+
+		random_independent_ruler = {
+			limit = {
+				tier = emperor
+				is_nomadic = yes
+				primary_title = {
+					any_previous_holder = {
+						character = ROOT
+					}
+				}
+			}
+			save_event_target_as = emf_new_khan
+		}
+
+		if = {
+			limit = { NOT = { event_target:emf_new_khan = { always = yes } } }
+			
+			log = "emf_nomad.1: SERIOUS: could not find new khan of prior nomad title"
+
+			any_title = {
+				limit = { tier = count }
+				location = {
+					clr_province_flag = emf_old_khan_claim
+				}
+			}
+
+			break = yes
+		}
+
+		# Mark all the provinces within the prior nomadic realm that are contiguous
+		# to its capital...
+
+		event_target:emf_new_khan = {
+			capital_scope = { set_province_flag = emf_capital_path }
+			character_event = { id = emf_nomad.3 }
+		}
+
+		# Reclaim any provinces not marked contiguous-to-capitals that we have
+		# claim upon and are connected to our own non-nomadic realm.
+
+		character_event = { id = emf_nomad.4 }
+
+		# Cleanup...
+
+		event_target:emf_new_khan = {
+			any_realm_province = {
+				clr_province_flag = emf_capital_path
+				clr_province_flag = emf_old_khan_claim
+			}
+		}
+	}
+}
+
+# emf_nomad.2 [Settling Ex-Nomad]
+#
+# The guts of emf_nomad.1: Recursive "cluster-blobbing" algorithm that focuses
+# upon "converting" contiguous group(s) of provinces in a random yet plausible
+# manner.
+character_event = {
+	id = emf_nomad.2
+	hide_window = yes
+	is_triggered_only = yes
+
+	trigger = {
+		check_variable = { which = n_convert value = 0.1 }
+	}
+
+	immediate = {
+		random_realm_province = {
+			limit = {
+				has_province_flag = emf_nomad_settled
+				any_neighbor_province = {
+					NAND = {
+						religion = ROOT
+						culture = ROOT
+					}
+					any_province_holding = {
+						NOT = { holding_type = nomad }
+					}
+					owner = {
+						same_realm = ROOT
+					}
+				}
+			}
+
+			# Mark any already same-religion/culture neighbors as settled,
+			# but don't count them towards conversion total.
+			any_neighbor_province = {
+				limit = {
+					religion = ROOT
+					culture = ROOT
+					any_province_holding = {
+						NOT = { holding_type = nomad }
+					}
+					owner = {
+						same_realm = ROOT
+					}
+				}
+				set_province_flag = emf_nomad_settled
+			}
+
+			# Select a random eligible neighbor province to settle
+			random_neighbor_province = {
+				limit = {
+					NAND = {
+						religion = ROOT
+						culture = ROOT
+					}
+					any_province_holding = {
+						NOT = { holding_type = nomad }
+					}
+					owner = {
+						same_realm = ROOT
+					}
+				}
+				religion = ROOT
+				culture = ROOT
+				set_province_flag = emf_nomad_settled
+				ROOT = {
+					change_variable = { which = n_convert value = -1 }
+					character_event = { id = emf_nomad.2 } # Recurse
+					break = yes # <-- Very important
+				}
+			}
+		}
+
+		# If we reach this point, we couldn't find any conversion targets next to
+		# already-settled provinces, so we should branch-out and find a new seed
+		# province from which to continue trying to cluster randomly.
+
+		# First, let's prefer new seeds that have the potential to grow to at least
+		# a 2-cluster (it's too easy to select a province with, say, just a temple
+		# in the middle of nomadic lands)
+
+		random_realm_province = {
+			limit = {
+				NAND = {
+					religion = ROOT
+					culture = ROOT
+				}
+				any_province_holding = {
+					NOT = { holding_type = nomad }
+				}
+				any_neighbor_province = {
+					NAND = {
+						religion = ROOT
+						culture = ROOT
+					}
+					any_province_holding = {
+						NOT = { holding_type = nomad }
+					}
+					owner = {
+						same_realm = ROOT
+					}
+				}
+			}
+			religion = ROOT
+			culture = ROOT
+			set_province_flag = emf_nomad_settled
+			ROOT = {
+				change_variable = { which = n_convert value = -1 }
+				character_event = { id = emf_nomad.2 } # Recurse
+				break = yes # <-- Very important
+			}
+		}
+
+		# If we reach this point, we first failed to grow the current cluster, then
+		# we failed to seed a province that had the potential to be a 2-cluster, so
+		# now we're just going to try converting any random non-nomadic province.
+
+		random_realm_province = {
+			limit = {
+				any_province_holding = {
+					NOT = { holding_type = nomad }
+				}
+				NAND = {
+					religion = ROOT
+					culture = ROOT
+				}
+			}
+			religion = ROOT
+			culture = ROOT
+			set_province_flag = emf_nomad_settled
+			ROOT = {
+				change_variable = { which = n_convert value = -1 }
+				character_event = { id = emf_nomad.2 } # Recurse
+			}
+		}
+	}
+}
+
+# emf_nomad.3 [Khagan from Prior Nomadic Realm]
+#
+# Mark all provinces which are connected to our clan capital(s) via our realm.
+# Assumes all capital(s) have been pre-seeded with `emf_capital_path` flag.
+character_event = {
+	id = emf_nomad.3
+	hide_window = yes
+	is_triggered_only = yes
+
+	trigger = {
+		any_realm_province = {
+			has_province_flag = emf_capital_path
+			any_neighbor_province = {
+				owner = { same_realm = ROOT }
+				NOT = { has_province_flag = emf_capital_path }
+			}
+		}
+	}
+
+	immediate = {
+		random_realm_province = {
+			limit = {
+				has_province_flag = emf_capital_path
+				any_neighbor_province = {
+					owner = { same_realm = ROOT }
+					NOT = { has_province_flag = emf_capital_path }
+				}
+			}
+			any_neighbor_province = {
+				limit = {
+					owner = { same_realm = ROOT }
+					NOT = { has_province_flag = emf_capital_path }
+				}
+				set_province_flag = emf_capital_path
+			}
+		}
+
+		repeat_event = { id = emf_nomad.3 } # Recurse
+	}
+}
+
+# emf_nomad.4 [Ex-Nomad]
+#
+# Recursively reclaim qualifying provinces from the new khan that are connected
+# to our realm but are not connected to the capitals of any of the clan leaders
+# of the nomadic realm.
+#
+# Qualifying provinces for reclamation:
+# - marked as being part of our non-nomadic subrealm or demesne prior to settling
+#   (has the province flag `emf_old_khan_claim`)
+# - not connected to the nomadic capital (doesn't have `emf_capital_path`)
+# - part of the nomadic realm
+# - connected to our non-nomadic realm
+character_event = {
+	id = emf_nomad.4
+	hide_window = yes
+	is_triggered_only = yes
+
+	trigger = {
+		any_realm_province = {
+			any_neighbor_province = {
+				owner = { same_realm = event_target:emf_new_khan }
+				has_province_flag = emf_old_khan_claim
+				NOT = { has_province_flag = emf_capital_path }
+			}
+		}
+	}
+
+	immediate = {
+		random_realm_province = {
+			limit = {
+				any_neighbor_province = {
+					owner = { same_realm = event_target:emf_new_khan }
+					has_province_flag = emf_old_khan_claim
+					NOT = { has_province_flag = emf_capital_path }
+				}
+			}
+
+			random_neighbor_province = {
+				limit = {
+					owner = { same_realm = event_target:emf_new_khan }
+					has_province_flag = emf_old_khan_claim
+					NOT = { has_province_flag = emf_capital_path }
+				}
+
+				# Reclaim ...
+
+				clr_province_flag = emf_old_khan_claim
+
+				if = {
+					limit = { owner = { is_nomadic = no } }
+					
+					# I don't believe that the settlement hardcode will ever
+					# actually hit this case, but I'd like to know about if it
+					# does.
+
+					log = "emf_nomad.4: INFO: found a non-nomadic county owner among emf_old_khan_claim that didn't transfer to non-nomadic realm"
+
+					if = {
+						limit = {
+							owner = {
+								lower_tier_than = ROOT
+								NOT = { # Is entirely contained within emf_old_khan_claim ...
+									any_realm_province = {
+										NOR = {
+											province = PREVPREV # Already stripped the flag here
+											has_province_flag = emf_old_khan_claim
+										}
+									}
+								}
+							}
+						}
+						owner = {
+							set_defacto_liege = ROOT
+							pf_liege_change_effect = yes
+							any_realm_province = {
+								clr_province_flag = emf_old_khan_claim
+							}
+						}
+					}
+
+					ROOT = { repeat_event = { id = emf_nomad.4 } }
+
+					break = yes
+				}
+
+				# Just take it back...
+
+				county = {
+					grant_title_no_opinion = ROOT
+				}
+
+				# Similar in effect to emf_cb_nomadic_province_effect (in context):
+				if = {
+					limit = {
+						NOT = {
+							any_province_holding = {
+								NOT = { holding_type = nomad } # An actual nomad capital here should be impossible, but nevertheless.
+							}
+						}
+					}
+
+					build_holding = {
+						type = tribal
+						holder = ROOT
+					}
+					random_province_holding = {
+						limit = { holding_type = tribal }
+						make_capital_holding = yes
+					}
+
+					# Even though this should've happened upon transferring
+					# the county title, sometimes the engine is confused:
+
+					religion = ROOT
+					culture = ROOT
+				}
+			}
+		}
+
+		repeat_event = { id = emf_nomad.4 }
+	}
+}
+
+# emf_nomad.5 [Settling Nomad]
+#
+# Spawn troops proportional to the number of empty holding slots in nomadic
+# provinces into event_target:emf_new_capital.
+character_event = {
+	id = emf_nomad.5
+	hide_window = yes
+	is_triggered_only = yes
+
+	immediate = {
+
+		any_realm_province = {
+			limit = {
+				has_province_flag = emf_old_khan_claim
+				NOR = {
+					num_of_settlements = 2
+					any_province_holding = {
+						NOR = {
+							holding_type = nomad
+							holding_type = temple
+							holding_type = tribal
+						}
+					}
+				}
+			}
+			# Spawn proportional to # of empty holding slots abandoned
+			if = {
+				limit = { num_of_empty_holdings = 1 }
+				emf_nomad_settlement_spawn_unit_effect = yes
+			}
+			if = {
+				limit = { num_of_empty_holdings = 2 }
+				emf_nomad_settlement_spawn_unit_effect = yes
+			}
+			if = {
+				limit = { num_of_empty_holdings = 3 }
+				emf_nomad_settlement_spawn_unit_effect = yes
+			}
+			if = {
+				limit = { num_of_empty_holdings = 4 }
+				emf_nomad_settlement_spawn_unit_effect = yes
+			}
+			if = {
+				limit = { num_of_empty_holdings = 5 }
+				emf_nomad_settlement_spawn_unit_effect = yes
+			}
+			if = {
+				limit = { num_of_empty_holdings = 6 }
+				emf_nomad_settlement_spawn_unit_effect = yes
+			}
+			if = {
+				limit = { num_of_empty_holdings = 7 }
+				emf_nomad_settlement_spawn_unit_effect = yes
+			}
+		}
+	}
+}
+
+# emf_nomad.20 [New Empty County Holder]
+#
+# on_new_holder_usurpation listener for empty/nomadic provinces that enforces
+# the equivalent of the scripted effect emf_cb_nomadic_province_effect upon
+# all usurped empty counties.
+#
+# The scripted effect is still used throughout CBs, because this method needs to
+# convert culture/religion _back_ to what it was before the title transfer, and
+# if our CB code didn't try to minimize usage of this fall-back method, then
+# it's possible that SoA heresy-takeover mechanics could be triggered by some
+# conquests when they should not be.
+#
+# This should be considered the general, catch-all case for ensuring the invariant
+# that non-nomadic rulers conquering (or event-usurping) empty counties or nomadic
+# rulers of different culture than such a conquered county will always receive a
+# county with a new tribal settlement in it (and the province should be the prior
+# culture). NOTE: We don't listen to regular on_new_holder, because we don't
+# want this behavior for title grants/gains, which should be exempt. Some CBs use
+# such methods, so again, a mixed approach is necessary.
+#
+# If the logic here is updated, then the aforementioned scripted effect should
+# also be updated.
+#
+# As always:
+#   ROOT = new holder
+#   FROM = title
+#   FROMFROM = previous holder
+character_event = {
+	id = emf_nomad.20
+	hide_window = yes
+	is_triggered_only = yes
+
+	trigger = {
+		FROM = { tier = count } # Filter only county titles ...
+		FROM = { # ... that correspond to empty/nomadic provinces.
+			location = {
+				NOT = {
+					any_province_holding = {
+						NOT = { holding_type = nomad }
+					}
+				}
+			}
+		}
+		# And the new holder isn't a nomad, or the culture & religion of the new
+		# & prior holders is/are not the same.
+		ROOT = {
+			OR = {
+				is_nomadic = no
+				NOT = { culture = FROMFROM }
+				NOT = { religion = FROMFROM }
+			}
+		}
+		# We depend upon being able to query character religion/culture, so this
+		# is here as a sort of assertion:
+		FROMFROM = { always = yes }
+	}
+
+	immediate = {
+		FROMFROM = { save_event_target_as = emf_prior_holder }
+		FROM = {
+			location = {
+
+				if = {
+					limit = { has_empty_holding = yes }
+					province_event = { id = emf_nomad.21 }
+					break = yes
+				}
+
+				# If we get here, that means there was no empty holding slot
+				# available for the tribal holding (nomadic holding must be
+				# occupying the only holding slot, by current game constraints),
+				# so try to build it on the next game day.
+
+				if = {
+					limit = {
+						NOT = { any_province_holding = { holding_type = nomad } }
+					}
+					log = "emf_nomad.20: SERIOUS: conquered empty province '[This.GetName]' seems to have 0 holding slots, or else game constraints have changed"
+				}
+				
+				province_event = { id = emf_nomad.21 days = 1 }
+			}
+		}
+	}
+}
+
+
+# emf_nomad.21 [Newly-Usurped Empty Province]
+#
+# Actually build a tribal holding in ROOT, which was
+# previously held by event_target:emf_prior_holder and
+# is now held by FROM.
+province_event = {
+	id = emf_nomad.21
+	hide_window = yes
+	is_triggered_only = yes
+
+	trigger = {
+		has_empty_holding = yes
+	}
+	
+	immediate = {
+		log = "Built tribal holding in empty province: [Root.GetName] after conquest by [From.GetTitledName]"
+		build_holding = { type = tribal }
+
+		random_province_holding = {
+			limit = {
+				FROM = { is_nomadic = yes }
+				holding_type = tribal
+				is_capital = yes
+			}
+			revoke_capital_holding = yes
+		}
+		random_province_holding = {
+			limit = {
+				FROM = { is_nomadic = no }
+				holding_type = tribal
+				is_capital = no
+			}
+			make_capital_holding = yes
+		}
+
+		religion = event_target:emf_prior_holder
+		culture = event_target:emf_prior_holder
+	}
+}
+

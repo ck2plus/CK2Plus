@@ -1,0 +1,1718 @@
+namespace = DuelEngine
+# New events by Galle
+# Updated/extended by 'jordarkelf'
+### Pre-Battlefield-Duel Events
+# DuelEngine.500	Begin Battlefield Duel Chain
+# DuelEngine.501	Defender: Fight or Run?
+# DuelEngine.502	Attacker: Fight or Run? (Begin Duel)
+# DuelEngine.503	Defender Runs
+# DuelEngine.504	Attacker Runs
+# DuelEngine.505	Someone flees mid-duel
+### Post-Battlefield-Duel Events
+# DuelEngine.510	(End Duel) Victor Killed Opponent
+# DuelEngine.511	(End Duel) Victor Takes Opponent Hostage
+# DuelEngine.512	Opponent Imprisoned
+
+character_event = { # Battlefield Duel Start
+    id = DuelEngine.500
+    desc = "EVTDESC_DuelEngine_500"
+    border = "GFX_event_normal_frame_war"
+    picture = GFX_evt_battle
+
+    is_triggered_only = yes
+    #triggered by on_combat_pulse
+
+    weight_multiplier = { #on_action, multiplies with chance there
+        days = 1
+        modifier = {
+            factor = 1.5
+            trait = trained_warrior
+        }
+        modifier = {
+            factor = 1.75
+            trait = skilled_warrior
+        }
+        modifier = {
+            factor = 2
+            trait = master_warrior
+        }
+        modifier = {
+            factor = 3
+            trait = duelist
+        }
+        modifier = {
+            factor = 1.5
+            trait = brave
+        }
+        modifier = {
+            factor = 0.5
+            trait = craven
+        }
+		modifier = {
+			factor = 0
+			religion = jain
+		}
+        modifier = {
+            factor = 5
+            is_playable = yes #Want to give the player a little more fun
+        }
+		modifier = {
+			factor = 5
+			OR = {
+				#Martial religions and cultures(glory in battle)
+				culture = irish
+				culture = gallawa
+				culture = scottish
+				culture = pictish
+				culture_group = north_germanic
+				culture = maghreb_arabic
+				culture = bedouin_arabic
+				culture = alan
+				culture = pecheneg
+				culture = bolghar
+				culture = cuman
+				culture = khazar
+				culture = kurdish
+				religion = aztec
+				religion = celtic_pagan
+				religion = german_pagan
+				religion = norse_pagan
+				religion = slavic_pagan
+				religion = celtic_pagan_reformed
+				religion = german_pagan_reformed
+				religion = norse_pagan_reformed
+				religion = slavic_pagan_reformed
+			}
+		}
+    }
+	
+	trigger = {
+		#Does not play well with others
+		has_game_rule = {
+			name = multiplayer_compatibility
+			value = no
+		}
+		#Avoid crossing targets
+		NOT = { has_character_modifier = battlefield_fight }
+		location = {
+			#find a war participating character
+			any_province_character = {
+				war_with = ROOT
+				in_battle = yes
+				prisoner = no
+				is_alive = yes
+				NOT = { has_character_modifier = battlefield_fight }
+				OR = {
+					is_ruler = yes
+					ROOT = { is_ruler = yes }
+				}
+			}
+		}
+	}
+	
+	immediate = {
+		add_character_modifier = {
+			name = battlefield_fight
+			duration = 20
+		}
+		save_event_target_as = battlefield_duel_combatant_1
+		
+		#Target Lock
+		location = {
+			#find a war participating character
+			random_province_character = {
+				limit = {
+					war_with = ROOT
+					in_battle = yes
+					prisoner = no
+					is_alive = yes
+					NOT = { has_character_modifier = battlefield_fight }
+					OR = {
+						is_ruler = yes
+						ROOT = { is_ruler = yes }
+					}
+				}
+				show_portrait = yes
+				save_event_target_as = battlefield_duel_combatant_2
+				add_character_modifier = {
+					name = battlefield_fight
+					duration = 20
+				}
+				log = "DEBUG.DUEL_ENGINE selected [This.GetBestName] as battlefield_duel_combatant_2"
+				character_event = { id = DuelEngine.501 }
+			}
+		}
+	}
+	option  = {
+		name = "EVTOPTA_DuelEngine_500"
+	}
+}
+
+character_event = {
+	id = DuelEngine.501
+	desc = "EVTDESC_DuelEngine_501"
+	picture = GFX_evt_battle
+	border = "GFX_event_normal_frame_war"
+	is_triggered_only = yes
+
+	option = {
+		name = "EVTOPTA_DuelEngine_501"
+		hidden_tooltip = {
+			#Celtic characters flag for headhunting
+			#(do this before the battle in case battle wounds change relevant factors,
+			#also to influence decision-making in battle)
+			if = {
+				limit = {
+					OR = {
+						religion = celtic_pagan
+						religion = celtic_pagan_reformed
+					}
+				}
+				random_list = {
+					#chance of Celtic characters taking a head, depends on some duel engine factors
+					#more formidable the opponent, more likely to increase a headhunter level.
+					1 = { #no head: more likely outcome for overmatched opponents
+						# Skill-at-Arms Effects
+						modifier = {
+							factor = 3
+							trait = poor_warrior
+						}
+						modifier = {
+							factor = 6
+							trait = trained_warrior
+						}
+						modifier = {
+							factor = 9
+							trait = skilled_warrior
+						}
+						modifier = {
+							factor = 12
+							trait = master_warrior
+						}
+
+						# Martial Education Effects
+						modifier = {
+							factor = 1.5
+							trait = misguided_warrior
+						}
+						modifier = {
+							factor = 3
+							trait = tough_soldier
+						}
+						modifier = {
+							factor = 4.5
+							trait = skilled_tactician
+						}
+						modifier = {
+							factor = 6
+							trait = brilliant_strategist
+						}
+
+						# Various Martial Skills
+						modifier = {
+							factor = 3
+							trait = duelist
+						}
+
+						# Generic Combat Rating Difference
+						modifier = {
+							factor = 1.25
+							combat_rating_diff = { who = event_target:battlefield_duel_combatant_1 value = 1 }
+						}
+						modifier = {
+							factor = 1.5
+							combat_rating_diff = { who = event_target:battlefield_duel_combatant_1 value = 3 }
+						}
+						modifier = {
+							factor = 1.75
+							combat_rating_diff = { who = event_target:battlefield_duel_combatant_1 value = 5 }
+						}
+						modifier = {
+							factor = 2
+							combat_rating_diff = { who = event_target:battlefield_duel_combatant_1 value = 7 }
+						}
+						modifier = {
+							factor = 2.5
+							combat_rating_diff = { who = event_target:battlefield_duel_combatant_1 value = 10 }
+						}
+
+						# Physical Strength Effects
+						modifier = {
+							factor = 1.5
+							trait = robust
+						}
+						modifier = {
+							factor = 2
+							trait = strong
+						}
+						modifier = {
+							factor = 2
+							event_target:battlefield_duel_combatant_1 = { trait = weak }
+						}
+						modifier = {
+							factor = 1.5
+							event_target:battlefield_duel_combatant_1 = { trait = feeble }
+						}
+
+						# Cunning/Intelligence Effects
+						modifier = {
+							factor = 2
+							trait = genius
+						}
+						modifier = {
+							factor = 1.5
+							trait = quick
+						}
+						modifier = {
+							factor = 1.5
+							trait = shrewd
+						}
+						modifier = {
+							factor = 2
+							event_target:battlefield_duel_combatant_1 = { trait = imbecile }
+						}
+						modifier = {
+							factor = 1.5
+							event_target:battlefield_duel_combatant_1 = { trait = slow }
+						}
+						modifier = {
+							factor = 1.5
+							event_target:battlefield_duel_combatant_1 = { trait = dull }
+						}
+
+						# Personality Effects
+						modifier = {
+							factor = 2
+							trait = brave
+						}
+						modifier = {
+							factor = 2
+							trait = wroth
+						}
+						modifier = {
+							factor = 2
+							event_target:battlefield_duel_combatant_1 = { trait = craven }
+						}
+						modifier = {
+							factor = 1.5
+							trait = deceitful
+						}
+						modifier = {
+							factor = 1.5
+							event_target:battlefield_duel_combatant_1 = { trait = honest }
+						}
+
+						# Wound Effects
+						modifier = {
+							factor = 2
+							event_target:battlefield_duel_combatant_1 = { trait = wounded }
+						}
+						modifier = {
+							factor = 4
+							event_target:battlefield_duel_combatant_1 = {
+								OR = {
+									trait = severely_injured
+									is_maimed_trigger = yes
+								}
+							}
+						}
+
+						# Health Effects
+						modifier = {
+							factor = 1.5
+							event_target:battlefield_duel_combatant_1 = { is_ill = yes }
+						}
+						modifier = {
+							factor = 2
+							event_target:battlefield_duel_combatant_1 = { trait = pneumonic }
+						}
+						modifier = {
+							factor = 8
+							event_target:battlefield_duel_combatant_1 = { trait = leper }
+						}
+						modifier = {
+							factor = 4
+							event_target:battlefield_duel_combatant_1 = { trait = infirm }
+						}
+						modifier = {
+							factor = 6
+							event_target:battlefield_duel_combatant_1 = {
+								has_epidemic_disease_trigger = yes
+							}
+						}
+
+						# Body Shape Effects
+						modifier = {
+							factor = 1.5
+							trait = tall
+						}
+						modifier = {
+							factor = 1.5
+							trait = agile
+						}
+						modifier = {
+							factor = 1.5
+							trait = perceptive
+						}
+						modifier = {
+							factor = 1.5
+							event_target:battlefield_duel_combatant_1 = { trait = absentminded }
+						}
+						modifier = {
+							factor = 4
+							event_target:battlefield_duel_combatant_1 = { trait = hunchback }
+						}
+						modifier = {
+							factor = 4
+							event_target:battlefield_duel_combatant_1 = { trait = dwarf }
+						}
+						modifier = {
+							factor = 4
+							event_target:battlefield_duel_combatant_1 = { trait = clubfooted }
+						}
+						modifier = {
+							factor = 2
+							OR = {
+								trait = lefthanded
+								trait = ambidextrous
+							}
+							NOR = {
+								event_target:battlefield_duel_combatant_1 = { trait = lefthanded }
+								event_target:battlefield_duel_combatant_1 = { trait = ambidextrous }
+							}
+						}
+					}
+					1 = { #take a head
+						#slow down gain of higher headhunter levels
+						modifier = {
+							factor = 0.75
+							trait = head2
+						}
+						modifier = {
+							factor = 0.75
+							trait = head3
+						}
+						modifier = {
+							factor = 0.75
+							trait = head4
+						}
+						modifier = {
+							factor = 0.75
+							trait = head5
+						}
+						# Skill-at-Arms Effects
+						modifier = {
+							factor = 3
+							event_target:battlefield_duel_combatant_1 = { trait = poor_warrior }
+						}
+						modifier = {
+							factor = 6
+							event_target:battlefield_duel_combatant_1 = { trait = trained_warrior }
+						}
+						modifier = {
+							factor = 9
+							event_target:battlefield_duel_combatant_1 = { trait = skilled_warrior }
+						}
+						modifier = {
+							factor = 12
+							event_target:battlefield_duel_combatant_1 = { trait = master_warrior }
+						}
+
+						# Martial Education Effects
+						modifier = {
+							factor = 1.5
+							event_target:battlefield_duel_combatant_1 = { trait = misguided_warrior }
+						}
+						modifier = {
+							factor = 3
+							event_target:battlefield_duel_combatant_1 = { trait = tough_soldier }
+						}
+						modifier = {
+							factor = 4.5
+							event_target:battlefield_duel_combatant_1 = { trait = skilled_tactician }
+						}
+						modifier = {
+							factor = 6
+							event_target:battlefield_duel_combatant_1 = { trait = brilliant_strategist }
+						}
+
+						# Various Martial Traits
+						modifier = {
+							factor = 3
+							event_target:battlefield_duel_combatant_1 = { trait = duelist }
+						}
+
+						# Generic Combat Rating Difference
+						modifier = {
+							factor = 1.25
+							event_target:battlefield_duel_combatant_1 = { combat_rating_diff = { who = event_target:battlefield_duel_combatant_2 value = 1 } }
+						}
+						modifier = {
+							factor = 1.5
+							event_target:battlefield_duel_combatant_1 = { combat_rating_diff = { who = event_target:battlefield_duel_combatant_2 value = 3 } }
+						}
+						modifier = {
+							factor = 1.75
+							event_target:battlefield_duel_combatant_1 = { combat_rating_diff = { who = event_target:battlefield_duel_combatant_2 value = 5 } }
+						}
+						modifier = {
+							factor = 2
+							event_target:battlefield_duel_combatant_1 = { combat_rating_diff = { who = event_target:battlefield_duel_combatant_2 value = 7 } }
+						}
+						modifier = {
+							factor = 2.5
+							event_target:battlefield_duel_combatant_1 = { combat_rating_diff = { who = event_target:battlefield_duel_combatant_2 value = 10 } }
+						}
+
+						# Physical Strength Effects
+						modifier = {
+							factor = 1.5
+							event_target:battlefield_duel_combatant_1 = { trait = robust }
+						}
+						modifier = {
+							factor = 2
+							event_target:battlefield_duel_combatant_1 = { trait = strong }
+						}
+						modifier = {
+							factor = 2
+							trait = weak
+						}
+						modifier = {
+							factor = 1.5
+							trait = feeble
+						}
+
+						# Cunning/Intelligence Effects
+						modifier = {
+							factor = 2
+							event_target:battlefield_duel_combatant_1 = { trait = genius }
+						}
+						modifier = {
+							factor = 1.5
+							event_target:battlefield_duel_combatant_1 = { trait = quick }
+						}
+						modifier = {
+							factor = 1.5
+							event_target:battlefield_duel_combatant_1 = { trait = shrewd }
+						}
+						modifier = {
+							factor = 2
+							trait = imbecile
+						}
+						modifier = {
+							factor = 1.5
+							trait = slow
+						}
+						modifier = {
+							factor = 1.5
+							trait = dull
+						}
+
+						# Personality Effects
+						modifier = {
+							factor = 2
+							event_target:battlefield_duel_combatant_1 = { trait = brave }
+						}
+						modifier = {
+							factor = 2
+							event_target:battlefield_duel_combatant_1 = { trait = wroth }
+						}
+						modifier = {
+							factor = 2
+							trait = craven
+						}
+						modifier = {
+							factor = 1.5
+							event_target:battlefield_duel_combatant_1 = { trait = deceitful }
+						}
+						modifier = {
+							factor = 1.5
+							trait = honest
+						}
+						modifier = {
+							factor = 10
+							trait = zealous
+							event_target:battlefield_duel_combatant_1 = { NOT = { religion = event_target:battlefield_duel_combatant_2 } } 
+						}
+
+						# Wound Effects
+						modifier = {
+							factor = 2
+							trait = wounded
+						}
+						modifier = {
+							factor = 4
+							OR = {
+								trait = severely_injured
+								is_maimed_trigger = yes
+							}
+						}
+						modifier = {
+							factor = 999999
+							trait = incapable
+						}
+
+						# Health Effects
+						modifier = {
+							factor = 1.5
+							is_ill = yes
+						}
+						modifier = {
+							factor = 2
+							trait = pneumonic
+						}
+						modifier = {
+							factor = 8
+							trait = leper
+						}
+						modifier = {
+							factor = 4
+							trait = infirm
+						}
+						modifier = {
+							factor = 6
+							has_epidemic_disease_trigger = yes
+						}
+						modifier = {
+							factor = 10
+							trait = blinded
+						}
+
+						# Body Shape Effects
+						modifier = {
+							factor = 1.5
+							event_target:battlefield_duel_combatant_1 = { trait = tall }
+						}
+						modifier = {
+							factor = 1.5
+							event_target:battlefield_duel_combatant_1 = { trait = agile }
+						}
+						modifier = {
+							factor = 1.5
+							event_target:battlefield_duel_combatant_1 = { trait = perceptive }
+						}
+						modifier = {
+							factor = 1.5
+							trait = absentminded
+						}
+						modifier = {
+							factor = 4
+							trait = hunchback
+						}
+						modifier = {
+							factor = 4
+							trait = dwarf
+						}
+						modifier = {
+							factor = 4
+							trait = clubfooted
+						}
+						modifier = {
+							factor = 2
+							OR = {
+								event_target:battlefield_duel_combatant_1 = { trait = lefthanded }
+								event_target:battlefield_duel_combatant_1 = { trait = ambidextrous }
+							}
+							NOR = {
+								trait = lefthanded
+								trait = ambidextrous
+							}
+						}
+						set_character_flag = battle_celtic_headhunter
+					}
+				}
+			}
+		}
+		log = "DEBUG.DUEL_ENGINE [battlefield_duel_combatant_2.GetBestName] decided to fight [battlefield_duel_combatant_1.GetBestName]"
+		event_target:battlefield_duel_combatant_1 = { character_event = { id = DuelEngine.502 tooltip = "EVTTOOLTIP_DuelEngine_502" } }
+		ai_chance = {
+			factor = 100
+			modifier = {
+				factor = 3
+				trait = poor_warrior
+			}
+			modifier = {
+				factor = 5
+				trait = trained_warrior
+			}
+			modifier = {
+				factor = 7
+				trait = skilled_warrior
+			}
+			modifier = {
+				factor = 9
+				trait = master_warrior
+			}
+			modifier = {
+				factor = 3
+				trait = duelist
+			}
+			modifier = {
+				factor = 10
+				trait = brave
+			}
+			modifier = {
+				factor = 5
+				trait = proud
+			}
+			modifier = {
+				factor = 1.5
+				trait = wroth
+			}
+			modifier = {
+				factor = 1.5
+				trait = strong
+			}
+			modifier = {
+				factor = 1.25
+				trait = robust
+			}
+		}
+	}
+
+	option = {
+		name = "EVTOPTB_DuelEngine_501"
+		log = "DEBUG.DUEL_ENGINE [battlefield_duel_combatant_2.GetBestName] decided to run from [battlefield_duel_combatant_1.GetBestName]"
+		hidden_tooltip = { event_target:battlefield_duel_combatant_1 = { character_event = { id = DuelEngine.503 } } }
+		if = {
+			limit = {
+				event_target:battlefield_duel_combatant_1 = {
+					NOT = { trait = poor_warrior }
+					NOT = { trait = trained_warrior }
+					NOT = { trait = skilled_warrior }
+					NOT = { trait = master_warrior }
+				}
+				NOT = { trait = craven }
+			}
+			random = {
+				chance = 25
+				add_trait = craven
+			}
+		}
+		if = {
+			limit = {
+				event_target:battlefield_duel_combatant_1 = {
+					trait = poor_warrior
+				}
+				NOT = { trait = craven }
+			}
+			random = {
+				chance = 20
+				add_trait = craven
+			}
+		}
+		if = {
+			limit = {
+				event_target:battlefield_duel_combatant_1 = {
+					trait = trained_warrior
+				}
+				NOT = { trait = craven }
+			}
+			random = {
+				chance = 15
+				add_trait = craven
+			}
+		}
+		if = {
+			limit = {
+				event_target:battlefield_duel_combatant_1 = {
+					trait = skilled_warrior
+				}
+				NOT = { trait = craven }
+			}
+			random = {
+				chance = 10
+				add_trait = craven
+			}
+		}
+		if = {
+			limit = {
+				event_target:battlefield_duel_combatant_1 = {
+					trait = master_warrior
+				}
+				NOT = { trait = craven }
+			}
+			random = {
+				chance = 5
+				add_trait = craven
+			}
+		}
+		morale = -0.1
+		ai_chance = {
+			factor = 100
+			modifier = {
+				factor = 2
+				event_target:battlefield_duel_combatant_1 = { trait = poor_warrior }
+			}
+			modifier = {
+				factor = 3
+				event_target:battlefield_duel_combatant_1 = { trait = trained_warrior }
+			}
+			modifier = {
+				factor = 4
+				event_target:battlefield_duel_combatant_1 = { trait = skilled_warrior }
+			}
+			modifier = {
+				factor = 5
+				event_target:battlefield_duel_combatant_1 = { trait = master_warrior }
+			}
+			modifier = {
+				factor = 3
+				event_target:battlefield_duel_combatant_1 = { trait = duelist }
+			}
+			modifier = {
+				factor = 2
+				event_target:battlefield_duel_combatant_1 = { trait = strong }
+			}
+			modifier = {
+				factor = 1.5
+				event_target:battlefield_duel_combatant_1 = { trait = robust }
+			}
+			modifier = {
+				factor = 10
+				trait = craven
+			}
+			modifier = {
+				factor = 2
+				trait = paranoid
+			}
+			modifier = {
+				factor = 2
+				trait = weak
+			}
+			modifier = {
+				factor = 1.5
+				trait = feeble
+			}
+			modifier = {
+				factor = 2
+				trait = dwarf
+			}
+			modifier = {
+				factor = 2
+				trait = hunchback
+			}
+			modifier = {
+				factor = 2
+				trait = leper
+			}
+			modifier = {
+				factor = 2
+				trait = wounded
+				NOT = { trait = lunatic }
+				NOT = { trait = brave }
+				NOT = { trait = proud }
+				NOT = { trait = wroth }
+			}
+			modifier = {
+				factor = 4
+				is_maimed_trigger = yes
+				NOT = { trait = lunatic }
+				NOT = { trait = brave }
+				NOT = { trait = proud }
+				NOT = { trait = wroth }
+			}
+			modifier = {
+				factor = 10
+				trait = blinded
+				NOT = { trait = lunatic }
+				NOT = { trait = brave }
+				NOT = { trait = proud }
+				NOT = { trait = wroth }
+			}
+		}
+	}
+}
+
+character_event = {
+	id = DuelEngine.502
+	desc = "EVTDESC_DuelEngine_502"
+	picture = GFX_evt_battle
+	border = "GFX_event_normal_frame_war"
+
+	is_triggered_only = yes
+	
+	immediate = {
+		log = "DEBUG:DUEL_ENGINE battlefield_duel_combatant_1 [This.GetBestName]"
+		log = "DEBUG:DUEL_ENGINE battlefield_duel_combatant_2 [battlefield_duel_combatant_2.GetBestName]"
+	}
+
+	option = {
+		name = "EVTOPTA_DuelEngine_502"
+
+		# Set context flags for duel
+		set_character_flag = flag_battlefield_duel
+		event_target:battlefield_duel_combatant_2 = { set_character_flag = flag_battlefield_duel }
+
+		hidden_tooltip = {
+			#Celtic characters flag for headhunting
+			#(do this before the battle in case battle wounds change relevant factors,
+			#also to influence decision-making in battle)
+			if = {
+				limit = {
+					OR = {
+						religion = celtic_pagan
+						religion = celtic_pagan_reformed
+					}
+				}
+				random_list = {
+					#chance of Celtic characters taking a head, depends on some duel engine factors
+					#more formidable the opponent, more likely to increase a headhunter level.
+					1 = { #no head: more likely outcome for overmatched opponents
+						# Skill-at-Arms Effects
+						modifier = {
+							factor = 3
+							trait = poor_warrior
+						}
+						modifier = {
+							factor = 6
+							trait = trained_warrior
+						}
+						modifier = {
+							factor = 9
+							trait = skilled_warrior
+						}
+						modifier = {
+							factor = 12
+							trait = master_warrior
+						}
+
+						# Martial Education Effects
+						modifier = {
+							factor = 1.5
+							trait = misguided_warrior
+						}
+						modifier = {
+							factor = 3
+							trait = tough_soldier
+						}
+						modifier = {
+							factor = 4.5
+							trait = skilled_tactician
+						}
+						modifier = {
+							factor = 6
+							trait = brilliant_strategist
+						}
+
+						# Various Martial Skills
+						modifier = {
+							factor = 3
+							trait = duelist
+						}
+
+						# Generic Combat Rating Difference
+						modifier = {
+							factor = 1.25
+							combat_rating_diff = { who = event_target:battlefield_duel_combatant_2 value = 1 }
+						}
+						modifier = {
+							factor = 1.5
+							combat_rating_diff = { who = event_target:battlefield_duel_combatant_2 value = 3 }
+						}
+						modifier = {
+							factor = 1.75
+							combat_rating_diff = { who = event_target:battlefield_duel_combatant_2 value = 5 }
+						}
+						modifier = {
+							factor = 2
+							combat_rating_diff = { who = event_target:battlefield_duel_combatant_2 value = 7 }
+						}
+						modifier = {
+							factor = 2.5
+							combat_rating_diff = { who = event_target:battlefield_duel_combatant_2 value = 10 }
+						}
+
+						# Physical Strength Effects
+						modifier = {
+							factor = 1.5
+							trait = robust
+						}
+						modifier = {
+							factor = 2
+							trait = strong
+						}
+						modifier = {
+							factor = 2
+							event_target:battlefield_duel_combatant_2 = { trait = weak }
+						}
+						modifier = {
+							factor = 1.5
+							event_target:battlefield_duel_combatant_2 = { trait = feeble }
+						}
+
+						# Cunning/Intelligence Effects
+						modifier = {
+							factor = 2
+							trait = genius
+						}
+						modifier = {
+							factor = 1.5
+							trait = quick
+						}
+						modifier = {
+							factor = 1.5
+							trait = shrewd
+						}
+						modifier = {
+							factor = 2
+							event_target:battlefield_duel_combatant_2 = { trait = imbecile }
+						}
+						modifier = {
+							factor = 1.5
+							event_target:battlefield_duel_combatant_2 = { trait = slow }
+						}
+						modifier = {
+							factor = 1.5
+							event_target:battlefield_duel_combatant_2 = { trait = dull }
+						}
+
+						# Personality Effects
+						modifier = {
+							factor = 2
+							trait = brave
+						}
+						modifier = {
+							factor = 2
+							trait = wroth
+						}
+						modifier = {
+							factor = 2
+							event_target:battlefield_duel_combatant_2 = { trait = craven }
+						}
+						modifier = {
+							factor = 1.5
+							trait = deceitful
+						}
+						modifier = {
+							factor = 1.5
+							event_target:battlefield_duel_combatant_2 = { trait = honest }
+						}
+
+						# Wound Effects
+						modifier = {
+							factor = 2
+							event_target:battlefield_duel_combatant_2 = { trait = wounded }
+						}
+						modifier = {
+							factor = 4
+							event_target:battlefield_duel_combatant_2 = {
+								OR = {
+									trait = severely_injured
+									is_maimed_trigger = yes
+								}
+							}
+						}
+
+						# Health Effects
+						modifier = {
+							factor = 1.5
+							event_target:battlefield_duel_combatant_2 = { is_ill = yes }
+						}
+						modifier = {
+							factor = 2
+							event_target:battlefield_duel_combatant_2 = { trait = pneumonic }
+						}
+						modifier = {
+							factor = 8
+							event_target:battlefield_duel_combatant_2 = { trait = leper }
+						}
+						modifier = {
+							factor = 4
+							event_target:battlefield_duel_combatant_2 = { trait = infirm }
+						}
+						modifier = {
+							factor = 6
+							event_target:battlefield_duel_combatant_2 = {
+								has_epidemic_disease_trigger = yes
+							}
+						}
+
+						# Body Shape Effects
+						modifier = {
+							factor = 1.5
+							trait = tall
+						}
+						modifier = {
+							factor = 1.5
+							trait = agile
+						}
+						modifier = {
+							factor = 1.5
+							trait = perceptive
+						}
+						modifier = {
+							factor = 1.5
+							event_target:battlefield_duel_combatant_2 = { trait = absentminded }
+						}
+						modifier = {
+							factor = 4
+							event_target:battlefield_duel_combatant_2 = { trait = hunchback }
+						}
+						modifier = {
+							factor = 4
+							event_target:battlefield_duel_combatant_2 = { trait = dwarf }
+						}
+						modifier = {
+							factor = 4
+							event_target:battlefield_duel_combatant_2 = { trait = clubfooted }
+						}
+						modifier = {
+							factor = 2
+							OR = {
+								trait = lefthanded
+								trait = ambidextrous
+							}
+							NOR = {
+								event_target:battlefield_duel_combatant_2 = { trait = lefthanded }
+								event_target:battlefield_duel_combatant_2 = { trait = ambidextrous }
+							}
+						}
+					}
+					1 = { #take a head
+						#slow down gain of higher headhunter levels
+						modifier = {
+							factor = 0.75
+							trait = head2
+						}
+						modifier = {
+							factor = 0.75
+							trait = head3
+						}
+						modifier = {
+							factor = 0.75
+							trait = head4
+						}
+						modifier = {
+							factor = 0.75
+							trait = head5
+						}
+						# Skill-at-Arms Effects
+						modifier = {
+							factor = 3
+							event_target:battlefield_duel_combatant_2 = { trait = poor_warrior }
+						}
+						modifier = {
+							factor = 6
+							event_target:battlefield_duel_combatant_2 = { trait = trained_warrior }
+						}
+						modifier = {
+							factor = 9
+							event_target:battlefield_duel_combatant_2 = { trait = skilled_warrior }
+						}
+						modifier = {
+							factor = 12
+							event_target:battlefield_duel_combatant_2 = { trait = master_warrior }
+						}
+
+						# Martial Education Effects
+						modifier = {
+							factor = 1.5
+							event_target:battlefield_duel_combatant_2 = { trait = misguided_warrior }
+						}
+						modifier = {
+							factor = 3
+							event_target:battlefield_duel_combatant_2 = { trait = tough_soldier }
+						}
+						modifier = {
+							factor = 4.5
+							event_target:battlefield_duel_combatant_2 = { trait = skilled_tactician }
+						}
+						modifier = {
+							factor = 6
+							event_target:battlefield_duel_combatant_2 = { trait = brilliant_strategist }
+						}
+
+						# Various Martial Traits
+						modifier = {
+							factor = 3
+							event_target:battlefield_duel_combatant_2 = { trait = duelist }
+						}
+
+						# Generic Combat Rating Difference
+						modifier = {
+							factor = 1.25
+							event_target:battlefield_duel_combatant_2 = { combat_rating_diff = { who = event_target:battlefield_duel_combatant_1 value = 1 } }
+						}
+						modifier = {
+							factor = 1.5
+							event_target:battlefield_duel_combatant_2 = { combat_rating_diff = { who = event_target:battlefield_duel_combatant_1 value = 3 } }
+						}
+						modifier = {
+							factor = 1.75
+							event_target:battlefield_duel_combatant_2 = { combat_rating_diff = { who = event_target:battlefield_duel_combatant_1 value = 5 } }
+						}
+						modifier = {
+							factor = 2
+							event_target:battlefield_duel_combatant_2 = { combat_rating_diff = { who = event_target:battlefield_duel_combatant_1 value = 7 } }
+						}
+						modifier = {
+							factor = 2.5
+							event_target:battlefield_duel_combatant_2 = { combat_rating_diff = { who = event_target:battlefield_duel_combatant_1 value = 10 } }
+						}
+
+						# Physical Strength Effects
+						modifier = {
+							factor = 1.5
+							event_target:battlefield_duel_combatant_2 = { trait = robust }
+						}
+						modifier = {
+							factor = 2
+							event_target:battlefield_duel_combatant_2 = { trait = strong }
+						}
+						modifier = {
+							factor = 2
+							trait = weak
+						}
+						modifier = {
+							factor = 1.5
+							trait = feeble
+						}
+
+						# Cunning/Intelligence Effects
+						modifier = {
+							factor = 2
+							event_target:battlefield_duel_combatant_2 = { trait = genius }
+						}
+						modifier = {
+							factor = 1.5
+							event_target:battlefield_duel_combatant_2 = { trait = quick }
+						}
+						modifier = {
+							factor = 1.5
+							event_target:battlefield_duel_combatant_2 = { trait = shrewd }
+						}
+						modifier = {
+							factor = 2
+							trait = imbecile
+						}
+						modifier = {
+							factor = 1.5
+							trait = slow
+						}
+						modifier = {
+							factor = 1.5
+							trait = dull
+						}
+
+						# Personality Effects
+						modifier = {
+							factor = 2
+							event_target:battlefield_duel_combatant_2 = { trait = brave }
+						}
+						modifier = {
+							factor = 2
+							event_target:battlefield_duel_combatant_2 = { trait = wroth }
+						}
+						modifier = {
+							factor = 2
+							trait = craven
+						}
+						modifier = {
+							factor = 1.5
+							event_target:battlefield_duel_combatant_2 = { trait = deceitful }
+						}
+						modifier = {
+							factor = 1.5
+							trait = honest
+						}
+						modifier = {
+							factor = 10
+							trait = zealous
+							event_target:battlefield_duel_combatant_2 = { NOT = { religion = event_target:battlefield_duel_combatant_1 } } 
+						}
+
+						# Wound Effects
+						modifier = {
+							factor = 2
+							trait = wounded
+						}
+						modifier = {
+							factor = 4
+							OR = {
+								trait = severely_injured
+								is_maimed_trigger = yes
+							}
+						}
+						modifier = {
+							factor = 999999
+							trait = incapable
+						}
+
+						# Health Effects
+						modifier = {
+							factor = 1.5
+							is_ill = yes
+						}
+						modifier = {
+							factor = 2
+							trait = pneumonic
+						}
+						modifier = {
+							factor = 8
+							trait = leper
+						}
+						modifier = {
+							factor = 4
+							trait = infirm
+						}
+						modifier = {
+							factor = 6
+							has_epidemic_disease_trigger = yes
+						}
+						modifier = {
+							factor = 10
+							trait = blinded
+						}
+
+						# Body Shape Effects
+						modifier = {
+							factor = 1.5
+							event_target:battlefield_duel_combatant_2 = { trait = tall }
+						}
+						modifier = {
+							factor = 1.5
+							event_target:battlefield_duel_combatant_2 = { trait = agile }
+						}
+						modifier = {
+							factor = 1.5
+							event_target:battlefield_duel_combatant_2 = { trait = perceptive }
+						}
+						modifier = {
+							factor = 1.5
+							trait = absentminded
+						}
+						modifier = {
+							factor = 4
+							trait = hunchback
+						}
+						modifier = {
+							factor = 4
+							trait = dwarf
+						}
+						modifier = {
+							factor = 4
+							trait = clubfooted
+						}
+						modifier = {
+							factor = 2
+							OR = {
+								event_target:battlefield_duel_combatant_2 = { trait = lefthanded }
+								event_target:battlefield_duel_combatant_2 = { trait = ambidextrous }
+							}
+							NOR = {
+								trait = lefthanded
+								trait = ambidextrous
+							}
+						}
+						set_character_flag = battle_celtic_headhunter
+					}
+				}
+			}
+		}
+		# Begin duel
+		hidden_tooltip = { e_rebels = { holder_scope = { character_event = { id = DuelEngine.0 } } } }
+		ai_chance = {
+			factor = 100
+			modifier = {
+				factor = 3
+				trait = poor_warrior
+			}
+			modifier = {
+				factor = 5
+				trait = trained_warrior
+			}
+			modifier = {
+				factor = 7
+				trait = skilled_warrior
+			}
+			modifier = {
+				factor = 9
+				trait = master_warrior
+			}
+			modifier = {
+				factor = 3
+				trait = duelist
+			}
+			modifier = {
+				factor = 10
+				trait = brave
+			}
+			modifier = {
+				factor = 5
+				trait = proud
+			}
+			modifier = {
+				factor = 1.5
+				trait = wroth
+			}
+			modifier = {
+				factor = 1.5
+				trait = strong
+			}
+			modifier = {
+				factor = 1.25
+				trait = robust
+			}
+		}
+	}
+
+	option = {
+		name = "EVTOPTB_DuelEngine_502"
+		hidden_tooltip = {
+			event_target:battlefield_duel_combatant_2 = {
+				clr_character_flag = battle_celtic_headhunter
+				character_event = { id = DuelEngine.504 }
+			}
+		}
+		if = {
+			limit = {
+				event_target:battlefield_duel_combatant_2 = {
+					NOT = { trait = poor_warrior }
+					NOT = { trait = trained_warrior }
+					NOT = { trait = skilled_warrior }
+					NOT = { trait = master_warrior }
+				}
+				NOT = { trait = craven }
+			}
+			random = {
+				chance = 25
+				add_trait = craven
+			}
+		}
+		if = {
+			limit = {
+				event_target:battlefield_duel_combatant_2 = {
+					trait = poor_warrior
+				}
+				NOT = { trait = craven }
+			}
+			random = {
+				chance = 20
+				add_trait = craven
+			}
+		}
+		if = {
+			limit = {
+				event_target:battlefield_duel_combatant_2 = {
+					trait = trained_warrior
+				}
+				NOT = { trait = craven }
+			}
+			random = {
+				chance = 15
+				add_trait = craven
+			}
+		}
+		if = {
+			limit = {
+				event_target:battlefield_duel_combatant_2 = {
+					trait = skilled_warrior
+				}
+				NOT = { trait = craven }
+			}
+			random = {
+				chance = 10
+				add_trait = craven
+			}
+		}
+		if = {
+			limit = {
+				event_target:battlefield_duel_combatant_2 = {
+					trait = master_warrior
+				}
+				NOT = { trait = craven }
+			}
+			random = {
+				chance = 5
+				add_trait = craven
+			}
+		}
+		morale = -0.1
+		ai_chance = {
+			factor = 100
+			modifier = {
+				factor = 2
+				event_target:battlefield_duel_combatant_2 = { trait = poor_warrior }
+			}
+			modifier = {
+				factor = 3
+				event_target:battlefield_duel_combatant_2 = { trait = trained_warrior }
+			}
+			modifier = {
+				factor = 4
+				event_target:battlefield_duel_combatant_2 = { trait = skilled_warrior }
+			}
+			modifier = {
+				factor = 5
+				event_target:battlefield_duel_combatant_2 = { trait = master_warrior }
+			}
+			modifier = {
+				factor = 3
+				event_target:battlefield_duel_combatant_2 = { trait = duelist }
+			}
+			modifier = {
+				factor = 2
+				event_target:battlefield_duel_combatant_2 = { trait = strong }
+			}
+			modifier = {
+				factor = 1.5
+				event_target:battlefield_duel_combatant_2 = { trait = robust }
+			}
+			modifier = {
+				factor = 10
+				trait = craven
+			}
+			modifier = {
+				factor = 2
+				trait = paranoid
+			}
+			modifier = {
+				factor = 2
+				trait = weak
+			}
+			modifier = {
+				factor = 1.5
+				trait = feeble
+			}
+			modifier = {
+				factor = 2
+				trait = dwarf
+			}
+			modifier = {
+				factor = 2
+				trait = hunchback
+			}
+			modifier = {
+				factor = 2
+				trait = leper
+			}
+			modifier = {
+				factor = 2
+				trait = wounded
+				NOT = { trait = lunatic }
+				NOT = { trait = brave }
+				NOT = { trait = proud }
+				NOT = { trait = wroth }
+			}
+			modifier = {
+				factor = 4
+				is_maimed_trigger = yes
+				NOT = { trait = lunatic }
+				NOT = { trait = brave }
+				NOT = { trait = proud }
+				NOT = { trait = wroth }
+			}
+			modifier = {
+				factor = 10
+				trait = blinded
+				NOT = { trait = lunatic }
+				NOT = { trait = brave }
+				NOT = { trait = proud }
+				NOT = { trait = wroth }
+			}
+		}
+	}
+}
+
+# DuelEngine.503	Defender Runs
+character_event = {
+	id = DuelEngine.503
+	desc = "EVTDESC_DuelEngine_503"
+	picture = GFX_evt_battle
+	border = "GFX_event_normal_frame_war"
+	is_triggered_only = yes
+
+	option = {
+		name = "EVTOPTA_DuelEngine_503"
+		remove_character_modifier = battlefield_fight
+		morale = 0.1
+	}
+}
+
+# DuelEngine.504	Attacker Runs
+character_event = {
+	id = DuelEngine.504
+	desc = "EVTDESC_DuelEngine_504"
+	picture = GFX_evt_battle
+	border = "GFX_event_normal_frame_war"
+	is_triggered_only = yes
+
+	option = {
+		name = "EVTOPTA_DuelEngine_504"
+		remove_character_modifier = battlefield_fight
+		morale = 0.1
+	}
+}
+
+character_event = { #run away mid-fight
+	id = DuelEngine.505
+	desc = "EVTDESC_DuelEngine_505"
+	picture = GFX_evt_battle
+	border = "GFX_event_normal_frame_war"
+	is_triggered_only = yes
+
+	desc = {
+		trigger = { trait = incapable }
+		text = "EVTDESCB_DuelEngine_505"
+	}
+
+	option = {
+		name = {
+			text = "EVTOPTA_DuelEngine_505"
+			trigger = {
+				NOT = { trait = incapable }
+			}
+		}
+		name = {
+			text = "EVTOPTB_DuelEngine_505"
+			trigger = {
+				trait = incapable
+			}
+		}
+
+		if = {
+			limit = { NOT = { trait = incapable } }
+			if = {
+				limit = {
+					FROM = {
+						NOT = { trait = poor_warrior }
+						NOT = { trait = trained_warrior }
+						NOT = { trait = skilled_warrior }
+						NOT = { trait = master_warrior }
+					}
+					NOT = { trait = craven }
+				}
+				random = {
+					chance = 25
+					add_trait = craven
+				}
+			}
+			if = {
+				limit = {
+					FROM = {
+						trait = poor_warrior
+					}
+					NOT = { trait = craven }
+				}
+				random = {
+					chance = 20
+					add_trait = craven
+				}
+			}
+			if = {
+				limit = {
+					FROM = {
+						trait = trained_warrior
+					}
+					NOT = { trait = craven }
+				}
+				random = {
+					chance = 15
+					add_trait = craven
+				}
+			}
+			if = {
+				limit = {
+					FROM = {
+						trait = skilled_warrior
+					}
+					NOT = { trait = craven }
+				}
+				random = {
+					chance = 10
+					add_trait = craven
+				}
+			}
+			if = {
+				limit = {
+					FROM = {
+						trait = master_warrior
+					}
+					NOT = { trait = craven }
+				}
+				random = {
+					chance = 5
+					add_trait = craven
+				}
+			}
+		}
+		if = {
+			limit = { NOT = { at_location = FROM } }
+			FROM = { morale = 0.2 }
+			break = yes
+		}
+		morale = -0.2
+	}
+}
+
+# Battlefield duel end
+character_event = {
+	id = DuelEngine.510
+	desc = "EVTDESC_DuelEngine_510"
+	picture = GFX_evt_battle
+	border = "GFX_event_normal_frame_war"
+	is_triggered_only = yes
+
+	option = {
+		name = "EVTOPTA_DuelEngine_510"
+		if = {
+			limit = { FROMFROM = { at_location = ROOT } }
+			FROMFROM = { morale = -0.2 }
+		}
+		if = {
+			limit = { FROMFROM = { NOT = { at_location = ROOT } } }
+			morale = 0.2
+		}
+	}
+}
+
+character_event = {
+	id = DuelEngine.511
+	desc = "EVTDESC_DuelEngine_511"
+	picture = GFX_evt_battle
+	border = "GFX_event_normal_frame_war"
+	is_triggered_only = yes
+
+	desc = {
+		text = "EVTDESCB_DuelEngine_511"
+		trigger = {
+			FROMFROM = { trait = incapable }
+		}
+	}
+
+	option = {
+		name = "EVTOPTA_DuelEngine_511"
+
+		name = {
+			text = "EVTOPTB_DuelEngine_511"
+			trigger = {
+				FROMFROM = { trait = incapable }
+			}
+		}
+		hidden_tooltip = {
+			FROMFROM = { character_event = { id = DuelEngine.512 } }
+		}
+	}
+}
+
+character_event = {
+	id = DuelEngine.512
+	desc = "EVTDESC_DuelEngine_512"
+	picture = GFX_evt_battle
+	border = "GFX_event_normal_frame_war"
+	is_triggered_only = yes
+
+	option = {
+		name = "EVTOPTA_DuelEngine_512"
+		imprison = FROM
+		set_character_flag = captured_in_battle
+		hidden_tooltip = {
+			FROM = {
+				character_event = {
+					id = 50020 # "imprisoned_events.txt"
+				}
+			}
+		}
+	}
+}

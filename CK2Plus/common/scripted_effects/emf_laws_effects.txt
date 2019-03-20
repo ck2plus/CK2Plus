@@ -1,0 +1,172 @@
+
+emf_laws_change_succ_prestige_cost_effect = {
+	if = {
+		limit = { tier = BARON }
+		holder_scope = { prestige = -125 }
+	}
+	if = {
+		limit = { tier = COUNT }
+		holder_scope = { prestige = -250 }
+	}
+	if = {
+		limit = { tier = DUKE }
+		holder_scope = { prestige = -500 }
+	}
+	if = {
+		limit = { tier = KING }
+		holder_scope = { prestige = -750 }
+	}
+	if = {
+		limit = { tier = EMPEROR }
+		holder_scope = { prestige = -1000 }
+	}
+}
+
+# Common to all succ_adopt* law effects; first thing we do, user-facing
+emf_laws_change_succ_basic_effect = {
+	emf_laws_change_succ_prestige_cost_effect = yes
+	holder_scope = {
+		pf_tradition_minus2_effect = yes
+	}
+	pf_save_old_succ_law_effect = yes
+}
+
+# Convenience effect used in all succ_adopt_* laws to save the current heir and pretenders before actually changing law
+emf_laws_change_succ_save_contenders_effect = {
+	holder_scope = {
+		event_target:emf_succ_title = {
+			current_heir = {
+				reverse_opinion = { who = PREVPREV modifier = opinion_succ_former_heir }
+				save_event_target_as = emf_former_heir
+			}
+		}
+		any_character = {
+			limit = {
+				NOT = { character = event_target:emf_former_heir }
+				any_pretender_title = { title = event_target:emf_succ_title }
+			}
+			reverse_opinion = { who = PREV modifier = opinion_succ_former_pretender }
+		}
+	}
+}
+
+# Convenience effect used in all succ_adopt_* laws to perform cleanup of all state at the end of the law effect
+emf_laws_change_succ_cleanup_effect = {
+	# Cleanup former heir & former pretender temporary TOMs...
+	holder_scope = {
+		remove_opinion = { who = event_target:emf_former_heir modifier = opinion_succ_former_heir }
+		any_opinion_modifier_target = {
+			limit = { reverse_has_opinion_modifier = { who = PREV modifier = opinion_succ_former_pretender } }
+			reverse_remove_opinion = { who = PREV modifier = opinion_succ_former_pretender }
+		}
+	}
+
+	# Cleanup reaction flags for this law change...
+	#
+	# Could optimize this in the future by changing these scripted triggers/effects for reactions to use temporary TOMs
+	# and thus any_opinion_modifier_target instead of literally sweeping all characters in the game. If we need to use
+	# delayed events for succession law reactions (for some reason), then we'll need to convert these to temporary TOMSs
+	# anyway.
+	any_character = {
+		limit = { emf_laws_change_succ_reaction_trigger = yes }
+		clr_character_flag = emf_good_reaction
+		clr_character_flag = emf_mild_reaction
+		clr_character_flag = emf_bad_reaction
+		clr_character_flag = emf_bad2_reaction
+	}
+}
+
+# Convenience effects for adopting a new succession law change reaction stance
+
+emf_laws_change_succ_terrible_reaction_effect = {
+	if = {
+		limit = { has_character_flag = emf_bad2_reaction }
+		tooltip = { 
+			opinion = {
+				who = event_target:emf_succ_changer
+				modifier = opinion_bad_succ_law_change
+				multiplier = 2
+			}
+		}
+	}
+	if = {
+		limit = { NOT = { has_character_flag = emf_bad2_reaction } }
+		emf_laws_change_succ_reset_reaction_effect = yes
+		set_character_flag = emf_bad2_reaction
+		opinion = { who = event_target:emf_succ_changer modifier = opinion_bad_succ_law_change multiplier = 2 }
+	}
+}
+
+emf_laws_change_succ_bad_reaction_effect = {
+	if = {
+		limit = { has_character_flag = emf_bad_reaction }
+		tooltip = { 
+			opinion = { who = event_target:emf_succ_changer modifier = opinion_bad_succ_law_change }
+		}
+	}
+	if = {
+		limit = { NOT = { has_character_flag = emf_bad_reaction } }
+		emf_laws_change_succ_reset_reaction_effect = yes
+		set_character_flag = emf_bad_reaction
+		opinion = { who = event_target:emf_succ_changer modifier = opinion_bad_succ_law_change }
+	}
+}
+
+emf_laws_change_succ_mild_reaction_effect = {
+	if = {
+		limit = { has_character_flag = emf_mild_reaction }
+		tooltip = { 
+			opinion = { who = event_target:emf_succ_changer modifier = opinion_succ_law_change }
+		}
+	}
+	if = {
+		limit = { NOT = { has_character_flag = emf_mild_reaction } }
+		emf_laws_change_succ_reset_reaction_effect = yes
+		set_character_flag = emf_mild_reaction
+		opinion = { who = event_target:emf_succ_changer modifier = opinion_succ_law_change }
+	}
+}
+
+emf_laws_change_succ_good_reaction_effect = {
+	if = {
+		limit = { has_character_flag = emf_good_reaction }
+		tooltip = { 
+			opinion = { who = event_target:emf_succ_changer modifier = opinion_good_succ_law_change }
+		}
+	}
+	if = {
+		limit = { NOT = { has_character_flag = emf_good_reaction } }
+		emf_laws_change_succ_reset_reaction_effect = yes
+		set_character_flag = emf_good_reaction
+		opinion = { who = event_target:emf_succ_changer modifier = opinion_good_succ_law_change }
+	}
+}
+
+### FILE-INTERNAL ###
+
+# Remove any succ_change opinions that we've added as part of this particular law change reaction (used in this file only)
+emf_laws_change_succ_reset_reaction_effect = {
+	hidden_tooltip = {
+		if = {
+			limit = { has_character_flag = emf_mild_reaction }
+			remove_opinion = { who = event_target:emf_succ_changer modifier = opinion_succ_law_change }
+			clr_character_flag = emf_mild_reaction
+		}
+		if = {
+			limit = { has_character_flag = emf_good_reaction }
+			remove_opinion = { who = event_target:emf_succ_changer modifier = opinion_good_succ_law_change }
+			clr_character_flag = emf_good_reaction
+		}
+		if = {
+			limit = { has_character_flag = emf_bad_reaction }
+			remove_opinion = { who = event_target:emf_succ_changer modifier = opinion_bad_succ_law_change }
+			clr_character_flag = emf_bad_reaction
+		}
+		if = {
+			limit = { has_character_flag = emf_bad2_reaction }
+			remove_opinion = { who = event_target:emf_succ_changer modifier = opinion_bad_succ_law_change }
+			remove_opinion = { who = event_target:emf_succ_changer modifier = opinion_bad_succ_law_change }
+			clr_character_flag = emf_bad2_reaction
+		}
+	}
+}
