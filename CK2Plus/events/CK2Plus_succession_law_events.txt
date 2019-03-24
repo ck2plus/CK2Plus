@@ -1520,11 +1520,27 @@ character_event = {
 				log = "---> [emf_succ_changer.GetTitledFirstName] (ID: [emf_succ_changer.GetID]) succeded with vote to change law for [emf_succ_title.GetID] to Tanistry"
 				
 				emf_laws_change_succ_save_contenders_effect = yes
-				add_law = succ_tanistry
+				if = {				
+					limit = {
+						culture_group = celtic
+						religion = celtic_pagan
+						any_owned_bloodline = {
+							has_bloodline_flag = bloodline_tanistry
+						}
+					}
+					add_law = succ_tanistry
+				}
+				else_if = {
+					limit = {
+						religion = baltic_pagan
+						religion = west_african_pagan					
+						has_religion_feature = religion_beatification
+						has_religion_feature = religion_feature_baltic
+						has_religion_feature = religion_feature_west_african
+					}
+					add_law = succ_eldership
+				}
 				current_heir = { save_event_target_as = emf_heir }
-
-				# FIXME: I'm just guessing about Tanistry's behavior from the little, imprecise, and likely
-				# inaccurate info on the CKII Wiki.
 
 				holder_scope = {
 					# Vassals are slightly upset
@@ -1536,58 +1552,102 @@ character_event = {
 						emf_laws_change_succ_mild_reaction_effect = yes
 					}
 					# Elector vassals are happy.
-					# Regarding Tanistry, my assumptions are that empire-tier titles have king- and
-					# duke-tier electors, king-tier titles have duke- and count-tier electors, duke-tier
-					# titles have count- and baron-tier electors, and count-tier titles have baron-tier
-					# electors.
-					any_vassal = {
+					if = {
 						limit = {
-							emf_laws_change_succ_vip_trigger = no
-							OR = {
-								AND = {
-									event_target:emf_succ_title = { tier = EMPEROR }
-									higher_real_tier_than = COUNT
-									OR = {
-										event_target:emf_succ_title = { is_titular = yes }
-										any_demesne_title = {
-											higher_tier_than = COUNT
-											de_jure_liege_or_above = event_target:emf_succ_title
+							culture_group = celtic
+							religion = celtic_pagan
+						}
+						# Regarding Tanistry, my assumptions are that empire-tier titles have king- and
+						# duke-tier electors, king-tier titles have duke- and count-tier electors, duke-tier
+						# titles have count- and baron-tier electors, and count-tier titles have baron-tier
+						# electors.
+						# EDIT: now that elective voting rules have been exposed, this assumption has been confirmed
+						any_vassal = {
+							limit = {
+								emf_laws_change_succ_vip_trigger = no
+								OR = {
+									AND = {
+										event_target:emf_succ_title = { tier = EMPEROR }
+										higher_real_tier_than = COUNT
+										OR = {
+											event_target:emf_succ_title = { is_titular = yes }
+											any_demesne_title = {
+												higher_tier_than = COUNT
+												de_jure_liege_or_above = event_target:emf_succ_title
+											}
 										}
 									}
-								}
-								AND = {
-									event_target:emf_succ_title = { tier = KING }
-									higher_real_tier_than = BARON
-									OR = {
-										event_target:emf_succ_title = { is_titular = yes }
-										any_demesne_title = {
-											higher_tier_than = BARON
-											de_jure_liege_or_above = event_target:emf_succ_title
+									AND = {
+										event_target:emf_succ_title = { tier = KING }
+										higher_real_tier_than = BARON
+										OR = {
+											event_target:emf_succ_title = { is_titular = yes }
+											any_demesne_title = {
+												higher_tier_than = BARON
+												de_jure_liege_or_above = event_target:emf_succ_title
+											}
 										}
 									}
-								}
-								AND = {
-									event_target:emf_succ_title = { tier = DUKE }
-									OR = {
-										event_target:emf_succ_title = { is_titular = yes }
-										any_demesne_title = {
-											de_jure_liege_or_above = event_target:emf_succ_title
+									AND = {
+										event_target:emf_succ_title = { tier = DUKE }
+										OR = {
+											event_target:emf_succ_title = { is_titular = yes }
+											any_demesne_title = {
+												de_jure_liege_or_above = event_target:emf_succ_title
+											}
 										}
 									}
-								}
-								AND = {
-									event_target:emf_succ_title = { tier = COUNT }
-									any_demesne_title = {
-										de_jure_liege = event_target:emf_succ_title
+									AND = {
+										event_target:emf_succ_title = { tier = COUNT }
+										any_demesne_title = {
+											de_jure_liege = event_target:emf_succ_title
+										}
 									}
 								}
 							}
+							emf_laws_change_succ_good_reaction_effect = yes
+						}						
+					}
+					else_if = {
+						limit = {
+							religion = baltic_pagan
+							religion = west_african_pagan					
+							has_religion_feature = religion_beatification
+							has_religion_feature = religion_feature_baltic
+							has_religion_feature = religion_feature_west_african
 						}
-						emf_laws_change_succ_good_reaction_effect = yes
+						#For Eldership: courtiers/vassals already chosen as elders should have a good reaction (if it is possible to scope to them?)
+						#courtiers/vassals LIKELY to be chosen as elders should have a positive reaction
+						any_courtier_or_vassal = {
+							limit = {			
+								emf_laws_change_succ_vip_trigger = no							
+								OR = {
+									has_elector_stance = { stance = elder_displeased title = PREVPREV }
+									has_elector_stance = { stance = elder_pleased title = PREVPREV } 
+									has_elector_stance = { stance = elder_ecstatic title = PREVPREV }	
+									calc_true_if = {
+										amount = 6
+										age = 40
+										age = 50
+										age = 60
+										age = 70
+										culture = PREV
+										religion = PREV
+										learning = 12
+										learning = 14
+										learning = 16
+										learning = 18
+										has_job_title = job_chancellor
+										has_job_title = job_spiritual
+									}
+								}
+							}
+							emf_laws_change_succ_good_reaction_effect = yes
+						}
 					}
 					# Dynasty members are happy
 					any_dynasty_member = {
-						limit = {
+						limit = { 
 							emf_laws_change_succ_vip_trigger = no
 						}
 						emf_laws_change_succ_good_reaction_effect = yes
@@ -1603,7 +1663,6 @@ character_event = {
 					# The former pretenders are upset if not of the ruler's dynasty
 					any_opinion_modifier_target = {
 						limit = {
-							is_alive = yes
 							reverse_has_opinion_modifier = { who = PREV modifier = opinion_succ_former_pretender }
 							NOT = { dynasty = event_target:emf_succ_changer }
 						}
@@ -1680,7 +1739,27 @@ character_event = {
 				log = "---> [emf_succ_changer.GetTitledFirstName] (ID: [emf_succ_changer.GetID]) succeded with vote to change law for [emf_succ_title.GetID] to Feudal Elective"
 				
 				emf_laws_change_succ_save_contenders_effect = yes
-				add_law = succ_feudal_elective
+				if = {
+					limit = {
+						OR = {
+							title = e_byzantium
+							title = e_roman_empire
+						}
+					}
+					add_law = succ_byzantine_elective
+				}
+				else_if = {
+					limit = {
+						OR = {
+							title = e_hre
+							has_title_flag = alternate_hre
+						}
+					}
+					add_law = succ_hre_elective
+				}
+				else = {
+					add_law = succ_feudal_elective
+				}
 				current_heir = { save_event_target_as = emf_heir }
 
 				holder_scope = {
@@ -1693,53 +1772,105 @@ character_event = {
 						emf_laws_change_succ_mild_reaction_effect = yes
 					}
 					# Electors are happy
-					any_vassal = {
+					if = {
 						limit = {
-							emf_laws_change_succ_vip_trigger = no
 							OR = {
-								AND = {
-									event_target:emf_succ_title = { tier = EMPEROR }
-									higher_real_tier_than = COUNT
-									OR = {
-										event_target:emf_succ_title = { is_titular = yes }
-										any_demesne_title = {
-											higher_tier_than = COUNT
-											de_jure_liege_or_above = event_target:emf_succ_title
-										}
-									}
-								}
-								AND = {
-									event_target:emf_succ_title = { tier = KING }
-									real_tier = DUKE
-									OR = {
-										event_target:emf_succ_title = { is_titular = yes }
-										any_demesne_title = {
-											tier = DUKE
-											de_jure_liege = event_target:emf_succ_title
-										}
-									}
-								}
-								AND = {
-									event_target:emf_succ_title = { tier = DUKE }
-									real_tier = COUNT
-									OR = {
-										event_target:emf_succ_title = { is_titular = yes }
-										any_demesne_title = {
-											tier = COUNT
-											de_jure_liege = event_target:emf_succ_title
-										}
-									}
-								}
-								AND = {
-									event_target:emf_succ_title = { tier = COUNT }
-									real_tier = BARON
-									any_demesne_title = {
-										de_jure_liege = event_target:emf_succ_title
-									}
+								#Princely Elective
+								has_landed_title = e_hre
+								primary_title = {
+									has_title_flag = alternate_hre
 								}
 							}
 						}
-						emf_laws_change_succ_good_reaction_effect = yes
+						any_realm_lord = {
+							limit = {
+								OR = {
+									has_landed_title = c_mainz #Bishops
+									has_landed_title = c_koln
+									has_landed_title = c_trier
+									has_landed_title = d_bohemia #Dukes
+									has_landed_title = d_franconia
+									has_landed_title = d_saxony
+									has_landed_title = d_brandenburg
+								}
+							}
+							emf_laws_change_succ_good_reaction_effect = yes
+						}
+					}
+					else_if = {
+						limit = {
+							OR = {
+								#Byzantine/Roman Elective
+								has_landed_title = e_byzantium
+								has_landed_title = e_roman_empire
+							}
+							any_courtier_or_vassal = {
+								limit = {
+									OR = { 
+										has_job_title = job_chancellor
+										has_job_title = job_marshal
+										has_job_title = job_treasurer
+										has_job_title = job_spymaster
+										has_job_title = job_spiritual
+										has_minor_title = title_councilmember_king #Generic advisors
+										has_minor_title = title_councilmember_emperor
+										has_minor_title = title_commander
+									}
+								}
+								emf_laws_change_succ_good_reaction_effect = yes
+							}
+						}
+					}
+					else = {
+						#general Feudal Elective
+						any_vassal = {
+							limit = {
+								emf_laws_change_succ_vip_trigger = no
+								OR = {
+									AND = {
+										event_target:emf_succ_title = { tier = EMPEROR }
+										higher_real_tier_than = COUNT
+										OR = {
+											event_target:emf_succ_title = { is_titular = yes }
+											any_demesne_title = {
+												higher_tier_than = COUNT
+												de_jure_liege_or_above = event_target:emf_succ_title
+											}
+										}
+									}
+									AND = {
+										event_target:emf_succ_title = { tier = KING }
+										real_tier = DUKE
+										OR = {
+											event_target:emf_succ_title = { is_titular = yes }
+											any_demesne_title = {
+												tier = DUKE
+												de_jure_liege = event_target:emf_succ_title
+											}
+										}
+									}
+									AND = {
+										event_target:emf_succ_title = { tier = DUKE }
+										real_tier = COUNT
+										OR = {
+											event_target:emf_succ_title = { is_titular = yes }
+											any_demesne_title = {
+												tier = COUNT
+												de_jure_liege = event_target:emf_succ_title
+											}
+										}
+									}
+									AND = {
+										event_target:emf_succ_title = { tier = COUNT }
+										real_tier = BARON
+										any_demesne_title = {
+											de_jure_liege = event_target:emf_succ_title
+										}
+									}
+								}
+							}
+							emf_laws_change_succ_good_reaction_effect = yes
+						}
 					}
 					# Dynasty members are slightly upset
 					any_dynasty_member = {
