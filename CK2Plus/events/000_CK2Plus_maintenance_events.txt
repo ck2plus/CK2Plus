@@ -1,0 +1,1091 @@
+namespace = maintPlus
+
+#######################################
+#
+# CK2Plus Maintenance Events
+#
+#######################################
+#
+# CATALOG
+#
+# 001 - 009: Maintenence Pulses
+# 010 - 019: Startup Events
+# 020 - 029: Yearly Events
+# 030 - 039: Succession Events
+# 040 - 099: TBD
+# 109 - 999: TBD
+# 
+#######################################
+
+#######################################
+#
+# 001 - 009: Maintenence Pulses
+#
+#######################################
+#
+# INDEX
+#
+# 001: Startup
+# 002: Yearly
+# 003: Succession
+#
+#######################################
+
+# 001: Startup
+character_event = {
+    id = maintPlus.001
+
+    hide_window = yes
+    is_triggered_only = yes
+
+    only_rulers = yes
+    religion = misphysite
+
+    trigger = {
+        has_landed_title = d_miaphysite
+    }
+
+    immediate = {
+        # First Time setup
+        if = {
+            limit = {
+                e_placeholder = { NOT = { has_title_flag = startup } }
+            }
+            e_placeholder = { set_title_flag = startup }
+            # Trigger relevant events
+            character_event = { id = emf_nomad.1000 } # emf_nomad.1000: Antinomad setup
+            character_event = { id = maintPlus.010 } # 010: Pre-schism setup
+            character_event = { id = maintPlus.011 } # 011: Title setup
+            character_event = { id = maintPlus.012 } # 012: Crown setup
+            any_character = {
+                limit = { NOT = { has_character_flag = start_of_game_character } }
+                character_event = { id = maintPlus.013 } # 013: Genetics and Claims check
+            }
+            character_event = { id = maintPlus.01 } # 014: Ruler Designer setup
+            if = {
+                limit = { is_ironman = yes }
+                any_player = { id = maintPlus.015 } # 015: Ironman Warning
+            }
+            any_player = { id = maintPlus.016 } # 016: Player greeting
+            # Game starts for real:
+            character_event = { id = SSI.73 days = 1 } # SSI.73: Check for playable aztec invasion
+        }
+    }
+}
+
+# 002: Yearly
+character_event = {
+    id = maintPlus.002
+
+    hide_window = yes
+    is_triggered_only = yes
+
+    only_rulers = yes
+    religion = miaphysite
+
+    trigger = {
+        has_landed_title = d_miaphysite
+    }
+}
+
+# 003: Succession
+character_event = {
+    id = maintPlus.003
+
+    hide_window = yes
+    is_triggered_only = yes
+}
+
+#######################################
+#
+# 010 - 019: Startup Events
+#
+#######################################
+#
+# INDEX
+#
+# 010: Pre-schism setup
+# 011: Title setup
+# 012: Crown setup
+# 013: Genetics and Claims check
+# 014: Ruler Designer setup
+# 015: Ironman Warning
+# 016: Player greeting
+# 017: Give correct genetics
+#
+#######################################
+
+# 010: Pre-schism setup
+character_event = {
+    id = maintPlus.010
+
+    hide_window = yes
+    is_triggered_only = yes
+
+    trigger = {
+        NOT = { has_global_flag = schism_happened }
+    }
+
+    immediate = {
+        # advance tracker if Carolingian Empire already formed
+        if = {
+            limit = {
+                e_karling = { has_title_flag = carolingian_empire_formed }
+            }
+            496 = {
+                set_variable = {
+                    which = "schism_tracker"
+                    value = 1
+                }
+            }
+        }
+        else = {
+            496 = {
+                set_variable = {
+                    which = "schism_tracker"
+                    value = 0
+                }
+            }
+        }
+
+        # advance tracker if using New Millenium bookmark
+        if = {
+            limit = { year >= 999 }
+            set_global_flag = filioque_adopted
+            set_global_flag = eucharist_conflict
+            496 = {
+                change_variable = {
+                    which = "schism_tracker"
+                    value = 2
+                }
+            }
+        }
+
+        # set catholic/orthodox heresies to chalcedonian
+        set_parent_religion = { religion = cathar parent = chalcedonian }
+        set_parent_religion = { religion = waldensian parent = chalcedonian }
+        set_parent_religion = { religion = lollard parent = chalcedonian }
+        set_parent_religion = { religion = adoptionist parent = chalcedonian }
+        set_parent_religion = { religion = bogomilist parent = chalcedonian }
+        set_parent_religion = { religion = monothelite parent = chalcedonian }
+        set_parent_religion = { religion = iconoclast parent = chalcedonian }
+
+        # get rid of the Pope and the Ecumenical Patriach
+        any_title = {
+            limit = {
+                has_holder = yes
+                OR = {
+                    title = k_papal_state
+                    title = k_orthodox
+                }
+            }
+            unsafe_destroy_landed_title = THIS
+            activate_title = { title = THIS status = no }
+        }
+
+		# switch any remaining characters
+        any_character = {
+            if = {
+                limit = { religion = catholic }
+                religion = chalcedonian
+                add_trait = latin_rites
+            }
+            if = {
+                limit = { religion = orthodox }
+                religion = chalcedonian
+                add_trait = greek_rites
+            }
+            if = {
+                limit = {
+                    religion = chalcedonian
+                    independent = yes
+                }
+                character_event = { id = Plus.2289 }
+            }
+        }
+    }
+}
+
+# 011: Title setup
+character_event = {
+    id = maintPlus.011
+
+    hide_window = yes
+    is_triggered_only = yes
+
+    immediate = {
+        # set appropriate demesne laws level
+		any_title = {
+			limit = {
+				temporary = no
+				has_holder = yes
+				is_primary_holder_title = yes
+				holder_scope = {
+					is_offmap_trigger = no
+					is_landed = yes
+					higher_tier_than = BARON
+				}
+			}
+			if = {
+				limit = {
+					holder_scope = {
+						capital_scope = { TECH_LEGALISM < 2 }
+					}
+					NOT = { has_law = demesne_laws_0 }
+				}
+				add_law = demesne_laws_0
+			}
+			else_if = {
+				limit = {
+					holder_scope = {
+						capital_scope = {
+							TECH_LEGALISM >= 2
+							TECH_LEGALISM < 4
+						}
+					}
+					NOT = { has_law = demesne_laws_1 }
+				}
+				add_law = demesne_laws_1
+			}
+			else_if = {
+				limit = {
+					holder_scope = {
+						capital_scope = {
+							TECH_LEGALISM >= 4
+							TECH_LEGALISM < 6
+						}
+					}
+					NOT = { has_law = demesne_laws_2 }
+				}
+				add_law = demesne_laws_2
+			}
+			if = {
+				limit = {
+					holder_scope = {
+						capital_scope = {
+							TECH_LEGALISM >= 6
+							TECH_LEGALISM < 8
+						}
+					}
+					NOT = { has_law = demesne_laws_3 }
+				}
+				add_law = demesne_laws_3
+			}
+			if = {
+				limit = {
+					holder_scope = {
+						capital_scope = {
+							TECH_LEGALISM >= 8
+						}
+					}
+					NOT = { has_law = demesne_laws_4 }
+				}
+				add_law = demesne_laws_4
+			}
+		}
+
+        # mark titles that start at CA 0 and should not be destroyed if reduced
+		any_title = {
+			limit = {
+				has_holder = yes
+				higher_tier_than = DUKE
+				has_law = crown_authority_0
+				NOT = { has_title_flag = do_not_destroy }
+			}
+			set_title_flag = do_not_destroy
+		}
+
+		# double-check governments in imperial realms
+        # NOTE: Is likely redundant with triggers within the governments files. May no longer be necessary. Please verify
+        # Make empires with imperial administration be imperial government
+        any_independent_ruler = {
+            limit = {
+                is_feudal = yes
+                has_imperial_government_trigger = no
+                primary_title = {
+                    tier = EMPEROR
+                    has_law = imperial_administration
+                    has_title_flag = has_imperial_administration
+                }
+            }
+            switch_to_imperial_effect = yes
+        }
+        # In case character happens to have two imperial titles (which can happen for 30 days.)
+        any_independent_ruler = {
+            limit = {
+                is_ruler = yes
+                independent = yes
+                has_imperial_government_trigger = yes
+                NOT = {
+                    primary_title = {
+                        tier = EMPEROR
+                        has_law = imperial_administration
+                        has_title_flag = has_imperial_administration
+                    }
+                }
+                primary_title = {
+                    owner = {
+                        NOT = {
+                            any_realm_title = {
+                                tier = EMPEROR
+                                has_law = imperial_administration
+                                NOT = { title = PREVPREV}
+                            }
+                        }
+                    }
+                }
+            }
+            switch_to_feudal_effect = yes
+        }
+        any_independent_ruler = {
+            any_realm_lord = {
+                limit = {
+                    is_ruler = yes
+                    independent = no
+                    has_imperial_government_trigger = yes
+                    NOT = { top_liege = { has_imperial_government_trigger = yes } }
+                }
+                switch_to_feudal_effect = yes
+            }
+        }
+        any_independent_ruler = {
+            any_realm_lord = {
+                limit = {
+                    is_ruler = yes
+                    independent = no
+                    is_feudal = yes
+                    is_patrician = no
+                    top_liege = { has_imperial_government_trigger = yes }
+                }
+                if = {
+                    limit = {
+                        has_imperial_government_trigger = no
+                    }
+                    switch_to_imperial_effect = yes
+                }
+            }
+        }
+
+        # Set up Imperial Decadence
+        any_independent_ruler = {
+			limit = {
+                real_tier = EMPEROR
+				is_offmap_trigger = no
+                is_nomadic = no
+                NOT = { uses_decadence = yes }
+				NOT = { has_landed_title = e_byzantium }
+			}
+			character_event = { id = Plus.1852 days = 1 }
+		}
+        e_byzantium = { # fire appropriate startup event for Byzantium (NOTE: please check this for correct functionality)
+            holder_scope = {
+                narrative_event = { id = Plus.1300 }
+                narrative_event = { id = Plus.1301 }
+                narrative_event = { id = Plus.1302 }
+                narrative_event = { id = Plus.1303 }
+            }
+        }
+    }
+}
+
+# 012: Crown setup
+character_event = {
+    id = maintPlus.011
+
+    hide_window = yes
+    is_triggered_only = yes
+
+    immediate = {
+		# give crowned trait to all existing kings and emperors
+		any_independent_ruler = {
+			limit = {
+				is_offmap_trigger = no
+				is_playable = yes
+				higher_real_tier_than = DUKE
+				is_adult = yes
+				is_feudal = yes
+				has_horde_culture = no
+				is_nomadic = no
+				primary_title = { is_vice_royalty = no }
+				independent = yes
+				NOR = {
+					trait = crowned
+					trait = crowned_by_relhead
+					trait = crowned_by_vip
+					trait = uncrowned
+					has_landed_title = e_hre
+					has_landed_title = e_karling
+					has_landed_title = e_byzantium
+				}
+			}
+			add_trait = crowned
+		}
+		
+		# give uncrowned trait to everyone else
+		any_independent_ruler = {
+			limit = {
+				is_offmap_trigger = no
+				is_playable = yes
+				higher_real_tier_than = DUKE
+				is_feudal = yes
+				has_horde_culture = no
+				is_nomadic = no
+				independent = yes
+				primary_title = { is_vice_royalty = no }
+				NOR = {
+					trait = crowned
+					trait = uncrowned
+					trait = crowned_by_relhead
+					trait = crowned_by_vip
+					trait = crowned_by_pope
+					trait = strong_basileus
+					trait = weak_basileus
+					trait = crowned_by_priest
+					trait = crowned_by_bishop
+					trait = crowned_by_myself
+					trait = crowned_by_pope_stolen
+				}
+			}
+			add_trait = uncrowned
+		}
+    }
+}
+
+# 013: Genetics and Claims check
+character_event = {
+    id = maintPlus.012
+
+    hide_window = yes
+    is_triggered_only = yes
+
+    immediate = {
+        # remove undesireable claims and perform genetics check
+		any_character = {
+			limit = { NOT = { has_character_flag = start_of_game_character } }
+			set_character_flag = start_of_game_character
+
+            # Remove undesireable claims
+            any_claim = {
+                limit = {
+                    has_holder = no
+                    controls_religion = no
+                }
+                remove_claim = ROOT
+            }
+            if = {
+                limit = {
+                    is_female = yes
+                    is_ruler = no
+                }
+                any_claim = {
+                    limit = {
+                        has_law = agnatic_succession
+                        OR = {
+                            is_tribal = yes
+                            is_nomadic = yes
+                        }
+                    }
+                    remove_claim = ROOT
+                }
+            }
+
+            # Pass on birth traits
+            character_event = { id = maintPlus.017 } # 017: Give correct genetics
+
+            # Remove colognian culture
+            # NOTE: verify need for this. It appears suspicious
+			if = {
+				limit = { culture = colognian }
+				if = {
+					limit = { liege = { NOT = { culture = colognian } german_cultures_trigger = yes } }
+					liege = { reverse_culture = PREV }
+				} else = {
+					location = {
+						reverse_culture = PREV
+					}
+				}
+			}
+		}
+    }
+}
+
+# 014: Ruler Designer setup
+
+
+# 015: Ironman Warning
+
+
+# 016: Player greeting
+
+# 017: Give correct genetics
+character_event = {
+	id = plusMaint.017
+
+	is_triggered_only = yes
+	hide_window = yes
+
+	immediate = {
+		# chance for genius or quick
+		# 10% chance per parent
+		if = {
+			limit = {
+				is_smart_trigger = no
+				is_dumb_trigger = no
+			}
+			if = {
+				limit = {
+                    OR = {
+					    mother_even_if_dead = { trait = quick }
+                        father_even_if_dead = { trait = quick }
+                    }
+                    is_smart_trigger = no
+				    is_dumb_trigger = no
+				}
+				random = {
+                    chance = 10
+                    modifier = {
+                        factor = 2
+                        AND = {
+                            mother_even_if_dead = { trait = quick }
+                            father_even_if_dead = { trait = quick }
+                        }
+                    }
+					add_trait = quick
+				}
+			}
+			if = {
+				limit = {
+                    OR = {
+					    mother_even_if_dead = { trait = genius }
+                        father_even_if_dead = { trait = genius }
+                    }
+					is_smart_trigger = no
+					is_dumb_trigger = no
+				}
+				random = {
+                    chance = 10
+                    modifier = {
+                        factor = 2
+                        AND = {
+                            mother_even_if_dead = { trait = genius }
+                            father_even_if_dead = { trait = genius }
+                        }
+                    }
+					add_trait = genius
+				}
+			}
+		}
+		
+		#chance for dwarf, tall, or giant
+        # 33% chance per parent
+		if = {
+			limit = {
+				NOR = {
+					trait = tall
+					trait = dwarf
+                    trait = giant
+				}
+			}
+			if = {
+				limit = {
+                    OR = {
+                        father_even_if_dead = { trait = dwarf }
+                        mother_even_if_dead = { trait = dwarf }
+                    }
+					NOR = {
+						trait = tall
+						trait = dwarf
+                        trait = giant
+					}
+				}
+                random = {
+                    chance = 33
+                    modifier = {
+                        factor = 2
+                        AND = {
+                            father_even_if_dead = { trait = dwarf }
+                            mother_even_if_dead = { trait = dwarf }
+                        }
+                    }
+                    add_trait = dwarf
+                }
+			}
+            if = {
+                limit = {
+                    OR = {
+                        father_even_if_dead = { trait = tall }
+                        mother_even_if_dead = { trait = tall }
+                    }
+                    NOR = {
+                        trait = tall
+                        trait = dwarf
+                        trait = giant
+                    }
+                }
+                random = {
+                    chance = 33
+                    modifier = {
+                        factor = 2
+                        AND = {
+                            father_even_if_dead = { trait = tall }
+                            mother_even_if_dead = { trait = tall }
+                        }
+                    }
+                    add_trait = tall
+                }
+            }
+            if = {
+                limit = {
+                    OR = {
+                        father_even_if_dead = { trait = giant }
+                        mother_even_if_dead = { trait = giant }
+                    }
+                    NOR = {
+                        trait = tall
+                        trait = dwarf
+                        trait = giant
+                    }
+                }
+                random = {
+                    chance = 33
+                    modifier = {
+                        factor = 2
+                        AND = {
+                            father_even_if_dead = { trait = giant }
+                            mother_even_if_dead = { trait = giant }
+                        }
+                    }
+                    add_trait = giant
+                }
+            }
+		}
+
+		#chance for slow or imbecile
+		# 10% chance per parent
+		if = {
+			limit = {
+				is_smart_trigger = no
+				is_dumb_trigger = no
+			}
+            if = {
+                limit = {
+                    OR = {
+                        mother_even_if_dead = { trait = slow }
+                        father_even_if_dead = { trait = slow }
+                    }
+                    is_smart_trigger = no
+                    is_dumb_trigger = no
+                }
+                random = {
+                    chance = 10
+                    modifier = {
+                        factor = 2
+                        AND = {
+                            mother_even_if_dead = { trait = slow }
+                            father_even_if_dead = { trait = slow }
+                        }
+                    }
+                    add_trait = slow
+                }
+            }
+            if = {
+                limit = {
+                    OR = {
+                        mother_even_if_dead = { trait = imbecile }
+                        father_even_if_dead = { trait = imbecile }
+                    }
+                    is_smart_trigger = no
+                    is_dumb_trigger = no
+                }
+                random = {
+                    chance = 10
+                    modifier = {
+                        factor = 2
+                        AND = {
+                            mother_even_if_dead = { trait = imbecile }
+                            father_even_if_dead = { trait = imbecile }
+                        }
+                    }
+                    add_trait = imbecile
+                }
+            }
+		}
+		
+		#chance for strong or weak
+		# 33% chance per parent
+		if = {
+			limit = {
+				NOR = {
+					trait = strong
+					trait = weak
+				}
+			}
+			if = {
+				limit = {
+                    OR = {
+					    mother_even_if_dead = { trait = strong }
+                        father_even_if_dead = { trait = strong }
+                    }
+					NOR = {
+						trait = strong
+						trait = weak
+					}
+				}
+                random = {
+                    chance = 33
+                    modifier = {
+                        factor = 2
+                        AND = {
+                            mother_even_if_dead = { trait = strong }
+                            father_even_if_dead = { trait = strong }
+                        }
+                    }
+                    add_trait = strong
+                }
+			}
+			if = {
+				limit = {
+                    OR = {
+                        mother_even_if_dead = { trait = weak }
+                        father_even_if_dead = { trait = weak }
+                    }
+					NOR = {
+						trait = strong
+						trait = weak
+					}
+				}
+                random = {
+                    chance = 33
+                    modifier = {
+                        factor = 2
+                        AND = {
+                            mother_even_if_dead = { trait = weak }
+                            father_even_if_dead = { trait = weak }
+                        }
+                    }
+                    add_trait = weak
+                }
+			}
+		}
+		
+		#chance for fair or ugly
+		# 33% per parent
+		if = {
+			limit = {
+				NOR = {
+					trait = fair
+					trait = ugly
+				}
+			}
+			if = {
+				limit = {
+                    OR = {
+					    father_even_if_dead = { trait = fair }
+                        mother_even_if_dead = { trait = fair }
+                    }
+					NOR = {
+						trait = fair
+						trait = ugly
+					}
+				}
+                random = {
+                    chance = 33
+                    modifier = {
+                        factor = 2
+                        AND = {
+                            father_even_if_dead = { trait = fair }
+                            mother_even_if_dead = { trait = fair }
+                        }
+                    }
+                    add_trait = fair
+                }
+			}
+			if = {
+				limit = {
+                    OR = {
+					    father_even_if_dead = { trait = ugly }
+                        mother_even_if_dead = { trait = ugly }
+                    }
+					NOR = {
+						trait = fair
+						trait = ugly
+					}
+				}
+                random = {
+                    chance = 33
+                    modifier = {
+                        factor = 2
+                        AND = {
+                            father_even_if_dead = { trait = ugly }
+                            mother_even_if_dead = { trait = ugly }
+                        }
+                    }
+                    add_trait = ugly
+                }
+			}
+		}
+		
+		# Chance of random congenital trait
+		if = {
+			limit = {
+				NOT = { is_secret_congenital_trait_trigger = yes }
+			}
+			generate_potential_congenital_trait = yes
+		}
+		
+		# Assign masking modifiers if the hidden traits rule is set,
+		# UNLESS the genetics check is being called at game start and the character is over age 6
+		if = {
+			limit = {
+				has_game_rule = {
+					name = hidden_character_traits_rule
+					value = yes
+				}
+				NAND = {
+					has_character_flag = start_of_game_character
+					age <= 6
+				}
+			}
+			if = {
+				limit = { trait = genius }
+				add_character_modifier = {
+					name = hidden_genius
+					duration = 5840 #16 years
+				}
+			}
+			if = {
+				limit = { trait = quick }
+				add_character_modifier = {
+					name = hidden_quick
+					duration = 5840 #16 years
+				}
+			}
+			if = {
+				limit = { trait = slow }
+				add_character_modifier = {
+					name = hidden_slow
+					duration = 5840 #16 years
+				}
+			}
+			if = {
+				limit = { trait = imbecile }
+				add_character_modifier = {
+					name = hidden_imbecile
+					duration = 5840 #16 years
+				}
+			}
+			if = {
+				limit = { trait = strong }
+				add_character_modifier = {
+					name = hidden_strong
+					duration = 5840 #16 years
+				}
+			}
+			if = {
+				limit = { trait = weak }
+				add_character_modifier = {
+					name = hidden_weak
+					duration = 5840 #16 years
+				}
+			}
+			if = {
+				limit = { trait = fair }
+				add_character_modifier = {
+					name = hidden_fair
+					duration = 5840 #16 years
+				}
+			}
+			if = {
+				limit = { trait = ugly }
+				add_character_modifier = {
+					name = hidden_ugly
+					duration = 5840 #16 years
+				}
+			}
+			if = {
+				limit = { trait = tall }
+				add_character_modifier = {
+					name = hidden_tall
+					duration = 5840 #16 years
+				}
+			}
+			if = {
+				limit = { trait = dwarf }
+				add_character_modifier = {
+					name = hidden_dwarf
+					duration = 5840 #16 years
+				}
+			}
+		}
+		
+		#pass on divine blood
+		if = {
+			limit = {
+				NOT = { trait = divine_blood }
+                OR = {
+                    father_even_if_dead = {
+                        dynasty = ROOT
+                        trait = divine_blood
+                    }
+                    mother_even_if_dead = {
+					    dynasty = ROOT
+					    trait = divine_blood
+				    }
+                }
+			}
+			add_trait = divine_blood
+		}
+		
+		#pass on yehudi trait
+		if = {
+			limit = {
+                OR = {
+                    AND = {
+                        has_character_flag = start_of_game_character
+                        religion_group = jewish_group
+                    }
+                    mother_even_if_dead = { trait = yehudi }
+                }
+			}
+			add_trait = yehudi
+		}
+		
+		#chance of being barren or infertile
+		if = {
+			limit = {
+				NOT = { trait = fertile }
+				immortal = no
+				NOT = { has_character_flag = start_of_game_character }
+				trait = inbred
+			}
+			random_list = {
+				20 = { }
+				50 = {
+					add_trait = infertile
+				}
+				30 = {
+					add_trait = infertile
+					set_character_flag = is_barren
+				}
+			}
+		}
+		if = {
+			limit = {
+				is_weak_trigger = yes
+				NOT = { trait = fertile }
+				NOT = { trait = infertile }
+				immortal = no
+				NOT = { has_character_modifier = barren }
+				NOT = { has_character_flag = start_of_game_character }
+			}
+			random_list = {
+				70 = { }
+				25 = {
+					add_trait = infertile
+				}
+				15 = {
+					add_trait = infertile
+					set_character_flag = is_barren
+				}
+			}
+		}
+		if = {
+			limit = {
+				NOT = { trait = fertile }
+				NOT = { is_weak_trigger = yes }
+				NOT = { is_strong_trigger = yes }
+				NOT = { trait = infertile }
+				NOT = { has_character_modifier = barren }
+				NOT = { has_character_flag = start_of_game_character }
+				immortal = no
+			}
+			random_list = {
+				85 = { }
+				12 = {
+					add_trait = infertile
+				}
+				3 = {
+					add_trait = infertile
+					set_character_flag = is_barren
+				}
+			}
+		}
+
+		#add indian caste if they don't have one
+		if = {
+			limit = {
+				religion_group = indian_group
+				NOT = { religion = taoist }
+				NOT = { religion = bon }
+				NOR = {
+					trait = brahmin
+					trait = kshatriya
+					trait = vaishya
+				}
+			}
+			if = {
+				limit = {
+					is_feudal = yes
+				}
+				add_trait = kshatriya
+			}
+			else_if = {
+				limit = {
+					is_feudal = no
+					OR = {
+						is_theocracy = yes
+						is_priest = yes
+					}
+				}
+				add_trait = brahmin
+			}
+			else = {
+				add_trait = vaishya
+			}
+		}
+		
+		#add opinions for cousins
+		if = {
+			limit = {
+				is_female = no
+				has_character_flag = start_of_game_character
+			}
+			any_child = {
+				ROOT = {
+					any_sibling_even_if_dead = {
+						any_child = {
+							reverse_opinion = { who = PREVPREVPREV modifier = opinion_cousin years = 100 }
+							opinion = { who = PREVPREVPREV modifier = opinion_cousin years = 100 }
+						}
+					}
+				}
+			}
+		}
+		
+		#add opinion for cousins
+		father_even_if_dead = {
+			any_sibling_even_if_dead = {
+				any_child = {
+					limit = { NOT = { has_opinion_modifier = { who = ROOT modifier = opinion_cousin } } }
+					reverse_opinion = { who = ROOT modifier = opinion_cousin years = 100 }
+					opinion = { who = ROOT modifier = opinion_cousin years = 100 }
+				}
+			}
+		}
+		mother_even_if_dead = {
+			any_sibling_even_if_dead = {
+				any_child = {
+					limit = { NOT = { has_opinion_modifier = { who = ROOT modifier = opinion_cousin } } }
+					reverse_opinion = { who = ROOT modifier = opinion_cousin years = 100 }
+					opinion = { who = ROOT modifier = opinion_cousin years = 100 }
+				}
+			}
+		}
+	}
+}
+
+
+#######################################
+# TBD
+# ID maintPlus.100 - maintPlus.999
+#######################################
