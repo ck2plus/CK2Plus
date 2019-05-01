@@ -152,8 +152,9 @@ character_event = {
 
 	immediate = {
 		set_global_flag = schism_prevented
+
+		# This is primarily for those firing the event via console
 		if = {
-			# This is primarily for those firing the event via console
 			limit = {
 				NOR = {
 					has_global_flag = patriarch_supreme_is_greek
@@ -168,11 +169,10 @@ character_event = {
 				set_global_flag = patriarch_supreme_is_latin
 			}
 		}
+
 		# Greek Victory
 		if = {
 			limit = { has_global_flag = patriarch_supreme_is_greek }
-			orthodox = { save_event_target_as = victor_religion }
-			catholic = { save_event_target_as = losing_religion }
 			b_hagiasophia = { holder_scope = { save_event_target_as = chalcedon_patriarch } }
 			create_character = {
 				religion = catholic
@@ -183,13 +183,12 @@ character_event = {
 				age = 40
 			}
 			new_character = { save_event_target_as = chalcedon_pope }
-			d_miaphysite = { holder_scope = { character_event = { id = schismPlus.003 } } }
+			orthodox = { save_event_target_as = victor_religion }
+			catholic = { save_event_target_as = losing_religion }
 		}
 		# Catholic Victory
 		else_if = {
 			limit = { has_global_flag = patriarch_supreme_is_latin }
-			catholic = { save_event_target_as = victor_religion }
-			orthodox = { save_event_target_as = losing_religion }
 			k_pentarch_rome = { holder_scope = { save_event_target_as = chalcedon_pope } }
 			create_character = {
 				religion = orthodox
@@ -200,26 +199,11 @@ character_event = {
 				age = 40
 			}
 			new_character = { save_event_target_as = chalcedon_patriarch }
-			d_miaphysite = { holder_scope = { character_event = { id = schismPlus.003 } } }
+			catholic = { save_event_target_as = victor_religion }
+			orthodox = { save_event_target_as = losing_religion }
 		}
-	}
-}
 
-# 003: Schism Prevented (Do it)
-character_event = {
-	id = schismPlus.003
-
-	is_triggered_only = yes
-	hide_window = yes
-	hide_from = yes
-
-	only_rulers = yes
-	religion = miaphysite
-
-	trigger = { has_landed_title = d_miaphysite } # Make sure it's firing on the Coptic Pope so it works right
-
-	immediate = {
-		# Religion heads first
+		# Religion Heads First
 		# The Pope
 		event_target:chalcedon_pope = {
 			set_character_flag = converting_religion
@@ -271,56 +255,52 @@ character_event = {
 				set_defacto_liege = event_target:new_liege
 				pf_liege_change_effect = yes
 			}
-
-		}
-
-		# Zealots Next
-		any_character = {
-			limit = {
-				religion = chalcedonian
-				trait = zealous
-			}
-			if = {
-				limit = { is_theocracy = yes }
-				set_character_flag = converting_religion
-			}
-				# Indented for readability
-				if = {
-					limit = { trait = latin_rites }
-					remove_trait = latin_rites
-					unsafe_religion = catholic
-				}
-				else_if = {
-					limit = { trait = greek_rites }
-					remove_trait = greek_rites
-					unsafe_religion = orthodox
-				}
-				else = {
-					unsafe_religion = event_target:victor_religion
-				}
-			if = {
-				limit = { has_character_flag = converting_religion }
-				clr_character_flag = converting_religion
-				set_government_type = theocracy_government
-			}
 		}
 
 		# Everyone Else
 		any_character = {
 			limit = { religion = chalcedonian }
+
+			# Theocracy Sanity Check
 			if = {
 				limit = { is_theocracy = yes }
 				set_character_flag = converting_religion
 			}
-			unsafe_religion = event_target:victor_religion
+
+			if = {
+				limit = {
+					trait = zealous
+					trait = latin_rites
+				}
+				remove_trait = latin_rites
+				unsafe_religion = catholic
+			}
+			else_if = {
+				limit = {
+					trait = zealous
+					trait = greek_rites
+				}
+				remove_trait = greek_rites
+				unsafe_religion = orthodox
+			}
+			else = {
+				remove_trait = greek_rites
+				remove_trait = latin_rites
+				unsafe_religion = event_target:victor_religion
+			}
+
 			if = {
 				limit = { has_character_flag = converting_religion }
 				clr_character_flag = converting_religion
 				set_government_type = theocracy_government
 			}
 		}
+		any_character = {
+			limit = { secret_religion = chalcedonian }
+			set_secret_religion = event_target:victor_religion
+		}
 
-		# set holy orders
+		# Set holy orders
 		if = {
 			limit = { d_knights_calatrava = { has_holder = yes } }
 			d_knights_calatrava = { religion = event_target:victor_religion }
@@ -396,25 +376,24 @@ character_event = {
 		set_parent_religion = { religion = event_target:losing_religion parent = event_target:victor_religion}
 		set_parent_religion = { religion = chalcedonian parent = 0 }
 
-		# Clean up
+		# Clean Up
 		hidden_tooltip = {
 			any_character = {
 				limit = { religion = chalcedonian }
 				unsafe_religion = event_target:victor_religion
 			}
 			any_character = {
-				limit = {
-					OR = {
-						trait = greek_rites
-						trait = latin_rites
-					}
-				}
-				remove_trait = greek_rites
-				remove_trait = latin_rites
-			}
-			any_character = {
 				limit = { has_character_flag = converting_religion }
+				set_government_type = theocracy_government
 				clr_character_flag = converting_religion
+			}
+			any_province = {
+				limit = { religion = chalcedonian }
+				religion = event_target_victor_religion
+			}
+			any_province = {
+				limit = { has_province_modifier = secret_chalcedonian_community }
+				remove_province_modifier = secret_chalcedonian_community
 			}
 			clr_global_flag = attacked_by_papal_emperor
 			clr_global_flag = filioque_adopted
@@ -427,21 +406,9 @@ character_event = {
 					religion = event_target:victor_religion
 					controls_religion = yes
 				}
-				narrative_event = { id = schismPlus.005 days = 5 }
+				narrative_event = { id = schismPlus.005 }
 			}
 		}
-	}
-}
-
-# 004: Schism Error Catch Bounce
-character_event = {
-	id = schismPlus.004
-
-	is_triggered_only = yes
-	hide_window = yes
-
-	immediate = {
-		d_miaphysite = { character_event = { id = schismPlus.002 } }
 	}
 }
 
@@ -582,354 +549,235 @@ character_event = {
 
 	immediate = {
 		set_global_flag = schism_happened
+		k_pentarch_rome = { holder_scope = { save_event_target_as = chalcedon_pope } }
+		if = {
+			limit = { b_hagiasophia = { holder_scope = { religion = iconoclast } } }
+			create_character = {
+				religion = orthodox
+				culture = greek
+				dynasty = random
+				female = no
+				trait = zealous
+				age = 40
+			}
+			new_character = { save_event_target_as = chalcedon_patriarch }
+			iconoclast = { save_event_target_as = eastern_religion }
+			orthodox = { save_event_target_as = eastern_heresy }
+		}
+		else = {
+			b_hagiasophia = { holder_scope = { save_event_target_as = chalcedon_patriarch } }
+			orthodox = { save_event_target_as = eastern_religion }
+			iconoclast = { save_event_target_as = eastern_heresy }
+		}
 
-		# Prepare for conversion
+		# Prepare the People
 		any_character = {
 			limit = {
+				religion = chalcedonian
+				NOT = { has_landed_title = k_pentarch_rome }
+				NOT = { has_landed_title = b_hagiasophia }
+				NOT = { has_character_flag = convert_to_catholic }
+				NOT = { trait = latin_rites }
 				OR = {
-					religion = chalcedonian
-					secret_religion = chalcedonian
-				}
-			}
-			# Orthodox
-			if = {
-				limit = {
-					OR = {
-						trait = greek_rites
-						AND = {
-							rightful_religious_head_scope = { trait = greek_rites }
-							NOR = {
-								trait = greek_rites
-								trait = latin_rites
-							}
-						}
-						AND = {
-							location = {
-								NOR = {
-									region = world_europe_west
-									region = world_europe_north
-									region = world_europe_south_italy
-									region = world_africa_west
-									region = custom_morocco
-									region = custom_algiers
-									region = custom_africa
-									region = custom_croatia
-									region = custom_poland
-									region = custom_carpathia
-								}
-							}
-							NOR = {
-								trait = greek_rites
-								trait = latin_rites
-								rightful_religious_head_scope = { trait = greek_rites }
-								rightful_religious_head_scope = { trait = latin_rites }
-							}
+					trait = greek_rites
+					rightful_religious_head_scope = { trait = greek_rites }
+					location = {
+						NOR = {
+							region = world_europe_west
+							region = world_europe_north
+							region = world_europe_south_italy
+							region = world_africa_west
+							region = custom_morocco
+							region = custom_algiers
+							region = custom_africa
+							region = custom_croatia
+							region = custom_poland
+							region = custom_carpathia
 						}
 					}
 				}
-				set_character_flag = convert_to_orthodox
 			}
-			# Catholic
-			else_if = {
-				limit = {
-					OR = {
-						trait = latin_rites
-						AND = {
-							rightful_religious_head_scope = { trait = latin_rites }
-							NOR = {
-								trait = greek_rites
-								trait = latin_rites
-							}
-						}
-						AND = {
-							location = {
-								OR = {
-									region = world_europe_west
-									region = world_europe_north
-									region = world_europe_south_italy
-									region = world_africa_west
-									region = custom_morocco
-									region = custom_algiers
-									region = custom_africa
-									region = custom_croatia
-									region = custom_poland
-									region = custom_carpathia
-								}
-							}
-							NOR = {
-								trait = greek_rites
-								trait = latin_rites
-								rightful_religious_head_scope = { trait = greek_rites }
-								rightful_religious_head_scope = { trait = latin_rites }
-							}
-						}
+			if = {
+				limit = { is_theocracy = yes }
+				set_character_flag = converting_religion
+			}
+			set_character_flag = convert_to_orthodox
+		}
+		any_character = {
+			limit = {
+				secret_religion = chalcedonian
+				location = {
+					NOR = {
+						region = world_europe_west
+						region = world_europe_north
+						region = world_europe_south_italy
+						region = world_africa_west
+						region = custom_morocco
+						region = custom_algiers
+						region = custom_africa
+						region = custom_croatia
+						region = custom_poland
+						region = custom_carpathia
 					}
 				}
-				set_character_flag = convert_to_catholic
 			}
+			set_secret_religion = event_target:eastern_religion
 		}
-
-		# Deal with the patriarchs
-		activate_title = { title = k_papal_state status = yes }
-		activate_title = { title = k_orthodox status = yes }
-		k_pentarch_rome = {
-			holder_scope = {
-				any_liege = {
-					limit = { tier = EMPEROR }
-					save_event_target_as = new_liege
-				}
-				k_papal_state = {
-					copy_title_history = k_pentarch_rome
-					gain_title = PREV
-					make_primary_title = yes
-				}
-				if = {
-					limit = { event_target:new_liege = { is_alive = yes } }
-					set_defacto_liege = event_target:new_liege
-					pf_liege_change_effect = yes
-				}
-				unsafe_religion = catholic
-				remove_trait = latin_rites
-			}
-			unsafe_destroy_landed_title = THIS
-			activate_title = { title = THIS status = no }
-		}
-		b_hagiasophia = {
-			holder_scope = {
-				any_liege = {
-					limit = { tier = EMPEROR }
-					save_event_target_as = new_liege
-				}
-				k_orthodox = {
-					copy_title_history = b_hagiasophia
-					gain_title = PREV
-					make_primary_title = yes
-				}
-				if = {
-					limit = { event_target:new_liege = { is_alive = yes } }
-					set_defacto_liege = event_target:new_liege
-					pf_liege_change_effect = yes
-				}
-				unsafe_religion = orthodox
-				remove_trait = greek_rites
-			}
-			unsafe_destroy_landed_title = THIS
-			activate_title = { title = THIS status = no }
-		}
-
-		# reset catholic/orthodox holy orders
-		if = {
-			limit = { d_knights_calatrava = { has_holder = yes } }
-			d_knights_calatrava = {
-				religion = catholic
-				holder_scope = {
-					religion = catholic
-					any_courtier = { religion = catholic }
-				}
-			}
-		}
-		if = {
-			limit = { d_knights_hospitaler = { has_holder = yes } }
-			d_knights_hospitaler = {
-				religion = catholic
-				holder_scope = {
-					religion = catholic
-					any_courtier = { religion = catholic }
-				}
-			}
-		}
-		if = {
-			limit = { d_knights_santiago = { has_holder = yes } }
-			d_knights_santiago = {
-				religion = catholic
-				holder_scope = {
-					religion = catholic
-					any_courtier = { religion = catholic }
-				}
-			}
-		}
-		if = {
-			limit = { d_knights_templar = { has_holder = yes } }
-			d_knights_templar = {
-				religion = catholic
-				holder_scope = {
-					religion = catholic
-					any_courtier = { religion = catholic }
-				}
-			}
-		}
-		if = {
-			limit = { d_teutonic_order = { has_holder = yes } }
-			d_teutonic_order = {
-				religion = catholic
-				holder_scope = {
-					religion = catholic
-					any_courtier = { religion = catholic }
-				}
-			}
-		}
-		if = {
-			limit = { d_holy_sepulchre = { has_holder = yes } }
-			d_holy_sepulchre = {
-				religion = orthodox
-				holder_scope = {
-					religion = orthodox
-					any_courtier = { religion = orthodox }
-				}
-			}
-		}
-
-		# Convert
-		any_independent_ruler = {
-			# Orthodox
-			if = {
-				limit = { has_character_flag = convert_to_orthodox }
-				if = {
-					limit = { religion = chalcedonian }
-					religion = orthodox
-				}
-				else_if = {
-					limit = { secret_religion = chalcedonian }
-					set_secret_religion = orthodox
-				}
-				if = {
-					limit = { trait = greek_rites }
-					remove_trait = greek_rites
-				}
-				any_realm_province = {
-					limit = { religion = chalcedonian }
-					religion = orthodox
-				}
-				any_realm_province = {
-					limit = { has_province_modifier = secret_chalcedonian_community }
-					remove_province_modifier = secret_chalcedonian_community
-					add_province_modifier = { name = secret_orthodox_community duration = -1 }
-				}
-				clr_character_flag = convert_to_orthodox
-			}
-			# Catholic
-			else_if = {
-				limit = { has_character_flag = convert_to_catholic }
-				if = {
-					limit = { religion = chalcedonian }
-					religion = catholic
-				}
-				else_if = {
-					limit = { secret_religion = chalcedonian }
-					set_secret_religion = catholic
-				}
-				if = {
-					limit = { trait = latin_rites }
-					remove_trait = latin_rites
-				}
-				any_realm_province = {
-					limit = { religion = chalcedonian }
-					religion = catholic
-				}
-				any_realm_province = {
-					limit = { has_province_modifier = secret_chalcedonian_community }
-					remove_province_modifier = secret_chalcedonian_community
-					add_province_modifier = { name = secret_catholic_community duration = -1 }
-				}
-				clr_character_flag = convert_to_catholic
-			}
-			# Non-Chalcedonian Clean Up
-			else = {
-				any_vassal = {
-					limit = {
+		any_character = {
+			limit = {
+				religion = chalcedonian
+				NOT = { has_landed_title = k_pentarch_rome }
+				NOT = { has_landed_title = b_hagiasophia }
+				NOT = { has_character_flag = convert_to_orthodox }
+				NOT = { trait = greek_rites }
+				OR = {
+					trait = latin_rites
+					rightful_religious_head_scope = { trait = latin_rites }
+					location = {
 						OR = {
-							religion = chalcedonian
-							secret_religion = chalcedonian
+							region = world_europe_west
+							region = world_europe_north
+							region = world_europe_south_italy
+							region = world_africa_west
+							region = custom_morocco
+							region = custom_algiers
+							region = custom_africa
+							region = custom_croatia
+							region = custom_poland
+							region = custom_carpathia
 						}
-					}
-					# Orthodox
-					if = {
-						limit = { has_character_flag = convert_to_orthodox }
-						if = {
-							limit = { religion = chalcedonian }
-							religion = orthodox
-						}
-						else_if = {
-							limit = { secret_religion = chalcedonian }
-							set_secret_religion = orthodox
-						}
-						if = {
-							limit = { trait = greek_rites }
-							remove_trait = greek_rites
-						}
-						any_realm_province = {
-							limit = { religion = chalcedonian }
-							religion = orthodox
-						}
-						any_realm_province = {
-							limit = { has_province_modifier = secret_chalcedonian_community }
-							remove_province_modifier = secret_chalcedonian_community
-							add_province_modifier = { name = secret_orthodox_community duration = -1 }
-						}
-						clr_character_flag = convert_to_orthodox
-					}
-					# Catholic
-					else_if = {
-						limit = { has_character_flag = convert_to_catholic }
-						if = {
-							limit = { religion = chalcedonian }
-							religion = catholic
-						}
-						else_if = {
-							limit = { secret_religion = chalcedonian }
-							set_secret_religion = catholic
-						}
-						if = {
-							limit = { trait = latin_rites }
-							remove_trait = latin_rites
-						}
-						any_realm_province = {
-							limit = { religion = chalcedonian }
-							religion = catholic
-						}
-						any_realm_province = {
-							limit = { has_province_modifier = secret_chalcedonian_community }
-							remove_province_modifier = secret_chalcedonian_community
-							add_province_modifier = { name = secret_catholic_community duration = -1 }
-						}
-						clr_character_flag = convert_to_catholic
 					}
 				}
 			}
-
-			# Convert the vassals
-			any_realm_character = {
-				limit = {
+			if = {
+				limit = { is_theocracy = yes }
+				set_character_flag = converting_religion
+			}
+			set_character_flag = convert_to_catholic
+		}
+		any_character = {
+			limit = {
+				secret_religion = chalcedonian
+				location = {
 					OR = {
-						religion = chalcedonian
-						secret_religion = chalcedonian
-					}
-				}
-				if = {
-					limit = { has_character_flag = convert_to_orthodox }
-					if = {
-						limit = { religion = chalcedonian }
-						religion = orthodox
-					}
-					else_if = {
-						limit = { secret_religion = chalcedonian }
-						set_secret_religion = orthodox
-					}
-				}
-				else_if = {
-					limit = { has_character_flag = convert_to_catholic }
-					if = {
-						limit = { religion = chalcedonian }
-						religion = catholic
-					}
-					else_if = {
-						limit = { secret_religion = chalcedonian }
-						set_secret_religion = catholic
+						region = world_europe_west
+						region = world_europe_north
+						region = world_europe_south_italy
+						region = world_africa_west
+						region = custom_morocco
+						region = custom_algiers
+						region = custom_africa
+						region = custom_croatia
+						region = custom_poland
+						region = custom_carpathia
 					}
 				}
 			}
+			set_secret_religion = catholic
+		}
 
-			# Clean Up Leftover Provinces
+		# Convert the Religion Heads
+		event_target:chalcedon_pope = {
+			set_character_flag = converting_religion
+			remove_trait = greek_rites
+			remove_trait = latin_rites
+			unsafe_religion = catholic
+			clr_character_flag = converting_religion
+			set_government_type = theocracy_government
+			any_liege = {
+				limit = { tier = EMPEROR }
+				save_event_target_as = new_liege
+			}
+			k_papal_state = {
+				activate_title = { title = THIS status = yes }
+				copy_title_history = k_pentarch_rome
+				gain_title = PREV
+				make_primary_title = yes
+			}
+			k_pentarch_rome = {
+				unsafe_destroy_landed_title = THIS
+				activate_title = { title = THIS status = no }
+			}
+			if = {
+				limit = { event_target:new_liege = { is_alive = yes } }
+				set_defacto_liege = event_target:new_liege
+				pf_liege_change_effect = yes
+			}
+		}
+		event_target:chalcedon_patriarch = {
+			set_character_flag = converting_religion
+			remove_trait = greek_rites
+			remove_trait = latin_rites
+			unsafe_religion = orthodox
+			clr_character_flag = converting_religion
+			set_government_type = theocracy_government
+			any_liege = {
+				limit = { tier = EMPEROR }
+				save_event_target_as = new_liege
+			}
+			k_orthodox = {
+				activate_title = { title = THIS status = yes }
+				copy_title_history = b_hagiasophia
+				gain_title = PREV
+				make_primary_title = yes
+			}
+			if = {
+				limit = { event_target:new_liege = { is_alive = yes } }
+				set_defacto_liege = event_target:new_liege
+				pf_liege_change_effect = yes
+			}
+		}
+
+		# Convert the People
+		any_character = {
+			limit = { has_character_flag = convert_to_catholic }
+			unsafe_religion = catholic
+			if = {
+				limit = { has_character_flag = converting_religion }
+				set_government_type = theocracy_government
+				clr_character_flag = converting_religion
+			}
+			clr_character_flag = convert_to_catholic
+		}
+		any_character = {
+			limit = { has_character_flag = convert_to_orthodox }
+			unsafe_religion = orthodox
+			if = {
+				limit = { has_character_flag = converting_religion }
+				set_government_type = theocracy_government
+				clr_character_flag = converting_religion
+			}
+			clr_character_flag = convert_to_orthodox
+		}
+
+		# Convert the Land
+		any_independent_ruler = {
+			limit = {
+				OR = {
+					religion = event_target:eastern_religion
+					religion = event_target:eastern_heresy
+				}
+			}
+			any_realm_province = {
+				limit = { religion = chalcedonian }
+				religion = event_target:eastern_religion
+			}
+		}
+		any_independent_ruler = {
+			limit = { religion = catholic }
+			any_realm_province = {
+				limit = { religion = chalcedonian }
+				religion = catholic
+			}
+		}
+		any_independent_ruler = {
+			limit = {
+				NOR = {
+					religion = catholic
+					religion = event_target:eastern_religion
+					religion = event_target:eastern_heresy
+				}
+			}
 			any_realm_province = {
 				limit = { religion = chalcedonian }
 				if = {
@@ -949,13 +797,9 @@ character_event = {
 					}
 					religion = catholic
 				}
-				else = { religion = orthodox }
-			}
-			any_realm_province = {
-				limit = { has_province_modifier = secret_chalcedonian_community }
-				if = {
+				else_if = {
 					limit = {
-						OR = {
+						NOR = {
 							region = world_europe_west
 							region = world_europe_north
 							region = world_europe_south_italy
@@ -968,13 +812,108 @@ character_event = {
 							region = custom_carpathia
 						}
 					}
-					remove_province_modifier = secret_chalcedonian_community
-					add_province_modifier = { name = secret_catholic_community duration = -1 }
+					religion = event_target:eastern_religion
 				}
-				else = {
-					remove_province_modifier = secret_chalcedonian_community
-					add_province_modifier = { name = secret_orthodox_community duration = -1 }
+			}
+		}
+		# Coptic Pope has land too
+		any_realm_province = {
+			limit = { religion = chalcedonian }
+			if = {
+				limit = {
+					OR = {
+						region = world_europe_west
+						region = world_europe_north
+						region = world_europe_south_italy
+						region = world_africa_west
+						region = custom_morocco
+						region = custom_algiers
+						region = custom_africa
+						region = custom_croatia
+						region = custom_poland
+						region = custom_carpathia
+					}
 				}
+				religion = catholic
+			}
+			else_if = {
+				limit = {
+					NOR = {
+						region = world_europe_west
+						region = world_europe_north
+						region = world_europe_south_italy
+						region = world_africa_west
+						region = custom_morocco
+						region = custom_algiers
+						region = custom_africa
+						region = custom_croatia
+						region = custom_poland
+						region = custom_carpathia
+					}
+				}
+				religion = event_target:eastern_religion
+			}
+		}
+
+		# reset catholic/orthodox holy orders
+		if = {
+			limit = { d_knights_calatrava = { has_holder = yes } }
+			d_knights_calatrava = {
+				holder_scope = {
+					unsafe_religion = catholic
+					any_courtier = { unsafe_religion = catholic }
+				}
+				religion = catholic
+			}
+		}
+		if = {
+			limit = { d_knights_hospitaler = { has_holder = yes } }
+			d_knights_hospitaler = {
+				holder_scope = {
+					unsafe_religion = catholic
+					any_courtier = { unsafe_religion = catholic }
+				}
+				religion = catholic
+			}
+		}
+		if = {
+			limit = { d_knights_santiago = { has_holder = yes } }
+			d_knights_santiago = {
+				holder_scope = {
+					unsafe_religion = catholic
+					any_courtier = { unsafe_religion = catholic }
+				}
+				religion = catholic
+			}
+		}
+		if = {
+			limit = { d_knights_templar = { has_holder = yes } }
+			d_knights_templar = {
+				holder_scope = {
+					unsafe_religion = catholic
+					any_courtier = { unsafe_religion = catholic }
+				}
+				religion = catholic
+			}
+		}
+		if = {
+			limit = { d_teutonic_order = { has_holder = yes } }
+			d_teutonic_order = {
+				holder_scope = {
+					unsafe_religion = catholic
+					any_courtier = { unsafe_religion = catholic }
+				}
+				religion = catholic
+			}
+		}
+		if = {
+			limit = { d_holy_sepulchre = { has_holder = yes } }
+			d_holy_sepulchre = {
+				holder_scope = {
+					unsafe_religion = orthodox
+					any_courtier = { unsafe_religion = orthodox }
+				}
+				religion = orthodox
 			}
 		}
 
@@ -1044,13 +983,14 @@ character_event = {
 		set_parent_religion = { religion = waldensian parent = catholic }
 		set_parent_religion = { religion = lollard parent = catholic }
 		set_parent_religion = { religion = adoptionist parent = catholic }
-		set_parent_religion = { religion = iconoclast parent = orthodox }
-		set_parent_religion = { religion = monothelite parent = orthodox }
+		set_parent_religion = { religion = event_target:eastern_heresy parent = event_target:eastern_religion }
+		set_parent_religion = { religion = iconoclast parent = event_target:eastern_religion }
+		set_parent_religion = { religion = monothelite parent = event_target:eastern_religion }
 		if = {
 			limit = {
 				NOT = { is_title_active = d_bogomilist }
 			}
-			set_parent_religion = { religion = bogomilist parent = orthodox }
+			set_parent_religion = { religion = bogomilist parent = event_target:eastern_religion }
 		}
 		set_parent_religion = { religion = chalcedonian parent = 0 }
 
