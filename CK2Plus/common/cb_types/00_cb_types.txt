@@ -7,13 +7,13 @@ claim = {
 	hostile_against_others = yes
 	can_ask_to_join_war = yes
 
-	infamy_modifier = 0.85
-
-	sort_priority = 1000
-
 	allowed_to_target_tributaries = yes
 
 	press_claim = yes
+
+	infamy_modifier = 0.85
+
+	sort_priority = 1000
 
 	can_use_gui = {
 		check_if_crusader_trigger = yes
@@ -22,138 +22,132 @@ claim = {
 	can_use_title = {
 		cb_can_use_preamble = yes
 		cb_no_nap_with_suzerain_trigger = yes
-		ROOT = { attacking_religious_head_trigger = no }
-		#AI non-adventurers will only press claims to different religion groups if the title is duke+
-		OR = {
-			ROOT = { ai = no }
-			higher_tier_than = count
-			ROOT = { religion_group = FROM }
-			ROOT = { has_character_flag = claimant_adventurer }
-		}
-		#disallow non-adventurer females from pressing claims unless they're already a ruler or they're non-muslim and the title is not agnatic
+		#AI will not fight for baronies held by a patriarch
+		can_attack_patriarch_trigger = yes
+		# Attacker
 		ROOT = {
-			OR = {
-				is_female = no
-				has_character_flag = claimant_adventurer
-				is_ruler = yes
-				AND = {
-					NOT = { religion_group = muslim }
-					NOT = { has_religion_feature = religion_patriarchal }
-				}
-				religion = druze
+			attacking_religious_head_trigger = no
+			trigger_if = {
+				limit = { has_character_flag = claimant_adventurer }
 			}
-			OR = {
-				is_female = yes
-				NOT = { has_religion_feature = religion_matriarchal }
-			}
-		}
-		#disallow females from pressing claims on agnatic nomadic titles
-		OR = {
-			ROOT = { ai = no }
-			FROM = { is_nomadic = no }
-			ROOT = { is_female = no }
-			NOT = { has_law = agnatic_succession }
-		}
-
-		OR = {
-			FROM = {
-				has_landed_title = PREV
-			}
-			holder_scope = {
-				is_liege_or_above = FROM
-			}
-		}
-		ROOT = {
-			OR = {
-				is_ruler = no
-				primary_title = {
+			trigger_else = {
+				# gender requirements
+				trigger_if = {
+					limit = { is_female = yes }
 					OR = {
-						is_primary_type_title = no # Static Mercs, the Pope, Holy Orders, etc
-						higher_tier_than = PREVPREV
-						tier = PREVPREV
+						is_ruler = yes
+						FROM = { NOT = { has_law = agnatic_succession } }
+					}
+				}
+				trigger_else = {
+					OR = {
+						is_ruler = yes
+						FROM = { NOT = { has_law = enatic_succession } }
 					}
 				}
 			}
-		}
-		OR = {
-			ROOT = { has_strong_claim = PREV }
-			ROOT = { has_character_flag = claimant_adventurer  }
-			AND = {
-				ROOT = { has_weak_claim = PREV }
-				OR = {
-					is_contested = yes # is already being contested in some form of Claim or Succession War
-					is_pretender = yes # Checks vs ROOT character
-					holder_scope = { has_regent = yes }
-					AND = {
-						higher_tier_than = duke
-						holder_scope = { trait = uncrowned }
+
+			trigger_if = {
+				limit = {
+					NOR = {
+						has_strong_claim = PREV
+						has_character_flag = claimant_adventurer
 					}
-					AND = {
-						succ_law_title = {
-							NOR = {
-								has_law = enatic_succession
-								has_law = enatic_cognatic_succession
-								has_law = true_cognatic_succession
-							}
-						}
-						holder_scope = { is_female = yes }
-					}
-					AND = {
-						succ_law_title = {
+				}
+				has_weak_claim = PREV
+
+				PREV = { # Claimed Title
+					trigger_if = {
+						limit = {
 							OR = {
-								has_law = enatic_succession
-								has_law = enatic_cognatic_succession
+								is_pretender = no # Checks vs ROOT character
+								is_contested = no # Already being contested in some war
+								holder_scope = { has_regent = no }
 							}
-						}
-						holder_scope = { is_female = no }
-					}
-					AND = {
-						ROOT = {
-							is_female = yes
-							culture = basque
 						}
 						OR = {
-							de_jure_liege_or_above = k_navarra
-							title = k_navarra
-						}
-					}
-					AND = {
-						ROOT = {
-							OR = {
-								is_female = no
-								has_religion_feature = religion_matriarchal
-								has_religion_feature = religion_equal
-								has_religion_feature = religion_feature_bon
+							holder_scope = {
+								higher_tier_than = duke
+								trait = uncrowned
 							}
-						}
-						holder_scope = {
-							AND = {
-								is_female = yes
-								NOR = {
-									has_religion_feature = religion_matriarchal
-									has_religion_feature = religion_equal
-									has_religion_feature = religion_feature_bon
-									has_game_rule = { name = gender value = all }
-									has_game_rule = { name = gender value = plus }
+							trigger_if = {
+								limit = {
+									NOR = {
+										has_game_rule = {
+											name = gender
+											value = all
+										}
+										has_game_rule = {
+											name = gender
+											value = plus
+										}
+									}
+								}
+								ROOT = { # attacking claimant
+									trigger_if = {
+										limit = { is_female = yes }
+										OR = {
+											has_law = status_of_women_4
+											has_religion_feature = religion_matriarchal
+											has_religion_feature = religion_equal
+											has_religion_feature = religion_feature_bon
+										}
+									}
+								}
+								holder_scope = { # title holder
+									is_female = yes
+									NOR = {
+										has_law = status_of_women_4
+										has_religion_feature = religion_matriarchal
+										has_religion_feature = religion_equal
+										has_religion_feature = religion_feature_bon
+									}
 								}
 							}
 						}
 					}
 				}
 			}
+
+			# Hard to know if this is what Paradox originally intended, but seems to make the most sense
+			# Should prevent landless primary type rulers from claiming titles above their tier
+			trigger_if = {
+				limit = { is_landed = no }
+
+				primary_title = {
+					trigger_if = {
+						limit = { is_primary_type_title = yes } # Static Mercs, the Pope, Holy Orders, etc.
+						NOT = { lower_tier_than = PREVPREV } # Should not titles above their own tier
+					}
+				}
+			}
+
+			#only cynics or adventurers can press claims on same-faith holy orders unless one is a player
+			trigger_if = {
+				limit = {
+					NOR = {
+						any_player = { character = ROOT }
+						any_player = { character = FROM }
+					}
+					FROM = {
+						holy_order = yes
+						lower_tier_than = king
+						religion = ROOT
+					}
+				}
+				OR = {
+					has_character_flag = claimant_adventurer
+					trait = cynical
+				}
+			}
 		}
-		#only cynics or adventurers can press claims on same-faith holy orders unless one is a player
-		OR = {
-			ROOT = { has_character_flag = claimant_adventurer }
-			FROM = { NOT = { religion = ROOT } }
-			ROOT = { trait = cynical }
-			ROOT = { ai = no }
-			FROM = { ai = no }
-			FROM = { higher_tier_than = duke }
-			FROM = { holy_order = no }
+
+		holder_scope = {
+			OR = {
+				character = FROM
+				is_vassal_or_below_of = FROM
+			}
 		}
-		#AI will not fight for baronies held by a patriarch
-		can_attack_patriarch_trigger = yes
 	}
 
 	is_valid_title = {
@@ -381,6 +375,33 @@ claim = {
 
 	ai_will_do = {
 		factor = 1
+
+		trigger = {
+			ROOT = {
+				OR = {
+					FROM = { higher_tier_than = count }
+					religion_group = FROM
+					has_character_Flag = claimant_adventurer
+				}
+				# Disallow wrong gender ai from pressing claims on agnatic/enatic nomadic titles
+				trigger_if = {
+					limit = { FROM = { is_nomadic = yes } }
+
+					trigger_if = {
+						limit = { is_female = yes }
+						FROM = {
+							NOT = { has_law = agnatic_succession }
+						}
+					}
+					trigger_else = {
+						FROM = {
+							NOT = { has_law = enatic_succession}
+						}
+					}
+				}
+			}
+		}
+
 		modifier = {
 			factor = 1.2
 			ROOT = {
