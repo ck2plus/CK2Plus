@@ -28,6 +28,7 @@ ai_not_busy_trigger = {
 }
 
 allowed_custom_titles_trigger = {
+	# TODO: Find a way to make this more flexable
 	primary_title = {
 		NOR = {
 			title = k_israel
@@ -161,7 +162,7 @@ can_change_succession_law = {
 					relative_power_to_liege >= 0.10
 					is_voter = yes
 				}
-				NOT = { opinion = { who = PREV value >= 0 } }
+				opinion = { who = PREV value < 0 }
 			}
 			trigger_if = {
 				limit = {
@@ -175,7 +176,7 @@ can_change_succession_law = {
 					faction_power = { faction = faction_court power >= 0.50 }
 				}
 			}
-			trigger_else_if = {
+			trigger_if = {
 				limit = {
 					OR = {
 						has_character_flag = faction_prosperity_unhappy
@@ -187,7 +188,7 @@ can_change_succession_law = {
 					faction_power = { faction = faction_prosperity power >= 0.50 }
 				}
 			}
-			trigger_else_if = {
+			trigger_if = {
 				limit = {
 					OR = {
 						has_character_flag = faction_glory_unhappy
@@ -199,7 +200,7 @@ can_change_succession_law = {
 					faction_power = { faction = faction_glory power >= 0.50 }
 				}
 			}
-			trigger_else_if = {
+			trigger_if = {
 				limit = {
 					OR = {
 						has_character_flag = faction_tradition_unhappy
@@ -240,31 +241,10 @@ can_excommunicate_trigger = {
 	}
 }
 
-has_disinheritance_trait_trigger = {
-	custom_tooltip = {
-		text = HAS_DISINHERITANCE_TRAIT_TT
-		hidden_tooltip = {
-			OR = {
-				trait = bastard
-				trait = eunuch
-				trait = horse
-				trait = abdicated
-				trait = disinherited
-				trait = monk
-				trait = nun
-				trait = desert_mother
-				trait = desert_father
-				trait = retired_vestalis
-				trait = vestalis
-			}
-		}
-	}
-}
-
 religion_allows_temple_inheritance = {
 	custom_tooltip = {
 		text = RELIGION_ALLOWS_TEMPLE_INHERITANCE_TT
-		hidden_tooltip = {
+		hidden_trigger ={
 			OR = {
 				religion = waldensian
 				religion = yazidi
@@ -279,7 +259,7 @@ religion_allows_temple_inheritance = {
 
 can_inherit_trigger = {
 	NOR = {
-		has_disinheritance_trait_trigger = yes
+		has_inheritance_blocker = yes
 		is_consort = yes # Concubines cannot inherit
 		government = order_government
 		AND = {
@@ -312,57 +292,56 @@ can_marry_trigger = {
 		is_incapable = yes
 		is_inaccessible_trigger = yes
 	}
-	OR = {
-		NOT = { age = 30 }
-		is_female = no
+	# Old Maids are undesireable
+	trigger_if = {
+		limit = { is_female = yes }
+		age < 30
 	}
-	OR = {
-		AND = {
-			NOT = { age = 25 }
-			fertility = 0.30
-		}
-		NOR = {
-			age = 40
-			AND = {
-				is_older_than = ROOT
-				age_diff = { who = ROOT years = 3 }
-			}
-			ROOT = {
-				is_older_than = PREV
-				age_diff = { who = PREV years = 10 }
-			}
-		}
+	# We may consider removing this check
+	trigger_if = {
+		limit = { age < 25 }
+		fertility >= 0.30
 	}
-	OR = {
-		is_ruler = yes
-		NOT = {
-			liege = {
-				ai = no
-				OR = {
-					is_close_relative = PREV
-					dynasty = PREV
-				}
+	trigger_else_if = {
+		limit = { is_older_than = ROOT }
+		age_diff = { who = ROOT years < 3 }
+	}
+	trigger_else_if = {
+		limit = {
+			ROOT = { is_older_than = PREV }
+		}
+		age_diff = { who = ROOT years < 10 }
+	}
+	trigger_else = {
+		age < 40
+	}
+	trigger_if = {
+		limit = {
+			is_ruler = no
+			liege = { ai = no }
+		}
+		liege = {
+			NOR = {
+				is_close_relative = PREV
+				dynasty = PREV
 			}
 		}
 	}
 }
 
 can_marry_matrilineally_trigger = {
-	OR = {
-		AND = {
-			is_ruler = yes
-			OR = {
-				NOT = { has_law = agnatic_succession }
-				is_feminist_trigger = yes
-			}
+	trigger_if = {
+		limit = { is_ruler = yes }
+		NOR = {
+			has_law = agnatic_succession
+			has_law = status_of_women_0
 		}
-		AND = {
-			is_ruler = no
-			liege = {
-				OR = {
-					NOT = { has_law = agnatic_succession }
-					is_feminist_trigger = yes
-				}
+	}
+	trigger_else = {
+		liege = {
+			NOR = {
+				has_law = agnatic_succession
+				has_law = status_of_women_0
 			}
 		}
 	}
@@ -381,21 +360,23 @@ close_viceroy_trigger = {
 		character = event_target:council_second_pick
 		character = event_target:council_third_pick
 	}
-	OR = {
-		character = event_target:current_viceroy
-		character = event_target:former_viceroy
-		NOT = { vassal_of = ROOT }
-		is_voter = no
-		lower_real_tier_than = DUKE
-		NOR = {
-			event_target:council_first_pick = { is_voter = yes }
-			event_target:council_second_pick = { is_voter = yes }
-			event_target:council_third_pick = { is_voter = yes }
+	trigger_if = {
+		limit = {
+			NOR = {
+				character = event_target:current_viceroy
+				character = event_target:former_viceroy
+			}
 		}
-	}
-	OR = {
-		character = event_target:current_viceroy
-		character = event_target:former_viceroy
+		OR = {
+			NOT = { vassal_of = ROOT }
+			is_voter = no
+			lower_real_tier_than = DUKE
+			NOR = {
+				event_target:council_first_pick = { is_voter = yes }
+				event_target:council_second_pick = { is_voter = yes }
+				event_target:council_third_pick = { is_voter = yes }
+			}
+		}
 		any_realm_province = {
 			has_province_flag = contingent_territory
 			OR = {
@@ -409,8 +390,16 @@ close_viceroy_trigger = {
 			}
 		}
 	}
+	# Redundant but I don't care
+	trigger_else = {
+		OR = {
+			character = event_target:current_viceroy
+			character = event_target:former_viceroy
+		}
+	}
 }
 
+# TODO: Replace usage with is_foe
 crime_against_FROM_trigger = {
 	OR = {
 		reverse_has_opinion_modifier = { who = FROM modifier = opinion_dishonorable }
@@ -456,6 +445,7 @@ crime_against_FROM_trigger = {
 	}
 }
 
+# TODO: Replace usage with is_foe
 crime_against_ROOT_FROM_trigger = {
 	OR = {
 		reverse_has_opinion_modifier = { who = ROOT_FROM modifier = opinion_dishonorable }
@@ -590,15 +580,17 @@ faction_council_trigger = {
 	}
 }
 
+# NOTE: Is this really necessary?
 has_holder_trigger = {
 	custom_tooltip = {
 		text = TITLE_IS_HELD
-		hidden_tooltip = {
+		hidden_trigger = {
 			FROM = { has_holder = yes }
 		}
 	}
 }
 
+# TODO: re-add other imperial governments
 has_imperial_government_trigger = {
 	government = roman_imperial_government
 }
@@ -929,7 +921,7 @@ holy_order_not_expelled_trigger = {
 in_command_trigger = {
 	custom_tooltip = {
 		text = IN_COMMAND_TOOLTIP
-		hidden_tooltip = {
+		hidden_trigger ={
 			in_command = yes
 			OR = {
 				war = yes
@@ -939,37 +931,7 @@ in_command_trigger = {
 	}
 }
 
-is_abroad_trigger = {
-	custom_tooltip = {
-		text = IS_ABROAD_TOOLTIP
-		hidden_tooltip = {
-			OR = {
-				in_command_trigger = yes
-				has_character_modifier = away_from_court
-				trait = on_hajj
-				trait = on_pilgrimage
-				trait = learning_druidic_arts
-				AND = {
-					is_adult = no
-					educator = {
-						NOR = {
-							is_liege_of = PREV
-							same_liege = PREV
-						}
-					}
-				}
-				AND = {
-					prisoner = yes
-					OR = {
-						is_ruler = yes
-						host = { NOT = { is_liege_of = PREV } }
-					}
-				}
-			}
-		}
-	}
-}
-
+# TODO: Simplify this
 is_feminist_trigger = {
 	OR = {
 		culture = basque
@@ -999,10 +961,11 @@ is_feminist_trigger = {
 	}
 }
 
+# NOTE: Is this really necessary?
 is_not_titular_trigger = {
 	custom_tooltip = {
 		text = TITLE_IS_NOT_TITULAR
-		hidden_tooltip = {
+		hidden_trigger ={
 			FROM = { is_titular = no }
 		}
 	}
@@ -1055,7 +1018,7 @@ is_usable_claim_trigger = {
 has_empire_size_trigger = {
 	custom_tooltip = {
 		text = HAS_SIZE_EMPIRE
-		hidden_tooltip = {
+		hidden_trigger ={
 			OR = {
 				realm_size = 150
 				num_of_count_titles_in_realm = 50
@@ -1067,7 +1030,7 @@ has_empire_size_trigger = {
 has_two_king_titles_trigger = {
 	custom_tooltip = {
 		text = HAS_TWO_KING_TITLES
-		hidden_tooltip = {
+		hidden_trigger ={
 			any_demesne_title = {
 				tier = KING
 				is_titular = no
@@ -1080,7 +1043,7 @@ has_two_king_titles_trigger = {
 has_three_king_titles_trigger = {
 	custom_tooltip = {
 		text = HAS_THREE_KING_TITLES
-		hidden_tooltip = {
+		hidden_trigger ={
 			any_demesne_title = {
 				tier = KING
 				is_titular = no
@@ -1119,7 +1082,7 @@ may_create_duchy_trigger = {
 		trigger = { independent = no }
 		custom_tooltip = {
 			text = NOT_IMPERIAL_GOVERNMENT
-			hidden_tooltip = { has_imperial_government_trigger = no }
+			hidden_trigger ={ has_imperial_government_trigger = no }
 		}
 	}
 	conditional_tooltip = {
@@ -1153,7 +1116,7 @@ may_create_kingdom_trigger = {
 		trigger = { independent = no }
 		custom_tooltip = {
 			text = NOT_IMPERIAL_GOVERNMENT
-			hidden_tooltip = { has_imperial_government_trigger = no }
+			hidden_trigger ={ has_imperial_government_trigger = no }
 		}
 	}
 	conditional_tooltip = {
@@ -1184,7 +1147,7 @@ may_create_kingdom_trigger = {
 		}
 		custom_tooltip = {
 			text = NOT_RESTRICTED_BY_LOCKOUT_LAW
-			hidden_tooltip = {
+			hidden_trigger ={
 				top_liege = { NOT = { has_law = kingdom_lockout_0 } }
 			}
 		}
@@ -1703,7 +1666,7 @@ vanilla_empires_trigger = {
 german_cultures_trigger = {
 	custom_tooltip = {
 		text = GERMAN_CULTURES_TRIGGER
-		hidden_tooltip = {
+		hidden_trigger ={
 			OR = {
 				culture = german
 				culture = imperial_german
@@ -1723,7 +1686,7 @@ german_cultures_trigger = {
 potential_late_german_cultures_trigger = {
 	custom_tooltip = {
 		text = POTENTIAL_LATE_GERMAN_CULTURES_TRIGGER
-		hidden_tooltip = {
+		hidden_trigger ={
 			OR = {
 				culture = old_saxon
 				culture = bavarian
@@ -1735,7 +1698,7 @@ potential_late_german_cultures_trigger = {
 late_german_cultures_trigger = {
 	custom_tooltip = {
 		text = LATE_GERMAN_CULTURES_TRIGGER
-		hidden_tooltip = {
+		hidden_trigger ={
 			OR = {
 				culture = teutonic
 				culture = austrian
@@ -2001,7 +1964,7 @@ is_secret_congenital_trait_trigger = {
 is_italian_trigger = {
 	custom_tooltip = {
 		text = IS_ITALIAN_TRIGGER
-		hidden_tooltip = {
+		hidden_trigger ={
 			OR = {
 				culture = corsican
 				culture = dalmatian
@@ -2340,7 +2303,7 @@ is_tyrant_trigger = {
 is_not_busy_trigger = {
 	custom_tooltip = {
 		text = is_not_busy_trigger_tooltip
-		hidden_tooltip = {
+		hidden_trigger ={
 			NOR = {
 				has_character_modifier = do_not_disturb
 				has_character_flag = do_not_disturb
@@ -2360,7 +2323,7 @@ cb_can_use_preamble = { # Should be at the start of most CBs
 is_reformed_pagan_religion = {
 	custom_tooltip = {
 		text = TT_NOT_UNREFORMED_PAGAN
-		hidden_tooltip = {
+		hidden_trigger ={
 			OR = {
 				AND = {
 					religion_group = pagan_group
@@ -2375,7 +2338,7 @@ is_reformed_pagan_religion = {
 
 is_pagan_religion = {
 	custom_tooltip = { text = IS_PAGAN_TT }
-	hidden_tooltip = {
+	hidden_trigger ={
 		OR = {
 			religion_group = pagan_group
 			religion_group = hellenic_pagan_group
