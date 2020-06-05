@@ -580,16 +580,6 @@ faction_council_trigger = {
 	}
 }
 
-# NOTE: Is this really necessary?
-has_holder_trigger = {
-	custom_tooltip = {
-		text = TITLE_IS_HELD
-		hidden_trigger = {
-			FROM = { has_holder = yes }
-		}
-	}
-}
-
 # TODO: re-add other imperial governments
 has_imperial_government_trigger = {
 	government = roman_imperial_government
@@ -961,12 +951,11 @@ is_feminist_trigger = {
 	}
 }
 
-# NOTE: Is this really necessary?
-is_not_titular_trigger = {
-	custom_tooltip = {
-		text = TITLE_IS_NOT_TITULAR
-		hidden_trigger ={
-			FROM = { is_titular = no }
+has_titular_requirements = {
+	FROM = {
+		trigger_if = {
+			limit = { is_titular = yes }
+			has_holder = yes
 		}
 	}
 }
@@ -1018,7 +1007,7 @@ is_usable_claim_trigger = {
 has_empire_size_trigger = {
 	custom_tooltip = {
 		text = HAS_SIZE_EMPIRE
-		hidden_trigger ={
+		hidden_trigger = {
 			OR = {
 				realm_size = 150
 				num_of_count_titles_in_realm = 50
@@ -1027,50 +1016,42 @@ has_empire_size_trigger = {
 	}
 }
 
-has_two_king_titles_trigger = {
-	custom_tooltip = {
-		text = HAS_TWO_KING_TITLES
-		hidden_trigger ={
-			any_demesne_title = {
-				tier = KING
-				is_titular = no
-				count = 2
-			}
-		}
-	}
-}
-
-has_three_king_titles_trigger = {
-	custom_tooltip = {
-		text = HAS_THREE_KING_TITLES
-		hidden_trigger ={
-			any_demesne_title = {
-				tier = KING
-				is_titular = no
-				count = 3
-			}
-		}
-	}
-}
-
 empire_creation_kingdom_rules_trigger = {
-	conditional_tooltip = {
-		trigger = {
+	trigger_if = {
+		limit = {
 			has_game_rule = {
 				name = empire_creation_kingdom_rule
 				value = has_two
 			}
+			custom_tooltip = {
+				text = HAS_TWO_KING_TITLES
+				hidden_trigger = {
+					any_demesne_title = {
+						tier = KING
+						is_titular = no
+						count = 2
+					}
+				}
+			}
 		}
-		has_two_king_titles_trigger = yes
 	}
-	conditional_tooltip = {
-		trigger = {
+	trigger_else_if = {
+		limit = {
 			has_game_rule = {
 				name = empire_creation_kingdom_rule
 				value = has_three
 			}
 		}
-		has_three_king_titles_trigger = yes
+		custom_tooltip = {
+			text = HAS_THREE_KING_TITLES
+			hidden_trigger = {
+				any_demesne_title = {
+					tier = KING
+					is_titular = no
+					count = 3
+				}
+			}
+		}
 	}
 }
 
@@ -1078,15 +1059,15 @@ may_create_duchy_trigger = {
 	is_adult = yes
 	has_regent = no
 	war = no
-	conditional_tooltip = {
-		trigger = { independent = no }
+	trigger_if = {
+		limit = { independent = no }
 		custom_tooltip = {
 			text = NOT_IMPERIAL_GOVERNMENT
-			hidden_trigger ={ has_imperial_government_trigger = no }
+			hidden_trigger = { has_imperial_government_trigger = no }
 		}
 	}
-	conditional_tooltip = {
-		trigger = { FROM = { is_titular = yes } }
+	trigger_if = {
+		limit = { FROM = { is_titular = yes } }
 		lower_real_tier_than = DUKE
 	}
 }
@@ -1094,16 +1075,17 @@ may_create_duchy_trigger = {
 may_create_empire_trigger = {
 	is_title_active = FROM
 	is_adult = yes
+	is_nomadic = no
 	has_regent = no
 	war = no
-	conditional_tooltip = {
-		trigger = { real_tier = EMPEROR }
-		is_nomadic = no
-		primary_title = { is_titular = no }
-		FROM = { is_titular = yes }
-	}
 	empire_creation_kingdom_rules_trigger = yes
 	ruled_years = 5
+
+	trigger_if = {
+		limit = { real_tier = EMPEROR }
+		FROM = { is_titular = yes }
+		primary_title = { is_titular = no }
+	}
 }
 
 may_create_kingdom_trigger = {
@@ -1112,20 +1094,31 @@ may_create_kingdom_trigger = {
 	has_regent = no
 	war = no
 	ruled_years = 5
-	conditional_tooltip = {
-		trigger = { independent = no }
+	trigger_if = {
+		limit = { independent = no }
 		custom_tooltip = {
 			text = NOT_IMPERIAL_GOVERNMENT
 			hidden_trigger ={ has_imperial_government_trigger = no }
 		}
 	}
-	conditional_tooltip = {
-		trigger = {
+	trigger_if = {
+		limit = {
+			FROM = { is_titular = yes }
+		}
+		lower_real_tier_than = KING
+	}
+	trigger_if = {
+		limit = {
 			top_liege = { has_law = kingdom_lockout_0 }
-			NOT = { FROM = { culture = roman } }
-			NOT = {
-				AND = {
-					top_liege = { has_landed_title = e_hre }
+		}
+		custom_tooltip = {
+			text = NOT_RESTRICTED_BY_LOCKOUT_LAW
+
+			hidden_trigger = {
+				trigger_if = {
+					limit = {
+						top_liege = { has_landed_title = e_hre }
+					}
 					FROM = {
 						OR = {
 							title = k_bohemia
@@ -1143,27 +1136,32 @@ may_create_kingdom_trigger = {
 						}
 					}
 				}
-			}
-		}
-		custom_tooltip = {
-			text = NOT_RESTRICTED_BY_LOCKOUT_LAW
-			hidden_trigger ={
-				top_liege = { NOT = { has_law = kingdom_lockout_0 } }
+				trigger_else = {
+					always = no
+				}
 			}
 		}
 	}
-	conditional_tooltip = {
-		trigger = { FROM = { is_titular = yes } }
-		lower_real_tier_than = KING
-	}
-	conditional_tooltip = {
-		trigger = { ai = yes }
-		OR = {
-			NOT = { has_landed_title = k_france }
-			has_character_flag = is_charlemagne
-			FROM = { NOT = { title = k_aquitaine } }
+
+	# AI stuff
+	trigger_if = {
+		limit = { ai = yes }
+		trigger_if = {
+			limit = { has_landed_title = k_france }
+
+			OR = {
+				has_character_flag = is_charlemagne
+				FROM = { NOT = title = k_aquitaine }
+			}
 		}
-		OR = {
+		trigger_if = {
+			limit = {
+				prestige < 1000
+				any_demesne_title = {
+					tier = DUKE
+					count < 3
+				}
+			}
 			FROM = {
 				OR = {
 					is_titular = no
@@ -1181,67 +1179,66 @@ may_create_kingdom_trigger = {
 					title = k_grand_sicily
 				}
 			}
-			AND = {
-				prestige = 1000
-				any_demesne_title = {
-					count = 3
-					tier = DUKE
-				}
-			}
 		}
 	}
 }
 
 mend_schism_religion_trigger = {
 	is_heretic = no
-	OR = {
-		AND = {
+	trigger_if = {
+		limit = {
 			OR = {
 				religion = catholic
 				religion = fraticelli
 				religion = cathar
 			}
-			event_target:mender_religion = {
-				OR = {
-					religion = orthodox
-					religion = monothelite
-					religion = iconoclast
-					religion = bogomilist
-				}
-			}
 		}
-		AND = {
+		event_target:mender_religion = {
 			OR = {
 				religion = orthodox
 				religion = monothelite
 				religion = iconoclast
 				religion = bogomilist
 			}
-			event_target:mender_religion = {
-				OR = {
-					religion = catholic
-					religion = fraticelli
-					religion = cathar
-				}
+		}
+	}
+	trigger_else_if = {
+		limit = {
+			OR = {
+				religion = orthodox
+				religion = monothelite
+				religion = iconoclast
+				religion = bogomilist
 			}
 		}
+		event_target:mender_religion = {
+			OR = {
+				religion = catholic
+				religion = fraticelli
+				religion = cathar
+			}
+		}
+	}
+	trigger_else = {
+		always = no
 	}
 }
 
 powerful_vassal_wants_council_trigger = {
-	OR = {
-		AND = {
-			liege = { lower_real_tier_than = KING }
-			among_most_powerful_vassals = 3
-		}
-		AND = {
-			liege = { real_tier = KING }
-			among_most_powerful_vassals = 4
-		}
-		AND = {
+	trigger_if = {
+		limit = {
 			liege = { real_tier = EMPEROR }
-			among_most_powerful_vassals = 5
 		}
+		among_most_powerful_vassals = 5
+	}
+	trigger_else_if = {
+		limit = {
+			liege = { real_tier = KING }
+		}
+		among_most_powerful_vassals = 4
+	}
+	trigger_else = {
+		among_most_powerful_vassals = 3
 	}
 }
 
@@ -1273,36 +1270,42 @@ religion_head_divorce_trigger = {
 
 repudiate_chalcedon_religion_trigger = {
 	is_heretic = no
-	OR = {
-		religion = orthodox
-		religion = iconoclast
-		religion = monothelite
-		religion = bogomilist
-		AND = {
+
+	trigger_if = {
+		limit = {
 			OR = {
 				religion = apostolic
 				religion = paulician
 			}
-			event_target:mender_religion = {
-				OR = {
-					religion = miaphysite
-					religion = monophysite
-				}
-			}
 		}
-		AND = {
+		event_target:mender_religion = {
 			OR = {
 				religion = miaphysite
 				religion = monophysite
 			}
-			event_target:mender_religion = {
-				OR = {
-					religion = apostolic
-					religion = paulician
-				}
+		}
+	}
+	trigger_else_if = {
+		limit = {
+			OR = {
+				religion = miaphysite
+				religion = monophysite
 			}
 		}
-
+		event_target:mender_religion = {
+			OR = {
+				religion = apostolic
+				religion = paulician
+			}
+		}
+	}
+	trigger_else = {
+		OR = {
+			religion = orthodox
+			religion = iconoclast
+			religion = monothelite
+			religion = bogomilist
+		}
 	}
 }
 
@@ -1317,39 +1320,40 @@ repudiate_ephesus_religion_trigger = {
 }
 
 same_sea_zone_province_trigger = {
-	OR = {
-		AND = {
-			ROOT = { location = { region = custom_baltic_sea_zone } }
-			region = custom_baltic_sea_zone
-		}
-		AND = {
-			ROOT = { location = { region = custom_north_sea_zone } }
-			region = custom_north_sea_zone
-		}
-		AND = {
-			ROOT = { location = { region = custom_atlantic_zone } }
-			region = custom_atlantic_zone
-		}
-		AND = {
-			ROOT = { location = { region = custom_west_med_zone } }
-			region = custom_west_med_zone
-		}
-		AND = {
-			ROOT = { location = { region = custom_east_med_zone } }
-			region = custom_east_med_zone
-		}
-		AND = {
-			ROOT = { location = { region = custom_black_sea_zone } }
-			region = custom_black_sea_zone
-		}
-		AND = {
-			ROOT = { location = { region = custom_arctic_sea_zone } }
-			region = custom_arctic_sea_zone
-		}
-		AND = {
-			ROOT = { location = { region = custom_indian_sea_zone } }
-			region = custom_indian_sea_zone
-		}
+	trigger_if = {
+		limit = { region = custom_baltic_sea_zone }
+		ROOT = { location = { region = custom_baltic_sea_zone } }
+	}
+	trigger_else_if = {
+		limit = { region = custom_north_sea_zone }
+		ROOT = { location = { region = custom_north_sea_zone } }
+	}
+	trigger_else_if = {
+		limit = { region = custom_atlantic_zone }
+		ROOT = { location = { region = custom_atlantic_zone } }
+	}
+	trigger_else_if = {
+		limit = { region = custom_west_med_zone }
+		ROOT = { location = { region = custom_west_med_zone } }
+	}
+	trigger_else_if = {
+		limit = { region = custom_east_med_zone }
+		ROOT = { location = { region = custom_east_med_zone } }
+	}
+	trigger_else_if = {
+		limit = { region = custom_black_sea_zone }
+		ROOT = { location = { region = custom_black_sea_zone } }
+	}
+	trigger_else_if = {
+		limit = { region = custom_arctic_sea_zone }
+		ROOT = { location = { region = custom_arctic_sea_zone } }
+	}
+	trigger_else_if = {
+		limit = { region = custom_indian_sea_zone }
+		ROOT = { location = { region = custom_indian_sea_zone } }
+	}
+	trigger_else = {
+		always = no
 	}
 }
 
@@ -1397,64 +1401,79 @@ valid_viceroy_trigger = {
 		character = event_target:council_second_pick
 		character = event_target:council_third_pick
 	}
-	OR = {
-		character = event_target:current_viceroy
-		character = event_target:former_viceroy
-		NOT = { vassal_of = ROOT }
-		is_voter = no
-		lower_real_tier_than = DUKE
-		NOR = {
-			event_target:council_first_pick = { is_voter = yes }
-			event_target:council_second_pick = { is_voter = yes }
-			event_target:council_third_pick = { is_voter = yes }
+	trigger_if = {
+		limit = {
+			NOR = {
+				character = event_target:current_viceroy
+				character = event_target:former_viceroy
+			}
 		}
-	}
-	OR = {
-		character = event_target:current_viceroy
-		character = event_target:former_viceroy
-		any_realm_province = {
-			has_province_flag = contingent_territory
-			OR = {
-				de_jure_liege_or_above = event_target:viceroy_title
-				any_neighbor_province = {
-					OR = {
-						duchy = { title = event_target:viceroy_title }
-						kingdom = { title = event_target:viceroy_title }
+		OR = {
+			NOT = { vassal_of = ROOT }
+			is_voter = no
+			lower_real_tier_than = DUKE
+			NOR = {
+				event_target:council_first_pick = { is_voter = yes }
+				event_target:council_second_pick = { is_voter = yes }
+				event_target:council_third_pick = { is_voter = yes }
+			}
+		}
+		OR = {
+			any_realm_province = {
+				has_province_flag = contingent_territory
+				OR = {
+					de_jure_liege_or_above = event_target:viceroy_title
+					any_neighbor_province = {
+						OR = {
+							duchy = { title = event_target:viceroy_title }
+							kingdom = { title = event_target:viceroy_title }
+						}
 					}
-				}
-				event_target:viceroy_title = {
-					any_de_jure_vassal_title = {
-						tier = COUNT
-						location = {
-							NOT = { distance = { where = PREVPREVPREV value = 75 } }
+					event_target:viceroy_title = {
+						any_de_jure_vassal_title = {
+							tier = COUNT
+							location = {
+								NOT = { distance = { where = PREVPREVPREV value = 75 } }
+							}
 						}
 					}
 				}
 			}
 		}
 	}
+	trigger_else = {
+		OR = {
+			character = event_target:current_viceroy
+			character = event_target:former_viceroy
+		}
+	}
 }
 
 wants_matrilineal_marriage_trigger = {
 	is_female = yes
-	OR = {
-		AND = {
-			is_dumb_trigger = no
-			NOR = {
-				trait = humble
-				trait = content
-				is_incapable = yes
-			}
-			OR = {
-				trait = ambitious
-				trait = proud
-				trait = brave
-				stewardship = 10
-				is_smart_trigger = yes
-				is_ruler = yes
-				higher_tier_than = DUKE
-			}
+
+	trigger_if = {
+		limit = { is_ruler = yes }
+
+		is_dumb_trigger = no
+		NOR = {
+			trait = humble
+			trait = content
+			is_incapable = yes
 		}
+		OR = {
+			trait = ambitious
+			trait = proud
+			trait = brave
+			stewardship = 10
+			is_smart_trigger = yes
+			is_ruler = yes
+			higher_tier_than = DUKE
+		}
+	}
+	trigger_else_if = {
+		limit = { is_heir = yes }
+
 		any_heir_title = {
 			is_primary_holder_title = yes
 			holder_scope = {
@@ -1473,187 +1492,32 @@ wants_matrilineal_marriage_trigger = {
 			}
 		}
 	}
-	OR = {
-		is_ruler = yes
-		any_heir_title = { always = yes }
-		any_pretender_title = { always = yes }
+	trigger_else = {
+		any_pretender_title = {
+			is_primary_holder_title = yes
+			holder_scope = {
+				is_close_relative = PREVPREV
+				is_dumb_trigger = no
+				NOR = {
+					trait = humble
+					trait = content
+					is_incapable = yes
+				}
+				OR = {
+					trait = ambitious
+					trait = proud
+					higher_tier_than = COUNT
+				}
+			}
+		}
 	}
 }
 
+# Consider removing may no longer be necessary
 wrong_religion_head_trigger = {
-	OR = {
-		AND = {
-			title = k_pentarch_rome
-			ROOT = { NOT =  { religion = chalcedonian } }
-		}
-		AND = {
-			title = k_papal_state
-			ROOT = { NOT =  { religion = catholic } }
-		}
-		AND = {
-			title = d_cathar
-			ROOT = { NOT =  { religion = cathar } }
-		}
-		AND = {
-			title = d_fraticelli
-			ROOT = { NOT =  { religion = fraticelli } }
-		}
-		AND = {
-			title = k_orthodox
-			ROOT = { NOT =  { religion = orthodox } }
-		}
-		AND = {
-			title = d_bogomilist
-			ROOT = { NOT =  { religion = bogomilist } }
-		}
-		AND = {
-			title = d_monothelite
-			ROOT = { NOT =  { religion = monothelite } }
-		}
-		AND = {
-			title = d_iconoclast
-			ROOT = { NOT =  { religion = iconoclast } }
-		}
-		AND = {
-			title = d_miaphysite
-			ROOT = { NOT =  { religion = miaphysite } }
-		}
-		AND = {
-			title = d_monophysite
-			ROOT = { NOT =  { religion = monophysite } }
-		}
-		AND = {
-			title = d_apostolic
-			ROOT = { NOT =  { religion = apostolic } }
-		}
-		AND = {
-			title = d_paulician
-			ROOT = { NOT =  { religion = paulician } }
-		}
-		AND = {
-			title = d_nestorian
-			ROOT = { NOT =  { religion = nestorian } }
-		}
-		AND = {
-			title = d_messalian
-			ROOT = { NOT =  { religion = messalian } }
-		}
-		AND = {
-			title = d_sunni
-			ROOT = { NOT =  { religion = sunni } }
-		}
-		AND = {
-			title = d_zikri
-			ROOT = { NOT =  { religion = zikri } }
-		}
-		AND = {
-			title = d_quranist
-			ROOT = { NOT =  { religion = quranist } }
-		}
-		AND = {
-			title = d_ibadi
-			ROOT = { NOT =  { religion = ibadi } }
-		}
-		AND = {
-			title = d_kharijite
-			ROOT = { NOT =  { religion = kharijite } }
-		}
-		AND = {
-			title = d_shiite
-			ROOT = { NOT =  { religion = shiite } }
-		}
-		AND = {
-			title = d_bektashi_head
-			ROOT = { NOT =  { religion = bektashi } }
-		}
-		AND = {
-			title = d_druze
-			ROOT = { NOT =  { religion = druze } }
-		}
-		AND = {
-			title = d_hurufi
-			ROOT = { NOT =  { religion = hurufi } }
-		}
-		AND = {
-			title = d_qarmatian
-			ROOT = { NOT =  { religion = qarmatian } }
-		}
-		AND = {
-			title = d_baltic_pagan_reformed
-			ROOT = { NOT =  { religion = baltic_pagan_reformed } }
-		}
-		AND = {
-			title = d_celtic_pagan_reformed
-			ROOT = { NOT =  { religion = celtic_pagan_reformed } }
-		}
-		AND = {
-			title = d_finnish_pagan_reformed
-			ROOT = { NOT =  { religion = finnish_pagan_reformed } }
-		}
-		AND = {
-			title = d_german_pagan_reformed
-			ROOT = { NOT =  { religion = german_pagan_reformed } }
-		}
-		AND = {
-			title = d_norse_pagan_reformed
-			ROOT = { NOT =  { religion = norse_pagan_reformed } }
-		}
-		AND = {
-			title = d_slavic_pagan_reformed
-			ROOT = { NOT =  { religion = slavic_pagan_reformed } }
-		}
-		AND = {
-			title = d_tengri_pagan_reformed
-			ROOT = { NOT =  { religion = tengri_pagan_reformed } }
-		}
-		AND = {
-			title = d_west_african_pagan_reformed
-			ROOT = { NOT =  { religion = west_african_pagan_reformed } }
-		}
-		AND = {
-			title = d_zun_pagan_reformed
-			ROOT = { NOT =  { religion = zun_pagan_reformed } }
-		}
-		AND = {
-			title = d_egyptian_pagan
-			ROOT = { NOT =  { religion = egyptian_pagan } }
-		}
-		AND = {
-			title = d_pontifex_maximus
-			ROOT = { NOT =  { religion = roman_pagan } }
-		}
-		AND = {
-			title = d_promethean_pagan
-			ROOT = { NOT =  { religion = promethean_pagan } }
-		}
-		AND = {
-			title = d_zoroastrian
-			ROOT = { NOT =  { religion = zoroastrian } }
-		}
-		AND = {
-			title = d_mazdaki
-			ROOT = { NOT =  { religion = mazdaki } }
-		}
-		AND = {
-			title = d_manichean
-			ROOT = { NOT =  { religion = manichean } }
-		}
-		AND = {
-			title = d_yazidi
-			ROOT = { NOT =  { religion = yazidi } }
-		}
-		AND = {
-			title = d_jewish
-			ROOT = { NOT =  { religion = jewish } }
-		}
-		AND = {
-			title = d_samaritan
-			ROOT = { NOT =  { religion = samaritan } }
-		}
-		AND = {
-			title = d_aztec
-			ROOT = { NOT =  { religion = aztec } }
-		}
+	random_character = {
+		rightful_religious_head = ROOT
+		NOT = { religion = ROOT }
 	}
 }
 
@@ -1733,30 +1597,38 @@ german_cultures_no_imperial_german_trigger = {
 }
 
 compare_cultures_ROOT_trigger = { # Compares the culture of the current scope with ROOT and returns true if they are the same, or part of an exception
-	OR = {
+	trigger_if = {
+		limit = { german_cultures_trigger = yes }
+		ROOT = { german_cultures_trigger = yes }
+	}
+	trigger_else_if = {
+		limit = { is_italian_trigger = yes }
+		ROOT = { is_italian_trigger = yes }
+	}
+	trigger_else_if = {
+		limit = { is_greek_trigger = yes }
+		ROOT = { is_greek_trigger = yes }
+	}
+	trigger_else = {
 		culture = ROOT
-		AND = { # German cultures are more accepting of each other
-			ROOT = { german_cultures_trigger = yes }
-			german_cultures_trigger = yes
-		}
-		AND = { # Italian cultures are more accepting of each other
-			ROOT = { is_italian_trigger = yes }
-			is_italian_trigger = yes
-		}
 	}
 }
 
 compare_cultures_FROM_trigger = { # Compares the culture of the current scope with FROM and returns true if they are the same, or part of an exception
-	OR = {
+	trigger_if = {
+		limit = { german_Cultures_trigger = yes }
+		FROM = { german_cultures_trigger = yes }
+	}
+	trigger_else_if = {
+		limit = { is_italian_trigger = yes }
+		FROM = { is_italian_trigger = yes }
+	}
+	trigger_else_if = {
+		limit = { is_greek_trigger = yes }
+		FROM = { is_greek_trigger = yes }
+	}
+	trigger_else = {
 		culture = FROM
-		AND = { # German cultures are more accepting of each other
-			FROM = { german_cultures_trigger = yes }
-			german_cultures_trigger = yes
-		}
-		AND = { # Italian cultures are more accepting of each other
-			FROM = { is_italian_trigger = yes }
-			is_italian_trigger = yes
-		}
 	}
 }
 
@@ -1910,21 +1782,7 @@ regnal_dynastic_name_trigger = {
 		NOT = { character = ROOT }
 		same_sex = ROOT
 		is_alive = no
-		OR = {
-			culture = ROOT
-			AND = {
-				is_italian_trigger = yes
-				ROOT = { is_italian_trigger = yes }
-			}
-			AND = {
-				german_cultures_trigger = yes
-				ROOT = { german_cultures_trigger = yes }
-			}
-			AND = {
-				is_greek_trigger = yes
-				ROOT = { is_greek_trigger = yes }
-			}
-		}
+		compare_cultures_ROOT_trigger = yes
 		OR = {
 			tier = ROOT
 			higher_tier_than = ROOT
@@ -1934,13 +1792,12 @@ regnal_dynastic_name_trigger = {
 
 regnal_name_trigger = {
 	OR = {
-		AND = {
-			is_female = no
-			regnal_name_culture_trigger = yes
-		}
-		AND = {
-			is_female = yes
+		trigger_if = {
+			limit = { is_female = yes }
 			regnal_female_name_culture_trigger = yes
+		}
+		trigger_else = {
+			regnal_name_culture_trigger = yes
 		}
 		regnal_dynastic_name_trigger = yes
 	}
