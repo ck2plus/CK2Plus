@@ -130,8 +130,8 @@ claim = {
 			trigger_if = {
 				limit = {
 					NOR = {
-						any_player = { character = ROOT }
-						any_player = { character = FROM }
+						ROOT = { ai = no }
+						FROM = { ai = no }
 					}
 					FROM = {
 						holy_order = yes
@@ -155,42 +155,55 @@ claim = {
 	}
 
 	is_valid_title = {
-		OR = {
-			FROM = {
-				has_landed_title = PREV
-			}
-			holder_scope = {
-				is_liege_or_above = FROM
+		# Attacker
+		ROOT = { has_claim = PREV }
+
+		holder_scope = {
+			OR = {
+				character = FROM
+				is_vassal_or_below_of = FROM
 			}
 		}
-		ROOT = { has_claim = PREV }
 	}
 
 	on_add = {
-		hidden_tooltip = { fire_haruspicy_event_effect = yes }
-		FROM = {
-			attacked_tributary_cb_effect = yes
-		}
-		if = {
-			limit = { defender = { is_offmap_governor = offmap_china } }
-			attacker = {
-				sound_effect = china_angered_emperor
-				detract_grace_super_huge_effect = yes
-			}
-		}
+		fire_haruspicy_event_effect = yes
+		anger_china_effect = yes
+		attacked_tributary_cb_effect = yes
 	}
 
 	on_success_title = {
 		log = "[Root.GetBestName] (ID: [Root.GetID]) succeeded with their Claim war on the [This.GetFullName] against [From.GetBestName] (ID: [From.GetID])"
-		ROOT = {
-			add_character_modifier = { name = victory_timer duration = 1 hidden = yes }
+
+		usurp_title_plus_barony_if_unlanded = {
+			target = attacker
+			type = claim
+		}
+
+		attacker = {
+			show_scope_change = no
+			participation_scaled_prestige = 200
+			# CK2Plus
+			add_character_modifier = {
+				name = victory_timer
+				duration = 1
+				hidden = yes
+			}
 			pf_glory_plus2_effect = yes
 		}
-		#decentralize target realm
-		title_reduce_CA_effect = yes
-		title_reduce_TO_effect = yes
-		hidden_tooltip = {
-			ROOT = {
+		any_attacker = {
+			limit = { NOT = { character = attacker } }
+			hidden_effect = { participation_scaled_prestige = 200 }
+		}
+
+		defender = {
+			show_scope_change = no
+			prestige = -100
+			pf_glory_minus2_effect = yes
+		}
+
+		hidden_effect = {
+			attacker = {
 				clr_character_flag = claimant_adventurer
 				if = {
 					limit = {
@@ -203,114 +216,104 @@ claim = {
 					}
 				}
 			}
-		}
-		empty_province_effect = yes
-		pf_liege_change_under_title_begin_effect = yes
-		usurp_title_plus_barony_if_unlanded = { target = ROOT type = claim }
-		pf_liege_change_under_title_end_effect = yes
-		if = {
-			limit = {
-				higher_tier_than = BARON
-				NOT = { culture = ROOT }
-			}
-			hidden_tooltip = { conquest_culture = ROOT }
-		}
-		ROOT = {
-			show_scope_change = no
-			participation_scaled_prestige = 200
-		}
-		any_attacker = {
-			limit = { NOT = { character = ROOT } }
-			hidden_tooltip = { participation_scaled_prestige = 200 }
-		}
-		FROM = {
-			show_scope_change = no
-			prestige = -100
-			pf_glory_minus2_effect = yes
-		}
 
-		hidden_tooltip = {
-			check_war_effect = yes
-			FROM = {
+			defender = {
 				landless_pope_effect = yes
 			}
+
+			if = {
+				limit = {
+					higher_tier_than = BARON
+					NOT = { culture = attacker }
+				}
+				hidden_tooltip = { conquest_culture = attacker }
+			}
+
+			check_war_effect = yes
 		}
+
+		# CK2Plus
+		empty_province_effect = yes
+		# Decentralize target realm
+		title_reduce_CA_effect = yes
+		title_reduce_TO_effect = yes
+		# Factions Stuff
+		pf_liege_change_under_title_begin_effect = yes
+		pf_liege_change_under_title_end_effect = yes
+
 	}
 
 	on_fail_title = {
-		ROOT = {
+		attacker = {
 			show_scope_change = no
 			prestige = -100
-			hidden_tooltip = {
-				if = {
-					limit = { has_character_flag = claimant_adventurer }
-					disband_event_forces = yes
-					clr_character_flag = claimant_adventurer
-				}
+			hidden_effect = {
+				disband_event_forces = yes
+				clr_character_flag = claimant_adventurer
 			}
 		}
-		FROM = {
+
+		defender = {
 			show_scope_change = no
 			participation_scaled_prestige = 100
 		}
 		any_defender = {
-			limit = { NOT = { character = FROM } }
-			hidden_tooltip = { participation_scaled_prestige = 100 }
+			limit = { NOT = { character = defender } }
+			hidden_effect = { participation_scaled_prestige = 100 }
 		}
 	}
 
 	on_reverse_demand = {
-		FROM = {
-			show_scope_change = no
-			add_character_modifier = { name = victory_timer duration = 1 hidden = yes }
-			pf_glory_plus2_effect = yes
-		}
-		ROOT = {
+		attacker = {
 			show_scope_change = no
 			prestige = -200
 			transfer_scaled_wealth = {
-				to = FROM
+				to = defender
 				value = 4.0
+			}
+			if = {
+				limit = { has_character_flag = claimant_adventurer }
+				imprison = defender
 			}
 			pf_glory_minus2_effect = yes
 		}
-		if = {
-			limit = {
-				ROOT = { has_character_flag = claimant_adventurer }
-			}
-			ROOT = { imprison = FROM }
-		}
-		any_defender = {
-			limit = { character = FROM }
+
+		defender = {
+			show_scope_change = no
 			participation_scaled_prestige = 200
+			# CK2Plus
+			add_character_modifier = { name = victory_timer duration = 1 hidden = yes }
+			pf_glory_plus2_effect = yes
 		}
 		any_defender = {
-			limit = { NOT = { character = FROM } }
-			hidden_tooltip = { participation_scaled_prestige = 200 }
+			limit = { NOT = { character = defender } }
+			hidden_effect = { participation_scaled_prestige = 200 }
 		}
+
+		# China stuff
 		hidden_effect = {
-			ROOT = {
+			# Attacker
+			attacker = {
 				if = {
-					limit = {
-						has_landed_title = e_china_west_governor
-					}
+					limit = { has_landed_title = e_china_west_governor }
+
 					log = "China War Logging: China lost a claim war against [From.GetBestName]"
-				}
-				if = { #Makes China have a chance of leaving Expanionist policy...
-					limit = {
-						has_landed_title = e_china_west_governor
-						offmap_china = {
-							has_policy = china_expansionist
+
+					if = { # Makes China have a chance of leaving Expanionist policy...
+						limit = {
+							offmap_china = {
+								has_policy = china_expansionist
+							}
 						}
-					}
-					random = {
-						chance = 50
-						offmap_china = {
-							set_policy = china_open
-							log = "-------------------------------------"
-							log = "China Policy Logging:"
-							log = "Chinas new Policy is now OPEN"
-							log = "-------------------------------------"
+						random = {
+							chance = 50
+							offmap_china = {
+								set_policy = china_open
+								log = "-------------------------------------"
+								log = "China Policy Logging:"
+								log = "China's new Policy is now OPEN"
+								log = "-------------------------------------"
+							}
 						}
 					}
 				}
@@ -319,41 +322,39 @@ claim = {
 	}
 
 	on_reverse_demand_title = {
-		ROOT = {
+		attacker = {
 			show_scope_change = no
 			remove_claim = PREV
-			hidden_tooltip = {
-				if = {
-					limit = { has_character_flag = claimant_adventurer }
-					disband_event_forces = yes
-					clr_character_flag = claimant_adventurer
-				}
+			hidden_effect = {
+				disband_event_forces = yes
+				clr_character_flag = claimant_adventurer
 			}
 		}
 	}
 
 	on_attacker_leader_death = {
 		if = {
-			limit = { ROOT = { has_character_flag = EoD_prophet_attacker } }
-			FROM = { narrative_event = { id = RIP.15116 } }
-		}
-		if = {
 			limit = {
-				ROOT = {
+				attacker = { has_character_flag = EoD_prophet_attacker }
+			}
+			defender = { narrative_event = { id = RIP.15116 } }
+		}
+
+		attacker = {
+			if = {
+				limit = {
 					OR = {
 						has_character_flag = claimant_adventurer
 						has_character_flag = EoD_prophet_attacker
 					}
 				}
-			}
-			ROOT = {
-				hidden_tooltip = {
-					disband_event_forces = claimant_adventurer
+				hidden_effect = {
+					disband_event_forces = yes
 					clr_character_flag = claimant_adventurer
 					clr_character_flag = EoD_prophet_attacker
 				}
+				PREV = { end_war = invalid }
 			}
-			end_war = invalid
 		}
 	}
 
@@ -387,20 +388,19 @@ claim = {
 					religion_group = FROM
 					has_character_Flag = claimant_adventurer
 				}
+			}
+			FROM = {
 				# Disallow wrong gender ai from pressing claims on agnatic/enatic nomadic titles
 				trigger_if = {
-					limit = { FROM = { is_nomadic = yes } }
+					limit = { is_nomadic = yes }
 
 					trigger_if = {
-						limit = { is_female = yes }
-						FROM = {
-							NOT = { has_law = agnatic_succession }
-						}
+						limit = { ROOT = { is_female = yes } }
+
+						NOT = { has_law = agnatic_succession }
 					}
 					trigger_else = {
-						FROM = {
-							NOT = { has_law = enatic_succession}
-						}
+						NOT = { has_law = enatic_succession }
 					}
 				}
 			}
@@ -656,9 +656,7 @@ other_claim = {
 
 	on_add = {
 		hidden_tooltip = { fire_haruspicy_event_effect = yes }
-		FROM = {
-			attacked_tributary_cb_effect = yes
-		}
+		attacked_tributary_cb_effect = yes
 		ROOT = {
 			set_character_flag = claim_being_pressed
 		}
@@ -2383,9 +2381,7 @@ claim_all = {
 			}
 		}
 		hidden_tooltip = { fire_haruspicy_event_effect = yes }
-		FROM = {
-			attacked_tributary_cb_effect = yes
-		}
+		attacked_tributary_cb_effect = yes
 		if = {
 			limit = { defender = { is_offmap_governor = offmap_china } }
 			attacker = {
@@ -15483,9 +15479,7 @@ dejure_county_claim = {
 			}
 			ROOT = { piety = -500 }
 		}
-		FROM = {
-			attacked_tributary_cb_effect = yes
-		}
+		attacked_tributary_cb_effect = yes
 		if = {
 			limit = { defender = { is_offmap_governor = offmap_china } }
 			attacker = {
@@ -15756,9 +15750,7 @@ dejure_barony_claim = {
 			}
 			attacker = { piety = -500 }
 		}
-		FROM = {
-			attacked_tributary_cb_effect = yes
-		}
+		attacked_tributary_cb_effect = yes
 		if = {
 			limit = { defender = { is_offmap_governor = offmap_china } }
 			attacker = {
@@ -16046,9 +16038,7 @@ other_dejure_county_claim = {
 			}
 			FROMFROM = { piety = -500 }
 		}
-		FROM = {
-			attacked_tributary_cb_effect = yes
-		}
+		attacked_tributary_cb_effect = yes
 		ROOT = {
 			set_character_flag = claim_being_pressed
 		}
