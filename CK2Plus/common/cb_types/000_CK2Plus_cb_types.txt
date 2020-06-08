@@ -27,37 +27,57 @@ holy_war = {
 
 	sort_priority = 800
 
+	# Starting scope is attacker
+	# ROOT is third-party claimant
+	# FROM is defender
+	# FROMFROM is attacker
+	can_use = {
+		cb_can_use_preamble = yes
+		cb_no_nap_with_suzerain_trigger = yes
+		FROM = { NOT = { has_character_modifier = crusade_block_timer } }
+		ROOT = { can_use_holy_war_cb = yes }
+	}
+
+	# Starting scope is attacker
+	# ROOT is attacker
+	# FROM is defender
 	can_use_gui = {
 		ROOT = {
 			has_secret_religion = no
-			OR = {
-				custom_tooltip = {
-					text = HOLY_WAR_REGULAR
-					hidden_tooltip = {
-						piety = 100
+
+			trigger_if = {
+				limit = {
+					controls_religion = no
+					NOT = {
+						has_opinion_modifier = {
+							who = FROM
+							modifier = holy_war_sanction
+						}
+					}
+				}
+
+				trigger_if = {
+					limit = {
 						NOT = { has_character_modifier = holy_war_timer }
 					}
+					piety = 100
 				}
-				custom_tooltip = {
-					text = HOLY_WAR_KHARIJITE
-					hidden_tooltip = {
-						piety = 100
-						religion = kharijite
-					}
+				trigger_else_if = {
+					limit = { religion = kharijite }
+
+					piety = 100
 				}
-				piety = 250
-				custom_tooltip = {
-					text = HOLY_WAR_SANCTIONED
-					hidden_tooltip = {
-						has_opinion_modifier = { who = FROM modifier = holy_war_sanction }
-					}
+				trigger_else = {
+					piety = 250
 				}
-				controls_religion = yes
 			}
 		}
 	}
 
 	on_add = {
+		fire_haruspicy_event_effect = yes
+		anger_china_effect = yes
+		attacked_tributary_cb_effect = yes
 		ROOT = {
 			show_scope_change = no
 			if = {
@@ -68,22 +88,18 @@ holy_war = {
 				piety = -250
 			}
 		}
-		hidden_tooltip = { fire_haruspicy_event_effect = yes }
-		if = {
-			limit = { defender = { is_offmap_governor = offmap_china } }
-			attacker = {
-				sound_effect = china_angered_emperor
-				detract_grace_super_huge_effect = yes
-			}
-		}
 	}
 
+	# Starting scope is claimed title
+	# ROOT is attacker
+	# FROM is defender
 	can_use_title = {
 		FROM = {
-			#neighbours or close
-			OR = {
-				any_realm_province = {
-					duchy = { title = PREVPREVPREV }
+			# Is neighbor title or close
+			any_realm_province = {
+				duchy = { title = PREVPREVPREV }
+
+				OR = {
 					any_neighbor_province = {
 						owner = {
 							OR = {
@@ -92,16 +108,16 @@ holy_war = {
 							}
 						}
 					}
-				}
-				any_realm_province = {
-					duchy = { title = PREVPREVPREV }
 					ROOT = {
 						any_realm_province = {
-							NOT = { distance = { where = PREVPREV value = 75 } }
+							distance = {
+								where = PREVPREV
+								value < 75
+							}
 							owner = {
 								OR = {
-									is_liege_or_above = PREVPREV
-									character = PREVPREV
+									character = ROOT
+									is_liege_or_above = ROOT
 								}
 							}
 						}
@@ -110,7 +126,13 @@ holy_war = {
 			}
 		}
 
-		#use reconquista instead
+		ROOT = {
+			num_of_count_titles >= 1
+			is_nomadic = no
+			mercenary = no
+		}
+
+		# Use reconquista instead
 		NAND = {
 			capital_scope = { region = world_europe_west_iberia }
 			ROOT = {
@@ -124,301 +146,123 @@ holy_war = {
 				religion_group = muslim
 			}
 		}
-
-		ROOT = {
-			num_of_count_titles = 1
-			is_nomadic = no
-			mercenary = no
-			#slow down holy wars between pagans and christians/muslims
-			OR = {
-				ai = no
-				FROM = { NOT = { is_pagan_religion = yes } }
-				has_opinion_modifier = { who = FROM modifier = holy_war_sanction }
-				piety = 200
-				AND = {
-					religion_group = christian
-					has_global_flag = christian_crusades_unlocked
-				}
-				AND = {
-					religion_group = muslim
-					has_global_flag = muslim_jihads_unlocked
-				}
-				AND = {
-					is_pagan_religion = yes
-					is_reformed_pagan_religion = yes
-					has_global_flag = pagan_ghws_unlocked
-				}
-			}
-			OR = {
-				ai = no
-				NOT = { is_pagan_religion = yes }
-				has_opinion_modifier = { who = FROM modifier = holy_war_sanction }
-				piety = 200
-				AND = {
-					FROM = { religion_group = christian }
-					has_global_flag = christian_crusades_unlocked
-				}
-				AND = {
-					FROM = { religion_group = muslim }
-					has_global_flag = muslim_jihads_unlocked
-				}
-				AND = {
-					FROM = { is_pagan_religion = yes }
-					has_global_flag = pagan_ghws_unlocked
-				}
-			}
-			#big grey blobs
-			OR = {
-				ai = no
-				PREV = { any_direct_de_jure_vassal_title = { any_direct_de_jure_vassal_title = { is_holy_site = ROOT } } }
-				NOR = {
-					has_landed_title = e_hre
-					has_landed_title = e_karling
-					any_liege = { has_landed_title = e_hre }
-					any_liege = { has_landed_title = e_karling }
-				}
-				has_opinion_modifier = { who = FROM modifier = holy_war_sanction }
-				piety = 300
-			}
-			#avoid invading west africa
-			OR = {
-				ai = no
-				PREV = { any_direct_de_jure_vassal_title = { any_direct_de_jure_vassal_title = { is_holy_site = ROOT } } }
-				AND = {
-					culture_group = west_african
-					FROM = { culture_group = west_african }
-				}
-				AND = {
-					NOT = { culture_group = west_african }
-					FROM = { NOT = { culture_group = west_african } }
-				}
-				has_opinion_modifier = { who = FROM modifier = holy_war_sanction }
-				piety = 300
-			}
-			#avoid invading central africa
-			OR = {
-				ai = no
-				PREV = { any_direct_de_jure_vassal_title = { any_direct_de_jure_vassal_title = { is_holy_site = ROOT } } }
-				AND = {
-					culture_group = central_african
-					FROM = { culture_group = central_african }
-				}
-				AND = {
-					NOT = { culture_group = central_african }
-					FROM = { NOT = { culture_group = central_african } }
-				}
-				has_opinion_modifier = { who = FROM modifier = holy_war_sanction }
-				piety = 300
-			}
-			#avoid invading east africa
-			OR = {
-				ai = no
-				PREV = { any_direct_de_jure_vassal_title = { any_direct_de_jure_vassal_title = { is_holy_site = ROOT } } }
-				AND = {
-					culture_group = east_african
-					FROM = { culture_group = east_african }
-				}
-				AND = {
-					NOT = { culture_group = east_african }
-					FROM = { NOT = { culture_group = east_african } }
-				}
-				has_opinion_modifier = { who = FROM modifier = holy_war_sanction }
-				piety = 300
-			}
-			#avoid invading sahara
-			OR = {
-				ai = no
-				PREV = { any_direct_de_jure_vassal_title = { any_direct_de_jure_vassal_title = { is_holy_site = ROOT } } }
-				AND = {
-					culture = tuareg
-					FROM = { culture = tuareg }
-				}
-				AND = {
-					NOT = { culture = tuareg }
-					FROM = { NOT = { culture = tuareg } }
-				}
-				has_opinion_modifier = { who = FROM modifier = holy_war_sanction }
-				piety = 300
-			}
-			#slow down Indian expansion outside of India
-			OR = {
-				ai = no
-				PREV = { any_direct_de_jure_vassal_title = { any_direct_de_jure_vassal_title = { is_holy_site = ROOT } } }
-				NOT = { has_dharmic_religion_trigger = yes }
-				PREV = {
-					capital_scope = {
-						OR = {
-							region = world_india_deccan
-							region = world_india_bengal
-							region = world_india_rajastan
-						}
-						NOT = { culture_group = tibetan_group }
-					}
-				}
-				piety = 300
-			}
-			#slow down Tibetan expansion outside of Bengal and Tibet
-			OR = {
-				ai = no
-				PREV = { any_direct_de_jure_vassal_title = { any_direct_de_jure_vassal_title = { is_holy_site = ROOT } } }
-				NOT = { has_dharmic_religion_trigger = yes }
-				PREV = {
-					capital_scope = {
-						OR = {
-							region = world_himalayas
-							region = custom_kamarupa
-							region = custom_bengal
-							region = world_steppe_tarim
-							duchy = { title = d_kumul } # aka Xizhou
-						}
-					}
-					culture_group = tibetan_group
-				}
-				piety = 300
-			}
-			#orthodox AI should avoid holy wars for the most part
-			OR = {
-				ai = no
-				NOR = {
-					religion = orthodox
-					religion = bogomilist
-					religion = nestorian
-					religion = monothelite
-					religion = iconoclast
-					AND = { # Byzantium plays under Orthodox rules even when Chalcedonian
-						OR = {
-							has_landed_title = e_byzantium
-							top_liege = { has_landed_title = e_byzantium }
-						}
-						OR = {
-							religion = chalcedonian
-							top_liege = { religion = chalcedonian }
-						}
-					}
-				}
-				FROM = { religion_group = muslim }
-				PREV = { kingdom = { ROOT = { capital_scope = { kingdom = { title = PREVPREVPREV} } } } }
-				PREV = { any_direct_de_jure_vassal_title = { any_direct_de_jure_vassal_title = { is_holy_site = ROOT } } }
-				piety = 400
-			}
-			#christians should leave tengris alone
-			OR = {
-				ai = no
-				NOT = { religion_group = christian }
-				FROM = { NOT = { religion = tengri_pagan } }
-				has_global_flag = mongol_horde_arrival
-				PREV = { any_direct_de_jure_vassal_title = { any_direct_de_jure_vassal_title = { is_holy_site = ROOT } } }
-				piety = 400
-			}
-			#jewish AI should avoid holy wars for the most part
-			OR = {
-				ai = no
-				NOT = { religion_group = jewish_group }
-				PREV = { any_direct_de_jure_vassal_title = { any_direct_de_jure_vassal_title = { is_holy_site = ROOT } } }
-				piety = 400
-			}
-			#AI will usually only use the CB once every 5 years
-			OR = {
-				ai = no
-				NOT = { has_character_modifier = holy_war_timer }
-				PREV = { any_direct_de_jure_vassal_title = { any_direct_de_jure_vassal_title = { is_holy_site = ROOT } } }
-				has_opinion_modifier = { who = FROM modifier = holy_war_sanction }
-			}
-		}
-	}
-
-	can_use = {
-		cb_can_use_preamble = yes
-		cb_no_nap_with_suzerain_trigger = yes
-		FROM = { NOT = { has_character_modifier = crusade_block_timer } }
-		ROOT = { can_use_holy_war_cb = yes }
 	}
 
 	is_valid = {
 		ROOT = { can_use_holy_war_cb = yes }
 	}
 
+	# Starting scope is claimed title
+	# ROOT is attacker
+	# FROM is defender
 	on_add_title = {
 		if = {
 			limit = {
-				any_direct_de_jure_vassal_title = { any_direct_de_jure_vassal_title = { is_holy_site = ROOT } }
+				any_de_jure_vassal_title = { is_holy_site = ROOT }
 			}
 			ROOT = { custom_tooltip = { text = NO_PIETY_COST_HOLY } }
 		}
-		if = {
-			limit = {
-				NOT = { any_direct_de_jure_vassal_title = { any_direct_de_jure_vassal_title = { is_holy_site = ROOT } } }
-				ROOT = { has_opinion_modifier = { who = FROM modifier = holy_war_sanction } }
-			}
-			ROOT = { custom_tooltip = { text = NO_PIETY_COST_SANCTION } }
-		}
-		if = {
-			limit = {
-				NOT = {
-					any_direct_de_jure_vassal_title = { any_direct_de_jure_vassal_title = { is_holy_site = ROOT } }
-					ROOT = { has_opinion_modifier = { who = FROM modifier = holy_war_sanction } }
-				}
+		else_if = {
+			limit  = {
 				ROOT = {
 					OR = {
-						NOT = { has_character_modifier = holy_war_timer }
 						controls_religion = yes
-						religion = kharijite
+						has_opinion_modifier = {
+							who = FROM
+							modifier = holy_war_sanction
+						}
 					}
 				}
 			}
-			ROOT = { piety = -100 }
-		}
-		if = {
-			limit = {
-				NOR = {
-					any_direct_de_jure_vassal_title = { any_direct_de_jure_vassal_title = { is_holy_site = ROOT } }
-					ROOT = { has_opinion_modifier = { who = FROM modifier = holy_war_sanction } }
-				}
-				ROOT = {
-					has_character_modifier = holy_war_timer
-					controls_religion = no
-					NOT = { religion = kharijite }
+			ROOT = {
+				custom_tooltip = {
+					text = NO_PIETY_COST_SANCTION
+
+					hidden_effect = {
+						remove_opinion = {
+							who = FROM
+							modifier = holy_war_sanction
+						}
+					}
 				}
 			}
-			ROOT = { piety = -250 }
+
 		}
-		if = {
+		else_if = {
 			limit = {
-				ROOT = { has_opinion_modifier = { who = FROM modifier = holy_war_sanction } }
+				ROOT = { has_character_modifier = holy_war_timer }
 			}
-			hidden_tooltip = {
-				ROOT = { remove_opinion = { who = FROM modifier = holy_war_sanction } }
+
+			ROOT = {
+				if = {
+					limit = { religion = kharijite }
+					piety = -100
+				}
+				else = {
+					piety = -250
+				}
 			}
 		}
 	}
 
+	# Starting scope is attacker
+	# ROOT is attacker
+	# FROM is defender
 	on_success = {
-		FROM = {
-			imperial_decadence_plus_1_effect = yes
-			pf_glory_minus2_effect = yes
-			pf_tradition_minus4_effect = yes
+		imperial_decadence_minus_1_effect = yes
+		pf_glory_plus2_effect = yes
+		pf_tradition_plus4_effect = yes
+
+		add_character_modifier = {
+			name = victory_timer
+			duration = 1
+			hidden = yes
 		}
-		ROOT = {
-			imperial_decadence_minus_1_effect = yes
-			add_character_modifier = { name = victory_timer duration = 1 hidden = yes }
-			pf_glory_plus2_effect = yes
-			pf_tradition_plus4_effect = yes
-			participation_scaled_piety = 200
-			participation_scaled_prestige = 200
-			dynasty_head = {
+
+		if = {
+			limit = { is_heretic = no }
+
+			religion_authority = {
+				modifier = won_holy_war
+				years = 20
+			}
+			hidden_effect = {
 				if = {
 					limit = {
-						uses_decadence = yes
+						has_nickname = no
+						is_pagan_religion = yes
 					}
-					participation_scaled_decadence = -10
+					random_list = {
+						10 = { give_nickname = nick_the_dragon }
+						10 = { give_nickname = nick_the_holy }
+						10 = { give_nickname = nick_bloodaxe }
+						10 = { give_nickname = nick_the_great }
+						40 = { give_nickname = nick_the_sword_of_god }
+					}
 				}
 			}
 		}
+
+		defender = {
+			imperial_decadence_plus_1_effect = yes
+			pf_glory_minus2_effect = yes
+			pf_tradition_minus4_effect = yes
+
+			if = {
+				limit = { is_heretic = no }
+
+				religion_authority = {
+					modifier = lost_holy_war
+					years = 20
+				}
+			}
+		}
+
 		any_attacker = {
-			limit = { NOT = { character = ROOT } }
-			hidden_tooltip = {
+			hidden_effect = {
 				participation_scaled_piety = 200
 				participation_scaled_prestige = 200
+
 				dynasty_head = {
 					if = {
 						limit = {
@@ -427,66 +271,22 @@ holy_war = {
 						participation_scaled_decadence = -10
 					}
 				}
-			}
-			hidden_tooltip = {
 				if = {
 					limit = {
+						is_heretic = no
 						has_ambition = obj_strengthen_religion
 					}
 					change_variable = { which = strengthen_religion value = 1 }
 				}
 			}
 		}
-		if = {
-			limit = {
-				ROOT = { is_heretic = no }
-			}
-			ROOT = {
-				religion_authority = {
-					modifier = won_holy_war
-					years = 20
-				}
-				hidden_tooltip = {
-					if = {
-						limit = {
-							has_ambition = obj_strengthen_religion
-						}
-						change_variable = { which = strengthen_religion value = 1 }
-					}
-				}
-				hidden_tooltip = {
-					if = {
-						limit = {
-							has_nickname = no
-							is_pagan_religion = yes
-						}
-						random_list = {
-							10 = { give_nickname = nick_the_dragon }
-							10 = { give_nickname = nick_the_holy }
-							10 = { give_nickname = nick_bloodaxe }
-							10 = { give_nickname = nick_the_great }
-							40 = { give_nickname = nick_the_sword_of_god }
-						}
-					}
-				}
-			}
-		}
-		if = {
-			limit = {
-				FROM = { is_heretic = no }
-			}
-			FROM = {
-				religion_authority = {
-					modifier = lost_holy_war
-					years = 20
-				}
-			}
-		}
+
 	}
 
 	on_success_title = {
 		log = "[Root.GetBestName] (ID: [Root.GetID]) succeeded with their holy war for the [This.GetFullName] against [From.GetBestName] (ID: [From.GetID])"
-		hidden_tooltip = {
+
+		hidden_effect = {
 			if = {
 				limit = {
 					has_holder = yes
@@ -497,15 +297,13 @@ holy_war = {
 						}
 					}
 				}
-				set_global_flag = usurp_duchy
+				set_title_flag = usurp_duchy
 			}
+
+			destroy_tradeposts_effect = yes
 		}
-		hidden_tooltip = { destroy_tradeposts_effect = yes }
-		empty_province_effect = yes
-		pf_liege_change_under_title_begin_effect = yes
 
 		ROOT = {
-			hidden_tooltip = { add_character_modifier = { name = "holy_war_timer" duration = 1825 } }
 			vassalize_or_take_under_title = {
 				title = PREV
 				enemy = FROM
@@ -515,17 +313,22 @@ holy_war = {
 			}
 		}
 
-		hidden_tooltip = {
+		hidden_effect = {
 			if = {
 				limit = {
-					has_global_flag = usurp_duchy
+					has_title_flag = usurp_duchy
 				}
 				destroy_landed_title = yes
 				usurp_title = ROOT
-				clr_global_flag = usurp_duchy
+				clr_title_flag = usurp_duchy
 			}
-			#pick temple to grant if ruler has promised one
+
 			ROOT = {
+				add_character_modifier = {
+					name = "holy_war_timer"
+					duration = 1825
+				}
+				# Pick temple to grant if ruler has promised one
 				if = {
 					limit = { has_character_flag = pledged_temple }
 					random_demesne_title = {
@@ -540,63 +343,90 @@ holy_war = {
 					clr_character_flag = pledged_temple
 				}
 			}
-		}
 
-		pf_liege_change_under_title_end_effect = yes
-		hidden_tooltip = {
 			check_war_effect = yes
 			FROM = {
 				landless_pope_effect = yes
 			}
 		}
+
+		empty_province_effect = yes
+		pf_liege_change_under_title_begin_effect = yes
+		pf_liege_change_under_title_end_effect = yes
 	}
 
+	# Starting scope is attacker
+	# ROOT is attacker
+	# FROM is defender
 	on_fail = {
-		ROOT = {
-			clr_character_flag = pledged_temple
-			hidden_tooltip = { add_character_modifier = { name = "holy_war_timer" duration = 1825 } }
-			show_scope_change = no
+		attacker = {
 			piety = -100
 			prestige = -100
+
+			hidden_effect = {
+				clr_character_flag = pledged_temple
+				add_character_modifier = {
+					name = "holy_war_timer"
+					duration = 1825
+				}
+			}
+
+			if = {
+				limit = {
+					is_heretic = no
+				}
+				religion_authority = {
+					modifier = lost_holy_war
+					years = 20
+				}
+			}
 		}
 	}
 
 	on_reverse_demand = {
-		ROOT = {
-			imperial_decadence_plus_1_effect = yes
-			hidden_tooltip = { add_character_modifier = { name = "holy_war_timer" duration = 1825 } }
-			clr_character_flag = pledged_temple
-			show_scope_change = no
+		attacker = {
 			piety = -200
 			prestige = -200
 			transfer_scaled_wealth = {
-				to = FROM
+				to = defender
 				value = 4.0
 			}
+			imperial_decadence_plus_1_effect = yes
 			pf_glory_minus2_effect = yes
 			pf_tradition_minus4_effect = yes
+
+			hidden_effect = {
+				clr_character_flag = pledged_temple
+				add_character_modifier = {
+					name = "holy_war_timer"
+					duration = 1825
+				}
+			}
 		}
-		FROM = {
+		defender = {
 			imperial_decadence_minus_1_effect = yes
-			add_character_modifier = { name = victory_timer duration = 1 hidden = yes }
 			pf_glory_plus2_effect = yes
 			pf_tradition_plus4_effect = yes
-			participation_scaled_prestige = 200
-			participation_scaled_piety = 200
-			dynasty_head = {
-				if = {
-					limit = {
-						uses_decadence = yes
-					}
-					participation_scaled_decadence = -10
+			add_character_modifier = {
+				name = victory_timer
+				duration = 1
+				hidden = yes
+			}
+			if = {
+				limit = {
+					is_heretic = no
+				}
+				religion_authority = {
+					modifier = won_holy_war
+					years = 20
 				}
 			}
 		}
 		any_defender = {
-			limit = { NOT = { character = FROM } }
-			hidden_tooltip = {
-				participation_scaled_prestige = 200
-				participation_scaled_piety = 200
+			participation_scaled_prestige = 200
+			participation_scaled_piety = 200
+
+			hidden_effect = {
 				dynasty_head = {
 					if = {
 						limit = {
@@ -605,61 +435,22 @@ holy_war = {
 						participation_scaled_decadence = -10
 					}
 				}
-				hidden_tooltip = {
-					if = {
-						limit = {
-							has_ambition = obj_strengthen_religion
-						}
-						change_variable = { which = strengthen_religion value = 1 }
+				if = {
+					limit = {
+						has_ambition = obj_strengthen_religion
+					}
+					change_variable = {
+						which = strengthen_religion
+						value = 1
 					}
 				}
 			}
 		}
 		any_attacker = {
 			limit = {
-				character = ROOT
 				uses_decadence = yes
 			}
 			participation_scaled_decadence = 20
-		}
-		any_attacker = {
-			limit = {
-				NOT = { character = ROOT }
-				uses_decadence = yes
-			}
-			hidden_tooltip = {
-				participation_scaled_decadence = 20
-			}
-		}
-		if = {
-			limit = {
-				FROM = { is_heretic = no }
-			}
-			FROM = {
-				religion_authority = {
-					modifier = won_holy_war
-					years = 20
-				}
-				hidden_tooltip = {
-					if = {
-						limit = {
-							has_ambition = obj_strengthen_religion
-						}
-						change_variable = { which = strengthen_religion value = 1 }
-					}
-				}
-			}
-		}
-		if = {
-			limit = {
-				ROOT = { is_heretic = no }
-			}
-			ROOT = {
-				religion_authority = {
-					modifier = lost_holy_war
-					years = 20
-				}
-			}
 		}
 	}
 
@@ -681,6 +472,225 @@ holy_war = {
 
 	ai_will_do = {
 		factor = 1
+
+		trigger = {
+			ROOT = {
+				trigger_if = {
+					limit = {
+						NOT = {
+							has_opinion_modifier = {
+								who = FROM
+								modifier = holy_war_sanction
+							}
+						}
+					}
+
+					trigger_if = {
+						limit = { piety < 200 }
+
+						trigger_if = {
+							limit = {
+								religion_group = christian
+							}
+							has_global_flag = christian_crusades_unlocked
+						}
+						trigger_else_if = {
+							limit = {
+								religion_group = muslim
+							}
+							has_global_flag = muslim_jihads_unlocked
+						}
+						trigger_else_if = {
+							limit = {
+								is_pagan_religion = yes
+							}
+							is_reformed_pagan_religion = yes
+							has_global_flag = pagan_ghws_unlocked
+						}
+						# Note: I don't get why this is here.
+						trigger_else_if = {
+							limit = { FROM = { is_pagan_religion = yes } }
+							has_global_flag = pagan_ghws_unlocked
+						}
+					}
+					trigger_else_if = {
+						limit = {
+							piety < 300
+							NOT = {
+								PREV = {
+									any_de_jure_vassal_title = {
+										is_holy_site = ROOT
+									}
+								}
+							}
+						}
+
+						trigger_if = {
+							limit = {
+								has_dharmic_religion_trigger = yes
+							}
+
+							PREV = {
+								OR = {
+									# Slow down Indian expansion outside of India
+									capital_scope = {
+										NOT = { culture_group = tibetan_group }
+										region = world_india
+									}
+									# Slow down Tibetan expansion outside of Bengal and Tibet
+									capital_scope = {
+										culture_group = tibetan_group
+										OR = {
+											region = world_himalayas
+											region = world_steppe_tarim
+											region = world_india_bengal
+											duchy = { title = d_kumul } # aka Xizhou
+										}
+									}
+								}
+							}
+						}
+
+						# Avoid invading Africa
+						PREV = {
+							trigger_if = {
+								limit = {
+									capital_scope = {
+										region = world_africa_west
+									}
+								}
+								ROOT = {
+									capital_scope = {
+										region = world_africa_west
+									}
+								}
+							}
+							trigger_else_if = {
+								limit = {
+									capital_scope = {
+										region = world_africa_central
+									}
+								}
+								ROOT = {
+									capital_scope = {
+										region = world_africa_central
+									}
+								}
+							}
+							trigger_else_if = {
+								limit = {
+									capital_scope = {
+										region = world_africa_east
+									}
+								}
+								ROOT = {
+									capital_scope = {
+										region = world_africa_east
+									}
+								}
+							}
+							trigger_else_if = {
+								limit = {
+									capital_scope = {
+										region = custom_sahara
+									}
+								}
+								ROOT = {
+									capital_scope = { region = custom_sahara }
+								}
+							}
+						}
+
+						# Anti-blob
+						NOR = {
+							top_liege = { has_landed_title = e_hre }
+							top_liege = { has_landed_title = e_karling }
+						}
+					}
+					trigger_else_if = {
+						limit = {
+							piety < 400
+							NOT = {
+								PREV = {
+									any_de_jure_vassal_title = {
+										is_holy_site = ROOT
+									}
+								}
+							}
+						}
+
+						trigger_if = {
+							limit = {
+								religion_group = christian
+							}
+
+							# Christians should leave tengris alone
+							trigger_if = {
+								limit = { FROM = { religion = tengri_pagan } }
+								has_global_flag = mongol_horde_arrival
+							}
+
+							# Orthodox should avoid Holy Wars for the most part
+							trigger_if = {
+								limit = {
+									OR = {
+										religion = orthodox
+										religion = bogomilist
+										religion = nestorian
+										religion = monothelite
+										religion = iconoclast
+										AND = {
+											religion = chalcedonian
+											trait = greek_rites
+										}
+									}
+								}
+
+								OR = {
+									FROM = { religion_group = muslim }
+									PREV = {
+										kingdom = {
+											ROOT = {
+												capital_scope = {
+													kingdom = {
+														title = PREVPREVPREV
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+						# Jewish AI should avoid holy wars
+						trigger_else_if = {
+							limit = { religion_group = jewish_group }
+
+							always = no
+						}
+					}
+				}
+				# Need boats to war across oceans
+				trigger_if = {
+					limit = {
+						NOT = {
+							any_realm_province = {
+								TECH_NAVAL >= 1
+								port = yes
+							}
+						}
+					}
+					FROM = {
+						any_realm_province = {
+							any_neighbor_province = {
+								owner = { same_realm = ROOT }
+							}
+						}
+					}
+				}
+			}
+		}
+
 		modifier = { #Focus on Coronation first.
 			factor = 0.1
 			has_dlc = "Holy Fury"
@@ -691,25 +701,6 @@ holy_war = {
 					religion = fraticelli
 				}
 				is_crowned_trigger = no
-			}
-		}
-		modifier = {
-			factor = 0
-			FROM = {
-				NOT = {
-					any_realm_province = {
-						duchy = { title = PREVPREVPREV }
-						any_neighbor_province = { owner = { same_realm = ROOT } }
-					}
-				}
-			}
-			ROOT = {
-				NOT = {
-					any_realm_province = {
-						TECH_NAVAL = 1
-						port = yes
-					}
-				}
 			}
 		}
 		modifier = {
