@@ -6,31 +6,75 @@ plus_valid_adv_target_title_trigger = {
 	is_titular = no
 	is_landless_type_title = no
 	higher_tier_than = BARON
+
 	# Either Duke+ tier or it's their primary title
-	OR = {
-		higher_tier_than = COUNT
+	trigger_if = {
+		limit = { lower_tier_than = DUKE }
 		is_primary_holder_title = yes
 	}
-	# Weak claims only allowed against women/regencies/uncrowned unless claimant is ambitious
-	OR = {
-		ROOT = { has_strong_claim = PREV }
-		holder_scope = { is_female = yes }
-		holder_scope = { has_regent = yes }
-		holder_scope = { trait = uncrowned }
-		ROOT = { trait = ambitious }
-		ROOT = { has_character_flag = event_adventurer }
-	}
-	# Female claimants must be ambitious and can only target non-agnatic titles
-	OR = {
-		ROOT = { has_character_flag = event_adventurer }
-		AND = {
-			ROOT = { is_female = no }
-			NOT = { has_law = enatic_succession }
+
+	trigger_if = {
+		limit = {
+			ROOT = {
+				NOT = { has_character_flag = event_adventurer }
+			}
 		}
-		AND = {
-			ROOT = { is_female = yes }
-			ROOT = { trait = ambitious }
-			NOT = { has_law = agnatic_succession }
+
+		# Ignore the gender stuff
+		trigger_if = {
+			limit = {
+				OR = {
+					has_game_rule = {
+						name = gender
+						value = all
+					}
+					has_game_rule = {
+						name = gender
+						value = plus
+					}
+				}
+			}
+
+			trigger_if = {
+				limit = {
+					ROOT = {
+						NOT = { has_strong_claim = PREV }
+					}
+				}
+				holder_scope = {
+					OR = {
+						has_regent = yes
+						trait = uncrowned
+						ROOT = { trait = ambitious }
+					}
+				}
+			}
+		}
+		trigger_else = {
+			# Female claimants must be ambitious
+			ROOT = {
+				trigger_if = {
+					limit = { is_female = yes }
+
+					trait = ambitious
+				}
+			}
+
+			trigger_if = {
+				limit = {
+					ROOT = {
+						NOT = { has_strong_claim = PREV }
+					}
+				}
+				holder_scope = {
+					OR = {
+						has_regent = yes
+						is_female = yes
+						trait = uncrowned
+						ROOT = { trait = ambitious }
+					}
+				}
+			}
 		}
 	}
 	# Title holder must qualify
@@ -38,29 +82,50 @@ plus_valid_adv_target_title_trigger = {
 		independent = yes
 		demesne_size = 1
 		# Not held by theocracy unless not of the claimant's religion
-		OR = {
-			is_theocracy = no
+		trigger_if = {
+			limit = { is_theocracy = yes }
 			NOT = { religion = ROOT }
 		}
 		# Cannot target nomads for their clan title or primary title
-		NAND = {
-			government = nomadic_government
-			OR = {
+		trigger_else_if = {
+			limit = { government = nomadic_government }
+			NOR = {
 				clan_title = { title = PREVPREV }
 				primary_title = { title = PREVPREV }
 			}
 		}
 		# Cannot target merchant republics unless their capital is not de jure
-		OR = {
-			is_merchant_republic = no
-			NOT = { capital_holding = { de_jure_liege_or_above = PREVPREV } }
+		trigger_else_if = {
+			limit = { is_merchant_republic = yes }
+			NOT = {
+				capital_holding = { de_jure_liege_or_above = PREVPREV }
+			}
 		}
+
 		# Cannot target close relatives unless they are hated or the claimant is a bastard
-		OR = {
-			NOT = { reverse_opinion = { who = ROOT value = -25 } }
-			NOT = { is_close_relative = ROOT }
-			ROOT = { trait = bastard }
+		trigger_if = {
+			limit = { is_close_relative = ROOT }
+			ROOT = {
+				OR = {
+					trait = bastard
+					opinion = {
+						who = PREV
+						value = -25
+					}
+				}
+			}
 		}
+
+		# Cannot target a title that has the wrong gender law
+		trigger_if = {
+			limit = { has_law = agnatic_succession }
+			ROOT = { is_female = no }
+		}
+		trigger_else_if = {
+			limit = { has_law = enatic_succession }
+			ROOT = { is_female = yes}
+		}
+
 		NOR = {
 			in_revolt = yes
 			any_liege = { in_revolt = yes }
@@ -84,9 +149,15 @@ plus_valid_adventurer_trigger = {
 	any_opinion_modifier_target = {
 		independent = yes
 		demesne_size = 1
-		has_opinion_modifier = { who = PREV modifier = opinion_targeted_by_adventurer }
-		reverse_has_opinion_modifier = { who = PREV modifier = opinion_claimant_adventure_target }
 		any_demesne_title = { claimed_by = PREVPREV }
+		has_opinion_modifier = {
+			who = PREV
+			modifier = opinion_targeted_by_adventurer
+		}
+		reverse_has_opinion_modifier = {
+			who = PREV
+			modifier = opinion_claimant_adventure_target
+		}
 	}
 }
 
@@ -95,22 +166,35 @@ plus_adventurer_can_approach_trigger = {
 	is_playable = yes
 	num_of_count_titles = 1
 	capital_scope = {
-		NOT = { distance = { where = event_target:adventurer_origin value = 750 } }
-	}
-	OR = {
-		religion = ROOT
-		AND = {
-			religion_group = ROOT
-			NOT = { religion_group = muslim }
-			is_pagan_religion = no
+		NOT = {
+			distance = {
+				where = event_target:adventurer_origin
+				value = 750
+			}
 		}
 	}
-	OR = {
-		independent = yes
+	trigger_if = {
+		limit = {
+			NOT = { religion = ROOT }
+		}
+		religion_group = ROOT
+		NOR = {
+			religion_group = muslim
+			religion_group = pagan_group
+		}
+	}
+	trigger_if = {
+		limit = { independent = no }
 		liege = {
 			OR = {
-				reverse_has_opinion_modifier = { who = ROOT modifier = let_adventurer_stay }
-				reverse_has_opinion_modifier = { who = ROOT modifier = backed_adventurer }
+				reverse_has_opinion_modifier = {
+					who = ROOT
+					modifier = let_adventurer_stay
+				}
+				reverse_has_opinion_modifier = {
+					who = ROOT
+					modifier = backed_adventurer
+				}
 			}
 		}
 	}
@@ -132,12 +216,14 @@ plus_adventurer_can_approach_trigger = {
 		any_vassal = {
 			is_playable = yes
 			num_of_count_titles = 1
-			OR = {
-				religion = ROOT
-				AND = {
-					religion_group = ROOT
-					NOT = { religion_group = muslim }
-					is_pagan_religion = no
+			trigger_if = {
+				limit = {
+					NOT = { religion = ROOT }
+				}
+				religion_group = ROOT
+				NOR = {
+					religion_group = muslim
+					religion_group = pagan_group
 				}
 			}
 			NOR = {
@@ -159,79 +245,79 @@ plus_adventurer_can_approach_trigger = {
 plus_common_cause_trigger = {
 	OR = {
 		is_close_relative = ROOT
-		opinion = { who = ROOT value = 40 }
-		NOT = { opinion = { who = event_target:adventurer_target value = -40 } }
+		opinion = { who = ROOT value >= 40 }
+		opinion = { who = event_target:adventurer_target value < -40 }
 		war_with = event_target:adventurer_target
 	}
 }
 
 # ROOT = adventurer
 plus_likes_adventurer_target_trigger = {
-	opinion = { who = event_target:adventurer_target value = -20 }
+	opinion = { who = event_target:adventurer_target value >= -20 }
 	OR = {
 		is_close_relative = event_target:adventurer_target
 		dynasty = event_target:adventurer_target
-		opinion = { who = event_target:adventurer_target value = 40 }
+		opinion = { who = event_target:adventurer_target value >= 40 }
 	}
 }
 
 # ROOT = adventurer
 plus_not_bad_candidate_trigger = {
-	opinion = { who = ROOT value = -20 }
+	opinion = { who = ROOT value >= -20 }
 	OR = {
-		opinion = { who = ROOT value = 0 }
-		NOT = { intrigue = 8 }
+		opinion = { who = ROOT value >= 0 }
+		intrigue < 8
 		trait = honest
 		trait = kind
+		has_truce = event_target:adventurer_target
+		war_with = event_target:adventurer_target
+		is_rival = event_target:adventurer_target
+		is_friend = ROOT
 		NOR = {
 			trait = deceitful
 			trait = ambitious
 			trait = cruel
 			is_allied_with = event_target:adventurer_target
 		}
-		has_truce = event_target:adventurer_target
-		war_with = event_target:adventurer_target
-		is_rival = event_target:adventurer_target
-		is_friend = ROOT
 	}
 }
 
 # ROOT = adventuer, THIS = approached liege
 plus_closest_to_adventurer_trigger = {
 	capital_scope = {
-		NOT = { distance = { where = event_target:adventurer_location value = 75 } }
+		distance = { where = event_target:adventurer_location value < 75 }
 	}
 }
 
 # ROOT = adventuer, THIS = approached liege
 plus_close_to_adventurer_trigger = {
 	capital_scope = {
-		distance = { where = event_target:adventurer_location value = 75 }
-		NOT = { distance = { where = event_target:adventurer_location value = 125 } }
+		distance = { where = event_target:adventurer_location value >= 75 }
+		distance = { where = event_target:adventurer_location value < 125 }
 	}
 }
 
 # ROOT = adventuer, THIS = approached liege
 plus_not_close_to_adventurer_trigger = {
 	capital_scope = {
-		distance = { where = event_target:adventurer_location value = 125 }
-		NOT = { distance = { where = event_target:adventurer_location value = 200 } }
+		distance = { where = event_target:adventurer_location value >= 125 }
+		distance = { where = event_target:adventurer_location value < 200 }
 	}
 }
 
 # ROOT = adventuer, THIS = approached liege
 plus_far_from_adventurer_trigger = {
 	capital_scope = {
-		distance = { where = event_target:adventurer_location value = 200 }
-		NOT = { distance = { where = event_target:adventurer_location value = 300 } }
+		distance = { where = event_target:adventurer_location value >= 200 }
+		distance = { where = event_target:adventurer_location value < 300 }
 	}
 }
 
 # ROOT = adventuer, THIS = approached liege
 plus_furthest_from_adventurer_trigger = {
 	capital_scope = {
-		distance = { where = event_target:adventurer_location value = 300 }
-		NOT = { distance = { where = event_target:adventurer_location value = 450 } }
+		distance = { where = event_target:adventurer_location value >= 300 }
+		distance = { where = event_target:adventurer_location value < 450 }
 	}
 }
 
@@ -245,7 +331,7 @@ plus_adventurer_can_approach_vassal_trigger = {
 		is_close_relative = FROM
 		any_spouse = { is_close_relative = FROM }
 		opinion = { who = FROM value = 40 }
-		NOT = { opinion = { who = event_target:adventurer_target value = -40 } }
+		opinion = { who = event_target:adventurer_target value < -40 }
 	}
 	NOR = {
 		trait = incapable
@@ -259,17 +345,16 @@ plus_adventurer_can_approach_vassal_trigger = {
 
 # ROOT = duchy adventurer, THIS = target
 plus_duchy_target_trigger = {
-	OR = {
-		is_theocracy = no
+	trigger_if = {
+		limit = { is_theocracy = yes }
 		NOT = { religion = ROOT }
 	}
+	reverse_opinion = { who = ROOT value < 25 }
 	NOR = {
 		in_revolt = yes
 		same_realm = ROOT
 		dynasty = ROOT
 		any_spouse = { character = ROOT }
-		reverse_opinion = { who = ROOT value = 25 }
 		has_any_opinion_modifier = opinion_targeted_by_adventurer
 	}
 }
-
