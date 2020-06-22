@@ -3595,7 +3595,7 @@ invasion = {
 					}
 					 # Help AI William by usurping extra land
 					if = {
-						limit = { ai = yes 	}
+						limit = { ai = yes }
 
 						any_de_jure_vassal_title = {
 							limit = {
@@ -3686,7 +3686,6 @@ invasion = {
 
 		defender = {
 			show_scope_change = no
-
 			participation_scaled_prestige = 300
 			roman_victory_triumph_effect = yes
 
@@ -3817,102 +3816,83 @@ tribal_invasion = {
 		check_if_crusader_trigger = yes
 	}
 
-	on_add = {
-		ROOT = { show_scope_change = no prestige = -500 }
-		hidden_tooltip = { fire_haruspicy_event_effect = yes }
-		if = {
-			limit = { defender = { is_offmap_governor = offmap_china } }
-			attacker = {
-				sound_effect = china_angered_emperor
-				detract_grace_super_huge_effect = yes
-			}
-		}
-		if = {
-			limit = {
-				attacker = {
-					any_owned_bloodline = {
-						has_bloodline_flag = bloodline_great_conquerors
-					}
-				}
-			}
-			attacker = {
-				set_character_flag = flag_declared_bloodline_invasion
-			}
-		}
-	}
-
 	can_use = {
 		cb_can_use_preamble = yes
 		cb_no_nap_with_suzerain_trigger = yes
-		ROOT = {
-			independent = yes
-			is_nomadic = no
-			NOT = { is_liege_or_above = FROM }
-			OR = {
-				AND = {
-					has_dlc = "Horse Lords"
-					higher_tier_than = COUNT
-					OR = {
-						has_character_flag = horde_invader
-						AND = {
-							independent = yes
-							OR = {
-								is_pagan_religion = yes
-								AND = {
-									NOT = { is_title_active = d_aztec }
-									religion = aztec
-								}
-							}
-							is_reformed_pagan_religion = no
-							OR = {
-								culture_group = altaic
-								culture_group = magyar
-								culture_group = mesoamerican
-							}
-							FROM = {
-								NOT = { is_pagan_religion = yes } # Should subjugate these instead
-							}
+	}
 
-						}
+	can_use_title = {
+		# Attacker
+		ROOT = {
+			NOT = { same_realm = FROM }
+			is_nomadic = no
+
+			trigger_if = {
+				limit = {
+					ai = no
+					multiplayer = yes
+				}
+				NOT = {
+					has_game_rule = {
+						name = multiplayer_invasions
+						value = off
 					}
 				}
+			}
+
+			OR = {
 				AND = {
-					NOT = { has_dlc = "Horse Lords" }
 					independent = yes
 					higher_tier_than = COUNT
-					OR = {
-						AND = {
-							is_pagan_religion = yes
-							is_reformed_pagan_religion = no
-						}
-						AND = {
-							religion = aztec
-							NOT = { is_title_active = d_aztec }
-						}
-						AND = {
-							OR = {
-								has_horde_culture = yes
-								has_character_flag = horde_invader
-							}
-							NOT = { religion_group = christian }
-						}
-					}
+
 					OR = {
 						culture_group = altaic
 						culture_group = magyar
 						culture_group = mesoamerican
 					}
+
 					OR = {
-						has_horde_culture = yes
-						has_character_flag = horde_invader
+						is_tribal = yes
+						primary_title = { has_law = succ_elective_gavelkind }
+
+						trigger_if = {
+							limit = { has_dlc = "Horse Lords" }
+							OR = {
+								has_landed_title = e_mongol_empire
+								has_landed_title = e_mexikha
+							}
+						}
+					}
+
+					trigger_if = {
+						limit = { has_horde_culture = yes }
+
+						NOT = { religion_group = christian }
+					}
+					trigger_else = {
+						religion_group = pagan_group
+
+						# Should subjugate these instead
 						FROM = {
-							NOT = { is_pagan_religion = yes } # Should subjugate these instead
+							NOT = { religion_group = pagan_group }
 						}
 					}
 				}
 				AND = {
+					independent = yes
+					higher_tier_than = COUNT
+					has_character_flag = horde_invader
+
+					trigger_if = {
+						limit = {
+							NOT = { has_dlc = "Horse Lords" }
+						}
+						NOT = { religion_group = christian }
+					}
+				}
+				AND = {
 					mercenary = yes
-					NOT = { num_of_titles = 2 }
+					num_of_titles < 2
 				}
 				AND = {
 					has_character_flag = is_child_of_destiny
@@ -3927,47 +3907,36 @@ tribal_invasion = {
 					}
 				}
 			}
-		}
-		ROOT = {
-			NOT = { same_realm = FROM }
-		}
-	}
 
-	can_use_title = {
-		# The attacker needs at least one county in the target kingdom, or a border
-		ROOT = {
-			OR = {
-				ai = yes
-				multiplayer = no
-				NOT = {
-					has_game_rule = {
-						name = multiplayer_invasions
-						value = off
-					}
-				}
-			}
+			# The attacker needs at least one county in the target kingdom, or a border
 			any_realm_province = {
 				OR = {
-					county = { de_jure_liege_or_above  = PREVPREVPREV }
+					county = { de_jure_liege_or_above = PREVPREVPREV }
 					any_neighbor_province = {
 						county = { de_jure_liege_or_above  = PREVPREVPREVPREV }
 					}
 				}
 			}
-			OR = { # This ensures that the AI doesn't declare this type of war against someone who only holds a few counties within the targeted title...
-				ROOT = {
-					ai = no
+
+			# This ensures that the AI doesn't declare this type of war against someone who only holds a few counties within the targeted title.
+			trigger_if = {
+				limit = {
+					ROOT = { ai = yes }
 				}
+
+				# Attacker
 				ROOT = {
 					OR = {
 						has_landed_title = e_mongol_empire
 						has_landed_title = e_mexikha
 					}
 				}
+
+				# Defender
 				FROM = {
 					num_of_realm_counties = {
-						value = 3
-						title = PREVPREV
+						value >= 3
+						title = PREV
 					}
 				}
 			}
@@ -3975,6 +3944,7 @@ tribal_invasion = {
 	}
 
 	is_valid_title = {
+		# Defender
 		FROM = {
 			any_realm_province = {
 				de_jure_liege_or_above = PREVPREV
@@ -3982,33 +3952,39 @@ tribal_invasion = {
 		}
 	}
 
+	on_add = {
+		attacker = {
+			show_scope_change = no
+			prestige = -500
+			if = {
+				limit = {
+					any_owned_bloodline = {
+						has_bloodline_flag = bloodline_great_conquerors
+					}
+				}
+				set_character_flag = flag_declared_bloodline_invasion
+			}
+		}
+
+		fire_haruspicy_event_effect = yes
+		anger_china_effect = yes
+	}
+
 	on_success = {
-		ROOT = {
+		attacker = {
 			show_scope_change = no
 			prestige = 300
-			imperial_decadence_minus_1_effect = yes
-			add_character_modifier = { name = victory_timer duration = 1 hidden = yes }
-			pf_glory_plus2_effect = yes
 			participation_scaled_prestige = 300
-		}
-		any_attacker = {
-			limit = { NOT = { character = ROOT } }
-			hidden_tooltip = { participation_scaled_prestige = 300 }
-		}
-		FROM = {
-			show_scope_change = no
-			prestige = -300
-			imperial_decadence_plus_1_effect = yes
-			pf_glory_minus2_effect = yes
-		}
-		hidden_tooltip = {
-			ROOT = {
-				occupy_minors_of_occupied_settlements = FROM
-				gain_all_occupied_titles = { who = FROM type = invasion }
+
+			hidden_effect = {
+				occupy_minors_of_occupied_settlements = defender
+				gain_all_occupied_titles = {
+					who = defender
+					type = invasion
+				}
+
 				if = {
-					limit = {
-						has_nickname = no
-					}
+					limit = { has_nickname = no }
 					random_list = {
 						10 = { give_nickname = nick_the_great }
 						10 = { give_nickname = nick_the_victorious }
@@ -4019,32 +3995,69 @@ tribal_invasion = {
 					}
 				}
 			}
+
+			# CK2Plus
+			imperial_decadence_minus_1_effect = yes
+			pf_glory_plus2_effect = yes
+
+			add_character_modifier = {
+				name = victory_timer duration = 1
+				hidden = yes
+			}
+		}
+		any_attacker = {
+			limit = { NOT = { character = attacker } }
+			hidden_effect = { participation_scaled_prestige = 300 }
+		}
+
+		defender = {
+			show_scope_change = no
+			prestige = -300
+
+			# CK2Plus
+			imperial_decadence_plus_1_effect = yes
+			pf_glory_minus2_effect = yes
 		}
 	}
 
 	on_success_title = {
 		log = "[Root.GetBestName] (ID: [Root.GetID]) succeeded with their Tribal Invasion CB of the [This.GetFullName] against [From.GetBestName] (ID: [From.GetID])"
-		empty_province_effect = yes
-		custom_tooltip = {
-			text = tribal_invasion_succ_tip
-			hidden_tooltip = {
-				pf_liege_change_under_title_begin_effect = yes
-				ROOT = {
+
+		attacker = {
+			show_scope_change = no
+			if = {
+				limit = {
+					OR = {
+						character = 159136 # Árpád
+						character = 159137 # Álmos
+					}
+					has_dlc = "Holy Fury"
+					NOT = {
+						any_owned_bloodline = {
+							has_bloodline_flag = arpad_bloodline
+						}
+					}
+				}
+				create_bloodline = {
+					type = arpad
+				}
+			}
+
+			custom_tooltip = {
+				text = tribal_invasion_succ_tip
+				hidden_effect = {
 					vassalize_or_take_under_title_destroy_duchies = {
 						title = PREV
-						enemy = FROM
+						enemy = defender
 						is_crusade = yes # Even if the title holder is not participating in the war, gain holdings occupied by all Crusade participants
 						type = invasion
 					}
-				}
-				pf_liege_change_under_title_end_effect = yes
-				if = {
-					limit = {
-						e_mexikha = {
-							holder = ROOT
+					if = {
+						limit = {
+							e_mexikha = {
+								holder = attacker
+							}
 						}
-					}
-					ROOT = {
 						any_realm_province = {
 							limit = {
 								OR = {
@@ -4058,6 +4071,10 @@ tribal_invasion = {
 							clr_province_flag = aztec_second_wave
 						}
 					}
+					ROOT = {
+
+					}
+
 				}
 			}
 		}
@@ -4068,44 +4085,25 @@ tribal_invasion = {
 				landless_pope_effect = yes
 			}
 		}
+
+		# CK2Plus
+		empty_province_effect = yes
+		pf_liege_change_under_title_begin_effect = yes
+		pf_liege_change_under_title_end_effect = yes
 	}
 
 	on_fail = {
-		FROM = {
-			show_scope_change = no
-			prestige = 150
-			participation_scaled_prestige = 150
-		}
-		any_defender = {
-			limit = { NOT = { character = FROM } }
-			hidden_tooltip = { participation_scaled_prestige = 150 }
-		}
-		ROOT = {
+		attacker = {
 			show_scope_change = no
 			prestige = -150
 		}
-	}
 
-	on_reverse_demand = {
-		FROM = {
-			imperial_decadence_minus_1_effect = yes
-			add_character_modifier = { name = victory_timer duration = 1 hidden = yes }
-			pf_glory_plus2_effect = yes
-		}
-		ROOT = {
+		defender = {
 			show_scope_change = no
-			prestige = -300
-			transfer_scaled_wealth = {
-				to = FROM
-				value = 4.0
-			}
-			imperial_decadence_plus_1_effect = yes
-			pf_glory_minus2_effect = yes
-		}
-		FROM = {
-			show_scope_change = no
-			prestige = 300
-			hidden_tooltip = {
+			prestige = 150
+			participation_scaled_prestige = 150
+
+			hidden_effect = {
 				if = {
 					limit = {
 						has_nickname = no
@@ -4119,35 +4117,57 @@ tribal_invasion = {
 					}
 				}
 			}
-			participation_scaled_prestige = 300
 		}
 		any_defender = {
-			limit = { NOT = { character = FROM } }
-			hidden_tooltip = { participation_scaled_prestige = 300 }
+			limit = { NOT = { character = defender } }
+			hidden_effect = { participation_scaled_prestige = 150 }
 		}
-		FROM = {
-			if = {
-				limit = {
-					has_dlc = "Legacy of Rome"
-					OR = {
-						has_landed_title = e_byzantium
-						has_landed_title = e_roman_empire
-						AND = {
-							independent = yes
-							higher_tier_than = COUNT
-							OR = {
-								culture = roman
-								religion = roman_pagan
-							}
-						}
-					}
-					OR = {
-						religion_group = christian
-						is_pagan_religion = yes
+	}
+
+	on_reverse_demand = {
+		attacker = {
+			show_scope_change = no
+			prestige = -300
+			transfer_scaled_wealth = {
+				to = defender
+				value = 4.0
+			}
+
+			# CK2Plus
+			imperial_decadence_plus_1_effect = yes
+			pf_glory_minus2_effect = yes
+		}
+
+		defender = {
+			show_scope_change = no
+			prestige = 300
+			participation_scaled_prestige = 300
+			hidden_effect = {
+				if = {
+					limit = { has_nickname = no }
+					random_list = {
+						10 = { give_nickname = nick_the_great }
+						10 = { give_nickname = nick_the_hammer }
+						10 = { give_nickname = nick_the_avenger }
+						10 = { give_nickname = nick_the_lion }
+						10 = { give_nickname = nick_the_bold }
 					}
 				}
-				hidden_tooltip = { character_event = { id = LoR.30 days = 12 } }
+				roman_victory_triumph_effect = yes
 			}
+
+			# CK2Plus
+			imperial_decadence_minus_1_effect = yes
+			pf_glory_plus2_effect = yes
+			add_character_modifier = {
+				name = victory_timer
+				duration = 1
+				hidden = yes
+			}
+		}
+		any_defender = {
+			limit = { NOT = { character = defender } }
+			hidden_effect = { participation_scaled_prestige = 300 }
 		}
 	}
 
@@ -4168,70 +4188,198 @@ tribal_invasion = {
 	}
 
 	ai_will_do = {
-		factor = 1
-		modifier = { #Focus on Coronation first.
-			factor = 0.1
-			has_dlc = "Holy Fury"
-			ROOT = {
-				is_feudal = yes
-				OR = {
-					religion = catholic
-					religion = fraticelli
-				}
-				is_crowned_trigger = no
-			}
-		}
-		# Try to guide the Hordes in the right direction
-		modifier = {
-			factor = 0.1
-			ROOT = {
-				OR = {
-					dynasty = 613 # Seljuks
-					dynasty = 800 # Timurids
-					primary_title = { title = e_il-khanate }
-				}
-			}
-			OR = {
-				capital_scope = {
-					OR = {
-						region = custom_bulgaria
-						region = custom_croatia
-						region = custom_serbia
-						region = custom_wallachia
-						region = custom_crimea
-						region = custom_cuman
-						region = custom_perm
-						region = custom_volga
-						region = custom_rus
-						region = world_india_bengal
-						region = world_india_deccan
-						region = world_india_rajastan
+		factor = 0.9 # Prefer using CB's without on_add costs
+
+		trigger = {
+			trigger_if = {
+				limit = {
+					attacker = {
+						is_tribal = yes
+					}
+
+					defender = {
+						is_nomadic = yes
 					}
 				}
-				FROM = {
-					primary_title = { title = e_golden_horde }
-					NOT = { year = 1300 }
+
+				any_direct_de_jure_vassal_title = {
+					any_direct_de_jure_vassal_title = {
+						OR = {
+							holding_type = castle
+							holding_type = city
+							holding_type = tribal
+						}
+					}
 				}
-				FROM = {
-					primary_title = { title = e_chagatai }
-					NOT = { year = 1300 }
+			}
+			trigger_else_if = {
+				limit = {
+					attacker = {
+						is_nomadic = no
+						is_tribal = no
+					}
+
+					defender = {
+						is_nomadic = yes
+					}
+
+				}
+
+				any_direct_de_jure_vassal_title = {
+					any_direct_de_jure_vassal_title = {
+						OR = {
+							holding_type = castle
+							holding_type = city
+						}
+					}
+				}
+			}
+
+			trigger_if = {
+				limit = {
+					attacker = {
+						has_character_flag = is_temujin
+						has_landed_title = e_mongol_empire
+						demesne_size >= 1
+					}
+				}
+
+				defender = {
+					NOT = { has_landed_title = e_china_west_governor }
 				}
 			}
 		}
-		modifier = {
+
+		coronation_factor = yes
+
+		# TODO: Review these
+		# Try to guide the Hordes in the right direction
+		mult_modifier = {
+			factor = 0.1
+
+			attacker = {
+				OR = {
+					dynasty = 613 # Seljuks
+					dynasty = 800 # Timurids
+
+					primary_title = {
+						title = e_il-khanate
+					}
+				}
+			}
+
+			OR = {
+				empire = {
+					NOR = {
+						title = e_persia
+						title = e_byzantium
+						title = e_arabia
+					}
+				}
+
+				defender = {
+					primary_title = {
+						title = e_golden_horde
+					}
+
+					year < 1300
+				}
+
+				# CK2Plus
+				defender = {
+					primary_title = { title = e_chagatai }
+					year < 1300
+				}
+			}
+		}
+
+		mult_modifier = {
+			factor = 0.1
+
+			attacker = {
+				primary_title = {
+					title = e_golden_horde
+				}
+			}
+
+			OR = {
+				empire = {
+					OR = {
+						title = e_persia
+						title = e_byzantium
+						title = e_arabia
+					}
+				}
+
+				defender = {
+					primary_title = {
+						title = e_il-khanate
+					}
+
+					year < 1300
+				}
+			}
+		}
+
+		mult_modifier = {
+			factor = 0.1
+
+			attacker = {
+				culture = hungarian
+
+				primary_title = {
+					OR = {
+						title = k_hungary
+						title = e_carpathia
+					}
+				}
+			}
+
+			empire = {
+				OR = {
+					title = e_tartaria
+					title = e_russia
+				}
+			}
+		}
+
+		# CK2Plus
+		mult_modifier = { #Prefer bigger targets
+			factor = 1.5
+			attacker = {
+				tier = KING
+			}
+		}
+		mult_modifier = { #Prefer bigger targets
 			factor = 2.0
-			ROOT = {
+			attacker = {
+				tier = EMPEROR
+			}
+		}
+		mult_modifier = {
+			factor = 2.0
+			attacker = {
 				OR = {
 					dynasty = 613 # Seljuks
 					dynasty = 800 # Timurids
 					primary_title = { title = e_il-khanate }
+					trigger_if = {
+						limit = {
+							NOT = {
+								any_realm_province = { region = custom_persia }
+							}
+						}
+						primary_title = { title = e_mongol_empire }
+					}
 				}
 			}
 			capital_scope = { region = custom_persia }
 		}
-		modifier = {
+		mult_modifier = {
 			factor = 2.0
-			ROOT = { primary_title = { title = e_golden_horde } }
+			attacker = {
+				primary_title = { title = e_golden_horde }
+			}
 			capital_scope = {
 				OR = {
 					region = custom_cuman
@@ -4240,30 +4388,22 @@ tribal_invasion = {
 				}
 			}
 		}
-		modifier = {
+		mult_modifier = {
 			factor = 1.5
-			ROOT = {
+			attacker = {
 				primary_title = { title = e_mongol_empire }
 				NOT = { any_realm_province = { region = custom_cuman } }
 			}
 			capital_scope = { region = custom_cuman }
 		}
-		modifier = {
+		mult_modifier = {
 			factor = 2.0
-			ROOT = {
-				primary_title = { title = e_mongol_empire }
-				NOT = { any_realm_province = { region = custom_persia } }
-			}
-			capital_scope = { region = custom_persia }
-		}
-		modifier = {
-			factor = 2.0
-			ROOT = { primary_title = { title = e_mongol_empire } }
+			attacker = { primary_title = { title = e_mongol_empire } }
 			capital_scope = { region = custom_khwarizm }
 		}
-		modifier = {
+		mult_modifier = {
 			factor = 0.1
-			ROOT = { primary_title = { title = e_golden_horde } }
+			attacker = { primary_title = { title = e_golden_horde } }
 			OR = {
 				capital_scope = {
 					OR = {
@@ -4288,19 +4428,19 @@ tribal_invasion = {
 						region = world_india_rajastan
 					}
 				}
-				FROM = {
+				defender = {
 					primary_title = { title = e_il-khanate }
 					NOT = { year = 1300 }
 				}
-				FROM = {
+				defender = {
 					primary_title = { title = e_chagatai }
 					NOT = { year = 1300 }
 				}
 			}
 		}
-		modifier = {
+		mult_modifier = {
 			factor = 0.1
-			ROOT = {
+			attacker = {
 				primary_title = { title = e_chagatai }
 			}
 			OR = {
@@ -4313,19 +4453,19 @@ tribal_invasion = {
 						region = world_india_rajastan
 					}
 				}
-				FROM = {
+				defender = {
 					primary_title = { title = e_il-khanate }
 					NOT = { year = 1300 }
 				}
-				FROM = {
+				defender = {
 					primary_title = { title = e_chagatai }
 					NOT = { year = 1300 }
 				}
 			}
 		}
-		modifier = {
+		mult_modifier = {
 			factor = 0.1
-			ROOT = { culture = hungarian }
+			attacker = { culture = hungarian }
 			capital_scope = {
 				OR = {
 					region = custom_cuman
@@ -4339,9 +4479,9 @@ tribal_invasion = {
 				}
 			}
 		}
-		modifier = {
+		mult_modifier = {
 			factor = 0.1
-			ROOT = { culture = khazar }
+			attacker = { culture = khazar }
 			capital_scope = {
 				OR = {
 					region = world_steppe_tarim
@@ -4352,9 +4492,9 @@ tribal_invasion = {
 				}
 			}
 		}
-		modifier = {
+		mult_modifier = {
 			factor = 1.5
-			ROOT = { culture = hungarian }
+			attacker = { culture = hungarian }
 			capital_scope = {
 				OR = {
 					region = custom_bulgaria
@@ -4363,9 +4503,9 @@ tribal_invasion = {
 				}
 			}
 		}
-		modifier = {
+		mult_modifier = {
 			factor = 0.1
-			ROOT = {
+			attacker = {
 				OR = {
 					primary_title = { title = e_mongol_empire }
 					primary_title = { title = e_chagatai }
@@ -4375,47 +4515,9 @@ tribal_invasion = {
 				culture = FROM
 			}
 		}
-		modifier = {
-			factor = 0
-			ROOT = {
-				culture = mongol
-				is_pagan_religion = yes
-			}
-			FROM = {
-				culture = mongol
-				is_pagan_religion = yes
-			}
-		}
-		modifier = {
-			factor = 0
-			ROOT = { has_character_flag = no_invasions }
-		}
-		modifier = {
-			factor = 0
-			ROOT = {
-				has_character_flag = is_temujin
-				has_landed_title = e_mongol_empire
-				demesne_size = 1
-			}
-			FROM = {
-				has_landed_title = e_china_west_governor
-			}
-		}
-		modifier = { #Prefer bigger targets
-			factor = 1.5
-			FROM = {
-				tier = KING
-			}
-		}
-		modifier = { #Prefer bigger targets
-			factor = 2.0
-			FROM = {
-				tier = EMPEROR
-			}
-		}
-		modifier = {
+		mult_modifier = {
 			factor = 5.0
-			ROOT = { trait = bloodlust }
+			attacker = { trait = bloodlust }
 		}
 		sufficient_treasury_for_war = yes
 	}
@@ -4441,36 +4543,14 @@ crusade = {
 	can_use_gui = {
 		has_game_started = yes
 		has_global_flag = plus_rules_applied
-		OR = {
-			AND = {
-				NOT = { has_global_flag = delayed_crusades_1 }
-				NOT = { has_global_flag = delayed_crusades_2 }
-				NOT = { has_global_flag = delayed_crusades_3 }
-				NOT = { has_global_flag = delayed_crusades_4 }
-				NOT = { has_global_flag = delayed_crusades_5 }
-			}
-			had_global_flag = { flag = delayed_crusades_1 days = 365 }
-			had_global_flag = { flag = delayed_crusades_2 days = 1095 }
-			had_global_flag = { flag = delayed_crusades_3 days = 1825 }
-			had_global_flag = { flag = delayed_crusades_4 days = 3650 }
-			had_global_flag = { flag = delayed_crusades_5 days = 7300 }
-		}
-		FROM = { NOT = { has_character_modifier = crusade_block_timer } }
-		ROOT = { # The Religious Head
+		ROOT = {
 			uses_new_crusade = no
 			has_called_crusade = no
-			has_secret_religion = no
-			religion_authority = 0.4
-			NOT = {
-				has_character_modifier = crusade_timer
-				AND = {
-					trait = bad_priest_christian
-					NOT = { has_global_flag = fourth_crusade_happened }
-				}
-			}
-			conditional_tooltip = {
-				trigger = {
-					is_alternate_start = yes
+			religion_authority >= 0.4
+			mercenary = no
+
+			trigger_if = {
+				limit = {
 					has_alternate_start_parameter = {
 						key = religion_names
 						value = random
@@ -4478,156 +4558,246 @@ crusade = {
 				}
 				custom_tooltip = {
 					text = ALT_GHW_STARTED
+
 					has_global_flag = muslim_jihads_unlocked
 					has_global_flag = pagan_ghws_unlocked
 					has_global_flag = christian_crusades_unlocked
 				}
 			}
-			conditional_tooltip = {
-				trigger = {
-					NOT = {
-						has_alternate_start_parameter = {
-							key = religion_names
-							value = random
-						}
-					}
-				}
+
+			trigger_else = {
 				OR = {
 					religion_group = zoroastrian_group
 					religion_group = jewish_group
-					AND = {
-						religion_group = pagan_group
+
+					trigger_if = {
+						limit = { religion_group = pagan_group }
 						custom_tooltip = {
 							text = CTT_PAGAN_GHWS_UNLOCKED
 							has_global_flag = pagan_ghws_unlocked
 						}
 					}
-					AND = {
-						religion_group = christian
+					trigger_else_if = {
+						limit = { religion_group = christian }
 						custom_tooltip = {
 							text = CTT_CHRISTIAN_CRUSADES_UNLOCKED
 							has_global_flag = christian_crusades_unlocked
 						}
 					}
-					AND = {
-						religion_group = muslim
+					trigger_else_if = {
+						limit = { religion_group = muslim }
 						custom_tooltip = {
 							text = CTT_MUSLIM_JIHADS_UNLOCKED
 							has_global_flag = muslim_jihads_unlocked
 						}
 					}
+					trigger_else = {
+						always = no
+					}
 				}
 			}
-			mercenary = no
+
+			# CK2Plus
+			has_secret_religion = no
+			NOT = { has_character_modifier = crusade_timer }
+
+			trigger_if = {
+				limit = {
+					NOT = { has_global_flag = fourth_crusade_happened }
+				}
+				NOT = { trait = bad_priest_christian }
+			}
+		}
+
+		# CK2Plus
+		FROM = {
+			NOT = { has_character_modifier = crusade_block_timer }
+		}
+
+		trigger_if = {
+			limit = { has_global_flag = delayed_crusades_1 }
+			had_global_flag = { flag = delayed_crusades_1 days = 365 }
+		}
+		trigger_else_if = {
+			limit = { has_global_flag = delayed_crusades_2 }
+			had_global_flag = { flag = delayed_crusades_2 days = 1095 }
+		}
+		trigger_else_if = {
+			limit = { has_global_flag = delayed_crusades_3 }
+			had_global_flag = { flag = delayed_crusades_3 days = 1825 }
+		}
+		trigger_else_if = {
+			limit = { has_global_flag = delayed_crusades_4 }
+			had_global_flag = { flag = delayed_crusades_4 days = 3650 }
+		}
+		trigger_else_if = {
+			limit = { has_global_flag = delayed_crusades_5 }
+			had_global_flag = { flag = delayed_crusades_5 days = 7300 }
 		}
 	}
 
 	can_use = {
-		cb_can_use_preamble = yes
-		cb_no_nap_with_suzerain_trigger = yes
+		# Attacker
 		ROOT = {
 			uses_new_crusade = no
 			can_call_crusade = yes
-			any_demesne_title = { NOT = { controls_religion = yes } }
+			# CK2Plus
+			is_heretic = no
+
+			# Religion check
 			OR = {
-				NOT = { religion = cathar }
-				has_global_flag = cathar_war
+				NOT = { religion_group = FROM }
+
+				# One is a heretic of the other
+				is_heresy_of = FROM
+				is_parent_religion = FROM
+
+				trigger_if = {
+					limit = { religion_group = pagan_group }
+					NOT = { religion = FROM }
+				}
+				# CK2Plus
+				trigger_else_if = {
+					limit = { religion = cathar }
+					has_global_flag = cathar_war
+				}
+				trigger_else_if = {
+					limit = { religion = paulician }
+					FROM = {
+						NOT = { religion = paulician }
+					}
+				}
+				trigger_else_if = {
+					limit = { religion = kharijite }
+					FROM = {
+						NOT = { religion = kharijite }
+					}
+				}
+
+				trigger_if = {
+					limit = { has_global_flag = fourth_crusade_ongoing }
+
+					is_heretic = no
+					OR = {
+						religion = catholic
+						religion = cathar
+						religion = fraticelli
+						religion = waldensian
+						religion = lollard
+						religion = adoptionist
+					}
+				}
+			}
+
+			# Not if the Schism has been mended
+			trigger_if = {
+				limit = { has_global_flag = schism_mended }
+
+				NOR = {
+					religion = catholic
+					religion = fraticelli
+					# CK2Plus
+					religion = cathar
+				}
 			}
 		}
 
+		# CK2Plus
+		cb_can_use_preamble = yes
+		cb_no_nap_with_suzerain_trigger = yes
+	}
+
+	can_use_title = {
+		# Defender
 		FROM = {
-			OR = {
-				NOT = { religion_group = ROOT }
-				is_heresy_of = ROOT
-				is_parent_religion = ROOT
-				AND = {
-					is_pagan_religion = yes
-					NOT = { religion = ROOT }
-				}
-				AND = {
-					ROOT = { religion = paulician }
-					NOT = { religion = ROOT }
-				}
-				AND = {
-					ROOT = { religion = kharijite }
-					NOT = { religion = ROOT }
-				}
-				AND = {
-					ROOT = {
-						OR = {
-							religion = catholic
-							religion = cathar
-							religion = fraticelli
-							religion = waldensian
-							religion = lollard
-							religion = adoptionist
-						}
-						is_heretic = no
-					}
-					has_global_flag = fourth_crusade_ongoing
+			# Don't declare Crusades on revolters - chances are high the war will invalidate
+			independent = yes
+
+			num_of_realm_counties = {
+				value >= 6
+				title = PREV
+			}
+
+			# CK2Plus
+			PREV = {
+				OR = {
+					has_holder = no
+					holder = FROM
+					holder_scope = { any_liege = { character = FROM } }
+					holder_scope = { religion = ROOT }
 				}
 			}
 		}
 	}
 
-	can_use_title = {
-		FROM = {
-			any_realm_title = {
-				de_jure_liege_or_above = PREVPREV
-			}
+	is_valid = {
+		# Attacker
+		ROOT = {
+			can_call_crusade = yes
 
-			independent = yes
-			in_revolt = no # Don't declare Crusades on revolters - chances are high the war will invalidate
-
-			num_of_realm_counties = {
-				value = 6
-				title = PREV
-			}
-			#target needs to either hold the target title,
-			#be the title's overlord,
-			#or the title needs to have no holder/holder of ROOT's religious group
+			# Religion check
 			OR = {
-				has_landed_title = PREV
-				any_vassal = { has_landed_title = PREVPREV }
-				PREV = { has_holder = no }
-				PREV = { holder_scope = { religion = ROOT } }
-			}
-		}
+				NOT = { religion_group = FROM }
 
-		OR = {
-			# religion head is a player
-			ROOT = { ai = no }
-			# the target owns a holy site within that kingdom title
-			FROM = {
-				any_realm_title = {
-					de_jure_liege_or_above = PREVPREV
-					is_holy_site = ROOT
+				# One is a heretic of the other
+				is_heresy_of = FROM
+				is_parent_religion = FROM
+
+				trigger_if = {
+					limit = { religion_group = pagan_group }
+					NOT = { religion = FROM }
 				}
-			}
-			# the target owns a province of the religion within that kingdom title
-			FROM = {
-				any_realm_title = {
-					tier = COUNT
-					de_jure_liege_or_above = PREVPREV
-					location = { religion = ROOT }
+
+				# CK2Plus
+				trigger_else_if = {
+					limit = { religion = cathar }
+					has_global_flag = cathar_war
 				}
-			}
-			# a ruler of the religion either owns a province in that kingdom or is neighboring
-			any_direct_de_jure_vassal_title = {
-				any_direct_de_jure_vassal_title = {
-					location = {
-						OR = {
-							owner = { religion = ROOT }
-							any_neighbor_province = { owner = { religion = ROOT } }
-						}
+				trigger_else_if = {
+					limit = { religion = paulician }
+					FROM = {
+						NOT = { religion = paulician }
 					}
 				}
+				trigger_else_if = {
+					limit = { religion = kharijite }
+					FROM = {
+						NOT = { religion = kharijite }
+					}
+				}
+
+				trigger_if = {
+					limit = { has_global_flag = fourth_crusade_ongoing }
+
+					is_heretic = no
+					OR = {
+						religion = catholic
+						religion = cathar
+						religion = fraticelli
+						religion = waldensian
+						religion = lollard
+						religion = adoptionist
+					}
+				}
+			}
+		}
+	}
+
+	is_valid_title = {
+		# Defender
+		FROM = {
+			num_of_realm_counties = {
+				value >= 1
+				title = PREV
 			}
 		}
 	}
 
 	on_add = {
-		hidden_tooltip = { fire_haruspicy_event_effect = yes }
+		fire_haruspicy_event_effect = yes
+		anger_china_effect = yes
+
+		# CK2Plus
 		ROOT = {
 			add_character_modifier = {
 				name = "crusade_timer"
@@ -4636,75 +4806,251 @@ crusade = {
 				inherit = yes
 			}
 		}
-		if = {
-			limit = { defender = { is_offmap_governor = offmap_china } }
-			attacker = {
-				sound_effect = china_angered_emperor
-				detract_grace_super_huge_effect = yes
-			}
-		}
-	}
-
-	is_valid = {
-		ROOT = {
-			can_call_crusade = yes
-		}
-		FROM = {
-			OR = {
-				NOT = { religion_group = ROOT }
-				is_heresy_of = ROOT
-				is_parent_religion = ROOT
-				AND = {
-					is_pagan_religion = yes
-					NOT = { religion = ROOT }
-				}
-				AND = {
-					ROOT = { religion = paulician }
-					NOT = { religion = ROOT }
-				}
-				AND = {
-					ROOT = { religion = kharijite }
-					NOT = { religion = ROOT }
-				}
-				AND = {
-					ROOT = {
-						OR = {
-							religion = catholic
-							religion = cathar
-							religion = fraticelli
-							religion = waldensian
-							religion = lollard
-							religion = adoptionist
-						}
-						is_heretic = no
-					}
-					has_global_flag = fourth_crusade_ongoing
-				}
-			}
-		}
-	}
-
-	is_valid_title = {
-		FROM = {
-			any_realm_province = {
-				de_jure_liege_or_above = PREVPREV
-			}
-		}
 	}
 
 	on_success_title = {
 		log = "[Root.GetBestName] (ID: [Root.GetID]) succeeded with their crusade for the [This.GetFullName] against [From.GetBestName] (ID: [From.GetID])"
-		#change imperial decadence
-		ROOT = { imperial_decadence_minus_2_effect = yes }
-		FROM = { imperial_decadence_plus_2_effect = yes }
 
-		hidden_tooltip = {
-			any_attacker = {
-				add_character_modifier = { name = victory_timer duration = 1 hidden = yes }
+		# Should we give the seized land to its current king?
+		if = {
+			limit = {
+				has_holder = yes
+				holder_scope = {
+					religion = attacker
+					NOT = { same_realm = defender }
+				}
 			}
-			ROOT = {
+			holder_scope = {
+				gain_settlements_under_title = {
+					title = PREV
+					enemy = defender
+					is_crusade = yes # Even if the title holder is not participating in the war, gain holdings occupied by all Crusade participants
+					type = holy_war
+				}
+			}
+		}
+
+		# CK2Plus: Should we give the siezed land to its de jure liege?
+		else_if = {
+			limit = {
+				OR = {
+					has_holder = no
+					holder_scope = { NOT = { religion = attacker } }
+					holder_scope = { same_realm = defender }
+				}
+
+				dejure_liege_title = {
+					has_holder = yes
+					holder_scope = {
+						religion = attacker
+						NOT = { same_realm = defender }
+					}
+				}
+			}
+
+			dejure_liege_title = {
+				holder_scope = {
+					gain_settlements_under_title = {
+						title = PREVPREV
+						enemy = defender
+						is_crusade = yes # Even if the title holder is not participating in the war, gain holdings occupied by all Crusade participants
+						type = holy_war
+					}
+				}
+			}
+		}
+
+		# Should we give the seized land to a claimant of our faith?
+		else_if = {
+			limit = {
+				OR = {
+					has_holder = no
+					holder_scope = {
+						NOT = { religion = attacker }
+					}
+				}
+
+				best_crusade_claimant = {
+					always = yes # There is a "best" claimant
+				}
+			}
+
+			# Claimants must be of ROOT's religion, and are ranked by strength of claim and actual contribution to the war
+			best_crusade_claimant = {
+				if = {
+					limit = { is_ruler = no }
+					set_character_flag = set_feudal_gov
+				}
+				gain_settlements_under_title = {
+					title = PREV
+					enemy = defender
+					is_crusade = yes # Even if the title holder is not participating in the war, gain holdings occupied by all Crusade participants
+					type = holy_war
+				}
+
 				if = {
 					limit = {
+						top_liege = {
+							character = defender
+						}
+					}
+					set_defacto_liege = THIS
+				}
+
+				if = { # transfer targeted kingdom title
+					limit = {
+						PREV = {
+							OR = {
+								has_holder = no
+								holder_scope = {
+									top_liege = { character = defender }
+								}
+							}
+						}
+						OR = {
+							independent = yes
+							is_ruler = no
+							liege = {
+								tier = EMPEROR
+							}
+						}
+					}
+					usurp_title = {
+						target = PREV
+						type = holy_war
+					}
+				}
+				if = {
+					limit = { has_character_flag = set_feudal_gov }
+					set_government_type = feudal_government
+				}
+				clr_character_flag = set_feudal_gov
+			}
+		}
+
+		# Give the seized land to the main contributor of the Crusade
+		else = {
+			most_participating_crusader = {
+				gain_settlements_under_title = {
+					title = PREV
+					enemy = defender
+					type = holy_war
+				}
+				if = { # transfer targeted kingdom title
+					limit = {
+						primary_title = { is_primary_type_title = no } # Mercs, the Pope, Holy Orders, etc
+						PREV = {
+							OR = {
+								has_holder = no
+								holder_scope = {
+									top_liege = { character = defender }
+								}
+							}
+						}
+						NOT = { character = attacker }
+						OR = {
+							independent = yes
+							liege = {
+								tier = EMPEROR
+							}
+						}
+					}
+					usurp_title_only = {
+						target = PREV
+						type = holy_war
+					}
+
+					if = {
+						limit = {
+							NOT = { culture = PREV }
+						}
+						hidden_effect = {
+							save_event_target_as = winning_crusader
+							PREV = { conquest_culture = event_target:winning_crusader }
+						}
+					}
+				}
+				hidden_effect = {
+					if = {
+						limit = {
+							trigger_if = {
+								limit = { has_nickname = yes }
+								this_has_lame_nickname_trigger = yes
+							}
+						}
+						random_list = {
+							10 = {
+								trigger = { religion_group = christian }
+								give_nickname = nick_the_crusader
+							}
+							10 = { give_nickname = nick_the_holy }
+							10 = { give_nickname = nick_the_glorious }
+							10 = { give_nickname = nick_the_lionheart }
+							10 = { give_nickname = nick_the_great }
+							10 = { give_nickname = nick_the_hammer }
+							10 = { give_nickname = nick_the_pilgrim }
+							40 = {
+								trigger = { NOT = { religion_group = christian } }
+								give_nickname = nick_the_sword_of_god
+							}
+						}
+					}
+				}
+			}
+		}
+
+		any_attacker = {
+			limit = { NOT = { character = ROOT } }
+			hidden_effect = {
+				participation_scaled_prestige = 500
+				participation_scaled_piety = 1000
+				if = {
+					limit = { uses_decadence = yes }
+					participation_scaled_decadence = -100
+				}
+
+				add_character_modifier = {
+					name = victory_timer
+					duration = 1
+					hidden = yes
+				}
+			}
+
+			# CK2Plus
+			pf_tradition_plus4_effect = yes
+			pf_glory_plus2_effect = yes
+		}
+		any_attacker = {
+			limit = {
+				ai = no
+				is_ironman = yes
+				NOT = { has_character_flag = achievement_crusader }
+			}
+			set_character_flag = achievement_crusader
+		}
+
+		attacker = {
+			show_scope_change = no
+			participation_scaled_prestige = 500
+			participation_scaled_piety = 1000
+			if = {
+				limit = { uses_decadence = yes }
+				participation_scaled_decadence = -100
+			}
+			religion_authority = {
+				modifier = won_crusade
+				years = 20
+			}
+
+			# CK2Plus
+			imperial_decadence_minus_2_effect = yes
+			#faction mood boost
+			pf_tradition_plus4_effect = yes
+			pf_glory_plus2_effect = yes
+			hidden_tooltip = {
+				if = {
+					limit = {
+						is_heretic = no
 						OR = {
 							religion = catholic
 							religion = cathar
@@ -4713,7 +5059,6 @@ crusade = {
 							religion = lollard
 							religion = adoptionist
 						}
-						is_heretic = no
 						OR = {
 							has_global_flag = catholic_crusade_failed
 							has_global_flag = fourth_crusade_ongoing
@@ -4725,486 +5070,280 @@ crusade = {
 			}
 		}
 
-		hidden_tooltip = { destroy_tradeposts_effect = yes }
-		pf_liege_change_under_title_begin_effect = yes
-
-		#first give the target kingdom to its current holder, if the holder is the same religion
-		if = {
-			limit = {
-				has_holder = yes
-				holder_scope = {
-					religion = ROOT
-					NOT = { same_realm = FROM }
-				}
-			}
-			holder_scope = {
-				add_character_modifier = { name = new_land_timer duration = 1 hidden = yes }
-				gain_settlements_under_title = {
-					title = PREV
-					enemy = FROM
-					is_crusade = yes # Even if the title holder is not participating in the war, gain holdings occupied by all Crusade participants
-					type = holy_war
-				}
-			}
-		}
-		#then give the target kingdom to its de jure liege, if the holder is the same religion
-		if = {
-			limit = {
-				OR = {
-					has_holder = no
-					holder_scope = { NOT = { religion = ROOT } }
-					holder_scope = { same_realm = FROM }
-				}
-				dejure_liege_title = {
-					has_holder = yes
-					holder_scope = {
-						religion = ROOT
-						NOT = { same_realm = FROM }
-					}
-				}
-			}
-			dejure_liege_title = {
-				holder_scope = {
-					add_character_modifier = { name = new_land_timer duration = 1 hidden = yes }
-					gain_settlements_under_title = {
-						title = PREVPREV
-						enemy = FROM
-						is_crusade = yes # Even if the title holder is not participating in the war, gain holdings occupied by all Crusade participants
-						type = holy_war
-					}
-				}
-			}
-		}
-		#then give the target kingdom to the most participating attacker
-		if = {
-			limit = {
-				OR = {
-					has_holder = no
-					holder_scope = { NOT = { religion = ROOT } }
-					holder_scope = { same_realm = FROM }
-				}
-				NOT = {
-					dejure_liege_title = {
-						has_holder = yes
-						holder_scope = {
-							religion = ROOT
-							NOT = { same_realm = FROM }
-						}
-					}
-				}
-			}
-			hidden_tooltip = {
-				most_participating_crusader = {
-					set_character_flag = crusade_victor
-				}
-				#other crusaders will request fiefs
-				any_attacker = {
-					limit = {
-						NOT = { has_character_flag = crusade_victor }
-						is_feudal = yes
-						higher_tier_than = BARON
-						demesne_size = 1
-						NOT = { religion_group = muslim }
-					}
-					character_event = { id = Plus.401 }
-				}
-				#add a strong claim to the best_crusade_claimant if not also the most_participating_attacker
-				if = {
-					limit = {
-						best_crusade_claimant = {
-							NOT = { has_character_flag = crusade_victor }
-							is_alive = yes
-						}
-					}
-					best_crusade_claimant = { PREV = { add_pressed_claim = PREV } }
-				}
-				most_participating_crusader = {
-					clr_character_flag = crusade_victor
-				}
-			}
-			most_participating_crusader = {
-				# Clear original flags first
- 				any_landed_title = { clr_title_flag = previous_holding }
- 				any_character = { clr_character_flag = previous_vassal }
-
-				any_demesne_title = { set_title_flag = previous_holding }
-				any_vassal = { set_character_flag = previous_vassal }
-				primary_title = { save_event_target_as = current_title }
-				PREV = {
-					any_de_jure_vassal_title = {
-						limit = {
-							tier = COUNT
-							holder_scope = { same_realm = FROM }
-							location = {
-								NOT = { any_province_holding = { NOT = { holding_type = nomad } } }
-								NOT = { culture = PREVPREVPREV }
-							}
-						}
-						location = {
-							build_holding = { type = tribal }
-							any_province_holding = {
-								limit = { NOT = { holding_type = nomad } }
-								make_capital_holding = yes
-							}
-						}
-					}
-				}
-				gain_settlements_under_title = {
-					title = PREV
-					enemy = FROM
-					is_crusade = yes # Even if the title holder is not participating in the war, gain holdings occupied by all Crusade participants
-					type = holy_war
-				}
-				#who to give crusade gains to?
-				hidden_tooltip = {
-					character_event = { id = Plus.400 }
-				}
-				if = {
-					limit = { NOT = { culture = PREV } }
-					hidden_tooltip = {
-						save_event_target_as = winning_crusader
-						PREV = { conquest_culture = event_target:winning_crusader }
-					}
-				}
-				hidden_tooltip = {
-					if = {
-						limit = {
-							OR = {
-								this_has_lame_nickname_trigger = yes
-								has_nickname = no
-							}
-						}
-						random_list = {
-							10 = {
-								modifier = {
-									factor = 0
-									NOT = { religion_group = christian }
-								}
-								give_nickname = nick_the_crusader
-							}
-							10 = { give_nickname = nick_the_holy }
-							10 = { give_nickname = nick_the_glorious }
-							10 = { give_nickname = nick_the_lionheart }
-							10 = { give_nickname = nick_the_great }
-							10 = { give_nickname = nick_the_hammer }
-							10 = { give_nickname = nick_the_pilgrim }
-							40 = {
-								modifier = {
-									factor = 0
-									religion_group = christian
-								}
-								give_nickname = nick_the_sword_of_god
-							}
-						}
-					}
-				}
-			}
-		}
-
-		pf_liege_change_under_title_end_effect = yes
-
-		ROOT = {
+		defender = {
 			show_scope_change = no
-			participation_scaled_piety = 1000
-			participation_scaled_prestige = 500
-			dynasty_head = {
+			prestige = -500
+			religion_authority = {
+				modifier = lost_crusade
+				years = 20
+			}
+
+			# CK2Plus
+			imperial_decadence_plus_2_effect = yes
+			pf_glory_minus2_effect = yes
+			pf_tradition_minus4_effect = yes
+		}
+
+		hidden_effect = {
+			check_if_reconquista_finished_effect = yes
+			defender = {
+				landless_pope_effect = yes
+			}
+		}
+
+		# CK2Plus
+		hidden_effect = {
+			destroy_tradeposts_effect = yes
+			holder_scope = {
+				add_character_modifier = {
+					name = new_land_timer
+					duration = 1
+					hidden = yes
+				}
+			}
+
+			any_defender = {
+				limit = {
+					NOT = { character = defender }
+				}
+				prestige = -250
+			}
+
+			# Maintenance - shatter defender's empire if it is too small
+			defender = {
+				character_event = { id = realmPlus.100 }
+			}
+		}
+		pf_liege_change_under_title_begin_effect = yes
+		pf_liege_change_under_title_end_effect = yes
+	}
+
+	on_fail = {
+		attacker = {
+			show_scope_change = no
+			piety = -200
+		}
+
+		any_defender = {
+			limit = { NOT = { character = defender } }
+			hidden_effect = {
+				participation_scaled_piety = 200
+				participation_scaled_prestige = 100
+				if = {
+					limit = { uses_decadence = yes }
+					participation_scaled_decadence = -50
+				}
+			}
+
+			# CK2Plus
+			pf_tradition_minus2_effect = yes
+		}
+
+		defender = {
+			show_scope_change = no
+			participation_scaled_piety = 200
+			participation_scaled_prestige = 100
+			if = {
+				limit = { uses_decadence = yes }
+				participation_scaled_decadence = -50
+			}
+
+			hidden_effect = {
+				roman_victory_triumph_effect = yes
+
+				if = {
+					limit = {
+						trigger_if = {
+							limit = { has_nickname = yes }
+							this_has_lame_nickname_trigger = yes
+						}
+					}
+					random_list = {
+						10 = { give_nickname = nick_the_holy }
+						10 = { give_nickname = nick_the_glorious }
+						10 = { give_nickname = nick_the_lionheart }
+						10 = { give_nickname = nick_the_great }
+						10 = { give_nickname = nick_the_hammer }
+						20 = {
+							trigger = { NOT = { religion_group = christian } }
+							give_nickname = nick_the_sword_of_god
+						}
+					}
+				}
+			}
+
+			# CK2Plus
+			pf_tradition_minus4_effect = yes
+		}
+
+		# CK2Plus
+		any_attacker = {
+			limit = { NOT = { character = attacker } }
+			prestige = -100
+		}
+		hidden_effect = {
+			attacker = {
+				if = {
+					limit = {
+						is_heretic = no
+						OR = {
+							religion = chalcedonian
+							religion = catholic
+							religion = cathar
+							religion = fraticelli
+							religion = waldensian
+							religion = lollard
+							religion = adoptionist
+						}
+					}
+					set_global_flag = catholic_crusade_failed
+
+					if = {
+						limit = { has_global_flag = fourth_crusade_ongoing }
+						clr_global_flag = fourth_crusade_ongoing
+					}
+				}
+			}
+		}
+	}
+
+	on_reverse_demand = {
+		attacker = {
+			show_scope_change = no
+			transfer_scaled_wealth = {
+				to = defender
+				value = 4.0
+			}
+			prestige = -500
+			religion_authority = {
+				modifier = lost_crusade
+				years = 20
+			}
+
+			if = {
+				limit = {
+					uses_decadence = yes
+					NOT = {
+						any_liege = {
+							dynasty = PREV
+						}
+					}
+				}
+				participation_scaled_decadence = 35
+			}
+
+			# CK2Plus
+			imperial_decadence_plus_2_effect = yes
+			pf_glory_minus2_effect = yes
+			pf_tradition_minus4_effect = yes
+			hidden_effect = {
+				if = {
+					limit = {
+						is_heretic = no
+						OR = {
+							religion = chalcedonian
+							religion = catholic
+							religion = cathar
+							religion = fraticelli
+							religion = waldensian
+							religion = lollard
+							religion = adoptionist
+						}
+					}
+					set_global_flag = catholic_crusade_failed
+
+					if = {
+						limit = { has_global_flag = fourth_crusade_ongoing }
+						clr_global_flag = fourth_crusade_ongoing
+					}
+				}
+			}
+		}
+		any_attacker = {
+			limit = {
+				NOT = { character = attacker }
+				uses_decadence = yes
+				NOT = {
+					any_liege = {
+						dynasty = PREV
+					}
+				}
+			}
+			hidden_effect = {
+				participation_scaled_decadence = 35
+			}
+		}
+
+		defender = {
+			show_scope_change = no
+			piety = 100
+			religion_authority = {
+				modifier = won_crusade
+				years = 20
+			}
+			participation_scaled_piety = 500
+			participation_scaled_prestige = 1000
+			if = {
+				limit = { uses_decadence = yes }
+				participation_scaled_decadence = -100
+			}
+
+			hidden_effect = {
+				roman_victory_triumph_effect = yes
+
+				if = {
+					limit = {
+						trigger_if = {
+							limit = { has_nickname = yes }
+							this_has_lame_nickname_trigger = yes
+						}
+					}
+					random_list = {
+						10 = { give_nickname = nick_the_holy }
+						10 = { give_nickname = nick_the_glorious }
+						10 = { give_nickname = nick_the_lionheart }
+						10 = { give_nickname = nick_the_great }
+						10 = { give_nickname = nick_the_hammer }
+						20 = {
+							trigger = { NOT = { religion_group = christian } }
+							give_nickname = nick_the_sword_of_god
+						}
+					}
+				}
+			}
+
+			# CK2Plus
+			imperial_decadence_minus_2_effect = yes
+			pf_glory_plus2_effect = yes
+			pf_tradition_plus4_effect = yes
+
+			add_character_modifier = {
+				name = victory_timer
+				duration = 1
+				hidden = yes
+			}
+		}
+
+		any_defender = {
+			limit = { NOT = { character = defender } }
+			hidden_effect = {
+				participation_scaled_piety = 500
+				participation_scaled_prestige = 1000
 				if = {
 					limit = { uses_decadence = yes }
 					participation_scaled_decadence = -100
 				}
 			}
-			#faction mood boost
-			pf_tradition_plus4_effect = yes
-			pf_glory_plus2_effect = yes
-		}
-		any_attacker = {
-			limit = { NOT = { character = ROOT } }
-			hidden_tooltip = {
-				participation_scaled_piety = 1000
-				participation_scaled_prestige = 500
-				dynasty_head = {
-					if = {
-						limit = { uses_decadence = yes }
-						participation_scaled_decadence = -100
-					}
-				}
-				pf_tradition_plus4_effect = yes
-				pf_glory_plus2_effect = yes
-			}
-		}
 
-		FROM = {
-			prestige = -500
-			pf_glory_minus2_effect = yes
-			pf_tradition_minus4_effect = yes
-		}
-		hidden_tooltip = {
-			any_defender = {
-				limit = { NOT = { character = FROM } }
-				prestige = -250
-			}
-		}
-		if = {
-			limit = {
-				ROOT = { is_heretic = no }
-			}
-			ROOT = {
-				religion_authority = {
-					modifier = won_crusade
-					years = 20
-				}
-			}
-		}
-		if = {
-			limit = {
-				FROM = { is_heretic = no }
-			}
-			FROM = {
-				religion_authority = {
-					modifier = lost_crusade
-					years = 20
-				}
-			}
-		}
-		#maintenance - shatter FROM empire if it's become too small (NYR)
-		hidden_tooltip = { FROM = { character_event = { id = realmPlus.100 } } }
-		hidden_tooltip = {
-			check_if_reconquista_finished_effect = yes
-			FROM = {
-				landless_pope_effect = yes
-			}
-		}
-	}
-
-	on_fail = {
-		hidden_tooltip = {
-			if = {
-				limit = {
-					ROOT = {
-						OR = {
-							religion = chalcedonian
-							religion = catholic
-							religion = cathar
-							religion = fraticelli
-							religion = waldensian
-							religion = lollard
-							religion = adoptionist
-						}
-						is_heretic = no
-					}
-				}
-				set_global_flag = catholic_crusade_failed
-			}
-			if = {
-				limit = {
-					ROOT = {
-						OR = {
-							religion = catholic
-							religion = cathar
-							religion = fraticelli
-							religion = waldensian
-							religion = lollard
-							religion = adoptionist
-						}
-						is_heretic = no
-					}
-					has_global_flag = fourth_crusade_ongoing
-				}
-				clr_global_flag = fourth_crusade_ongoing
-			}
-		}
-		ROOT = {
-			show_scope_change = no
-			prestige = -200
-		}
-		any_attacker = {
-			limit = { NOT = { character = ROOT } }
-			prestige = -100
-		}
-		FROM = {
-			participation_scaled_prestige = 100
-			participation_scaled_piety = 200
-			dynasty_head = {
-				if = {
-					limit = {
-						uses_decadence = yes
-					}
-					participation_scaled_decadence = -50
-				}
-			}
-			pf_tradition_minus4_effect = yes
-		}
-		any_defender = {
-			limit = { NOT = { character = FROM } }
-			hidden_tooltip = {
-				participation_scaled_prestige = 100
-				participation_scaled_piety = 200
-				dynasty_head = {
-					if = {
-						limit = {
-							uses_decadence = yes
-						}
-						participation_scaled_decadence = -50
-					}
-				}
-			}
-			pf_tradition_minus2_effect = yes
-		}
-	}
-
-	on_reverse_demand = {
-		#change imperial decadence
-		FROM = { imperial_decadence_minus_2_effect = yes }
-		ROOT = { imperial_decadence_plus_2_effect = yes }
-
-		FROM = {
-			add_character_modifier = { name = victory_timer duration = 1 hidden = yes }
+			# CK2Plus
 			pf_glory_plus2_effect = yes
 			pf_tradition_plus4_effect = yes
 		}
-		hidden_tooltip = {
-			if = {
-				limit = {
-					ROOT = {
-						OR = {
-							religion = chalcedonian
-							religion = catholic
-							religion = cathar
-							religion = fraticelli
-							religion = waldensian
-							religion = lollard
-							religion = adoptionist
-						}
-						is_heretic = no
-					}
-				}
-				set_global_flag = catholic_crusade_failed
-			}
-			if = {
-				limit = {
-					ROOT = {
-						OR = {
-							religion = catholic
-							religion = cathar
-							religion = fraticelli
-							religion = waldensian
-							religion = lollard
-							religion = adoptionist
-						}
-						is_heretic = no
-					}
-					has_global_flag = fourth_crusade_ongoing
-				}
-				clr_global_flag = fourth_crusade_ongoing
-			}
-		}
-		ROOT = {
-			prestige = -500
-			pf_glory_minus2_effect = yes
-			pf_tradition_minus4_effect = yes
-			transfer_scaled_wealth = {
-				to = FROM
-				value = 4.0
-			}
-		}
-		FROM = {
-			participation_scaled_prestige = 1000
-			participation_scaled_piety = 500
-			dynasty_head = {
-				if = {
-					limit = {
-						uses_decadence = yes
-					}
-					participation_scaled_decadence = -100
-				}
-			}
-			hidden_tooltip = {
-				if = {
-					limit = {
-						OR = {
-							this_has_lame_nickname_trigger = yes
-							has_nickname = no
-						}
-					}
-					hidden_effect = {
-						random_list = {
-							10 = { give_nickname = nick_the_holy }
-							10 = { give_nickname = nick_the_glorious }
-							10 = { give_nickname = nick_the_lionheart }
-							10 = { give_nickname = nick_the_great }
-							10 = { give_nickname = nick_the_hammer }
-							20 = {
-								modifier = {
-									factor = 0
-									religion_group = christian
-								}
-								give_nickname = nick_the_sword_of_god
-							}
-						}
-					}
-				}
-			}
-		}
-		hidden_tooltip = {
-			any_attacker = {
-				limit = { NOT = { character = ROOT } }
-				prestige = -250
-			}
-			any_defender = {
-				limit = { NOT = { character = FROM } }
-				hidden_tooltip = {
-					pf_glory_plus2_effect = yes
-					pf_tradition_plus4_effect = yes
-					participation_scaled_prestige = 1000
-					participation_scaled_piety = 500
-					dynasty_head = {
-						if = {
-							limit = {
-								uses_decadence = yes
-							}
-							participation_scaled_decadence = -100
-						}
-					}
-				}
-			}
-			any_attacker = {
-				limit = {
-					character = ROOT
-					uses_decadence = yes
-				}
-				participation_scaled_decadence = 35
-			}
-			any_attacker = {
-				limit = {
-					NOT = { character = ROOT }
-					uses_decadence = yes
-				}
-				hidden_tooltip = {
-					participation_scaled_decadence = 35
-				}
-			}
-		}
-		if = {
-			limit = {
-				FROM = { is_heretic = no }
-			}
-			FROM = {
-				religion_authority = {
-					modifier = won_crusade
-					years = 20
-				}
-			}
-		}
-		if = {
-			limit = {
-				ROOT = { is_heretic = no }
-			}
-			ROOT = {
-				religion_authority = {
-					modifier = lost_crusade
-					years = 20
-				}
-			}
+
+		# CK2Plus
+		any_attacker = {
+			limit = { NOT = { character = ROOT } }
+			prestige = -250
 		}
 	}
 
@@ -5226,34 +5365,56 @@ crusade = {
 
 	ai_will_do = {
 		factor = 1
-		modifier = {
-			factor = 0.1
-			ROOT = {
-				religion_group = muslim
-				NOT = { religion = kharijite }
+
+		trigger = {
+			trigger_if = {
+				limit = {
+					attacker = { religion = ibadi }
+				}
+				attacker = { trait = zealous }
 			}
-			FROM = { religion = ibadi }
+			OR = {
+				# the target owns a holy site within that kingdom title
+				defender = {
+					any_realm_title = {
+						de_jure_liege_or_above = PREVPREV
+						is_holy_site = ROOT
+					}
+				}
+				# the target owns a province of the religion within that kingdom title
+				defender = {
+					any_realm_title = {
+						tier = COUNT
+						de_jure_liege_or_above = PREVPREV
+						location = { religion = ROOT }
+					}
+				}
+				# a ruler of the religion either owns a province in that kingdom or is neighboring
+				any_de_jure_vassal_title = {
+					location = {
+						OR = {
+							owner = { religion = ROOT }
+							any_neighbor_province = {
+								owner = { religion = ROOT }
+							}
+						}
+					}
+				}
+			}
 		}
 		modifier = {
 			factor = 0.1
-			FROM = {
+			attacker = {
 				religion_group = muslim
 				NOT = { religion = kharijite }
 			}
-			ROOT = { religion = ibadi }
-		}
-		modifier = {
-			factor = 0
-			ROOT = {
-				religion = ibadi
-				NOT = { trait = zealous }
-			}
+			defender = { religion = ibadi }
 		}
 		sufficient_treasury_for_war = yes
 	}
 }
 
-# 13
+# 13: Crusade using the new crusade system. See crusade.info in the religion folder for documentation
 new_crusade = {
 	name = CB_NAME_CRUSADE
 	war_name = WAR_NAME_CRUSADE
@@ -5275,171 +5436,167 @@ new_crusade = {
 	can_use_gui = {
 		has_game_started = yes
 		has_global_flag = plus_rules_applied
-		OR = {
-			AND = {
-				NOT = { has_global_flag = delayed_crusades_1 }
-				NOT = { has_global_flag = delayed_crusades_2 }
-				NOT = { has_global_flag = delayed_crusades_3 }
-				NOT = { has_global_flag = delayed_crusades_4 }
-				NOT = { has_global_flag = delayed_crusades_5 }
-			}
-			had_global_flag = { flag = delayed_crusades_1 days = 365 }
-			had_global_flag = { flag = delayed_crusades_2 days = 1095 }
-			had_global_flag = { flag = delayed_crusades_3 days = 1825 }
-			had_global_flag = { flag = delayed_crusades_4 days = 3650 }
-			had_global_flag = { flag = delayed_crusades_5 days = 7300 }
-		}
-		FROM = { NOT = { has_character_modifier = crusade_block_timer } }
-		ROOT = { # The Religious Head
+		# Attacker
+		ROOT = {
 			uses_new_crusade = yes
 			has_called_crusade = no
-			has_secret_religion = no
-			religion_authority = 0.4
-			NOT = {
-				has_character_modifier = crusade_timer
-				AND = {
-					trait = bad_priest_christian
-					NOT = { has_global_flag = fourth_crusade_happened }
-				}
-			}
-			conditional_tooltip = {
-				trigger = {
-					is_alternate_start = yes
+			religion_authority >= 0.4
+			mercenary = no
+
+			trigger_if = {
+				limit = {
 					has_alternate_start_parameter = {
 						key = religion_names
 						value = random
 					}
 				}
+
 				custom_tooltip = {
 					text = ALT_GHW_STARTED
+
 					has_global_flag = muslim_jihads_unlocked
 					has_global_flag = pagan_ghws_unlocked
 					has_global_flag = christian_crusades_unlocked
 				}
 			}
-			conditional_tooltip = {
-				trigger = {
-					NOT = {
-						has_alternate_start_parameter = {
-							key = religion_names
-							value = random
-						}
-					}
-				}
+
+			trigger_else = {
 				religion_group = christian
+
 				custom_tooltip = {
 					text = CTT_CHRISTIAN_CRUSADES_UNLOCKED
+
 					has_global_flag = christian_crusades_unlocked
 				}
 			}
-			mercenary = no
+
+			# CK2Plus
+			has_secret_religion = no
+			NOT = { has_character_modifier = crusade_timer }
+
+			trigger_if = {
+				limit = {
+					NOT = { has_global_flag = fourth_crusade_happened }
+				}
+				NOT = { trait = bad_priest_christian }
+			}
+		}
+
+		# CK2Plus
+		FROM = {
+			NOT = { has_character_modifier = crusade_block_timer }
+		}
+
+		trigger_if = {
+			limit = { has_global_flag = delayed_crusades_1 }
+			had_global_flag = { flag = delayed_crusades_1 days = 365 }
+		}
+		trigger_else_if = {
+			limit = { has_global_flag = delayed_crusades_2 }
+			had_global_flag = { flag = delayed_crusades_2 days = 1095 }
+		}
+		trigger_else_if = {
+			limit = { has_global_flag = delayed_crusades_3 }
+			had_global_flag = { flag = delayed_crusades_3 days = 1825 }
+		}
+		trigger_else_if = {
+			limit = { has_global_flag = delayed_crusades_4 }
+			had_global_flag = { flag = delayed_crusades_4 days = 3650 }
+		}
+		trigger_else_if = {
+			limit = { has_global_flag = delayed_crusades_5 }
+			had_global_flag = { flag = delayed_crusades_5 days = 7300 }
 		}
 	}
 
 	can_use = {
-		cb_can_use_preamble = yes
-		cb_no_nap_with_suzerain_trigger = yes
+		# Attacker
 		ROOT = {
 			uses_new_crusade = yes
 			can_call_crusade = yes
-			hidden_tooltip = {
-				NOT = { has_character_modifier = cancel_crusade_cooldown }
-			}
-			any_demesne_title = { NOT = { controls_religion = yes } }
-			OR = {
-				NOT = { religion = cathar }
+
+			NOT = { has_character_modifier = cancel_crusade_cooldown }
+
+			# CK2Plus
+			trigger_if = {
+				limit = { religion = cathar }
 				has_global_flag = cathar_war
 			}
 		}
 
+		# Defender
 		FROM = {
-			NOT = { religion = ROOT}
+			independent = yes # Don't declare Crusades on revolters - chances are high the war will invalidate
+
+			NOT = { religion = ROOT }
+
 			OR = {
 				NOT = { religion_group = ROOT }
+				religion_group = pagan_group
+
+				# One is a heretic of the other
 				is_heresy_of = ROOT
 				is_parent_religion = ROOT
-				AND = {
-					is_pagan_religion = yes
-					NOT = { religion = ROOT }
+
+				# Fourth Crusade
+				trigger_if = {
+					limit = { has_character_flag = fourth_crusade_target }
+					NOT = { has_character_flag = fourth_crusade_recipient }
 				}
-				AND = {
-					ROOT = { religion = paulician }
-					NOT = { religion = ROOT }
-				}
-				AND = {
-					has_character_flag = fourth_crusade_target
-					NOR = {
-						has_character_flag = fourth_crusade_recipient
-						religion = ROOT
-					}
-				}
-				AND = {
-					has_global_flag = 4th_crusade_official
+				trigger_else_if = {
+					limit = { has_global_flag = 4th_crusade_official }
 					has_landed_title = e_byzantium
-					NOT = { religion = ROOT }
 				}
 			}
 		}
+
+		# Not if the Schism has been mended
+		trigger_if = {
+			limit = { has_global_flag = schism_mended }
+
+			NOR = {
+				religion = catholic
+				religion = fraticelli
+				# CK2Plus
+				religion = cathar
+			}
+		}
+
+		# CK2Plus
+		cb_can_use_preamble = yes
+		cb_no_nap_with_suzerain_trigger = yes
 	}
 
 	can_use_title = {
+		# Defender
 		FROM = {
-			any_realm_title = {
-				de_jure_liege_or_above = PREVPREV
-			}
-
-			independent = yes
-			in_revolt = no # Don't declare Crusades on revolters - chances are high the war will invalidate
-
-			OR = {
-				num_of_realm_counties = {
-					value = 6
-					title = PREV
-				}
-				PREV = {
-					title = k_thrace
-					FROM = {
-						has_landed_title = e_byzantium
-						religion_group = christian
-					}
-				}
-			}
-			#target needs to either hold the target title,
-			#be the title's overlord,
-			#or the title needs to have no holder/holder of ROOT's religious group
-			OR = {
-				has_landed_title = PREV
-				any_vassal = { has_landed_title = PREVPREV }
-				PREV = { has_holder = no }
-				PREV = { holder_scope = { religion = ROOT } }
-			}
-		}
-
-		OR = {
-			# the target owns a holy site within that kingdom title
-			FROM = {
-				any_realm_title = {
-					de_jure_liege_or_above = PREVPREV
-					is_holy_site = ROOT
-				}
-			}
-			# the target owns a province of the religion within that kingdom title
-			FROM = {
-				any_realm_title = {
-					tier = COUNT
-					de_jure_liege_or_above = PREVPREV
-					location = { religion = ROOT }
-				}
-			}
-			# a ruler of the religion either owns a province in that kingdom or is neighboring
-			any_direct_de_jure_vassal_title = {
-				any_direct_de_jure_vassal_title = {
-					location = {
-						OR = {
-							owner = { religion = ROOT }
-							any_neighbor_province = { owner = { religion = ROOT } }
+			trigger_if = {
+				limit = {
+					NOT = {
+						num_of_realm_counties = {
+							value >= 6
+							title = PREV
 						}
 					}
+				}
+
+				PREV = { title = k_thrace }
+
+				has_landed_title = e_byzantium
+				religion_group = christian
+
+				num_of_realm_counties = {
+					value >= 1
+					title = PREV
+				}
+			}
+			# CK2Plus
+			PREV = {
+				OR = {
+					has_holder = no
+					holder = FROM
+					holder_scope = { any_liege = { character = FROM } }
+					holder_scope = { religion = ROOT }
 				}
 			}
 		}
@@ -5447,49 +5604,56 @@ new_crusade = {
 
 
 	is_valid = {
+		# Attacker
 		ROOT = {
 			can_call_crusade = yes
 		}
+
+		# Defender
 		FROM = {
-			NOT = { religion = ROOT}
+			NOT = { religion = ROOT }
+
+			# Religion check
 			OR = {
 				NOT = { religion_group = ROOT }
+
+				# One is a heretic of the other
 				is_heresy_of = ROOT
 				is_parent_religion = ROOT
-				AND = {
-					is_pagan_religion = yes
-					NOT = { religion = ROOT }
-				}
-				AND = {
-					ROOT = { religion = paulician }
-					NOT = { religion = ROOT }
-				}
-				AND = {
-					has_character_flag = fourth_crusade_target
-					NOR = {
-						has_character_flag = fourth_crusade_recipient
-						religion = ROOT
-					}
-				}
-				AND = {
-					has_global_flag = 4th_crusade_official
+
+				religion_group = pagan_group
+
+				trigger_if = {
+					limit = { has_global_flag = 4th_crusade_official }
 					has_landed_title = e_byzantium
-					NOT = { religion = ROOT }
 				}
+
+				trigger_else_if = {
+					limit = { has_character_flag = fourth_crusade_target }
+					NOT = { has_character_flag = fourth_crusade_recipient }
+				}
+
+				# CK2Plus
+				ROOT = { religion = paulician }
 			}
 		}
 	}
 
 	is_valid_title = {
+		# Defender
 		FROM = {
-			any_realm_province = {
-				de_jure_liege_or_above = PREVPREV
+			num_of_realm_counties = {
+				value >= 1
+				title = PREV
 			}
 		}
 	}
 
 	on_add = {
-		hidden_tooltip = { fire_haruspicy_event_effect = yes }
+		fire_haruspicy_event_effect = yes
+		anger_china_effect = yes
+
+		# CK2Plus
 		ROOT = {
 			add_character_modifier = {
 				name = "crusade_timer"
@@ -5498,27 +5662,68 @@ new_crusade = {
 				inherit = yes
 			}
 		}
-		if = {
-			limit = { defender = { is_offmap_governor = offmap_china } }
-			attacker = {
-				sound_effect = china_angered_emperor
-				detract_grace_super_huge_effect = yes
-			}
-		}
 	}
+
 	on_success_title = {
 		log = "[Root.GetBestName] (ID: [Root.GetID]) succeeded with their Holy Fury crusade for the [This.GetFullName] against [From.GetBestName] (ID: [From.GetID])"
 
-		#set event targets
-		ROOT = {
+		custom_tooltip = {
+			text = new_crusade_win_TT
+		}
+
+		# Religion Authority and Prestige/Piety for the winner (Pope)
+		attacker = {
+			show_scope_change = no
+
+			participation_scaled_prestige = 500
+			participation_scaled_piety = 1000
+
+			religion_authority = {
+				modifier = won_crusade
+				years = 20
+			}
+
 			crusade_target_title = {
 				save_event_target_as = new_crusade_title
 			}
-		}
 
-		ROOT = {
 			official_crusade_recipient = {
 				save_event_target_as = new_crusade_recipient
+			}
+
+			crusade_target_char = {
+				save_event_target_as = new_crusade_target_char
+			}
+
+			# CK2Plus
+			imperial_decadence_minus_2_effect = yes
+			#faction mood boost
+			pf_tradition_plus4_effect = yes
+			pf_glory_plus2_effect = yes
+			if = {
+				limit = {
+					is_heretic = no
+					OR = {
+						religion = catholic
+						religion = cathar
+						religion = fraticelli
+						religion = waldensian
+						religion = lollard
+						religion = adoptionist
+					}
+					OR = {
+						has_global_flag = catholic_crusade_failed
+						has_global_flag = fourth_crusade_ongoing
+					}
+				}
+				clr_global_flag = catholic_crusade_failed
+				clr_global_flag = fourth_crusade_ongoing
+			}
+			dynasty_head = {
+				if = {
+					limit = { uses_decadence = yes }
+					participation_scaled_decadence = -100
+				}
 			}
 		}
 
@@ -5526,352 +5731,107 @@ new_crusade = {
 			save_event_target_as = new_crusade_most_participating_member
 		}
 
-		ROOT = {
-			crusade_target_char = {
-				save_event_target_as = new_crusade_target_char
+		# Religion Authority and Prestige/Piety loss for the loser (Target of Crusade)
+		defender = {
+			show_scope_change = no
+			prestige = -500
+			religion_authority = {
+				modifier = lost_crusade
+				years = 20
 			}
+
+			# CK2Plus
+			imperial_decadence_plus_2_effect = yes
+			pf_glory_minus2_effect = yes
+			pf_tradition_minus4_effect = yes
 		}
 
-		custom_tooltip = {
-			text = new_crusade_win_TT
-		}
-
-		#change imperial decadence
-		ROOT = { imperial_decadence_minus_2_effect = yes }
-		FROM = { imperial_decadence_plus_2_effect = yes }
-
-		hidden_tooltip = {
-			any_attacker = {
-				add_character_modifier = { name = victory_timer duration = 1 hidden = yes }
-			}
-			ROOT = {
-				if = {
-					limit = {
-						OR = {
-							religion = catholic
-							religion = cathar
-							religion = fraticelli
-							religion = waldensian
-							religion = lollard
-							religion = adoptionist
-						}
-						is_heretic = no
-						OR = {
-							has_global_flag = catholic_crusade_failed
-							has_global_flag = fourth_crusade_ongoing
-						}
-					}
-					clr_global_flag = catholic_crusade_failed
-					clr_global_flag = fourth_crusade_ongoing
-				}
-			}
-			if = {
+		hidden_effect = {
+			if = { # Achievement
 				limit = {
-					ai = yes
-					NOT = {
-						crusade_beneficiary = {
-							always = yes
-						}
+					event_target:new_crusade_target_char = {
+						has_landed_title = e_byzantium
+						religion_group = defender
 					}
 				}
-				character_event = { id = HFP.41007 }
-			}
-		}
-
-		# Is the Official Crusade Recipient available/suitable to receive the seized lands?
-		if = {
-			limit = {
-				most_participating_crusader = {
-					NOT = {
-						has_character_flag = crusade_selfish_stance
-						has_character_flag = crusade_beneficiary_stance
-					}
-					official_crusade_recipient = {
-						is_alive = yes
-						religion = ROOT
-					}
-				}
-			}
-			most_participating_crusader = {
-				official_crusade_recipient = {
-					set_crusader_king = this
-				}
-			}
-		}
-
-		# If not, select the main contributor of the Crusade or his/her Beneficiary if they are suitable
-		else_if = {
-			limit = {
-				most_participating_crusader = {
-					holy_order = no
-					mercenary = no
-					NOR = {
-						has_landed_title = k_papal_state
-						has_landed_title = d_fraticelli
-					}
-					OR = {
-						AND = {
-							ai = yes
-							crusade_beneficiary = {
-								is_alive = yes
-							}
-						}
+				any_attacker = {
+					limit = {
 						ai = no
 					}
+					set_character_flag = achievement_venetian_guile
 				}
 			}
-			most_participating_crusader = {
-				# Give the title to your Beneficiary
+
+			any_attacker = {
 				if = {
 					limit = {
-						crusade_beneficiary = {
-							is_alive = yes
-							is_landed = no
-							NOT = {
-								any_heir_title = {
-									always = yes
-								}
-							}
-							mercenary = no
-							holy_order = no
-						}
-						NOT = {
-							has_character_flag = crusade_selfish_stance
-						}
-					}
-					crusade_beneficiary = {
-						set_crusader_king = THIS
-						set_character_flag = crusader_king_flag
-					}
-				}
-				# Find an appropriate replacement Beneficiary if there is none selected, or the currently selected one is improper in one way or another
-				else_if = {
-					limit = {
 						ai = yes
-						any_dynasty_member = {
-							age = 16
-							NOT = {
-								any_heir_title = {
-									always = yes
-								}
-							}
-							is_landed = no
-							mercenary = no
-							holy_order = no
-							religion = PREV
-						}
 						NOT = {
-							has_character_flag = crusade_selfish_stance
+							crusade_beneficiary = {
+								always = yes
+							}
 						}
 					}
-					random_dynasty_member = {
-						limit = {
-							age = 16
-							NOT = {
-								any_heir_title = {
-									always = yes
-								}
-							}
-							is_landed = no
-							mercenary = no
-							holy_order = no
-							religion = PREV
-						}
-						preferred_limit = {
-							is_child_of = PREV
-							culture = PREV
-							NOT = {
-								age = 45
-							}
-							preferred_gender_based_on_laws_trigger = yes
-						}
-						preferred_limit = {
-							is_child_of = PREV
-							NOT = {
-								age = 45
-							}
-							preferred_gender_based_on_laws_trigger = yes
-						}
-						preferred_limit = {
-							is_child_of = PREV
-							preferred_gender_based_on_laws_trigger = yes
-						}
-						preferred_limit = {
-							is_liege_or_above = PREV
-							culture = PREV
-							NOT = {
-								age = 45
-							}
-							preferred_gender_based_on_laws_trigger = yes
-						}
-						preferred_limit = {
-							is_liege_or_above = PREV
-							NOT = {
-								age = 45
-							}
-							preferred_gender_based_on_laws_trigger = yes
-						}
-						preferred_limit = {
-							is_liege_or_above = PREV
-							preferred_gender_based_on_laws_trigger = yes
-						}
-						preferred_limit = {
-							is_child_of = PREV
-							culture = PREV
-							NOT = {
-								age = 45
-							}
-						}
-						preferred_limit = {
-							is_child_of = PREV
-							NOT = {
-								age = 45
-							}
-						}
-						preferred_limit = {
-							is_child_of = PREV
-						}
-						preferred_limit = {
-							is_liege_or_above = PREV
-							culture = PREV
-							NOT = {
-								age = 45
-							}
-						}
-						preferred_limit = {
-							is_liege_or_above = PREV
-							NOT = {
-								age = 45
-							}
-						}
-						preferred_limit = {
-							is_liege_or_above = PREV
-						}
-						preferred_limit = {
-							culture = PREV
-							NOT = {
-								age = 45
-							}
-						}
-						preferred_limit = {
-							NOT = {
-								age = 45
-							}
-						}
-						preferred_limit = {
-							culture = PREV
-						}
-						set_crusader_king = THIS
-						set_character_flag = crusader_king_flag
-					}
-				}
-				# Take the titles yourself
-				else = {
-					if = {
-						limit = {
-							any_owned_bloodline = {
-								has_bloodline_flag = grand_crusader_bloodline
-								bloodline_is_active_for = PREV
-							}
-						}
-						set_crusade_pot_multiplier = 0.2
-					}
-					else = {
-						set_crusade_pot_multiplier = 0
-					}
-					set_crusader_king = THIS
-					set_character_flag = crusader_king_flag
+					character_event = { id = HFP.41007 } # Beneficiary event - AI only
 				}
 			}
-		}
 
-		# If not, find someone else to take the title
-		else = {
-			# Find a random Beneficiary within certain limits
+			# Should we give the seized land to the Official Crusade Recipient?
 			if = {
 				limit = {
 					most_participating_crusader = {
-						any_crusade_participant = {
+						NOT = {
+							has_character_flag = crusade_selfish_stance
+							has_character_flag = crusade_beneficiary_stance
+						}
+						official_crusade_recipient = {
 							is_alive = yes
-							is_landed = yes
-							holy_order = no
-							mercenary = no
-							crusade_beneficiary = {
-								is_alive = yes
-								is_landed = no
-								holy_order = no
-								NOT = {
-									any_heir_title = {
-										always = yes
-									}
-								}
-								age = 12
-							}
+							religion = attacker
 						}
 					}
 				}
 				most_participating_crusader = {
-					random_crusade_participant = {
-						limit = {
-							is_alive = yes
-							is_landed = yes
-							holy_order = no
-							mercenary = no
-							crusade_beneficiary = {
-								is_alive = yes
-								is_landed = no
-								holy_order = no
-								NOT = {
-									any_heir_title = {
-										always = yes
-									}
-								}
-								age = 12
-							}
-						}
-						preferred_limit = {
-							tier = EMPEROR
-						}
-						preferred_limit = {
-							tier = KING
-						}
-						crusade_beneficiary = {
-							set_crusader_king = THIS
-							set_character_flag = crusader_king_flag
-						}
+					official_crusade_recipient = {
+						set_crusader_king = THIS
 					}
 				}
 			}
-			# Find any random Beneficiary, if possible
+
+			# Give the seized land to the main contributor of the Crusade or his/her Beneficiary
 			else_if = {
 				limit = {
 					most_participating_crusader = {
-						any_crusade_participant = {
+						trigger_if = {
+							limit = { ai = yes }
 							crusade_beneficiary = {
 								is_alive = yes
-								is_landed = no
-								holy_order = no
-								NOT = {
-									any_heir_title = {
-										always = yes
-									}
-								}
 							}
+						}
+						holy_order = no
+						mercenary = no
+						NOR = {
+							has_landed_title = k_papal_state
+							has_landed_title = d_fraticelli
 						}
 					}
 				}
 				most_participating_crusader = {
-					random_crusade_participant = {
+					# Give the title to your Beneficiary
+					if = {
 						limit = {
 							crusade_beneficiary = {
 								is_alive = yes
 								is_landed = no
-								holy_order = no
 								NOT = {
 									any_heir_title = {
 										always = yes
 									}
 								}
+								mercenary = no
+								holy_order = no
+							}
+							NOT = {
+								has_character_flag = crusade_selfish_stance
 							}
 						}
 						crusade_beneficiary = {
@@ -5879,22 +5839,193 @@ new_crusade = {
 							set_character_flag = crusader_king_flag
 						}
 					}
+					# Find an appropriate replacement Beneficiary if there is none selected, or the currently selected one is improper in one way or another
+					else_if = {
+						limit = {
+							ai = yes
+							any_dynasty_member = {
+								is_adult = yes
+								NOT = {
+									any_heir_title = {
+										always = yes
+									}
+								}
+								is_landed = no
+								mercenary = no
+								holy_order = no
+								religion = PREV
+							}
+							NOT = {
+								has_character_flag = crusade_selfish_stance
+							}
+						}
+						random_dynasty_member = {
+							limit = {
+								is_adult = yes
+								NOT = {
+									any_heir_title = {
+										always = yes
+									}
+								}
+								is_landed = no
+								mercenary = no
+								holy_order = no
+								religion = PREV
+							}
+							preferred_limit = {
+								is_child_of = PREV
+								culture = PREV
+								age < 45
+								preferred_gender_based_on_laws_trigger = yes
+							}
+							preferred_limit = {
+								is_child_of = PREV
+								age < 45
+								preferred_gender_based_on_laws_trigger = yes
+							}
+							preferred_limit = {
+								is_child_of = PREV
+								preferred_gender_based_on_laws_trigger = yes
+							}
+							preferred_limit = {
+								is_vassal_or_below_of = PREV
+								culture = PREV
+								age < 45
+								preferred_gender_based_on_laws_trigger = yes
+							}
+							preferred_limit = {
+								is_vassal_or_below_of = PREV
+								age < 45
+								preferred_gender_based_on_laws_trigger = yes
+							}
+							preferred_limit = {
+								is_vassal_or_below_of = PREV
+								preferred_gender_based_on_laws_trigger = yes
+							}
+							preferred_limit = {
+								is_child_of = PREV
+								culture = PREV
+								age < 45
+							}
+							preferred_limit = {
+								is_child_of = PREV
+								age < 45
+							}
+							preferred_limit = {
+								is_child_of = PREV
+							}
+							preferred_limit = {
+								is_vassal_or_below_of = PREV
+								culture = PREV
+								age < 45
+							}
+							preferred_limit = {
+								is_vassal_or_below_of = PREV
+								age < 45
+							}
+							preferred_limit = {
+								is_vassal_or_below_of = PREV
+							}
+							preferred_limit = {
+								culture = PREV
+								age < 45
+							}
+							preferred_limit = {
+								age < 45
+							}
+							preferred_limit = {
+								culture = PREV
+							}
+							set_crusader_king = THIS
+							set_character_flag = crusader_king_flag
+						}
+					}
+					# Take the titles yourself
+					else = {
+						if = {
+							limit = {
+								any_owned_bloodline = {
+									has_bloodline_flag = grand_crusader_bloodline
+									bloodline_is_active_for = PREV
+								}
+							}
+							set_crusade_pot_multiplier = 0.2
+						}
+						else = {
+							set_crusade_pot_multiplier = 0
+						}
+						set_crusader_king = THIS
+						set_character_flag = crusader_king_flag
+					}
 				}
 			}
-			# Find a logical "Beneficiary" from any playable Catholic/Fraticelli ruler, if all else fails
+
+			# If not applicable, find someone else to take the title
 			else = {
-				most_participating_crusader = {
-					# Try to find a Catholic/Fraticelli ruler
-					if = {
-						limit = {
-							any_playable_ruler = {
-								religion = PREV
-								any_dynasty_member = {
+				# Find a random Beneficiary within certain limits
+				if = {
+					limit = {
+						most_participating_crusader = {
+							any_crusade_participant = {
+								is_alive = yes
+								is_landed = yes
+								holy_order = no
+								mercenary = no
+								crusade_beneficiary = {
 									is_alive = yes
-									is_dying = no
-									mercenary = no
+									is_landed = no
 									holy_order = no
-									age = 12
+									NOT = {
+										any_heir_title = {
+											always = yes
+										}
+									}
+									age >= 12
+								}
+							}
+						}
+					}
+					most_participating_crusader = {
+						random_crusade_participant = {
+							limit = {
+								is_alive = yes
+								is_landed = yes
+								holy_order = no
+								mercenary = no
+								crusade_beneficiary = {
+									is_alive = yes
+									is_landed = no
+									holy_order = no
+									NOT = {
+										any_heir_title = {
+											always = yes
+										}
+									}
+									age >= 12
+								}
+							}
+							preferred_limit = {
+								tier = EMPEROR
+							}
+							preferred_limit = {
+								tier = KING
+							}
+							crusade_beneficiary = {
+								set_crusader_king = THIS
+								set_character_flag = crusader_king_flag
+							}
+						}
+					}
+				}
+				# Find any random Beneficiary, if possible
+				else_if = {
+					limit = {
+						most_participating_crusader = {
+							any_crusade_participant = {
+								crusade_beneficiary = {
+									is_alive = yes
+									is_landed = no
+									holy_order = no
 									NOT = {
 										any_heir_title = {
 											always = yes
@@ -5903,15 +6034,14 @@ new_crusade = {
 								}
 							}
 						}
-						random_playable_ruler = {
+					}
+					most_participating_crusader = {
+						random_crusade_participant = {
 							limit = {
-								religion = PREV
-								any_dynasty_member = {
+								crusade_beneficiary = {
 									is_alive = yes
-									is_dying = no
-									mercenary = no
+									is_landed = no
 									holy_order = no
-									age = 12
 									NOT = {
 										any_heir_title = {
 											always = yes
@@ -5919,426 +6049,668 @@ new_crusade = {
 									}
 								}
 							}
-							preferred_limit = {
-								tier = EMPEROR
-								culture = PREV
+							crusade_beneficiary = {
+								set_crusader_king = THIS
+								set_character_flag = crusader_king_flag
 							}
-							preferred_limit = {
-								tier = EMPEROR
+						}
+					}
+				}
+				# Find a logical "Beneficiary" from any playable Catholic/Fraticelli ruler, if all else fails
+				else = {
+					most_participating_crusader = {
+						# Try to find a Catholic/Fraticelli ruler
+						if = {
+							limit = {
+								any_playable_ruler = {
+									religion = PREV
+									any_dynasty_member = {
+										is_alive = yes
+										is_dying = no
+										mercenary = no
+										holy_order = no
+										age >= 12
+										NOT = {
+											any_heir_title = {
+												always = yes
+											}
+										}
+									}
+								}
 							}
-							preferred_limit = {
-								tier = KING
-								culture = PREV
-							}
-							preferred_limit = {
-								tier = KING
-							}
-							preferred_limit = {
-								tier = DUKE
-								culture = PREV
-							}
-							preferred_limit = {
-								tier = DUKE
-							}
-							preferred_limit = {
-								culture = PREV
-							}
-							random_dynasty_member = {
+							random_playable_ruler = {
 								limit = {
 									religion = PREV
-									is_alive = yes
-									is_dying = no
-									mercenary = no
-									holy_order = no
-									age = 12
-									NOT = {
-										any_heir_title = {
-											always = yes
+									any_dynasty_member = {
+										is_alive = yes
+										is_dying = no
+										mercenary = no
+										holy_order = no
+										age >= 12
+										NOT = {
+											any_heir_title = {
+												always = yes
+											}
 										}
 									}
 								}
-								set_crusader_king = THIS
-							}
-						}
-					}
-					# If every other option fails, make the Holy Order Grandmaster the Crusader King
-					else = {
-						set_crusader_king = THIS
-					}
-				}
-			}
-		}
-
-		#Distribution prep:
-		# Find a backup beneficiary for the other Crusaders, if they don't have one already selected
-		any_attacker = {
-			limit = {
-				NOT = {
-					most_participating_crusader = {
-						character = PREV
-					}
-				}
-				ai = yes
-				OR = {
-					crusade_beneficiary = {
-						OR = {
-							is_alive = no
-							is_landed = yes
-							NOT = {
-								any_heir_title = {
-									always = yes
+								preferred_limit = {
+									tier = EMPEROR
+									culture = PREV
+								}
+								preferred_limit = {
+									tier = EMPEROR
+								}
+								preferred_limit = {
+									tier = KING
+									culture = PREV
+								}
+								preferred_limit = {
+									tier = KING
+								}
+								preferred_limit = {
+									tier = DUKE
+									culture = PREV
+								}
+								preferred_limit = {
+									tier = DUKE
+								}
+								preferred_limit = {
+									culture = PREV
+								}
+								random_dynasty_member = {
+									limit = {
+										religion = PREV
+										is_alive = yes
+										is_dying = no
+										mercenary = no
+										holy_order = no
+										age >= 12
+										NOT = {
+											any_heir_title = {
+												always = yes
+											}
+										}
+									}
+									set_crusader_king = THIS
 								}
 							}
-							mercenary = yes
-							holy_order = yes
 						}
-					}
-					NOT = {
-						crusade_beneficiary = {
-							always = yes
+						# If every other option fails, make the Holy Order Grandmaster the Crusader King
+						else = {
+							set_crusader_king = THIS
 						}
 					}
 				}
 			}
-			save_event_target_as = crusade_attacker
-			character_event = { id = HFP.41007 }
-		}
 
-		# Make sure selfish Crusaders get as little as possible (reduce the pot for Selfish Crusaders)
-		any_attacker = {
-			limit = {
-				has_character_flag = crusade_selfish_stance
-			}
-			set_crusade_pot_multiplier = 0
-		}
-
-		# Distribute the Pot and Titles
-		ROOT = {
-			set_global_flag = distributing_crusade
-			any_crusade_participant = {
+			# Find a backup beneficiary for the other Crusaders, if they don't have one already selected
+			any_attacker = {
 				limit = {
-					ai = no
-					most_participating_crusader = {
-						NOT = {
+					NOT = {
+						most_participating_crusader = {
 							character = PREV
 						}
 					}
+					ai = yes
+					OR = {
+						crusade_beneficiary = {
+							OR = {
+								is_alive = no
+								is_landed = yes
+								NOT = {
+									any_heir_title = {
+										always = yes
+									}
+								}
+								mercenary = yes
+								holy_order = yes
+							}
+						}
+						NOT = {
+							crusade_beneficiary = {
+								always = yes
+							}
+						}
+					}
 				}
-				character_event = { id = HFP.41060 }
+				# save_event_target_as = crusade_attacker
+				character_event = { id = HFP.41007 } # Beneficiary event - AI only
 			}
-			distribute_crusade_pot = {
-				amount = 1
+
+			# Make sure selfish Crusaders get as little as possible (reduce the pot for Selfish Crusaders)
+			any_attacker = {
+				limit = { has_character_flag = crusade_selfish_stance }
+				set_crusade_pot_multiplier = 0
 			}
-			any_crusade_participant = {
-				crusade_beneficiary = {
-					add_character_modifier = { name = new_land_timer duration = 1 hidden = yes }
-					set_character_flag = beneficiary_who_received_titles
+
+			# Distribute the Pot and Titles
+			attacker = {
+				set_global_flag = distributing_crusade
+				any_crusade_participant = {
+					limit = {
+						ai = no
+						most_participating_crusader = {
+							NOT = {	character = PREV }
+						}
+					}
+					character_event = { id = HFP.41060 } # Pre-event to play as a Beneficiary
+				}
+				distribute_crusade_pot = {
+					amount = 1
+				}
+				any_crusade_participant = {
+					crusade_beneficiary = {
+						set_character_flag = beneficiary_who_received_titles
+					}
+				}
+				# If the winner is a selfish Nomad
+				if = {
+					limit = {
+						most_participating_crusader = {
+							is_nomadic = yes
+							OR = {
+								has_character_flag = crusade_selfish_stance
+								crusader_king = {
+									character = PREV
+								}
+							}
+						}
+					}
+					most_participating_crusader = {
+						gain_settlements_under_title = {
+							title = PREVPREV
+							enemy = defender
+							type = holy_war
+						}
+					}
+					any_playable_ruler = {
+						narrative_event = { id = HFP.41160 } # Winning Crusade
+					}
+				}
+				# If it is a Fourth Crusade
+				# NOTE: drastically different for CK2Plus
+				else_if = {
+					limit = {
+						has_global_flag = 4th_crusade_official
+						crusade_target_title = {
+							title = k_byzantium
+						}
+						FROM = {
+							religion_group = ROOT
+						}
+						FROM = {
+							NOT = {
+								religion = ROOT
+							}
+						}
+						crusade_target_char = {
+							e_byzantium = {
+								owner = {
+									character = PREVPREV
+								}
+							}
+						}
+					}
+					#SLIGHTLY less railroading here please and thank you (removed Cyprus and Trebizond changes from vanilla)
+					PREV = { #scope to the target title, prep for distribution
+						hidden_tooltip = { destroy_tradeposts_effect = yes }
+						pf_liege_change_under_title_begin_effect = yes
+					}
+					#Actually distribute the titles
+					distribute_crusade_target_title = yes
+					#The Crusader King becomes an Emperor and gets a bloodline
+					crusader_king = {
+						grant_title_no_opinion = e_latin_empire
+					}
+					e_latin_empire = {
+						copy_title_laws = PREVPREV
+						add_law = crown_authority_3
+					}
+					# Find random Byzantine duke and make a king out of them
+					e_byzantium = {
+						owner = {
+							random_vassal = {
+								limit = {
+									tier = DUKE
+									ai = yes
+								}
+								preferred_limit = {
+									de_jure_liege = k_byzantium
+								}
+								preferred_limit = {
+									de_jure_liege = k_nikaea
+								}
+								preferred_limit = {
+									de_jure_liege = k_sicily
+								}
+								primary_title = {
+									create_title = {
+										tier = KING
+										landless = no
+										temporary = no
+										name = "fourth_crusade_greek_kingdom_name"
+										holder = PREV
+										culture = PREV
+										custom_created = yes
+										base_title = THIS
+										copy_title_laws = yes
+									}
+								}
+							}
+						}
+					}
+					# All Byzantine vassals go independent except those neighboring the old Emperor, and he/she gets an inferior Empire title while the Byzantine title is broken
+					e_byzantium = {
+						owner = {
+							any_vassal = {
+								limit = {
+									higher_tier_than = BARON
+								}
+								set_defacto_liege = this
+							}
+							if = {
+								limit = {
+									primary_title = {
+										title = e_byzantium
+									}
+								}
+								capital_scope = {
+									create_title = {
+										tier = EMPEROR
+										landless = no
+										temporary = no
+										name = "fourth_crusade_greek_empire_name"
+										holder = PREV
+										culture = PREV
+										custom_created = yes
+										base_title = THIS
+									}
+								}
+								any_demesne_title = {
+									limit = {
+										tier = EMPEROR
+										is_titular = no
+									}
+									destroy_landed_title = THIS
+								}
+							}
+							any_neighbor_independent_ruler = {
+								limit = {
+									ai = yes
+									culture = PREV
+									religion = PREV
+									lower_tier_than = KING
+								}
+								set_defacto_liege = PREV
+							}
+						}
+					}
+					# Crete is taken by a Merchant Lord
+					if = {
+						limit = {
+							c_kaneia = {
+								owner = {
+									ai = yes
+								}
+							}
+							c_chandax = {
+								owner = {
+									ai = yes
+								}
+							}
+							any_crusade_participant = {
+								is_patrician = yes
+								higher_tier_than = COUNT
+							}
+						}
+						random_crusade_participant = {
+							limit = {
+								is_patrician = yes
+								higher_tier_than = COUNT
+							}
+							preferred_limit = {
+								has_landed_title = k_venice
+							}
+							preferred_limit = {
+								has_landed_title = d_venice
+							}
+							preferred_limit = {
+								tier = EMPEROR
+							}
+							preferred_limit = {
+								tier = KING
+							}
+							grant_title_no_opinion = d_krete
+							grant_title_no_opinion = c_kaneia
+							grant_title_no_opinion = c_chandax
+						}
+					}
+
+					if = {
+						limit = {
+							official_crusade_recipient = {
+								has_character_flag = fourth_crusade_recipient
+							}
+						}
+						official_crusade_recipient = {
+							save_event_target_as = byzantine_refugee
+						}
+					}
+					# Narrative event explaining that Byzantium has been taken out
+					any_character = {
+						narrative_event = { id = HF.49008 }
+					}
+					event_target:byzantine_refugee = {
+						death = {
+							death_reason = death_battle
+							killer = FROM
+						}
+					}
+					# Making sure the Byzantine Empire is destroyed
+					e_byzantium = {
+						unsafe_destroy_landed_title = THIS
+					}
+				}
+				# Otherwise
+				else = {
+					defender = {
+						any_realm_character = {
+							limit = {
+								religion = attacker
+								ai = no
+								higher_tier_than = BARON
+							}
+							set_defacto_liege = THIS
+						}
+					}
+					distribute_crusade_target_title = yes
+					crusader_king = {
+						save_event_target_as = crusade_king_recipient
+					}
+					any_playable_ruler = {
+						narrative_event = { id = HFP.41160 } # Winning Crusade
+					}
+				}
+				crusader_king = {
+					if = {
+						limit = {
+							has_character_flag = beneficiary_who_received_titles
+							NOT = { has_dynasty_modifier = ruling_in_crusader_kingdom }
+						}
+						add_dynasty_modifier = ruling_in_crusader_kingdom
+					}
+					any_realm_character = {
+						limit = {
+							has_character_flag = beneficiary_who_received_titles
+							NOT = { has_dynasty_modifier = ruling_in_crusader_kingdom }
+						}
+						add_dynasty_modifier = ruling_in_crusader_kingdom
+					}
+				}
+				clr_global_flag = distributing_crusade
+			}
+
+			# If the CK has too much gold
+			crusader_king = {
+				if = {
+					limit = {
+						wealth >= 2000
+						ai = yes
+						any_vassal = {
+							always = yes
+						}
+					}
+
+					while = {
+						count = 20
+						limit = {
+							wealth >= 2000
+						}
+						random_vassal = {
+							limit = {
+								wealth <= 1000
+							}
+							wealth = 350
+							crusader_king = {
+								wealth = -350
+							}
+						}
+					}
 				}
 			}
-			# If the winner is a selfish Nomad
+
+			# Achievement
+			any_attacker = {
+				limit = {
+					ai = no
+					is_ironman = yes
+					NOT = { has_character_flag = achievement_crusader }
+				}
+				set_character_flag = achievement_crusader
+			}
+
+			# Nickname for the most participating Crusader
+			most_participating_crusader = {
+				if = {
+					limit = {
+						can_apply_average_nickname_trigger = yes
+					}
+					random_list = {
+						10 = { give_nickname = nick_the_crusader }
+						10 = { give_nickname = nick_the_glorious }
+						10 = { give_nickname = nick_the_lionheart }
+						10 = { give_nickname = nick_the_great }
+						10 = { give_nickname = nick_the_hammer }
+						40 = { give_nickname = nick_the_sword_of_god }
+					}
+				}
+			}
+
+			# Nickname and effects for the new Crusader King, if it is a Beneficiary or the Official Crusade Recipient (not for Selfish Crusaders)
+			crusader_king = {
+				hidden_effect = {
+					if = {
+						limit = {
+							OR = {
+								most_participating_crusader = {
+									NOT = {
+										character = PREV
+									}
+								}
+								attacker = {
+									official_crusade_recipient = {
+										character = PREV
+									}
+								}
+							}
+						}
+						opinion = {
+							who = most_participating_crusader
+							modifier = opinion_granted_crusader_kingdom
+							years = 15
+						}
+						crusader_king = {
+							setting_up_the_crusader_kingdom_effect = yes
+							create_crusader_king_crown_effect = yes
+						}
+					}
+				}
+			}
+
+			crusader_king = {
+				save_event_target_as = new_crusader_king
+			}
+
+			# If the player is the most participating Crusader, and gave away the Kingdom to a Beneficiary, trigger event to let them start playing as Beneficiary
 			if = {
 				limit = {
 					most_participating_crusader = {
-						is_nomadic = yes
-						OR = {
-							has_character_flag = crusade_selfish_stance
+						ai = no
+						NOT = {
+							character = event_target:new_crusader_king
+						}
+						event_target:new_crusader_king = {
+							dynasty = PREV
+						}
+					}
+				}
+				most_participating_crusader = {
+					narrative_event = { id = HFP.41054 days = 3 } # Play as Crusader King / Queen
+				}
+			}
+
+			# Check most participating Crusader if they are potential Crusader material
+			most_participating_crusader = {
+				if = {
+					limit = {
+						NOR = {
+							has_character_flag = grandCrusader
+							trait = crusader_king
+						}
+					}
+					set_character_flag = grandCrusader
+				}
+				else = {
+					narrative_event = { id = HF.49020 }
+				}
+			}
+
+			# Release the CK if they are in jail
+			crusader_king = {
+				imprison = no
+			}
+
+			# Special bloodline for the recipient of the first Crusade
+			if = {
+				limit = {
+					NOT = {
+						has_global_flag = first_crusade_complete
+					}
+					most_participating_crusader = {
+						NOT = {
 							crusader_king = {
 								character = PREV
 							}
 						}
 					}
 				}
-				most_participating_crusader = {
-					add_character_modifier = { name = new_land_timer duration = 1 hidden = yes }
-					gain_settlements_under_title = {
-						title = PREVPREV
-						enemy = FROM
-						type = holy_war
-					}
-				}
-				any_playable_ruler = {
-					narrative_event = { id = HFP.41160 }
-				}
-			}
-			# If it is a Fourth Crusade
-			else_if = {
-				limit = {
-					has_global_flag = 4th_crusade_official
-					crusade_target_title = {
-						title = k_byzantium
-					}
-					FROM = {
-						religion_group = ROOT
-					}
-					FROM = {
-						NOT = {
-							religion = ROOT
-						}
-					}
-					crusade_target_char = {
-						e_byzantium = {
-							owner = {
-								character = PREVPREV
-							}
-						}
-					}
-				}
-				#SLIGHTLY less railroading here please and thank you (removed Cyprus and Trebizond changes from vanilla)
-				PREV = { #scope to the target title, prep for distribution
-					hidden_tooltip = { destroy_tradeposts_effect = yes }
-					pf_liege_change_under_title_begin_effect = yes
-				}
-				#Actually distribute the titles
-				distribute_crusade_target_title = yes
-				#The Crusader King becomes an Emperor and gets a bloodline
-				crusader_king = {
-					grant_title_no_opinion = e_latin_empire
-				}
-				e_latin_empire = {
-					copy_title_laws = PREVPREV
-					add_law = crown_authority_3
-				}
-				# Find random Byzantine duke and make a king out of them
-				e_byzantium = {
-					owner = {
-						random_vassal = {
-							limit = {
-								tier = DUKE
-								ai = yes
-							}
-							preferred_limit = {
-								de_jure_liege = k_byzantium
-							}
-							preferred_limit = {
-								de_jure_liege = k_nikaea
-							}
-							preferred_limit = {
-								de_jure_liege = k_sicily
-							}
-							primary_title = {
-								create_title = {
-									tier = KING
-									landless = no
-									temporary = no
-									name = "fourth_crusade_greek_kingdom_name"
-									holder = PREV
-									culture = PREV
-									custom_created = yes
-									base_title = THIS
-									copy_title_laws = yes
-								}
-							}
-						}
-					}
-				}
-				# All Byzantine vassals go independent except those neighboring the old Emperor, and he/she gets an inferior Empire title while the Byzantine title is broken
-				e_byzantium = {
-					owner = {
-						any_vassal = {
-							limit = {
-								higher_tier_than = BARON
-							}
-							set_defacto_liege = this
-						}
-						if = {
-							limit = {
-								primary_title = {
-									title = e_byzantium
-								}
-							}
-							capital_scope = {
-								create_title = {
-									tier = EMPEROR
-									landless = no
-									temporary = no
-									name = "fourth_crusade_greek_empire_name"
-									holder = PREV
-									culture = PREV
-									custom_created = yes
-									base_title = THIS
-								}
-							}
-							any_demesne_title = {
-								limit = {
-									tier = EMPEROR
-									is_titular = no
-								}
-								destroy_landed_title = THIS
-							}
-						}
-						any_neighbor_independent_ruler = {
-							limit = {
-								ai = yes
-								culture = PREV
-								religion = PREV
-								lower_tier_than = KING
-							}
-							set_defacto_liege = PREV
-						}
-					}
-				}
-				# Crete is taken by a Merchant Lord
 				if = {
 					limit = {
-						c_kaneia = {
-							owner = {
-								ai = yes
-							}
-						}
-						c_chandax = {
-							owner = {
-								ai = yes
-							}
-						}
-						any_crusade_participant = {
-							is_patrician = yes
-							higher_tier_than = COUNT
-						}
+						has_dlc = "Holy Fury"
 					}
-					random_crusade_participant = {
+					if = {
 						limit = {
-							is_patrician = yes
-							higher_tier_than = COUNT
+							crusader_king = {
+								is_female = yes
+							}
 						}
-						preferred_limit = {
-							has_landed_title = k_venice
-						}
-						preferred_limit = {
-							has_landed_title = d_venice
-						}
-						preferred_limit = {
-							tier = EMPEROR
-						}
-						preferred_limit = {
-							tier = KING
-						}
-						grant_title_no_opinion = d_krete
-						grant_title_no_opinion = c_kaneia
-						grant_title_no_opinion = c_chandax
-					}
-				}
-
-				if = {
-					limit = {
-						official_crusade_recipient = {
-							has_character_flag = fourth_crusade_recipient
+						crusader_king = {
+							create_bloodline = {
+								type = crusade_lord
+								religion = THIS
+								inheritance = matrilineal
+							}
+							set_bloodline_founder_religion_flag_effect = yes
 						}
 					}
-					official_crusade_recipient = {
-						save_event_target_as = byzantine_refugee
+					else = {
+						crusader_king = {
+							create_bloodline = {
+								type = crusade_lord
+								religion = THIS
+								inheritance = patrilineal
+							}
+							set_bloodline_founder_religion_flag_effect = yes
+						}
 					}
-				}
-				# Narrative event explaining that Byzantium has been taken out
-				any_character = {
-					narrative_event = { id = HF.49008 }
-				}
-				event_target:byzantine_refugee = {
-					death = {
-						death_reason = death_battle
-						killer = FROM
-					}
-				}
-				# Making sure the Byzantine Empire is destroyed
-				e_byzantium = {
-					unsafe_destroy_landed_title = THIS
 				}
 			}
-			# Otherwise
-			else = {
-				FROM = {
-					any_realm_character = {
-						limit = {
-							religion = ROOT
-							ai = no
-							higher_tier_than = BARON
-						}
-						set_defacto_liege = THIS
-					}
-				}
-				PREV = { #scope to the target title, prep for distribution
-					hidden_tooltip = { destroy_tradeposts_effect = yes }
-					pf_liege_change_under_title_begin_effect = yes
-				}
-				distribute_crusade_target_title = yes
-				crusader_king = {
-					save_event_target_as = crusade_king_recipient
-				}
-				any_playable_ruler = {
-					narrative_event = { id = HFP.41160 }
-				}
-			}
-			crusader_king = {
-				if = {
-					limit = {
-						has_character_flag = beneficiary_who_received_titles
-						NOT = { has_dynasty_modifier = ruling_in_crusader_kingdom }
-					}
-					add_dynasty_modifier = ruling_in_crusader_kingdom
-				}
-				any_realm_character = {
-					limit = {
-						has_character_flag = beneficiary_who_received_titles
-						NOT = { has_dynasty_modifier = ruling_in_crusader_kingdom }
-					}
-					add_dynasty_modifier = ruling_in_crusader_kingdom
-				}
-			}
-			clr_global_flag = distributing_crusade
-		}
 
-		pf_liege_change_under_title_end_effect = yes
-
-		# If the CK has too much gold
-		crusader_king = {
+			# Checks if First Crusade
 			if = {
 				limit = {
-					wealth = 2000
-					ai = yes
-					any_vassal = {
-						always = yes
+					NOT = {
+						has_global_flag = first_crusade_complete
 					}
 				}
-				set_variable = { which = count value = 20 }
-				while = {
-					limit = {
+				set_global_flag = first_crusade_complete
+			}
+
+			# Adds a negative opinion modifier for selfish Crusaders
+			any_crusade_participant = {
+				limit = {
+					OR = {
+						has_character_flag = crusade_selfish_stance
 						AND = {
-							wealth = 2000
-							check_variable = { which = count value = 1 }
-						}
-					}
-					random_vassal = {
-						limit = {
-							NOT = {
-								wealth = 1000
+							NOR = {
+								has_character_flag = crusade_papal_stance
+								has_character_flag = crusade_beneficiary_stance
+							}
+							most_participating_crusader = {
+								crusader_king = {
+									character = PREV
+									character = PREVPREV
+								}
 							}
 						}
-						wealth = 350
-						crusader_king = {
-							wealth = -350
+					}
+				}
+				if = {
+					limit = {
+						NOT = {
+							attacker = {
+								has_opinion_modifier = {
+									who = PREVPREV
+									modifier = opinion_selfish_crusader
+								}
+							}
 						}
 					}
-					subtract_variable = { which = count value = 1 }
+					attacker = {
+						opinion = {
+							who = PREVPREV
+							modifier = opinion_selfish_crusader
+							years = 20
+						}
+					}
 				}
+			}
+
+			# Clean up stances
+			any_attacker = {
+				clr_character_flag = crusade_selfish_stance
+				clr_character_flag = crusade_beneficiary_stance
+				clr_character_flag = crusade_papal_stance
+			}
+
+			attacker = {
+				character_event = { id = HFP.41199 }
 			}
 		}
 
-		ROOT = {
-			show_scope_change = no
-			participation_scaled_piety = 1000
-			participation_scaled_prestige = 500
-			dynasty_head = {
-				if = {
-					limit = { uses_decadence = yes }
-					participation_scaled_decadence = -100
+		hidden_effect = {
+			check_if_reconquista_finished_effect = yes
+			defender = {
+				landless_pope_effect = yes
+			}
+		}
+
+		# CK2Plus
+		pf_liege_change_under_title_end_effect = yes
+		hidden_effect = {
+			any_attacker = {
+				add_character_modifier = {
+					name = victory_timer
+					duration = 1
+					hidden = yes
 				}
 			}
-			#faction mood boost
-			pf_tradition_plus4_effect = yes
-			pf_glory_plus2_effect = yes
-		}
-		any_attacker = {
-			limit = { NOT = { character = ROOT } }
-			hidden_tooltip = {
+			any_attacker = {
+				limit = {
+					NOT = { character = attacker }
+				}
+
 				participation_scaled_piety = 1000
 				participation_scaled_prestige = 500
 				dynasty_head = {
@@ -6347,258 +6719,97 @@ new_crusade = {
 						participation_scaled_decadence = -100
 					}
 				}
-				pf_tradition_plus4_effect = yes
-				pf_glory_plus2_effect = yes
-			}
-		}
 
-		FROM = {
-			prestige = -500
-			pf_glory_minus2_effect = yes
-			pf_tradition_minus4_effect = yes
-		}
-		hidden_tooltip = {
+				add_character_modifier = {
+					name = victory_timer
+					duration = 1
+					hidden = yes
+				}
+			}
 			any_defender = {
-				limit = { NOT = { character = FROM } }
+				limit = {
+					NOT = { character = defender }
+				}
 				prestige = -250
 			}
-		}
-		if = {
-			limit = {
-				ROOT = { is_heretic = no }
-			}
-			ROOT = {
-				religion_authority = {
-					modifier = won_crusade
-					years = 20
-				}
-			}
-		}
-		if = {
-			limit = {
-				FROM = { is_heretic = no }
-			}
-			FROM = {
-				religion_authority = {
-					modifier = lost_crusade
-					years = 20
-				}
-			}
-		}
-
-		# Nickname for the most participating Crusader
-		most_participating_crusader = {
-			if = {
-				limit = {
-					can_apply_average_nickname_trigger = yes
-				}
-				random_list = {
-					10 = { give_nickname = nick_the_crusader }
-					10 = { give_nickname = nick_the_glorious }
-					10 = { give_nickname = nick_the_lionheart }
-					10 = { give_nickname = nick_the_great }
-					10 = { give_nickname = nick_the_hammer }
-					40 = { give_nickname = nick_the_sword_of_god }
-				}
-			}
-		}
-
-		# Nickname and effects for the new Crusader King, if it is a Beneficiary or the Official Crusade Recipient (not for Selfish Crusaders)
-		crusader_king = {
-			hidden_tooltip = {
-				if = {
-					limit = {
-						OR = {
-							most_participating_crusader = {
-								NOT = {
-									character = PREV
-								}
-							}
-							ROOT = {
-								official_crusade_recipient = {
-									character = PREV
-								}
-							}
-						}
-					}
-					opinion = {
-						who = most_participating_crusader
-						modifier = opinion_granted_crusader_kingdom
-						years = 15
-					}
-					crusader_king = {
-						setting_up_the_crusader_kingdom_effect = yes
-						create_crusader_king_crown_effect = yes
-					}
-				}
-			}
-		}
-
-		crusader_king = {
-			save_event_target_as = new_crusader_king
-			if = {
-				limit = { NOT = { culture = PREV } }
-				hidden_tooltip = {
-					PREV = { conquest_culture = event_target:new_crusader_king }
-				}
-			}
-		}
-
-		# If the player is the most participating Crusader, and gave away the Kingdom to a Beneficiary, trigger event to let them start playing as Beneficiary
-		if = {
-			limit = {
-				most_participating_crusader = {
-					ai = no
-					NOT = {
-						character = event_target:new_crusader_king
-					}
-					event_target:new_crusader_king = {
-						dynasty = PREV
-					}
-				}
-			}
-			most_participating_crusader = {
-				narrative_event = { id = HFP.41054 days = 3 }
-			}
-		}
-
-		# Check most participating Crusader if they are potential Crusader material
-		most_participating_crusader = {
-			if = {
-				limit = {
-					NOR = {
-						has_character_flag = grandCrusader
-						trait = crusader_king
-					}
-				}
-				set_character_flag = grandCrusader
-			}
-			else_if = {
-				limit = {
-					OR = {
-						has_character_flag = grandCrusader
-						trait = crusader_king
-					}
-				}
-				narrative_event = { id = HF.49020 }
-			}
-		}
-
-		# Release the CK if they are in jail
-		crusader_king = {
-			imprison = no
-		}
-
-		# Special bloodline for the recipient of the first Crusade
-		if = {
-			limit = {
-				NOT = {
-					has_global_flag = first_crusade_complete
-				}
-				most_participating_crusader = {
-					NOT = {
-						crusader_king = {
-							character = PREV
-						}
-					}
-				}
-			}
-			if = {
-				limit = {
-					has_dlc = "Holy Fury"
-				}
-				if = {
-					limit = {
-						crusader_king = {
-							is_female = yes
-						}
-					}
-					crusader_king = {
-						create_bloodline = {
-							type = crusade_lord
-							religion = THIS
-							inheritance = matrilineal
-						}
-						set_bloodline_founder_religion_flag_effect = yes
-					}
-				}
-				else = {
-					crusader_king = {
-						create_bloodline = {
-							type = crusade_lord
-							religion = THIS
-							inheritance = patrilineal
-						}
-						set_bloodline_founder_religion_flag_effect = yes
-					}
-				}
-			}
-		}
-
-		# Checks if First Crusade
-		if = {
-			limit = {
-				NOT = {
-					has_global_flag = first_crusade_complete
-				}
-			}
-			set_global_flag = first_crusade_complete
-		}
-
-		# Adds a negative opinion modifier for selfish Crusaders
-		any_crusade_participant = {
-			limit = {
-				OR = {
-					has_character_flag = crusade_selfish_stance
-					most_participating_crusader = {
-						crusader_king = {
-							character = PREV
-							character = PREVPREV
-						}
-					}
-				}
-			}
-			if = {
-				limit = {
-					NOT = {
-						ROOT = {
-							has_opinion_modifier = {
-								who = PREVPREV
-								modifier = opinion_selfish_crusader
-							}
-						}
-					}
-				}
-				ROOT = {
-					opinion = {
-						who = PREVPREV
-						modifier = opinion_selfish_crusader
-						years = 20
-					}
-				}
-			}
-		}
-
-		ROOT = {
-			character_event = { id = HFP.41199 }
-		}
-
-		#maintenance - shatter FROM empire if it's become too small (NYR)
-		hidden_tooltip = { FROM = { character_event = { id = realmPlus.100 } } }
-		hidden_tooltip = {
-			check_if_reconquista_finished_effect = yes
-			FROM = {
-				landless_pope_effect = yes
+			#maintenance - shatter FROM empire if it's become too small
+			defender = {
+				character_event = { id = realmPlus.100 }
 			}
 		}
 	}
 
 	on_fail = {
-		#this shouldn't even be possible? But whatever I'll leave it in anyway
-		hidden_tooltip = {
+		attacker = {
+			show_scope_change = no
+			prestige = -200
+			piety = -100
+			character_event = { id = HFP.41199 } # Cleanup Event
+		}
+
+		any_defender = {
+			limit = { NOT = { character = defender } }
+			hidden_effect = {
+				participation_scaled_piety = 200
+				participation_scaled_prestige = 100
+				if = {
+					limit = {
+						uses_decadence = yes
+					}
+					participation_scaled_decadence = -50
+				}
+			}
+			# CK2Plus
+			pf_tradition_minus2_effect = yes
+		}
+
+		defender = {
+			show_scope_change = no
+			participation_scaled_piety = 200
+			participation_scaled_prestige = 100
 			if = {
-				limit = {
-					ROOT = {
+				limit = { uses_decadence = yes }
+				participation_scaled_decadence = -50
+			}
+			hidden_effect = {
+				if = {
+					limit = {
+						trigger_if = {
+							limit = { has_nickname = yes }
+							this_has_lame_nickname_trigger = yes
+						}
+					}
+					random_list = {
+						10 = { give_nickname = nick_the_holy }
+						10 = { give_nickname = nick_the_glorious }
+						10 = { give_nickname = nick_the_lionheart }
+						10 = { give_nickname = nick_the_great }
+						10 = { give_nickname = nick_the_hammer }
+						20 = {
+							trigger = { NOT = { religion_group = christian } }
+							give_nickname = nick_the_sword_of_god
+						}
+					}
+				}
+
+				roman_victory_triumph_effect = yes
+			}
+			# CK2Plus
+			pf_tradition_minus4_effect = yes
+		}
+
+		# CK2Plus
+		any_attacker = {
+			limit = {
+				NOT = { character = attacker }
+			}
+			prestige = -100
+		}
+		hidden_effect = {
+			attacker = {
+				if = {
+					limit = {
+						is_heretic = no
 						OR = {
 							religion = chalcedonian
 							religion = catholic
@@ -6608,67 +6819,15 @@ new_crusade = {
 							religion = lollard
 							religion = adoptionist
 						}
-						is_heretic = no
 					}
-				}
-				set_global_flag = catholic_crusade_failed
-			}
-			if = {
-				limit = {
-					ROOT = {
-						OR = {
-							religion = catholic
-							religion = cathar
-							religion = fraticelli
-							religion = waldensian
-							religion = lollard
-							religion = adoptionist
-						}
-						is_heretic = no
-					}
-					has_global_flag = fourth_crusade_ongoing
-				}
-				clr_global_flag = fourth_crusade_ongoing
-			}
-		}
-		ROOT = {
-			show_scope_change = no
-			prestige = -200
-			piety = -100
-			character_event = { id = HFP.41199}
-		}
-		any_attacker = {
-			limit = { NOT = { character = ROOT } }
-			prestige = -100
-		}
-		FROM = {
-			participation_scaled_prestige = 100
-			participation_scaled_piety = 200
-			dynasty_head = {
-				if = {
-					limit = {
-						uses_decadence = yes
-					}
-					participation_scaled_decadence = -50
-				}
-			}
-			pf_tradition_minus4_effect = yes
-		}
-		any_defender = {
-			limit = { NOT = { character = FROM } }
-			hidden_tooltip = {
-				participation_scaled_prestige = 100
-				participation_scaled_piety = 200
-				dynasty_head = {
+					set_global_flag = catholic_crusade_failed
+
 					if = {
-						limit = {
-							uses_decadence = yes
-						}
-						participation_scaled_decadence = -50
+						limit = { has_global_flag = fourth_crusade_ongoing }
+						clr_global_flag = fourth_crusade_ongoing
 					}
 				}
 			}
-			pf_tradition_minus2_effect = yes
 		}
 	}
 
@@ -20134,8 +20293,7 @@ nomad_invasion = {
 	}
 
 	can_use = {
-		cb_can_use_preamble = yes
-		cb_no_nap_with_suzerain_trigger = yes
+		# Attacker
 		ROOT = {
 			is_nomadic = yes
 			OR = {
@@ -20148,33 +20306,44 @@ nomad_invasion = {
 					}
 				}
 			}
-			is_within_diplo_range = FROM
 		}
 
+		# Defender
 		ROOT = {
 			NOT = { same_realm = FROM }
 		}
 
-		OR = { # This ensures that the AI doesn't declare this type of war against someone who only holds a few counties within the targeted title...
-			ROOT = {
-				ai = no
-			}
-			ROOT = {
-				has_landed_title = e_mongol_empire
-			}
-			FROM = {
-				num_of_realm_counties = {
-					value = 8
-					title = PREV
-				}
-			}
-		}
+		# CK2Plus
+		cb_can_use_preamble = yes
+		cb_no_nap_with_suzerain_trigger = yes
 	}
 
 	is_valid_title = {
-		FROM = {
-			any_realm_province = {
-				de_jure_liege_or_above = PREVPREV
+		# At least one de jure county is in defender's realm
+		any_direct_de_jure_vassal_title = { # duchies
+			any_direct_de_jure_vassal_title = { # counties
+				owner = {
+					OR = {
+						character = FROM
+						is_vassal_or_below_of = FROM
+					}
+				}
+			}
+		}
+
+		OR = { # This ensures that the AI doesn't declare this type of war against someone who only holds a few counties within the targeted title...
+			# Attacker
+			ROOT = {
+				ai = no
+				has_landed_title = e_mongol_empire
+			}
+
+			# Defender
+			FROM = {
+				num_of_realm_counties = {
+					value >= 5
+					title = PREV
+				}
 			}
 		}
 	}
