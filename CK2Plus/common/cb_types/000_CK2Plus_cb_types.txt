@@ -34,51 +34,116 @@ holy_war = {
 	can_use = {
 		cb_can_use_preamble = yes
 		cb_no_nap_with_suzerain_trigger = yes
-		FROM = { NOT = { has_character_modifier = crusade_block_timer } }
-		ROOT = { can_use_holy_war_cb = yes }
+		can_use_holy_war_cb = yes
+
+		num_of_count_titles >= 1
+		is_nomadic = no
+		mercenary = no
+
+		# Defender
+		FROM = {
+			NOT = { has_character_modifier = crusade_block_timer }
+		}
 	}
 
 	# Starting scope is attacker
 	# ROOT is attacker
 	# FROM is defender
 	can_use_gui = {
-		ROOT = {
-			has_secret_religion = no
-
-			trigger_if = {
-				limit = {
-					controls_religion = no
-					NOT = {
-						has_opinion_modifier = {
-							who = FROM
-							modifier = holy_war_sanction
-						}
-					}
-				}
-
-				trigger_if = {
-					limit = {
-						NOT = { has_character_modifier = holy_war_timer }
-					}
-					piety = 100
-				}
-				trigger_else_if = {
-					limit = { religion = kharijite }
-
-					piety = 100
-				}
-				trigger_else = {
-					piety = 250
-				}
-			}
-		}
+		has_secret_religion = no
 	}
 
 	on_add = {
 		fire_haruspicy_event_effect = yes
 		anger_china_effect = yes
 		attacked_tributary_cb_effect = yes
+	}
+
+	# Starting scope is claimed title
+	# ROOT is attacker
+	# FROM is defender
+	can_use_title = {
+		# Attacker
 		ROOT = {
+			trigger_if = {
+				limit = {
+					religion = buddhist
+					NOT = { culture_group = tibetan_group }
+				}
+				piety = 250
+			}
+			trigger_else_if = {
+				limit = {
+					controls_religion = no
+					NOR = {
+						has_opinion_modifier = {
+							who = FROM
+							modifier = holy_war_sanction
+						}
+						PREV = {
+							any_de_jure_vassal_title = { is_holy_site = ROOT }
+						}
+					}
+				}
+
+				trigger_if = {
+					limit = {
+						has_character_modifier = holy_war_timer
+						NOT = { religion = kharijite }
+					}
+					piety = 250
+				}
+				trigger_else = {
+					piety = 100
+				}
+			}
+		}
+		# Is neighbor title or close
+		any_realm_province = {
+			duchy = { title = PREVPREV }
+
+			OR = {
+				owner = { shares_realm_border_with = ROOT }
+				ROOT = {
+					any_realm_province = {
+						distance = {
+							where = PREVPREV
+							value < 75
+						}
+					}
+				}
+			}
+		}
+
+		# Use reconquista instead
+		trigger_if = {
+			limit = {
+				capital_scope = { region = world_europe_west_iberia }
+				FROM = {
+					independent = yes
+					religion_group = muslim
+				}
+			}
+			NOT = {
+				ROOT = {
+					capital_scope = { region = world_europe_west_iberia }
+					independent = yes
+					religion_group = christian
+					is_heretic = no
+				}
+			}
+		}
+	}
+
+	is_valid = {
+		attacker = { can_use_holy_war_cb = yes }
+	}
+
+	# Starting scope is claimed title
+	# ROOT is attacker
+	# FROM is defender
+	on_add_title = {
+		attacker = {
 			show_scope_change = no
 			if = {
 				limit = {
@@ -87,121 +152,29 @@ holy_war = {
 				}
 				piety = -250
 			}
-		}
-	}
-
-	# Starting scope is claimed title
-	# ROOT is attacker
-	# FROM is defender
-	can_use_title = {
-		FROM = {
-			show_scope_change = no
-
-			# Is neighbor title or close
-			any_realm_province = {
-				duchy = { title = PREVPREVPREV }
-
-				OR = {
-					any_neighbor_province = {
-						owner = {
-							OR = {
-								is_liege_or_above = ROOT
-								character = ROOT
-							}
-						}
-					}
-					ROOT = {
-						any_realm_province = {
-							distance = {
-								where = PREVPREV
-								value < 75
-							}
-							owner = {
-								OR = {
-									character = ROOT
-									is_liege_or_above = ROOT
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-
-		ROOT = {
-			num_of_count_titles >= 1
-			is_nomadic = no
-			mercenary = no
-		}
-
-		# Use reconquista instead
-		NAND = {
-			capital_scope = { region = world_europe_west_iberia }
-			ROOT = {
-				capital_scope = { region = world_europe_west_iberia }
-				independent = yes
-				religion_group = christian
-				is_heretic = no
-			}
-			FROM = {
-				independent = yes
-				religion_group = muslim
-			}
-		}
-	}
-
-	is_valid = {
-		ROOT = { can_use_holy_war_cb = yes }
-	}
-
-	# Starting scope is claimed title
-	# ROOT is attacker
-	# FROM is defender
-	on_add_title = {
-		if = {
-			limit = {
-				any_de_jure_vassal_title = { is_holy_site = ROOT }
-			}
-			ROOT = { custom_tooltip = { text = NO_PIETY_COST_HOLY } }
-		}
-		else_if = {
-			limit  = {
-				ROOT = {
-					OR = {
-						controls_religion = yes
+			else_if = {
+				limit = {
+					controls_religion = no
+					NOR = {
 						has_opinion_modifier = {
-							who = FROM
+							who = defender
 							modifier = holy_war_sanction
+						}
+						PREV = {
+							any_de_jure_vassal_title = { is_holy_site = attacker }
 						}
 					}
 				}
-			}
-			ROOT = {
-				custom_tooltip = {
-					text = NO_PIETY_COST_SANCTION
 
-					hidden_effect = {
-						remove_opinion = {
-							who = FROM
-							modifier = holy_war_sanction
-						}
-					}
-				}
-			}
-
-		}
-		else_if = {
-			limit = {
-				ROOT = { has_character_modifier = holy_war_timer }
-			}
-
-			ROOT = {
 				if = {
-					limit = { religion = kharijite }
-					piety = -100
+					limit = {
+						has_character_modifier = holy_war_timer
+						NOT = { religion = kharijite }
+					}
+					piety = -250
 				}
 				else = {
-					piety = -250
+					piety = -100
 				}
 			}
 		}
@@ -222,8 +195,6 @@ holy_war = {
 		}
 
 		if = {
-			limit = { is_heretic = no }
-
 			religion_authority = {
 				modifier = won_holy_war
 				years = 20
@@ -251,8 +222,6 @@ holy_war = {
 			pf_tradition_minus4_effect = yes
 
 			if = {
-				limit = { is_heretic = no }
-
 				religion_authority = {
 					modifier = lost_holy_war
 					years = 20
@@ -267,18 +236,18 @@ holy_war = {
 
 				dynasty_head = {
 					if = {
-						limit = {
-							uses_decadence = yes
-						}
+						limit = { uses_decadence = yes }
 						participation_scaled_decadence = -10
 					}
 				}
 				if = {
 					limit = {
-						is_heretic = no
 						has_ambition = obj_strengthen_religion
 					}
-					change_variable = { which = strengthen_religion value = 1 }
+					change_variable = {
+						which = strengthen_religion
+						value = 1
+					}
 				}
 			}
 		}
@@ -294,18 +263,17 @@ holy_war = {
 					has_holder = yes
 					holder_scope = {
 						OR = {
-							character = FROM
-							is_liege_or_above = FROM
+							character = defender
+							is_vassal_or_below_of = defender
 						}
 					}
 				}
 				set_title_flag = usurp_duchy
 			}
-
 			destroy_tradeposts_effect = yes
 		}
 
-		ROOT = {
+		attacker = {
 			vassalize_or_take_under_title = {
 				title = PREV
 				enemy = FROM
@@ -321,11 +289,11 @@ holy_war = {
 					has_title_flag = usurp_duchy
 				}
 				destroy_landed_title = yes
-				usurp_title = ROOT
+				usurp_title = attacker
 				clr_title_flag = usurp_duchy
 			}
 
-			ROOT = {
+			attacker = {
 				add_character_modifier = {
 					name = "holy_war_timer"
 					duration = 1825
@@ -374,9 +342,6 @@ holy_war = {
 			}
 
 			if = {
-				limit = {
-					is_heretic = no
-				}
 				religion_authority = {
 					modifier = lost_holy_war
 					years = 20
@@ -389,10 +354,12 @@ holy_war = {
 		attacker = {
 			piety = -200
 			prestige = -200
+
 			transfer_scaled_wealth = {
 				to = defender
 				value = 4.0
 			}
+
 			imperial_decadence_plus_1_effect = yes
 			pf_glory_minus2_effect = yes
 			pf_tradition_minus4_effect = yes
