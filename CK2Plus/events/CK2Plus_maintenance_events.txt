@@ -87,42 +87,6 @@ namespace = Plus
 #
 #######################################
 
-# 304: Pass down lifetime appointments law to heir
-character_event = {
-	id = Plus.304
-
-	is_triggered_only = yes
-	hide_window = yes
-	has_character_flag = lifetime_appointments
-
-	trigger = {
-		primary_title = {
-			is_vice_royalty = no
-			has_law = council_privileges_1
-		}
-		current_heir = {
-			OR = {
-				is_ruler = no
-				lower_real_tier_than = ROOT
-			}
-		}
-	}
-
-	immediate = {
-		current_heir = {
-			set_character_flag = lifetime_appointments
-			if = {
-				limit = { is_ruler = yes }
-				job_spymaster = { remove_title = job_spymaster remove_opinion = { who = PREV modifier = opinion_fired_from_council } }
-				job_marshal = { remove_title = job_marshal remove_opinion = { who = PREV modifier = opinion_fired_from_council } }
-				job_chancellor = { remove_title = job_chancellor remove_opinion = { who = PREV modifier = opinion_fired_from_council } }
-				job_treasurer = { remove_title = job_treasurer remove_opinion = { who = PREV modifier = opinion_fired_from_council } }
-				job_spiritual = { remove_title = job_spiritual remove_opinion = { who = PREV modifier = opinion_fired_from_council } }
-			}
-		}
-	}
-}
-
 # 305: Remove Crowned by Pope or Crowned or Uncrowned if not a ruler
 character_event = {
 	id = Plus.305
@@ -879,6 +843,7 @@ character_event = {
 	}
 }
 
+# TODO: See if this is still necessary
 # 310: Copies empire's Crown Laws to de jure kingdoms
 character_event = {
 	id = Plus.310
@@ -1157,27 +1122,9 @@ character_event = {
 	ai = yes
 
 	trigger = {
-		OR = {
-			is_married = no
-			AND = {
-				has_polygamy = yes
-				NOT = { num_of_spouses = 2 }
-				real_tier = COUNT
-			}
-			AND = {
-				has_polygamy = yes
-				NOT = { num_of_spouses = 3 }
-				OR = {
-					real_tier = DUKE
-					has_minor_title = title_prince
-				}
-			}
-			AND = {
-				has_polygamy = yes
-				NOT = { num_of_spouses = 4 }
-				higher_real_tier_than = DUKE
-			}
-		}
+		is_not_busy_trigger = yes
+		is_inaccessible_trigger = no
+		is_incapable = no
 		is_ill = no
 		mercenary = no
 		is_betrothed = no
@@ -1185,70 +1132,100 @@ character_event = {
 		can_marry = yes
 		is_consort = no
 		fertility = 0.01
-		OR = {
-			NOT = { age = 40 }
-			is_female = no
+
+		trigger_if = {
+			limit = {
+				has_polygamy = yes
+				real_tier = COUNT
+			}
+			num_of_spouses < 2
 		}
-		OR = {
-			is_female = no
-			is_ruler = yes
-			any_heir_title = { always = yes }
-			any_pretender_title = { always = yes }
-			AND = {
-				is_councillor = yes
-				liege = { ai = no }
+		trigger_else_if = {
+			limit = {
+				has_polygamy = yes
+				OR = {
+					real_tier = DUKE
+					has_minor_title = title_prince
+				}
+			}
+			num_of_spouses < 3
+		}
+		trigger_else_if = {
+			limit = {
+				has_polygamy = yes
+				higher_real_tier_than = DUKE
+			}
+			num_of_spouses < 4
+		}
+		trigger_else = {
+			is_married = no
+		}
+
+		trigger_if = {
+			limit = { is_female = yes }
+			age < 40
+			OR = {
+				is_ruler = yes
+				any_heir_title = { always = yes }
+				any_pretender_title = { always = yes }
+				AND = {
+					is_councillor = yes
+					liege = { ai = no }
+				}
 			}
 		}
-		OR = {
-			is_ruler = yes
-			father_even_if_dead = { higher_tier_than = BARON }
-			mother_even_if_dead = { higher_tier_than = BARON }
-			any_close_relative = { higher_tier_than = COUNT }
-			AND = {
-				is_councillor = yes
-				liege = { ai = no }
+
+		trigger_if = {
+			limit = { is_ruler = no }
+			OR = {
+				father_even_if_dead = { higher_tier_than = BARON }
+				mother_even_if_dead = { higher_tier_than = BARON }
+				any_close_relative = { higher_tier_than = COUNT }
+				AND = {
+					is_councillor = yes
+					liege = { ai = no }
+				}
+			}
+			OR = {
+				liege = { ai = yes }
+				liege = {
+					NOT = { is_close_relative = ROOT }
+					NOT = { dynasty = ROOT }
+				}
 			}
 		}
-		OR = {
-			is_ruler = yes
-			liege = { ai = yes }
-			liege = {
-				NOT = { is_close_relative = ROOT }
-				NOT = { dynasty = ROOT }
-			}
-		}
-		OR = {
-			is_ruler = no
+		trigger_else = {
 			primary_title = {
 				holy_order = no
 				is_primary_type_title = no
 				temporary = no
 			}
+			OR = {
+				higher_tier_than = BARON
+				is_feudal = yes
+				is_tribal = yes
+			}
 		}
-		OR = {
-			is_ruler = no
-			higher_tier_than = BARON
-			is_feudal = yes
-			is_tribal = yes
-		}
+
 		NOR = {
 			trait = infirm
-			is_inaccessible_trigger = yes
 			has_character_flag = ai_spouse_finder
 		}
-		is_not_busy_trigger = yes
 	}
 
 	weight_multiplier = {
 		factor = 1
-		modifier = {
-			factor = 0
-			is_ruler = yes
-			NOT = { ruled_years = 1 }
+
+		trigger = {
+			trigger_if = {
+				limit = { is_ruler = yes }
+				ruled_years >= 1
+			}
 		}
+
 		modifier = {
 			factor = 1.5
-			NOT = { age = 25 }
+			age < 25
 		}
 		modifier = {
 			factor = 1.5
@@ -1334,38 +1311,48 @@ character_event = {
 	has_character_flag = ai_spouse_finder
 
 	trigger = {
-		OR = {
-			ai = no
-			age = 60
-			is_ill = yes
-			prisoner = yes
-			is_betrothed = yes
-			is_pregnant = yes
-			can_marry = no
-			is_consort = yes
-			is_incapable = yes
-			trait = infirm
-			is_inaccessible_trigger = yes
-			is_not_busy_trigger = no
-			NOR = {
-				is_married = no
-				AND = {
-					has_polygamy = yes
-					NOT = { num_of_spouses = 2 }
-					real_tier = COUNT
-				}
-				AND = {
-					has_polygamy = yes
-					NOT = { num_of_spouses = 3 }
-					OR = {
-						real_tier = DUKE
-						has_minor_title = title_prince
+		trigger_if = {
+			limit = { ai = yes }
+
+			OR = {
+				age = 60
+				is_ill = yes
+				prisoner = yes
+				is_betrothed = yes
+				is_pregnant = yes
+				can_marry = no
+				is_consort = yes
+				is_incapable = yes
+				trait = infirm
+				is_inaccessible_trigger = yes
+				is_not_busy_trigger = no
+
+				trigger_if = {
+					limit = {
+						has_polygamy = yes
+						real_tier = COUNT
 					}
+					num_of_spouses >= 2
 				}
-				AND = {
-					has_polygamy = yes
-					NOT = { num_of_spouses = 4 }
-					higher_real_tier_than = DUKE
+				trigger_else_if = {
+					limit = {
+						has_polygamy = yes
+						OR = {
+							real_tier = DUKE
+							has_minor_title = title_prince
+						}
+					}
+					num_of_spouses >= 3
+				}
+				trigger_else_if = {
+					limit = {
+						has_polygamy = yes
+						higher_real_tier_than = DUKE
+					}
+					num_of_spouses >= 4
+				}
+				trigger_else = {
+					is_married = yes
 				}
 			}
 		}
@@ -2253,78 +2240,66 @@ character_event = {
 	ai = no
 
 	immediate = {
-		if = {
-			limit = {
-				k_england = {
-					owner = {
-						culture = saxon
-						NOT = { dynasty = 106 }
-					}
+		k_england = {
+			holder_scope = {
+				if = {
+					limit = { dynasty = 106 } # Plantagenet
+					k_england = { set_coa = k_plantagenet }
 				}
-			}
-			k_england = { set_coa = k_england_saxon }
-			d_canterbury = { set_coa = d_canterbury_saxon }
-			d_cornwall = { set_coa = d_cornwall_saxon }
-			d_gloucester = { set_coa = d_gloucester_saxon }
-			d_hereford = { set_coa = d_hereford_saxon }
-			d_lancaster = { set_coa = d_lancaster_saxon }
-			d_norfolk = { set_coa = d_norfolk_saxon }
-			d_oxford = { set_coa = d_oxford_saxon }
-			d_somerset = { set_coa = d_somerset_saxon }
-			d_york = { set_coa = d_york_saxon }
-		}
-		if = {
-			limit = {
-				k_england = {
-					owner = {
+				else_if = {
+					limit = { culture = saxon }
+
+					k_england = { set_coa = k_england_saxon }
+					d_canterbury = { set_coa = d_canterbury_saxon }
+					d_cornwall = { set_coa = d_cornwall_saxon }
+					d_gloucester = { set_coa = d_gloucester_saxon }
+					d_hereford = { set_coa = d_hereford_saxon }
+					d_lancaster = { set_coa = d_lancaster_saxon }
+					d_norfolk = { set_coa = d_norfolk_saxon }
+					d_oxford = { set_coa = d_oxford_saxon }
+					d_somerset = { set_coa = d_somerset_saxon }
+					d_york = { set_coa = d_york_saxon }
+				}
+				else_if = {
+					limit = {
 						OR = {
 							culture = frankish
 							culture = norman
 							culture = english
 						}
-						NOT = { dynasty = 106 }
 					}
+
+					k_england = { set_coa = k_england_norman }
+					d_canterbury = { set_coa = d_canterbury_norman }
+					d_cornwall = { set_coa = d_cornwall_norman }
+					d_gloucester = { set_coa = d_gloucester_norman }
+					d_hereford = { set_coa = d_hereford_norman }
+					d_lancaster = { set_coa = d_lancaster_norman }
+					d_norfolk = { set_coa = d_norfolk_norman }
+					d_oxford = { set_coa = d_oxford_norman }
+					d_somerset = { set_coa = d_somerset_norman }
+					d_york = { set_coa = d_york_norman }
 				}
-			}
-			k_england = { set_coa = k_england_norman }
-			d_canterbury = { set_coa = d_canterbury_norman }
-			d_cornwall = { set_coa = d_cornwall_norman }
-			d_gloucester = { set_coa = d_gloucester_norman }
-			d_hereford = { set_coa = d_hereford_norman }
-			d_lancaster = { set_coa = d_lancaster_norman }
-			d_norfolk = { set_coa = d_norfolk_norman }
-			d_oxford = { set_coa = d_oxford_norman }
-			d_somerset = { set_coa = d_somerset_norman }
-			d_york = { set_coa = d_york_norman }
-		}
-		if = {
-			limit = {
-				k_england = {
-					owner = {
+				else_if = {
+					limit = {
 						culture_group = north_germanic
-						NOT = { dynasty = 106 }
 					}
+
+					k_england = { set_coa = k_englandnorwegian }
 				}
 			}
-			k_england = { set_coa = k_englandnorwegian }
 		}
-		if = {
-			limit = {
-				k_england = {
-					owner = {
-						dynasty = 106
-					}
-				}
+		k_carpathia = {
+			if = {
+				limit = { has_title_flag = carpathia_is_avaria }
+				set_coa = k_avaria
 			}
-			k_england = { set_coa = k_plantagenet }
 		}
-		if = {
-			limit = { k_carpathia = { has_title_flag = carpathia_is_avaria } }
-			k_carpathia = { set_coa = k_avaria }
-		}
-		if = {
-			limit = { d_finland = { has_title_flag = finland_is_satakunta } }
-			d_finland = { set_coa = d_satakunta }
+		d_finland = {
+			if = {
+				limit = { has_title_flag = finland_is_satakunta }
+				set_coa = d_satakunta
+			}
 		}
 	}
 }
@@ -3849,22 +3824,6 @@ character_event = {
 		any_demesne_title = {
 			limit = { had_title_flag = { flag = destroy_title days = 7 } }
 			clr_title_flag = destroy_title
-		}
-
-		#adjust flags and modifiers based on laws
-		if = {
-			limit = {
-				primary_title = { has_law = council_privileges_0 }
-				has_character_flag = lifetime_appointments
-			}
-			clr_character_flag = lifetime_appointments
-		}
-		if = {
-			limit = {
-				primary_title = { has_law = council_privileges_1 }
-				NOT = { has_character_flag = lifetime_appointments }
-			}
-			set_character_flag = lifetime_appointments
 		}
 
 		#double-check imperial government status
