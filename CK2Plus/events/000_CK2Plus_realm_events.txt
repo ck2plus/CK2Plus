@@ -80,51 +80,20 @@ character_event = {
 				is_offmap_trigger = no
 				is_playable = yes
 				higher_real_tier_than = DUKE
-				is_adult = yes
-				is_feudal = yes
-				has_horde_culture = no
-				is_nomadic = no
-				primary_title = { is_vice_royalty = no }
-				independent = yes
-				NOR = {
-					trait = crowned
-					trait = crowned_by_relhead
-					trait = crowned_by_vip
-					trait = uncrowned
-					has_landed_title = e_hre
-					has_landed_title = e_karling
-					has_landed_title = e_byzantium
-				}
-			}
-			add_trait = crowned
-		}
-
-		# give uncrowned trait to everyone else
-		any_independent_ruler = {
-			limit = {
-				is_offmap_trigger = no
-				is_playable = yes
-				higher_real_tier_than = DUKE
 				is_feudal = yes
 				has_horde_culture = no
 				is_nomadic = no
 				independent = yes
 				primary_title = { is_vice_royalty = no }
-				NOR = {
-					trait = crowned
-					trait = uncrowned
-					trait = crowned_by_relhead
-					trait = crowned_by_vip
-					trait = crowned_by_pope
-					trait = strong_basileus
-					trait = weak_basileus
-					trait = crowned_by_priest
-					trait = crowned_by_bishop
-					trait = crowned_by_myself
-					trait = crowned_by_pope_stolen
-				}
+				is_crowned = no
 			}
-			add_trait = uncrowned
+			if = {
+				limit = { is_adult = yes }
+				add_trait = crowned
+			}
+			else = {
+				add_trait = uncrowned
+			}
 		}
 	}
 }
@@ -159,6 +128,8 @@ character_event = {
 # INDEX
 #
 # 100: Imperial Destruction
+# 101: Emperor picks between two held empires
+# 102: Copy imperial laws to held kingdoms
 #
 #######################################
 
@@ -170,7 +141,7 @@ character_event = {
 
 	is_triggered_only = yes
 
-	only_independent = yes #emperor has to be independent
+	only_independent = yes
 	only_playable = yes
 	war = no
 
@@ -205,5 +176,182 @@ character_event = {
 	option = {
 		name = "EVTOPTA_Plus_303"
 		prestige = -1000
+	}
+}
+
+# 101: Emperor picks between two held empires
+character_event = {
+	id = realmPlus.101
+	is_triggered_only = yes
+
+	picture = GFX_evt_coronation
+
+	only_independent = yes
+	only_playable = yes
+
+	trigger = {
+		is_nomadic = no
+		real_tier = EMPEROR
+		num_of_emperor_titles >= 2
+	}
+
+	immediate = {
+		primary_title = { save_event_target_as = current_title }
+		any_demesne_title = {
+			limit = {
+				tier = EMPEROR
+				NOT = { title = event_target:current_title }
+				count = 1
+			}
+			save_event_target_as = new_title
+		}
+	}
+
+	desc = EVTDESC_Plus_1854
+
+	option = {
+		name = EVTOPTA_Plus_1854 # I will assume the new title
+
+		hidden_effect = {
+			event_target:new_title = { make_primary_title = yes }
+			event_target:current_title = {
+				any_vassal = { set_defacto_liege = ROOT }
+			}
+
+			clr_character_flag = must_grant_empire_flag
+		}
+
+		event_target:current_title = { unsafe_destroy_landed_title = THIS }
+
+		ai_chance = {
+			factor = 20
+
+			trigger = {
+				NOR = {
+					event_target:current_title = { culture = ROOT }
+					AND = {
+						event_target:current_title = { is_titular = no }
+						event_target:new_title = { is_titular = yes }
+					}
+				}
+			}
+
+			modifier = {
+				factor = 0.1
+				event_target:current_title = {
+					capital_scope = { culture = ROOT }
+				}
+			}
+		}
+	}
+	option = {
+		name = EVTOPTB_Plus_1854 # I will keep my current title
+
+		hidden_tooltip = {
+			event_target:new_title = {
+				any_vassal = { set_defacto_liege = ROOT }
+			}
+
+			clr_character_flag = must_grant_empire_flag
+		}
+
+		event_target:new_title = { unsafe_destroy_landed_title = THIS }
+
+		ai_chance = {
+			factor = 50
+
+			trigger = {
+				NOR = {
+					event_target:new_title = { culture = ROOT }
+					AND = {
+						event_target:current_title = { is_titular = yes }
+						event_target:new_title = { is_titular = no }
+					}
+				}
+			}
+
+			modifier = {
+				factor = 0.1
+				event_target:new_title = {
+					capital_scope = { culture = ROOT }
+				}
+			}
+		}
+	}
+	option = {
+		name = EVTOPTC_Plus_1854 # I will give the second title to someone else
+
+		trigger = {
+			is_tributary = no
+			NOT = { has_character_flag = must_grant_empire_flag }
+			event_target:new_title = { is_titular = no }
+			event_target:current_title = { is_titular = no }
+		}
+
+		custom_tooltip = {
+			text = GRANT_EMPIRE_WITHIN_30_DAYS
+			hidden_tooltip = {
+				set_character_flag = must_grant_empire_flag
+				character_event = {
+					id = realmPlus.101
+					days = 30
+				}
+			}
+		}
+
+		ai_chance = {
+			factor = 0
+		}
+	}
+
+	after = {
+		clear_event_target = current_title
+		clear_event_target = new_title
+		# In case the ruler somehow had more than two empires
+		if = {
+			limit = {
+				ROOT = {
+					num_of_emperor_titles >= 2
+					NOT = { has_character_flag = must_grant_empire_flag }
+				}
+			}
+			character_event = {
+				id = realm_Plus.101
+				days = 1
+			}
+		}
+	}
+}
+
+# 102: Copy imperial laws to held kingdoms
+character_event = {
+	id = realmPlus.102
+	is_triggered_only = yes
+	hide_window = yes
+
+	only_independent = yes
+	only_playable = yes
+
+	trigger = {
+		real_tier = EMPEROR
+		any_demesne_title = {
+			tier = KING
+			holder = ROOT # Safety check because I don't trust paradox
+		}
+	}
+
+	immediate = {
+		primary_title = { save_event_target_as = primaryTitle }
+		any_demesne_title = {
+			limit = {
+				tier = KING
+				holder = ROOT
+			}
+			copy_title_laws = event_target:primaryTitle
+		}
+	}
+
+	after = {
+		clear_event_target = primaryTitle
 	}
 }
