@@ -202,42 +202,39 @@ character_event = {
 	hide_window = yes
 
 	trigger = {
-		OR = {
-			mother_even_if_dead = {
-				any_sibling_even_if_dead = {
-					any_child = {
-						NOT = { has_opinion_modifier = { who = ROOT modifier = opinion_cousin } }
-					}
-				}
-			}
-			father_even_if_dead = {
-				any_sibling_even_if_dead = {
-					any_child = {
-						NOT = { has_opinion_modifier = { who = ROOT modifier = opinion_cousin } }
-					}
+		any_character = {
+			is_cousin_of = ROOT
+			NOT = {
+				has_opinion_modifier = {
+					who = ROOT
+					modifier = opinion_cousin
 				}
 			}
 		}
 	}
 
 	immediate = {
-		mother_even_if_dead = {
-			any_sibling_even_if_dead = {
-				any_child = {
-					limit = { NOT = { has_opinion_modifier = { who = ROOT modifier = opinion_cousin } } }
-					reverse_opinion = { who = ROOT modifier = opinion_cousin years = 100 }
-					opinion = { who = ROOT modifier = opinion_cousin years = 100 }
+		any_character = {
+			limit = {
+				is_cousin_of = ROOT
+				NOT = {
+					has_opinion_modifier = {
+						who = ROOT
+						modifier = opinion_cousin
+					}
 				}
 			}
-		}
-		father_even_if_dead = {
-			any_sibling_even_if_dead = {
-				any_child = {
-					limit = { NOT = { has_opinion_modifier = { who = ROOT modifier = opinion_cousin } } }
-					reverse_opinion = { who = ROOT modifier = opinion_cousin years = 100 }
-					opinion = { who = ROOT modifier = opinion_cousin years = 100 }
-				}
+			opinion = {
+				modifier = opinion_cousin
+				who = ROOT
+				years = -1
 			}
+			reverse_opinion = {
+				modifier = opinion_cousin
+				who = ROOT
+				years = -1
+			}
+
 		}
 	}
 }
@@ -296,5 +293,808 @@ character_event = {
 		else = {
 			remove_crown_effect = yes # need to make this
 		}
+	}
+}
+
+# 104: AI Spouse Finder
+character_event = {
+	id = maintPlus.104
+	is_triggered_only = yes
+	hide_window = yes
+
+	ai = yes
+	capable_only = yes
+	max_age = 45
+	prisoner = no
+
+	trigger = {
+		can_marry = yes
+		is_marriage_adult = yes
+		is_consort = no
+
+		is_not_busy_trigger = yes
+		is_inaccessible_trigger = no
+
+		is_incapable = no
+		is_ill = no
+		is_pregnant = no
+		NOT = { trait = infirm }
+
+		# Must have at least one known parent
+		OR = {
+			father_even_if_dead = { always = yes }
+			mother_even_if_dead = { always = yes }
+		}
+		# Must not be lowborn
+		NOT = { dynasty = none }
+
+		mercenary = no
+
+		trigger_if = {
+			limit = { is_female = yes }
+			age < 40
+			OR = {
+				is_ruler = yes
+				any_heir_title = { always = yes }
+				any_pretender_title = { always = yes }
+				AND = {
+					is_councillor = yes
+					liege = { ai = no }
+				}
+			}
+		}
+
+		trigger_if = {
+			limit = { is_ruler = yes }
+
+			primary_title = {
+				NOT = { government = order_government }
+				is_primary_type_title = no
+				temporary = no
+			}
+			trigger_if = {
+				limit = { real_tier = BARON }
+				OR = {
+					is_feudal = yes
+					is_tribal = yes
+				}
+			}
+		}
+		trigger_else = {
+			OR = {
+				any_close_relative = { higher_tier_than = COUNT }
+				father_even_if_dead = { higher_tier_than = BARON }
+				mother_even_if_dead = { higher_tier_than = BARON }
+				trigger_if = {
+					limit = {
+						liege = { ai = no }
+						is_councillor = yes
+					}
+				}
+			}
+
+			# Players don't want their family to marry out from under them
+			liege = {
+				trigger_if = {
+					limit = { ai = no }
+					NOR = {
+						dynasty = ROOT
+						is_close_relative = ROOT
+					}
+				}
+			}
+		}
+	}
+
+	weight_multiplier = {
+		days = 1
+
+		mult_modifier = {
+			factor = 1.25
+			age < 25
+		}
+		mult_modifier = {
+			factor = 1.25
+			NOT = {
+				any_child = {
+					is_heir = yes
+				}
+			}
+		}
+		mult_modifier = {
+			factor = 3
+			has_ambition = obj_get_married
+		}
+	}
+
+	immediate = {
+		random_list = {
+			# Marry a random noble (mostly preferred)
+			16 = {
+				if = {
+					limit = {
+						OR = {
+							higher_real_tier_than = DUKE
+							father = { higher_real_tier_than = DUKE }
+							mother = { higher_real_tier_than = DUKE }
+						}
+					}
+					random_character = {
+						limit = {
+							ai = yes
+							# Can't be too far away
+							OR = {
+								same_realm = ROOT
+								distance = {
+									who = ROOT
+									value < 200
+								}
+							}
+							# Can't be a nobody
+							OR = {
+								is_ruler = yes
+								father_even_if_dead = { is_ruler = yes }
+								mother_even_if_dead = { is_ruler = yes }
+							}
+							can_marry_ROOT_trigger = yes
+							NOR = {
+								dynasty = none
+								is_close_relative = ROOT
+								trait = celibate
+								trait = eunuch
+								trait = infirm
+								any_liege = { is_close_relative = PREV }
+								any_liege = { is_lover = PREV }
+								any_heir_title = { always = yes }
+								any_pretender_title = { always = yes }
+							}
+						}
+						# Already has good rank
+						preferred_limit = {
+							higher_tier_than = COUNT
+							culture_group = ROOT
+						}
+						preferred_limit = {
+							higher_tier_than = COUNT
+						}
+						# Has a claim I want
+						preferred_limit = {
+							culture_group = ROOT
+							any_claim = {
+								NOT = { claimed_by = ROOT }
+								OR = {
+									holder_scope = { is_vassal_or_below = ROOT }
+									capital_scope = {
+										ROOT = {
+											capital_scope = {
+												distance = {
+													where = PREVPREV
+													value < 100
+												}
+											}
+										}
+									}
+									trigger_if = {
+										limit = {
+											holder_scope = { same_realm = ROOT }
+										}
+										NOT = { lower_tier_than = ROOT }
+									}
+								}
+							}
+						}
+						preferred_limit = {
+							any_claim = {
+								NOT = { claimed_by = ROOT }
+								OR = {
+									holder_scope = { is_vassal_or_below = ROOT }
+									capital_scope = {
+										ROOT = {
+											capital_scope = {
+												distance = {
+													where = PREVPREV
+													value < 100
+												}
+											}
+										}
+									}
+									trigger_if = {
+										limit = {
+											holder_scope = { same_realm = ROOT }
+										}
+										NOT = { lower_tier_than = ROOT }
+									}
+								}
+							}
+						}
+						# Good Stats
+						preferred_limit = {
+							culture_group = ROOT
+							OR = {
+								diplomacy = 12
+								intrigue = 12
+								learning = 12
+								martial = 12
+								stewardship = 12
+							}
+						}
+						preferred_limit = {
+							OR = {
+								diplomacy = 12
+								intrigue = 12
+								learning = 12
+								martial = 12
+								stewardship = 12
+							}
+						}
+						# Ok Stats
+						preferred_limit = {
+							culture_group = ROOT
+							OR = {
+								diplomacy = 8
+								intrigue = 8
+								learning = 8
+								martial = 8
+								stewardship = 8
+								is_smart_trigger = yes
+								is_strong_trigger = yes
+							}
+						}
+						preferred_limit = {
+							OR = {
+								diplomacy = 8
+								intrigue = 8
+								learning = 8
+								martial = 8
+								stewardship = 8
+								is_smart_trigger = yes
+								is_strong_trigger = yes
+							}
+						}
+						# Attractive
+						preferred_limit = {
+							culture_group = ROOT
+							is_attractive_trigger = yes
+						}
+						preferred_limit = {
+							is_attractive_trigger = yes
+						}
+						# Prefer same culture over just anyone
+						preferred_limit = {
+							culture_group = ROOT
+						}
+
+						save_event_target_as = AI_suitor
+					}
+				}
+				else_if = {
+					limit = {
+						OR = {
+							higher_real_tier_than = BARON
+							father = { higher_real_tier_than = BARON }
+							mother = { higher_real_tier_than = BARON }
+						}
+					}
+					random_character = {
+						limit = {
+							ai = yes
+							# Can't be too far away
+							OR = {
+								same_realm = ROOT
+								distance = {
+									who = ROOT
+									value < 200
+								}
+							}
+							# Can't be a nobody
+							OR = {
+								is_ruler = yes
+								father_even_if_dead = { is_ruler = yes }
+								mother_even_if_dead = { is_ruler = yes }
+							}
+							can_marry_ROOT_trigger = yes
+							NOR = {
+								dynasty = none
+								is_close_relative = ROOT
+								trait = celibate
+								trait = eunuch
+								trait = infirm
+								any_liege = { is_close_relative = PREV }
+								any_liege = { is_lover = PREV }
+								any_heir_title = { always = yes }
+								any_pretender_title = { always = yes }
+							}
+						}
+						# Has a claim I want
+						preferred_limit = {
+							culture_group = ROOT
+							any_claim = {
+								NOT = { claimed_by = ROOT }
+								OR = {
+									holder_scope = { is_vassal_or_below = ROOT }
+									capital_scope = {
+										ROOT = {
+											capital_scope = {
+												distance = {
+													where = PREVPREV
+													value < 100
+												}
+											}
+										}
+									}
+									trigger_if = {
+										limit = {
+											holder_scope = { same_realm = ROOT }
+										}
+										NOT = { lower_tier_than = ROOT }
+									}
+								}
+							}
+						}
+						preferred_limit = {
+							any_claim = {
+								NOT = { claimed_by = ROOT }
+								OR = {
+									holder_scope = { is_vassal_or_below = ROOT }
+									capital_scope = {
+										ROOT = {
+											capital_scope = {
+												distance = {
+													where = PREVPREV
+													value < 100
+												}
+											}
+										}
+									}
+									trigger_if = {
+										limit = {
+											holder_scope = { same_realm = ROOT }
+										}
+										NOT = { lower_tier_than = ROOT }
+									}
+								}
+							}
+						}
+						# Good stats
+						preferred_limit = {
+							culture_group = ROOT
+							OR = {
+								diplomacy = 12
+								intrigue = 12
+								learning = 12
+								martial = 12
+								stewardship = 12
+							}
+						}
+						preferred_limit = {
+							OR = {
+								diplomacy = 12
+								intrigue = 12
+								learning = 12
+								martial = 12
+								stewardship = 12
+							}
+						}
+						# Ok stats
+						preferred_limit = {
+							culture_group = ROOT
+							OR = {
+								diplomacy = 8
+								intrigue = 8
+								learning = 8
+								martial = 8
+								stewardship = 8
+								is_smart_trigger = yes
+								is_strong_trigger = yes
+							}
+						}
+						preferred_limit = {
+							OR = {
+								diplomacy = 8
+								intrigue = 8
+								learning = 8
+								martial = 8
+								stewardship = 8
+								is_smart_trigger = yes
+								is_strong_trigger = yes
+							}
+						}
+						# Attractive
+						preferred_limit = {
+							culture_group = ROOT
+							is_attractive_trigger = yes
+						}
+						preferred_limit = {
+							is_attractive_trigger = yes
+						}
+						# Prefer same culture over just anyone
+						preferred_limit = {
+							culture_group = ROOT
+						}
+
+						save_event_target_as = AI_suitor
+					}
+				}
+				else = {
+					random_character = {
+						limit = {
+							ai = yes
+							# Can't be too far away
+							OR = {
+								same_realm = ROOT
+								distance = {
+									who = ROOT
+									value < 200
+								}
+							}
+							can_marry_ROOT_trigger = yes
+							# Keep everyone in their place
+							OR = {
+								is_ruler = no
+								real_tier = BARON
+							}
+							NOR = {
+								dynasty = none
+								trait = eunuch
+								trait = celibate
+								trait = infirm
+								trait = incapable
+								is_close_relative = ROOT
+								liege = { ai = no }
+								any_liege = { is_close_relative = PREV }
+								any_liege = { is_lover = PREV }
+								any_heir_title = { always = yes }
+								any_pretender_title = { always = yes }
+							}
+						}
+						# Has a claim I want
+						preferred_limit = {
+							culture_group = ROOT
+							any_claim = {
+								NOT = { claimed_by = ROOT }
+								OR = {
+									holder_scope = { is_vassal_or_below = ROOT }
+									holder_scope = { same_realm = ROOT }
+									capital_scope = {
+										ROOT = {
+											capital_scope = {
+												distance = {
+													where = PREVPREV
+													value < 100
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+						preferred_limit = {
+							any_claim = {
+								NOT = { claimed_by = ROOT }
+								OR = {
+									holder_scope = { is_vassal_or_below = ROOT }
+									holder_scope = { same_realm = ROOT }
+									capital_scope = {
+										ROOT = {
+											capital_scope = {
+												distance = {
+													where = PREVPREV
+													value < 100
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+						# Good stats
+						preferred_limit = {
+							culture_group = ROOT
+							OR = {
+								diplomacy = 12
+								intrigue = 12
+								learning = 12
+								martial = 12
+								stewardship = 12
+							}
+						}
+						preferred_limit = {
+							OR = {
+								diplomacy = 12
+								intrigue = 12
+								learning = 12
+								martial = 12
+								stewardship = 12
+							}
+						}
+						# Ok stats
+						preferred_limit = {
+							culture_group = ROOT
+							OR = {
+								diplomacy = 8
+								intrigue = 8
+								learning = 8
+								martial = 8
+								stewardship = 8
+								is_smart_trigger = yes
+								is_strong_trigger = yes
+							}
+						}
+						preferred_limit = {
+							OR = {
+								diplomacy = 8
+								intrigue = 8
+								learning = 8
+								martial = 8
+								stewardship = 8
+								is_smart_trigger = yes
+								is_strong_trigger = yes
+							}
+						}
+						# Attractive
+						preferred_limit = {
+							culture_group = ROOT
+							is_attractive_trigger = yes
+						}
+						preferred_limit = {
+							is_attractive_trigger = yes
+						}
+						# Prefer same culture over just anyone
+						preferred_limit = {
+							culture_group = ROOT
+						}
+
+						save_event_target_as = AI_suitor
+					}
+				}
+			}
+			# Marry a cousin
+			14 = {
+				trigger = {
+					is_cousin_marriage_religion_trigger = yes
+					any_character = {
+						is_cousin_of = ROOT
+						can_marry_ROOT_trigger = yes
+						ai = yes
+					}
+				}
+				mult_modifier = {
+					factor = 0.5
+					NOT = {
+						any_character = {
+							is_cousin_of = ROOT
+							ai = yes
+							OR = {
+								real_tier = ROOT
+								higher_real_tier_than = ROOT
+							}
+						}
+					}
+				}
+				random_character = {
+					limit = {
+						is_cousin_of = ROOT
+						can_marry_ROOT_trigger = yes
+						ai = yes
+					}
+					# Prefer father's side
+					preferred_limit = {
+						OR = {
+							father = {
+								any_sibling = {
+									is_female = no
+									any_child = { character = ROOT }
+								}
+							}
+							mother = {
+								any_sibling = {
+									is_female = no
+									any_child = { character = ROOT }
+								}
+							}
+						}
+					}
+
+					save_event_target_as = AI_suitor
+				}
+			}
+			# Marry an Aunt/Uncle
+			14 = {
+				trigger = {
+					is_psc_marriage_religion_trigger = yes
+					random_character = {
+						ai = yes
+						any_sibling = {
+							any_child = { character = ROOT }
+						}
+						can_marry_ROOT_trigger = yes
+					}
+				}
+				mult_modifier = { #Avoid marrying aunts and nephews
+					factor = 0.01
+					religion_group = jewish_group
+					is_female = yes
+				}
+
+				random_character = {
+					limit = {
+						ai = yes
+						any_sibling = {
+							any_child = { character = ROOT }
+						}
+						can_marry_ROOT_trigger = yes
+					}
+
+					save_event_target_as = AI_suitor
+				}
+			}
+			# Marry a Niece/Nephew
+			14 = {
+				trigger = {
+					is_psc_marriage_religion_trigger = yes
+					any_sibling = {
+						any_child = {
+							ai = yes
+							can_marry_ROOT_trigger = yes
+						}
+					}
+				}
+				mult_modifier = { # Avoid marrying aunts and nephews
+					factor = 0.01
+					religion_group = jewish_group
+					is_female = no
+				}
+				any_sibling = {
+					preferred_limit = {
+						is_female = no
+					}
+					random_child = {
+						limit = {
+							ai = yes
+							count == 1
+							can_marry_ROOT_trigger = yes
+						}
+
+						save_event_target_as = AI_suitor
+					}
+				}
+			}
+			# Marry a sibling
+			14 = {
+				trigger = {
+					is_bs_marriage_religion_trigger = yes
+					any_sibling = {
+						ai = yes
+						can_marry_ROOT_trigger = yes
+					}
+					trigger_if = {
+						limit = {
+							religion_openly_egyptiain_or_reformed_trigger = yes
+						}
+						higher_real_tier_than = DUKE
+					}
+				}
+				mult_modifier = {
+					factor = 0.5
+					NOT = {
+						any_sibling = {
+							OR = {
+								real_tier = ROOT
+								higher_real_tier_than = ROOT
+							}
+						}
+					}
+				}
+
+				random_sibling = {
+					limit = {
+						ai = yes
+						can_marry_ROOT_trigger = yes
+					}
+
+					save_event_target_as = AI_suitor
+				}
+
+			}
+			# Marry a parent
+			14 = {
+				trigger = {
+					is_pc_marriage_religion_trigger = yes
+					OR = {
+						father = {
+							ai = yes
+							can_marry_ROOT_trigger = yes
+						}
+						mother = {
+							ai = yes
+							can_marry_ROOT_trigger = yes
+						}
+					}
+					trigger_if = {
+						limit = {
+							religion_openly_egyptiain_or_reformed_trigger = yes
+						}
+						higher_real_tier_than = DUKE
+					}
+				}
+				mult_modifier = {
+					factor = 0.5
+					NOR = {
+						father = {
+							OR = {
+								real_tier = ROOT
+								higher_real_tier_than = ROOT
+							}
+						}
+						mother = {
+							OR = {
+								real_tier = ROOT
+								higher_real_tier_than = ROOT
+							}
+						}
+					}
+				}
+
+				if = {
+					limit = {
+						father = {
+							ai = yes
+							can_marry_ROOT_trigger = yes
+						}
+					}
+					father = {
+						save_event_target_as = AI_suitor
+					}
+				}
+				else = {
+					mother = {
+						save_event_target_as = AI_suitor
+					}
+				}
+			}
+			# Marry one of your own children
+			14 = {
+				trigger = {
+					is_pc_marriage_religion_trigger = yes
+					any_child = {
+						ai = yes
+						can_marry_ROOT_trigger = yes
+					}
+					trigger_if = {
+						limit = {
+							religion_openly_egyptiain_or_reformed_trigger = yes
+						}
+						higher_real_tier_than = DUKE
+					}
+				}
+				mult_modifier = {
+					factor = 0.5
+					NOT = {
+						any_child = {
+							OR = {
+								higher_real_tier_than = ROOT
+								real_tier = ROOT
+							}
+						}
+					}
+				}
+
+				random_child = {
+					limit = {
+						ai = yes
+						can_marry_ROOT_trigger = yes
+					}
+
+					save_event_target_as = AI_suitor
+				}
+			}
+		}
+
+		event_target:AI_suitor = {
+			marry_to_ROOT_effect = yes
+			log = "[This.GetTitledName] has married [Root.GetTitledName] (AI Spouse Finder)"
+		}
+
+		clear_event_target = AI_suitor
 	}
 }
