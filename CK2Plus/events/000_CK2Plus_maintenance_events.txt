@@ -78,7 +78,7 @@ narrative_event = {
 }
 
 # 012: Ruler Designer setup
-character_event = {
+province_event = {
 	id = maintPlus.012
 
 	is_triggered_only = yes
@@ -86,18 +86,77 @@ character_event = {
 
 	trigger = {
 		is_save_game = no
-		has_landed_title = d_miaphysite
+		has_province_flag = pulse_province
+	}
+
+	weight_modifier = {
+		days = 1
 	}
 
 	immediate = {
-		# Fix RD Immortal
-		character_event = { id = Plus.374 }
+		any_player = {
+			# Fix RD Immortal
+			if = {
+				limit = { trait = immortal }
 
-		# Secondary Startup Event for RD rulers
-		character_event = { id = Plus.343 }
+				remove_trait = immortal
+				add_trait = immortal
+			}
 
-		# Remove RD Traits
-		character_event = { id = Plus.994 days = 14 }
+			# Fix fired councilor opinions on game start due to new ruler
+			any_courtier_or_vassal = {
+				limit = {
+					has_opinion_modifier = {
+						who = PREV
+						modifier = opinion_recently_fired
+					}
+				}
+				remove_opinion = {
+					who = PREV
+					modifier = opinion_recently_fired
+				}
+			}
+
+			# Remove RD Traits
+			if = {
+				limit = {
+					trait = customize_ruler
+					NOT = { has_character_flag = customizing_ruler }
+				}
+				remove_trait = customize_ruler
+			}
+
+			if = {
+				limit = { trait = minority_culture }
+
+				save_event_target_as = minority_culture
+				remove_trait = minority_culture
+
+				if = {
+					limit = {
+						top_liege = {
+							NOT = {
+								any_realm_province = { culture = event_target:minority_culture }
+							}
+						}
+					}
+					capital_scope = {
+						culture = event_target:minority_culture
+						any_neighbor_province = {
+							if = {
+								limit = {
+									owner = { character = event_target:minority_culture }
+								}
+								random = {
+									chance = 50
+									culture = event_target:minority_culture
+								}
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 }
 
@@ -112,6 +171,9 @@ character_event = {
 # 100: Remove undesireable claims
 # 101: Indian Caste Fix
 # 102: Add Cousin Opinions
+# 103: Remove crowned traits when they're no longer relevant
+# 104: AI Spouse Finder
+# 105: Bloodlust Control
 #
 #######################################
 
@@ -202,21 +264,11 @@ character_event = {
 	hide_window = yes
 
 	trigger = {
-		any_character = {
-			is_cousin_of = ROOT
-			NOT = {
-				has_opinion_modifier = {
-					who = ROOT
-					modifier = opinion_cousin
-				}
-			}
-		}
-	}
+		any_close_relative = {
+			is_aunt_uncle_of = ROOT
 
-	immediate = {
-		any_character = {
-			limit = {
-				is_cousin_of = ROOT
+			any_child = {
+				is_cousin_of = ROOT # Redundant but I don't care
 				NOT = {
 					has_opinion_modifier = {
 						who = ROOT
@@ -224,17 +276,35 @@ character_event = {
 					}
 				}
 			}
-			opinion = {
-				modifier = opinion_cousin
-				who = ROOT
-				years = -1
-			}
-			reverse_opinion = {
-				modifier = opinion_cousin
-				who = ROOT
-				years = -1
-			}
+		}
+	}
 
+	immediate = {
+		any_close_relative = {
+			limit = { is_aunt_uncle_of = ROOT }
+
+			any_child = {
+				limit = {
+					is_cousin_of = ROOT # Redundant but I don't care
+					NOT = {
+						has_opinion_modifier = {
+							who = ROOT
+							modifier = opinion_cousin
+						}
+					}
+				}
+
+				opinion = {
+					modifier = opinion_cousin
+					who = ROOT
+					years = -1
+				}
+				reverse_opinion = {
+					modifier = opinion_cousin
+					who = ROOT
+					years = -1
+				}
+			}
 		}
 	}
 }
