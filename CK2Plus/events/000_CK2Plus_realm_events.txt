@@ -130,6 +130,7 @@ character_event = {
 # 100: Imperial Destruction
 # 101: Emperor picks between two held empires
 # 102: Copy imperial laws to held kingdoms
+# 103: Special Destruction Mechanic for HRE, Byzantium, and Latin Empire
 #
 #######################################
 
@@ -148,12 +149,22 @@ character_event = {
 	trigger = {
 		real_tier = EMPEROR
 		is_nomadic = no
+		num_of_emperor_titles == 1
+		OR = {
+			realm_size < 100
+			num_of_count_titles_in_realm < 35
+		}
 		NOR = {
 			num_of_emperor_titles >= 2
 			primary_title = { is_landless_type_title = yes }
-			realm_size >= 100
-			num_of_count_titles_in_realm >= 35
 			is_offmap_trigger = yes
+		}
+		# Exceptions
+		primary_title = {
+			NOR = {
+				title = e_byzantium
+				title = e_hre
+			}
 		}
 	}
 
@@ -362,6 +373,284 @@ character_event = {
 	}
 }
 
+# 103: Special Destruction Mechanic for HRE, Byzantium, and Latin Empire
+character_event = {
+	id = realmPlus.103
+	is_triggered_only = yes
+
+	picture = GFX_evt_council
+
+	only_independent = yes
+	only_playable = yes
+
+	trigger = {
+		real_tier = EMPEROR
+		is_nomadic = no
+		num_of_emperor_titles == 1
+
+		trigger_if = {
+			limit = { has_landed_title = e_byzantium }
+
+			NOT = { religion = chalcedonian }
+			is_orthodox_branch = no
+			religion_openly_hellenic_or_reformed_trigger = no
+		}
+		trigger_else_if = {
+			limit = { has_landed_title = e_hre }
+
+			NOT = { religion = chalcedonian }
+			is_catholic_branch = no
+		}
+		trigger_else_if = {
+			limit = { has_landed_title = e_latin_empire }
+
+			is_catholic_branch = no
+			num_of_count_titles_in_realm >= 35
+			realm_size >= 100
+		}
+		trigger_else = {
+			always = no
+		}
+	}
+
+	immediate = {
+		primary_title = { save_event_target_as = current_title }
+		if = {
+			limit = {
+				num_of_count_titles_in_realm >= 35
+				realm_size >= 100
+			}
+
+			if = {
+				limit = {
+					has_landed_title = e_byzantium
+					is_catholic_branch = yes
+				}
+				e_latin_empire = { save_event_target_as = emergency_title }
+			}
+			else_if = {
+				limit = {
+					has_landed_title = e_hre
+				}
+				e_germany = { save_event_target_as = emergency_title }
+			}
+			else_if = {
+				limit = {
+					has_landed_title = e_latin_empire
+					is_orthodox_branch = yes
+				}
+				e_byzantium = { save_event_target_as = emergency_title }
+			}
+			else = {
+				set_character_flag = needs_emergency_empire
+			}
+
+			if = {
+				limit = {
+					event_target:emergency_title = { has_holder = yes }
+				}
+				set_character_flag = needs_emergency_empire
+				clear_event_target = emergency_title
+			}
+		}
+		else = {
+			set_character_flag = too_small_for_emergency_empire
+		}
+	}
+
+	desc = {
+		text = EVTDESC_Plus_328
+		trigger = {
+			has_landed_title = e_byzantium
+		}
+	}
+	desc = {
+		text = EVTDESC_Plus_338
+		trigger = {
+			has_landed_title = e_hre
+		}
+	}
+	desc = {
+		text = EVTDESC_Plus_327
+		trigger = {
+			has_landed_title = e_latin_empire
+		}
+	}
+
+	option = {
+		name = I_WILL_CONVERT
+		trigger = {
+			NOT = { trait = zealous }
+		}
+
+		trigger_switch = {
+			on_trigger = has_landed_title
+
+			e_byzantium = {
+				if = {
+					limit = {
+						c_byzantion = {
+							location = {
+								culture = roman
+								religion_group = pagan_group
+							}
+						}
+					}
+					religion = roman_pagan
+				}
+				else_if = {
+					limit = {
+						c_byzantion = {
+							location = { religion_group = pagan_group }
+						}
+						hellenic_pagan = { has_flag = has_been_reformed }
+					}
+					religion = hellenic_pagan_reformed
+				}
+				else_if = {
+					limit = {
+						c_byzantion = {
+							location = { religion_group = pagan_group }
+						}
+					}
+					religion = hellenic_pagan
+				}
+				else = {
+					random_character = {
+						limit = {
+							is_orthodox_branch = yes
+							is_heretic = no
+						}
+						reverse_religion = ROOT
+					}
+				}
+			}
+			e_hre = {
+				random_character = {
+					limit = {
+						is_catholic_branch = yes
+						is_heretic = no
+					}
+					reverse_religion = ROOT
+				}
+			}
+			e_latin_empire = {
+				random_character = {
+					limit = {
+						is_catholic_branch = yes
+						is_heretic = no
+					}
+					reverse_religion = ROOT
+				}
+			}
+		}
+
+		add_character_modifier = {
+			name = recently_converted
+			duration = 730
+		}
+
+		ai_chance = {
+			factor = 5
+
+			trigger = {
+				NOT = { trait = content }
+			}
+		}
+	}
+	option = {
+		name = OK
+		trigger = {
+			has_character_flag = too_small_for_emergency_empire
+		}
+
+		# Emergency Kingdom for dumb emperors (usually AI)
+		if = {
+			limit = {
+				num_of_king_titles == 0
+				capital_scope = { kingdom = { has_holder = no } }
+			}
+			capital_scope = { kingdom = { gain_title = ROOT } }
+		}
+		else = {
+			log = "Unable to create emergency kingdom when shattering empire. Ruler rank demoted."
+		}
+		# You are the weakest link, goodbye.
+		primary_title = { destroy_landed_title = THIS }
+
+		ai_chance = {
+			factor = 2
+		}
+	}
+	option = {
+		name = OK
+		trigger = {
+			NOT = { has_character_flag = too_small_for_emergency_empire }
+		}
+
+		set_character_flag = centralize_without_penalties
+
+		if = {
+			limit = { has_character_flag = needs_emergency_empire }
+
+			capital_scope = {
+				kingdom = {
+					create_title = {
+						tier = EMPEROR
+						landless = no
+						temporary = no
+						custom_created = yes
+						culture = ROOT
+						base_title = THIS
+					}
+					new_title = {
+						save_event_target_as = emergency_title
+					}
+				}
+			}
+		}
+
+		event_target:emergency_title = {
+			gain_title = ROOT
+			hidden_effect = {
+				copy_title_laws = event_target:current_title
+				copy_title_history = event_target:current_title
+			}
+		}
+		hidden_effect = {
+			event_target:current_title = {
+				any_realm_character = {
+					if = {
+						limit = { has_strong_claim = PREV }
+						remove_claim = PREV
+						add_pressed_claim = event_target:emergency_title
+					}
+					else_if = {
+						limit = { has_weak_claim = PREV }
+						remove_claim = PREV
+						add_weak_pressed_claim = event_target:emergency_title
+					}
+				}
+				destroy_landed_title = THIS
+			}
+
+			any_vassal = {
+				limit = {
+					NOT = { has_character_flag = considered_for_independence }
+					primary_title = {
+						de_jure_liege_or_above = event_target:current_title
+					}
+				}
+
+				character_event = { id = Plus.430 days = 3 }
+			}
+		}
+
+		ai_chance = {
+			factor = 2
+		}
+	}
+}
 
 #######################################
 #
