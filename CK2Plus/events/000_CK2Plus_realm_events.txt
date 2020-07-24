@@ -809,38 +809,86 @@ character_event = {
 	}
 }
 
-# 602: Dishonorable Trait Degredation
+# 604: Tributary Maintenance
 character_event = {
-	id = realmPlus.602
+	id = realmPlus.604
 	is_triggered_only = yes
 	hide_window = yes
 
 	trigger = {
-		check_variable = {
-			which = dishonorable
-			value > 0
+		trigger_if = {
+			limit = { is_tributary = no }
+			check_variable = {
+				which = tributary_years
+				value > 0
+			}
 		}
 	}
 
 	immediate = {
-		dishonorable_degredation_effect = yes
-	}
-}
-
-# 603: Tyrant Trait Degradation
-character_event = {
-	id = realmPlus.603
-	is_triggered_only = yes
-	hide_window = yes
-
-	trigger = {
-		check_variable = {
-			which = tyrant
-			value > 0
+		# Remove tributary status if either tributary or overlord vassalized
+		if = {
+			limit = {
+				is_tributary = yes
+				OR = {
+					independent = no
+					suzerain = { independent = no }
+				}
+			}
+			suzerain = {
+				log = "---> [This.GetBestName] was removed as suzerain of [Root.GetBestName], as one of them is not independent"
+				remove_tributary = ROOT
+			}
 		}
-	}
 
-	immediate = {
-		tyrant_minus_1_effect = yes
+		# Clear tributary years if no longer a tributary
+		if = {
+			limit = { is_tributary = no }
+			set_variable = {
+				which = tributary_years
+				value = 0
+			}
+		}
+		else = {
+			# Transfer tributary years to another title
+			if = {
+				limit = {
+					any_demesne_title = {
+						is_primary_holder_title = no
+						check_variable = {
+							which = tributary_years
+							value > 0
+						}
+					}
+				}
+				random_demesne_title = {
+					limit = {
+						is_primary_holder_title = no
+						check_variable = {
+							which = tributary_years
+							value > 0
+						}
+					}
+					holder_scope = {
+						primary_title = {
+							change_variable = {
+								which = tributary_years
+								which = PREVPREV
+							}
+						}
+					}
+					set_variable = {
+						which = tributary_years
+						value = 0
+					}
+				}
+			}
+
+			# Increment Years
+			change_variable = {
+				which = tributary_years
+				value = 1
+			}
+		}
 	}
 }
