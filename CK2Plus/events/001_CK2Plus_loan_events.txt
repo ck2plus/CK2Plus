@@ -1,0 +1,240 @@
+namespace = loanPlus
+
+type_event = {
+	id = namespace.0001
+
+	picture = GFX_evt_council
+
+	only_rulers = yes
+
+	trigger = {
+		check_variable = {
+			which = loan_amount
+			value > 0
+		}
+		NOT = { has_character_modifier = loan_timer }
+	}
+
+	mean_time_to_happen = {
+		days = 1
+	}
+
+	immediate = {
+		add_character_modifier = {
+			name = loan_timer
+			years = 2
+		}
+
+		set_variable = {
+			which = loan_interest
+			which = loan_amount
+		}
+		set_variable = {
+			which = loan_plus_interest
+			which = loan_amount
+		}
+
+		multiply_variable = {
+			which = loan_interest
+			value = 0.8 # 4% APR
+		}
+
+		change_variable = {
+			which = loan_plus_interest
+			which = loan_interest
+		}
+	}
+
+	desc = {
+		text = EVTDESC38002 # TODO: move to correct namespace
+
+		trigger = {
+			NOT = { has_character_modifier = borrowed_from_jews }
+		}
+	}
+
+	desc = {
+		text = EVTDESC_Plus_625 # TODO: move to correct namespace
+
+		trigger = {
+			has_character_modifier = borrowed_from_jews
+		}
+	}
+
+	option = {
+		name = EVTOPTA38002 # Return the money
+
+		trigger = {
+			wealth >= loan_plus_interest
+		}
+
+		multiply_variable = {
+			which = loan_plus_interest
+			value = -1
+		}
+
+		wealth = loan_plus_interest
+
+		set_variable = {
+			which = loan_amount
+			value = 0
+		}
+	}
+
+	option = {
+		name = EVTOPTB38002 # Pay the interest
+
+		trigger = {
+			wealth >= loan_interest
+		}
+
+		multiply_variable = {
+			which = loan_interest
+			value = -1
+		}
+
+		wealth = loan_interest
+		# Variable is "fixed" next time the event fires
+	}
+
+	option = {
+		name = EVTOPTC38002 # Cannot afford it
+
+		trigger = {
+			wealth < loan_interest
+		}
+
+		divide_variable = {
+			which = loan_amount
+			value = 2
+		}
+		multiply_variable = {
+			which = loan_amount
+			value = -1
+		}
+
+		prestige = loan_amount
+
+		set_variable = {
+			which = loan_amount
+			which = loan_plus_interest
+		}
+	}
+
+	option = {
+		name = EVTOPTD38002 # Get rid of them!
+
+		multiply_variable = {
+			which = loan_amount
+			value = 2
+		}
+		multiply_variable = {
+			which = loan_amount
+			value = -1
+		}
+
+		prestige = loan_amount
+		dishonorable_plus_1_effect = yes
+
+		if = {
+			limit = { has_character_modifier = borrowed_from_jews }
+
+			add_character_modifier = {
+				name = expelled_jewish
+				duration = -1
+				inherit = yes
+			}
+
+			custom_tooltip = {
+				text = jews_are_expelled
+
+				character_event = { id = SoA.105 }
+
+				add_character_modifier = {
+					name = expelled_jews_timer
+					years = 20
+					hidden = yes
+				}
+			}
+
+			any_friend = {
+				limit = { religion_group = jewish_group }
+				remove_friend = ROOT
+			}
+		}
+		else = {
+			set_character_flag = offended_moneylenders
+		}
+
+		any_demesne_province = {
+			add_province_modifier = {
+				name = offended_moneylenders
+				years = 10
+			}
+		}
+
+		set_variable = {
+			which = loan_amount
+			value = 0
+		}
+
+		if = {
+			limit = {
+				any_vassal = { leads_faction = faction_prosperity }
+			}
+
+			custom_tooltip = {
+				text = PROSPERITYFACTIONMOODMINUS
+
+				hidden_effect = {
+					random_vassal = {
+						limit = { leads_faction = faction_prosperity }
+						set_variable = {
+							which = faction_mood_decrease
+							value = 8
+						}
+					}
+					character_event = {
+						id = PlusFaction.200
+						days = 1
+					}
+				}
+			}
+		}
+
+		ai_chance = {
+			factor = 1
+
+			trigger = {
+				OR = {
+					trait = wroth
+					trait = lunatic
+					trait = possessed
+				}
+			}
+		}
+	}
+
+	after = {
+		if = {
+			limit = {
+				check_variable = {
+					which = loan_amount
+					value <= 0
+				}
+			}
+
+			remove_character_modifier = loan_timer
+		}
+
+		# Clean up the variables
+		set_variable = {
+			which = loan_interest
+			value = 0
+		}
+		set_variable = {
+			which = loan_plus_interest
+			value = 0
+		}
+	}
+}
