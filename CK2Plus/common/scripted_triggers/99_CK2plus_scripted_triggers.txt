@@ -202,10 +202,10 @@ can_change_succession_law = {
 }
 
 can_destroy_title_trigger = {
+	higher_tier_than = DUKE
 	is_primary_holder_title = yes
 	is_landless_type_title = no
 	temporary = no
-	higher_tier_than = DUKE
 	has_law = crown_authority_0
 	NOT = { has_title_flag = do_not_destroy }
 }
@@ -461,9 +461,22 @@ faction_council_trigger = {
 	}
 }
 
-# TODO: re-add other imperial governments
 has_imperial_government_trigger = {
-	government = roman_imperial_government
+	is_feudal = yes
+
+	trigger_if = {
+		limit = { independent = yes }
+
+		OR = {
+			has_law = imperial_administration
+			has_law = ze_administration_laws_2
+		}
+	}
+	trigger_else = {
+		any_liege = {
+			has_imperial_government_trigger = yes
+		}
+	}
 }
 
 holy_order_not_expelled_trigger = {
@@ -790,15 +803,15 @@ holy_order_not_expelled_trigger = {
 }
 
 in_command_trigger = {
-	custom_tooltip = {
-		text = IN_COMMAND_TOOLTIP
-		hidden_trigger = {
-			in_command = yes
+	trigger_if = {
+		limit = {
 			OR = {
-				war = yes
 				any_liege = { war = yes }
+				war = yes
 			}
 		}
+
+		in_command = yes
 	}
 }
 
@@ -821,13 +834,16 @@ is_feminist_trigger = {
 		has_religion_feature = religion_equal
 		#TODO: figure out whether we need to make an is_misandrist_trigger or something and put this there? We use this trigger in a lot of places and Matriarchal religions may not be best suited for all of them
 		has_religion_feature = religion_matriarchal
-		AND = {
-			is_ruler = yes
+
+		trigger_if = {
+			limit = { is_ruler = yes }
+
 			primary_title = { has_law = status_of_women_4 }
 		}
-		AND = {
-			is_ruler = no
-			liege = { primary_title = { has_law = status_of_women_4 } }
+		trigger_else = {
+			liege = {
+				primary_title = { has_law = status_of_women_4 }
+			}
 		}
 	}
 }
@@ -840,11 +856,28 @@ is_usable_claim_trigger = {
 		is_contested = yes # is already being contested in some form of Claim or Succession War
 		is_pretender = yes # Checks vs ROOT character
 		holder_scope = { has_regent = yes }
-		AND = {
-			higher_tier_than = duke
+
+		trigger_if = {
+			limit = { higher_tier_than = DUKE }
+
 			holder_scope = { trait = uncrowned }
 		}
-		AND = {
+
+		trigger_if = {
+			limit = {
+				OR = {
+					title = k_navarra
+					de_jure_liege_or_above = k_navarra
+				}
+			}
+
+			is_female = yes
+			culture = basque
+		}
+
+		trigger_if = {
+			limit = { is_female = yes }
+
 			succ_law_title = {
 				NOR = {
 					has_law = enatic_succession
@@ -852,25 +885,13 @@ is_usable_claim_trigger = {
 					has_law = true_cognatic_succession
 				}
 			}
-			holder_scope = { is_female = yes }
 		}
-		AND = {
+		trigger_else = {
 			succ_law_title = {
 				OR = {
 					has_law = enatic_succession
 					has_law = enatic_cognatic_succession
 				}
-			}
-			holder_scope = { is_female = no }
-		}
-		AND = {
-			ROOT = {
-				is_female = yes
-				culture = basque
-			}
-			OR = {
-				de_jure_liege_or_above = k_navarra
-				title = k_navarra
 			}
 		}
 	}
@@ -921,134 +942,6 @@ empire_creation_kingdom_rules_trigger = {
 					tier = KING
 					is_titular = no
 					count = 3
-				}
-			}
-		}
-	}
-}
-
-may_create_duchy_trigger = {
-	is_adult = yes
-	has_regent = no
-	war = no
-	trigger_if = {
-		limit = { independent = no }
-		custom_tooltip = {
-			text = NOT_IMPERIAL_GOVERNMENT
-			hidden_trigger = { has_imperial_government_trigger = no }
-		}
-	}
-	trigger_if = {
-		limit = { FROM = { is_titular = yes } }
-		lower_real_tier_than = DUKE
-	}
-}
-
-may_create_empire_trigger = {
-	is_title_active = FROM
-	is_adult = yes
-	is_nomadic = no
-	has_regent = no
-	war = no
-	empire_creation_kingdom_rules_trigger = yes
-	ruled_years = 5
-
-	trigger_if = {
-		limit = { real_tier = EMPEROR }
-		FROM = { is_titular = yes }
-		primary_title = { is_titular = no }
-	}
-}
-
-may_create_kingdom_trigger = {
-	is_title_active = FROM
-	is_adult = yes
-	has_regent = no
-	war = no
-	ruled_years = 5
-	trigger_if = {
-		limit = { independent = no }
-		custom_tooltip = {
-			text = NOT_IMPERIAL_GOVERNMENT
-			hidden_trigger = { has_imperial_government_trigger = no }
-		}
-	}
-	trigger_if = {
-		limit = {
-			FROM = { is_titular = yes }
-		}
-		lower_real_tier_than = KING
-	}
-	trigger_if = {
-		limit = {
-			top_liege = { has_law = kingdom_lockout_0 }
-		}
-		custom_tooltip = {
-			text = NOT_RESTRICTED_BY_LOCKOUT_LAW
-
-			hidden_trigger = {
-				trigger_if = {
-					limit = {
-						top_liege = { has_landed_title = e_hre }
-					}
-					FROM = {
-						OR = {
-							title = k_bohemia
-							title = k_arch_austria
-							title = k_brandenburg
-							title = k_grand_bavaria
-							title = k_grand_franconia
-							title = k_grand_luxembourg
-							title = k_saxon
-							title = k_swabia
-							title = k_grand_tuscany
-							title = k_grand_milan
-							title = k_grand_naples
-							title = k_grand_sicily
-						}
-					}
-				}
-				trigger_else = {
-					always = no
-				}
-			}
-		}
-	}
-
-	# AI stuff
-	trigger_if = {
-		limit = { ai = yes }
-		trigger_if = {
-			limit = { has_landed_title = k_france }
-
-			OR = {
-				has_character_flag = is_charlemagne
-				FROM = { NOT = { title = k_aquitaine } }
-			}
-		}
-		trigger_if = {
-			limit = {
-				prestige < 1000
-				any_demesne_title = {
-					tier = DUKE
-					count < 3
-				}
-			}
-			FROM = {
-				OR = {
-					is_titular = no
-					title = k_bohemia
-					title = k_arch_austria
-					title = k_brandenburg
-					title = k_grand_bavaria
-					title = k_grand_franconia
-					title = k_grand_luxembourg
-					title = k_saxon
-					title = k_swabia
-					title = k_grand_tuscany
-					title = k_grand_milan
-					title = k_grand_naples
-					title = k_grand_sicily
 				}
 			}
 		}
