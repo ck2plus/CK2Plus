@@ -14,95 +14,197 @@
 #
 # Naming convention:  xxxx_trigger
 
+# Scopes from attacker
 can_attack_patriarch_trigger = {
 	trigger_if = {
 		limit = {
-			ROOT = {
-				religion_group = christian
-				has_pentarchy = yes
+			religion_group = christian
+			has_pentarchy = yes
+
+			PREV = {
+				is_holy_site = ROOT # generally speaking, the holy sites are the pentarchies
+				holder_scope = { religion = ROOT }
 			}
-			is_holy_site = ROOT # generally speaking, the holy sites are the pentarchies
-			holder_scope = { religion = ROOT }
 		}
 
-		ROOT = {
-			higher_real_tier_than = DUKE
-			NOT = { same_realm = FROM }
-		}
+		higher_real_tier_than = DUKE
+		NOT = { same_realm = FROM }
 	}
 }
 
 can_attack_tributary_trigger = {
 	trigger_if = {
 		limit = {
-			FROM = {
+			any_tributary = {
 				OR = {
-					pays_tribute_to = ROOT
-					any_liege = { pays_tribute_to = ROOT }
+					character = FROM
+					is_liege_or_above_of = FROM
 				}
 			}
 		}
 
-		ROOT = {
-			OR = {
-				trait = deceitful
-				trait = arbitrary
-			}
+		OR = {
+			trait = deceitful
+			trait = arbitrary
 		}
 	}
 }
 
 can_attack_religion_head_trigger = {
-	attacker = {
+	trigger_if = {
+		limit = {
+			rightful_religious_head = defender
+			OR = {
+				religion_group = christian
+				religion_group = jewish_group
+			}
+		}
+
+		OR = {
+			trait = cynical
+			trait = lunatic
+			trait = excommunicated
+			has_character_modifier = voice_of_satan
+		}
+	}
+}
+
+# Should be at the start of most CBs
+# Scopes from attacker for ease of use
+can_use_cb_preamble = {
+	NOT = { has_character_modifier = holy_truce_timer }
+
+	# TODO: Move the below to ai_will_do for the relevant CBs
+	trigger_if = {
+		limit = { ai = yes }
+		is_inaccessible_trigger = no
+	}
+
+	FROM = {
+		NOT = { has_character_modifier = holy_truce_timer }
+
 		trigger_if = {
 			limit = {
-				rightful_religious_head = FROM
-				OR = {
-					religion_group = christian
-					religion_group = jewish_group
-				}
+				is_tributary = yes
+				NOT = { pays_tribute_to = PREV }
 			}
 
-			OR = {
-				trait = cynical
-				trait = lunatic
-				trait = excommunicated
-				has_character_modifier = voice_of_satan
-			}
-		}
-	}
-}
-
-cb_no_nap_with_suzerain_trigger = {
-	FROM = {
-		trigger_if = {
-			limit = { is_tributary = yes }
-			OR = {
-				pays_tribute_to = ROOT
-				suzerain = {
-					NOR = {
-						has_non_aggression_pact_with = ROOT
-						is_allied_with = ROOT
-					}
+			suzerain = {
+				NOR = {
+					has_non_aggression_pact_with = PREVPREV
+					is_allied_with = PREVPREV
 				}
 			}
 		}
 	}
 }
 
-cb_other_no_nap_with_suzerain_trigger = {
-	FROM = {
-		trigger_if = {
-			limit = { is_tributary = yes }
-			OR = {
-				pays_tribute_to = FROMFROM
-				suzerain = {
-					NOR = {
-						has_non_aggression_pact_with = FROMFROM
-						is_allied_with = FROMFROM
-					}
-				}
+can_use_holy_war_cb = {
+	pacifist = no
+
+	# Basic Requirements
+	trigger_if = {
+		limit = { religion_group = FROM }
+
+		NOT = { religion = FROM }
+		OR = {
+			is_heresy_of = FROM
+			is_parent_religion = FROM
+			religion_group = indian_group
+			religion_group = muslim
+			religion_group = pagan_group
+			religion = paulician
+		}
+	}
+
+	# Same Realm
+	trigger_if = {
+		limit = {
+			FROM = { same_realm = PREV }
+			top_liege = {
+				NOT = { religion_group = PREV }
 			}
 		}
+		culture_group = tibetan_group
+		OR = {
+			religion = buddhist
+			religion = bon
+		}
+	}
+	trigger_else_if = {
+		limit = {
+			FROM = { same_realm = PREV }
+		}
+		top_liege = { religion_group = PREV }
+	}
+
+	# Specific Religion Requirements
+	trigger_if = { # Pagans
+		limit = { religion_group = pagan_group }
+		OR = {
+			is_reformed_religion = yes
+			any_realm_title = {
+				is_holy_site = PREV
+				count = 3
+			}
+		}
+	}
+	trigger_else_if = { # Buddhist and Hindu
+		limit = {
+			OR = {
+				religion = buddhist
+				religion = hindu
+			}
+			FROM = { religion_group = indian_group }
+		}
+		FROM = {
+			NOR = {
+				religion = buddhist
+				religion = hindu
+				religion = jain
+			}
+		}
+	}
+	trigger_else_if = { # Cathar
+		limit = { religion = cathar }
+		has_global_flag = cathar_war
+	}
+
+	# Patricians
+	trigger_if = {
+		limit = { is_patrician = yes }
+		independent = yes
+	}
+}
+
+sufficient_treasury_for_war_trigger = {
+	# Does not have a loan OR Does not have enough treasury to wage war
+	check_variable = {
+		which = loan_amount
+		value <= 49
+	}
+
+	trigger_if = {
+		limit = { real_tier = BARON }
+
+		wealth > 50
+	}
+	trigger_else_if = {
+		limit = { real_tier = COUNT }
+
+		wealth > 100
+	}
+	trigger_else_if = {
+		limit = { real_tier = DUKE }
+
+		wealth > 150
+	}
+	trigger_else_if = {
+		limit = { real_tier = KING }
+
+		wealth > 200
+	}
+	trigger_else = {
+		wealth > 300
 	}
 }
