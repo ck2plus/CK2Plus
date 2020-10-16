@@ -59,21 +59,12 @@ claim = {
 							is_contested = no # Already being contested in some war
 							holder_scope = {
 								has_regent = no
-								NOT = { trait = uncrowned }
+								is_crowned_trigger = no
 							}
 						}
 						trigger_if = {
 							limit = {
-								NOR = {
-									has_game_rule = {
-										name = gender
-										value = all
-									}
-									has_game_rule = {
-										name = gender
-										value = plus
-									}
-								}
+								has_gender_equal_game_rule_trigger = no
 							}
 							ROOT = { # attacking claimant
 								trigger_if = {
@@ -113,23 +104,6 @@ claim = {
 						limit = { is_primary_type_title = yes } # Static Mercs, the Pope, Holy Orders, etc.
 						NOT = { lower_tier_than = PREVPREV } # Should not claim titles above their own tier
 					}
-				}
-			}
-
-			# Only cynics or adventurers can press claims on same-faith holy orders unless one is a player
-			trigger_if = {
-				limit = {
-					ai = yes
-					FROM = {
-						ai = yes
-						holy_order = yes
-						lower_tier_than = king
-						religion = ROOT
-					}
-				}
-				OR = {
-					has_character_flag = claimant_adventurer
-					trait = cynical
 				}
 			}
 		}
@@ -212,13 +186,9 @@ claim = {
 		}
 
 		# CK2Plus
-
 		# Decentralize target realm
 		title_reduce_CA_effect = yes
 		title_reduce_TO_effect = yes
-		# Factions Stuff
-
-
 	}
 
 	on_fail_title = {
@@ -356,6 +326,8 @@ claim = {
 		factor = 1
 
 		trigger = {
+			is_contested = no
+
 			attacker = {
 				sufficient_treasury_for_war_trigger = yes
 
@@ -367,6 +339,28 @@ claim = {
 
 				# Only dishonorable ai will break the a tributary's trust
 				can_attack_tributary_trigger = yes
+
+				# Only cynics or adventurers can press claims on same-faith holy orders unless one is a player
+				trigger_if = {
+					limit = {
+						FROM = {
+							ai = yes
+							holy_order = yes
+							lower_tier_than = king
+							religion = ROOT
+						}
+					}
+					OR = {
+						has_character_flag = claimant_adventurer
+						trait = cynical
+					}
+				}
+
+				trigger_if = {
+					limit = { controls_religion = yes }
+
+					realm_size >= 1
+				}
 
 				OR = {
 					FROM = { higher_tier_than = count }
@@ -380,7 +374,9 @@ claim = {
 					limit = { is_nomadic = yes }
 
 					trigger_if = {
-						limit = { ROOT = { is_female = yes } }
+						limit = {
+							ROOT = { is_female = yes }
+						}
 
 						NOT = { has_law = agnatic_succession }
 					}
@@ -393,22 +389,12 @@ claim = {
 
 		modifier = {
 			factor = 1.2
-			ROOT = {
+
+			attacker = {
 				realm_levy_diff = {
-					who = FROM
+					who = defender
 					value = 5000
 				}
-			}
-		}
-		modifier = {
-			factor = 0
-			is_contested = yes
-		}
-		modifier = {
-			factor = 0
-			ROOT = {
-				controls_religion = yes
-				NOT = { realm_size = 1 }
 			}
 		}
 	}
@@ -506,7 +492,7 @@ other_claim = {
 							is_contested = no # Already being contested in some war
 							holder_scope = {
 								has_regent = no
-								NOT = { trait = uncrowned }
+								is_crowned_trigger = no
 							}
 						}
 						ROOT = { # claimant
@@ -578,7 +564,6 @@ other_claim = {
 		}
 
 		# CK2Plus
-
 		# You can't press claims against someone you installed into that title
 		holder_scope = {
 			NOT = {
@@ -649,9 +634,7 @@ other_claim = {
 					duration = 1
 					hidden = yes
 				}
-				hidden_tooltip = {
-					clr_character_flag = claim_being_pressed
-				}
+				clr_character_flag = claim_being_pressed
 			}
 		}
 	}
@@ -845,12 +828,9 @@ other_claim = {
 		}
 
 		# CK2Plus
-
 		# Decentralize target title
 		title_reduce_CA_effect = yes
 		title_reduce_TO_effect = yes
-
-
 	}
 
 	# Starting scope is attacker
@@ -1103,7 +1083,8 @@ other_claim = {
 	}
 }
 
-# 2 Disabled
+# Disabled
+# 2
 claim_on_liege = {
 	name = CB_NAME_CLAIM
 	war_name = WAR_NAME_CLAIM_LIEGE
@@ -1121,15 +1102,12 @@ claim_on_liege = {
 
 	sort_priority = 910
 
-	can_use = {
-		always = no
-	}
-
 	can_use_gui = {
 		check_if_crusader_trigger = yes
 	}
 
 	can_use_title = {
+		always = no # Disabled in Plus
 		is_vice_royalty = no
 
 		# Attacker
@@ -1148,21 +1126,14 @@ claim_on_liege = {
 						limit = {
 							is_pretender = no # Checks vs ROOT character
 							is_contested = no # Already being contested in some war
-							holder_scope = {
-								has_regent = no
-								NOT = { trait = uncrowned }
-							}
+							holder_scope = { has_regent = no }
 						}
 						trigger_if = {
 							limit = {
-								NOR = {
+								NOT = {
 									has_game_rule = {
 										name = gender
 										value = all
-									}
-									has_game_rule = {
-										name = gender
-										value = plus
 									}
 								}
 							}
@@ -1258,18 +1229,20 @@ claim_on_liege = {
 
 		defender = {
 			hidden_effect = { disband_event_forces = faction_loyalists }
-			# lower crown authority
-			any_demesne_title = { # All titles
-				limit = {
-					higher_tier_than = DUKE
-					NOT = { has_law = crown_authority_0 }
-				}
-				trigger_switch = {
-					on_trigger = has_law
-					crown_authority_1 = { add_law = crown_authority_0 }
-					crown_authority_2 = { add_law = crown_authority_1 }
-					crown_authority_3 = { add_law = crown_authority_2 }
-					crown_authority_4 = { add_law = crown_authority_3 }
+			if = { # lower crown authority
+				limit = { NOT = { has_dlc = "Conclave" } }
+				any_demesne_title = { # All titles
+					limit = {
+						higher_tier_than = DUKE
+						NOT = { has_law = crown_authority_0 }
+					}
+					trigger_switch = {
+						on_trigger = has_law
+						crown_authority_1 = { add_law = crown_authority_0 }
+						crown_authority_2 = { add_law = crown_authority_1 }
+						crown_authority_3 = { add_law = crown_authority_2 }
+						crown_authority_4 = { add_law = crown_authority_3 }
+					}
 				}
 			}
 		}
@@ -1532,18 +1505,9 @@ claim_on_liege_plot = {
 				if = {
 					limit = { independent = yes }
 					any_vassal = {
-						character_event = { id = Plus.430 days = 3}
+						character_event = { id = Plus.430 days = 3 }
 					}
 				}
-			}
-		}
-
-		# add victory modifier for the 'Win a War' ambition
-		any_attacker = {
-			add_character_modifier = {
-				name = victory_timer
-				duration = 1
-				hidden = yes
 			}
 		}
 	}
@@ -1579,6 +1543,7 @@ claim_on_liege_plot = {
 		# CK2Plus
 		title_reduce_CA_effect = yes
 		title_reduce_TO_effect = yes
+
 		defender = {
 			any_demesne_title = {
 				title_reduce_CA_effect = yes
@@ -3957,8 +3922,8 @@ tribal_invasion = {
 			if = {
 				limit = {
 					OR = {
-						character = 159136 # Árpád
-						character = 159137 # Álmos
+						character = 159136 # ï¿½rpï¿½d
+						character = 159137 # ï¿½lmos
 					}
 					has_dlc = "Holy Fury"
 					NOT = {
