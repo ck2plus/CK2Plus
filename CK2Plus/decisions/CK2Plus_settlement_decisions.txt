@@ -8,18 +8,18 @@
 #	realm_owned: all settlements in the same top realm as the AI
 #	dynasty_owned: all settlements owned by members of the same dynasty
 #	all: all settlements (Avoid if possible. VERY CPU-HEAVY!)
-#	
+#
 
 settlement_decisions = {
 
 	get_rid_of_settlement = {
 		filter = owned
 		ai_target_filter = owned
-		
+
 		from_potential = {
 			ai = no
 			is_nomadic = no
-		}	
+		}
 		potential = {
 			has_siege = no
 			controlled_by = FROM
@@ -78,7 +78,7 @@ settlement_decisions = {
 			factor = 0
 		}
 	}
-	
+
 	nomad_absorb_tribal = {
 		filter = vassal_owned
 		ai_target_filter = vassal_owned
@@ -132,6 +132,209 @@ settlement_decisions = {
 		}
 		ai_will_do = {
 			factor = 1
+		}
+	}
+
+	begin_pillage_settlement = {
+		only_playable = yes
+		filter = realm_owned
+		ai_target_filter = realm_owned
+		is_high_prio = yes
+
+		from_potential = {
+			is_playable = yes
+			OR = {
+				is_nomadic = yes
+				is_tribal = yes
+			}
+			has_dlc = "Horse Lords"
+			ai = no
+		}
+
+		potential = {
+			NOT = { holding_type = nomad }
+			OR = {
+				NOT = { holding_type = tribal }
+				FROM = { is_tribal = no }
+			}
+			OR = {
+				FROM = { is_nomadic = yes }
+				location = {
+					num_of_settlements = 2
+				}
+			}
+			owner = { character = FROM }
+			has_any_building = yes
+			NOT = { has_title_flag = nomad_pillage_flag }
+			NOT = { is_allowed_holding_type = FROM } #Not if allowed holding
+		}
+		allow = {
+			location = {
+				NOT = { has_province_modifier = recently_burnt_the_land }
+				owner = { character = FROM }
+			}
+			FROM = {
+				OR = {
+					independent = yes
+					location = {
+						NOT = { has_province_modifier = recently_burnt_the_land }
+						owner = { character = PREVPREV }
+					}
+					custom_tooltip = {
+						text = TT_NOT_SAME_REALM
+						hidden_tooltip = {
+							top_liege = {
+								PREVPREV = {
+									holder_scope = {
+										top_liege = {
+											NOT = { character = PREVPREVPREV }
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		effect = {
+			set_title_flag = nomad_pillage_flag
+			save_event_target_as = pillaged_settlement
+
+			log = "[From.GetTitledName] has pillaged [Root.GetName]"
+
+			if = {
+				limit = { NOT = { holding_type = tribal } }
+				location = {
+					owner = {
+						if = {
+							limit = { character = FROM }
+							FROM = { wealth = 50 }
+						}
+						if = {
+							limit = { NOT = { character = FROM } }
+							FROM = { wealth = 10 }
+						}
+					}
+				}
+				FROM = {
+					random_list = {
+						10 = { military_techpoints = 5 }
+						10 = { economy_techpoints = 5 }
+						10 = { culture_techpoints = 5 }
+					}
+				}
+			}
+			if = {
+				limit = { holding_type = tribal }
+				location = {
+					owner = {
+						if = {
+							limit = { character = FROM }
+							FROM = { wealth = 25 }
+						}
+						if = {
+							limit = { NOT = { character = FROM } }
+							FROM = { wealth = 5 }
+						}
+					}
+				}
+			}
+
+			location = {
+				if = {
+					limit = {
+						any_province_holding = {
+							NOT = { holding_type = nomad }
+						}
+					}
+					if = {
+						limit = { owner = { character = FROM } }
+						add_province_modifier = {
+							modifier = burnt_the_land
+							years = 8
+							stacking = yes
+						}
+						add_province_modifier = {
+							modifier = recently_burnt_the_land
+							months = 6
+						}
+					}
+					if = {
+						limit = { NOT = { owner = { character = FROM } } }
+						add_province_modifier = {
+							modifier = recently_burnt_the_land_not_owner
+							years = 10
+						}
+					}
+				}
+			}
+
+			custom_tooltip = {
+				text = "PILLAGE_DESTROY_BUILDINGS"
+				hidden_tooltip = {
+					if = {
+						limit = { owner = { character = FROM } }
+						destroy_random_building = THIS
+						destroy_random_building = THIS
+					}
+					if = {
+						limit = { NOT = { owner = { character = FROM } } }
+						destroy_random_building = THIS
+						owner = { opinion = { who = FROM modifier = opinion_outraged } }
+					}
+				}
+			}
+			hidden_tooltip = {
+				location = { save_event_target_as = nickname_target }
+				FROM = { save_event_target_as = nickname_receiver }
+				if = {
+					limit = {
+						owner = {
+							has_nickname = no
+							is_adult = yes
+							NOT = { trait = incapable }
+						}
+					}
+					random_list = {
+						5 = {
+							owner = { give_nickname = nick_the_destroyer }
+						}
+						5 = {
+							owner = { give_nickname = nick_the_scourge_of_god }
+							modifier = {
+								factor = 0
+								event_target:nickname_target = { religion = FROM }
+							}
+						}
+						5 = {
+							owner = { give_nickname = nick_the_slayer_of_culture }
+							modifier = {
+								factor = 0
+								event_target:nickname_target = { culture = FROM }
+							}
+						}
+						5 = {
+							owner = { give_nickname = nick_the_terror_of_provincename }
+						}
+						5 = {
+							owner = { give_nickname = nick_the_culture_marauder }
+							modifier = {
+								factor = 0
+								event_target:nickname_target = { culture = FROM }
+							}
+						}
+						75 = {}
+					}
+				}
+			}
+
+			FROM = {
+				character_event = { id = Plus.2681 days = 180 }
+			}
+		}
+		ai_will_do = {
+			factor = 0
 		}
 	}
 }
