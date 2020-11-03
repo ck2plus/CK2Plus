@@ -10,105 +10,134 @@
 #	dynasty: all members of the same dynasty
 #	rivals: your rivals plus any character you have an opinion modifier with 'crime = yes' set (the same set of characters the 'is_foe' trigger evaluates)
 #	all: all living characters (Avoid if possible. VERY CPU-HEAVY!)
-#	
+#
 
 targeted_decisions = {
 
 	vassal_fatwa_decision = {
-		only_playable = yes
 		filter = vassals
 		ai_target_filter = vassals
 		ai_check_interval = 18
-		
+
+		only_playable = yes
+
 		from_potential = {
-			is_playable = yes
-			higher_tier_than = BARON
+			dynasty_head = {
+				character = PREV
+			}
+
 			religion_group = muslim
-			any_courtier = {
-				has_job_title = job_spiritual
+
+			job_spiritual = {
+				religion = FROM
 			}
 		}
-		
+
 		potential = {
-			age = 16
-			is_ruler = yes
-			is_landed = yes
-			prisoner = no
-			vassal_of = FROM
-			religion = FROM
-			dynasty_head = { character = FROM }
 			OR = {
 				trait = dynasty_decadence_med
 				trait = dynasty_decadence_high
 				trait = decadent
 			}
-			NOT = { piety = 100 }
-			NOT = { dynasty = FROM }
-			NOT = { has_job_title = job_spiritual }
-			NOT = { has_character_modifier = fatwa_timer }
+
+			dynasty = FROM
+			religion = FROM
+			vassal_of = FROM
+			is_landed = yes
+			is_adult = yes
+			prisoner = no
+			piety < 100
+
+			NOR = {
+				has_job_title = job_spiritual
+				has_character_modifier = fatwa_timer
+			}
 		}
+
 		allow = {
 			FROM = {
-				piety = 100
-				NOT = { trait = decadent }
-				dynasty_head = {
-					NOR = {
-						trait = dynasty_decadence_med
-						trait = dynasty_decadence_high
-						trait = decadent
-					}
+				piety >= 100
+
+				NOR = {
+					trait = decadent
+					trait = dynasty_decadence_med
+					trait = dynasty_decadence_high
 				}
 			}
 		}
+
 		effect = {
-			custom_tooltip = { text = EVTTOOLTIP88750 }
-			hidden_tooltip = {
+			add_character_modifier = {
+				name = fatwa_timer
+				duration = 1140 # 38 months
+				hidden = yes
+			}
+
+			custom_tooltip = {
+				text = EVTTOOLTIP88750
+
 				FROM = {
-					random_courtier = {
-						limit = { has_job_title = job_spiritual }
-						character_event = { id = 88750 days = 3 tooltip = "EVTTOOLTIP88750" }
+					character_event = { id = 88754 }
+
+					job_spiritual = {
+						character_event = {
+							id = 88750
+							days = 3
+						}
 					}
 				}
-				add_character_modifier = {
-					name = fatwa_timer
-					duration = 1140
-					hidden = yes
-				}
-				FROM = { character_event = { id = 88754 } }
 			}
 		}
+
 		ai_will_do = {
 			factor = 1
-			modifier = {
-				factor = 0
-				reverse_opinion = { who = FROM value = 40 }
+
+			trigger = {
+				reverse_opinion = {
+					who = FROM
+					value < 40
+				}
 			}
-			modifier = {
+
+			# CK2Plus
+			mult_modifier = {
 				factor = 0.5
-				reverse_opinion = { who = FROM value = 20 }
+
+				reverse_opinion = {
+					who = FROM
+					value >= 0
+				}
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.5
-				reverse_opinion = { who = FROM value = 0 }
+
+				reverse_opinion = {
+					who = FROM
+					value >= 20
+				}
 			}
 		}
 	}
-	
+
 	vassal_castrate_decision = {
-		only_playable = yes
 		filter = court
 		ai_target_filter = court
 		ai_check_interval = 6
 
+		only_playable = yes
+
 		from_potential = {
 			has_dlc = "Legacy of Rome"
-			is_playable = yes
+
 			OR = {
-				culture_group = byzantine
 				religion_group = muslim
+				culture_group = byzantine
 				culture_group = chinese_group
+
 				any_owned_bloodline = {
 					has_bloodline_flag = bloodline_castration
+					bloodline_is_active_for = PREV
 				}
 			}
 		}
@@ -119,135 +148,145 @@ targeted_decisions = {
 			is_female = no
 			NOT = { trait = eunuch }
 		}
+
 		allow = {
 			prisoner = yes
 		}
+
 		effect = {
-			hidden_tooltip = {
+			hidden_effect = {
 				if = {
 					limit = { is_adult = yes }
+
 					FROM = {
 						character_event = { id = LoR.832 }
 					}
 				}
-				if = {
-					limit = { is_adult = no }
+				else = {
 					FROM = {
 						character_event = { id = LoR.834 }
 					}
 				}
-				character_event = { id = LoR.833 tooltip = "EVTTOOLTIPLoR.833" }
+
+				character_event = {
+					id = LoR.833
+					tooltip = EVTTOOLTIPLoR.833
+				}
 			}
+
 			add_trait = eunuch
+
 			pardon_effect = yes
+
 			opinion = {
-				modifier = opinion_castrated_me
+				name = opinion_castrated_me
 				who = FROM
 			}
+
 			FROM = {
+				piety = -10
+
 				if = {
 					limit = { NOT = { trait = cruel } }
+
 					custom_tooltip = {
 						text = cruel_imprisoner_trait_chance_TT
+
 						random = {
 							chance = 25
-							add_trait = cruel
-							hidden_tooltip = {
-								character_event = { id = 38259 }
-							}
+							add_trait_cruel_effect = yes
 						}
 					}
 				}
-				piety = -10
 			}
-			hidden_tooltip = {
+
+			hidden_effect = {
 				mother = {
 					opinion = {
-						modifier = opinion_castrated_close_kin
+						name = opinion_castrated_close_kin
 						who = FROM
 					}
 				}
+
 				father = {
 					opinion = {
-						modifier = opinion_castrated_close_kin
+						name = opinion_castrated_close_kin
 						who = FROM
 					}
 				}
+
 				any_spouse = {
 					opinion = {
-						modifier = opinion_castrated_close_kin
+						name = opinion_castrated_close_kin
 						who = FROM
 					}
 				}
+
 				any_child = {
 					opinion = {
-						modifier = opinion_castrated_close_kin
+						name = opinion_castrated_close_kin
 						who = FROM
 					}
 				}
+
 				if = {
 					limit = {
-						FROM = {
-							NOT = { dynasty = ROOT }
-							NOT = { sibling = ROOT }
+						NOR = {
+							dynasty = FROM
+							sibling = FROM
 						}
 					}
+
 					any_sibling = {
 						opinion = {
-							modifier = opinion_castrated_close_kin
+							name = opinion_castrated_close_kin
 							who = FROM
 						}
 					}
+
 					any_dynasty_member = {
 						opinion = {
-							modifier = opinion_castrated_family
+							name = opinion_castrated_family
 							who = FROM
 						}
 					}
 				}
 			}
 		}
+
 		ai_will_do = {
-			factor = 1
-			modifier = {
-				factor = 0.5 # Less likely to do it
-				always = yes
-			}
-			modifier = {
-				factor = 0
-				FROM = { war = yes }
-			}
-			modifier = {
-				factor = 0
-				is_ruler = yes
-			}
-			modifier = {
-				factor = 0
-				reverse_opinion = { who = FROM value = 0 }
-			}
-			modifier = {
-				factor = 0
+			factor = 0.5
+
+			trigger = {
 				FROM = {
+					piety >= 100
+					war = no
+
 					OR = {
+						trait = wroth
+						trait = cruel
+						trait = possessed
+						trait = lunatic
+						trait = impaler
+					}
+
+					opinion = {
+						who = ROOT
+						value < 0
+					}
+
+					NOR = {
 						trait = kind
 						trait = charitable
 					}
 				}
+
+				is_ruler = no
 			}
-			modifier = {
-				factor = 0
-				FROM = {
-					NOT = {
-						trait = wroth
-						trait = lunatic
-						trait = possessed
-						trait = impaler
-						trait = cruel
-					}
-				}
-			}
-			modifier = {
-				factor = 2.0
+
+			mult_modifier = {
+				factor = 2
+
 				FROM = {
 					OR = {
 						trait = cruel
@@ -259,14 +298,14 @@ targeted_decisions = {
 	}
 
 	vassal_blinding_decision = {
-		only_playable = yes
 		filter = court
 		ai_target_filter = court
 		ai_check_interval = 6
-	
+
+		only_playable = yes
+
 		from_potential = {
 			has_dlc = "Legacy of Rome"
-			is_playable = yes
 		}
 
 		potential = {
@@ -274,205 +313,237 @@ targeted_decisions = {
 			host = { character = FROM }
 			NOT = { trait = blinded }
 		}
+
 		allow = {
 			prisoner = yes
 		}
+
 		effect = {
-			hidden_tooltip = {
+			hidden_effect = {
 				FROM = {
 					character_event = { id = LoR.830 }
 				}
-				character_event = { id = LoR.831 tooltip = "EVTTOOLTIPLoR.831" }
-			}
-			if = {
-				limit = {
-					trait = one_eyed
+
+				character_event = {
+					id = LoR.831
+					tooltip = EVTTOOLTIPLoR.831
 				}
+			}
+
+			if = {
+				limit = { trait = one_eyed }
 				remove_trait = one_eyed
 			}
+
 			add_trait = blinded
-			pardon_effect = yes
+
+			if = {
+				limit = {
+					has_game_rule = {
+						name = punishment_release_prisoner
+						value = on
+					}
+				}
+
+				imprison = no
+			}
+
 			opinion = {
-				modifier = opinion_blinded_me
+				name = opinion_blinded_me
 				who = FROM
 			}
+
 			FROM = {
+				piety = -50
+
 				if = {
 					limit = { NOT = { trait = cruel } }
+
 					custom_tooltip = {
 						text = cruel_imprisoner_trait_chance_TT
+
 						random = {
 							chance = 25
-							add_trait = cruel
-							hidden_tooltip = {
-								character_event = { id = 38259 }
-							}
+							add_trait_cruel_effect = yes
 						}
 					}
 				}
-				piety = -10
 			}
-			hidden_tooltip = {
+
+			hidden_effect = {
 				mother = {
 					opinion = {
-						modifier = opinion_blinded_close_kin
+						name = opinion_blinded_close_kin
 						who = FROM
 					}
 				}
+
 				father = {
 					opinion = {
-						modifier = opinion_blinded_close_kin
+						name = opinion_blinded_close_kin
 						who = FROM
 					}
 				}
-				spouse = {
+
+				any_spouse = {
 					opinion = {
-						modifier = opinion_blinded_close_kin
+						name = opinion_blinded_close_kin
 						who = FROM
 					}
 				}
+
 				any_child = {
 					opinion = {
-						modifier = opinion_blinded_close_kin
+						name = opinion_blinded_close_kin
 						who = FROM
 					}
 				}
+
 				if = {
 					limit = {
-						FROM = {
-							NOT = { dynasty = ROOT }
-							NOT = { sibling = ROOT }
+						NOR = {
+							dynasty = FROM
+							sibling = FROM
 						}
 					}
+
 					any_sibling = {
 						opinion = {
-							modifier = opinion_blinded_close_kin
+							name = opinion_blinded_close_kin
 							who = FROM
 						}
 					}
+
 					any_dynasty_member = {
 						opinion = {
-							modifier = opinion_blinded_family
+							name = opinion_blinded_family
 							who = FROM
 						}
 					}
 				}
 			}
 		}
+
 		ai_will_do = {
-			factor = 1
-			modifier = {
-				factor = 0.5 # Less likely to do it
-				always = yes 
-			}
-			modifier = {
-				factor = 0
-				FROM = { war = yes }
-			}
-			modifier = {
-				factor = 0
-				FROM = { NOT = { culture_group = byzantine } }
-			}
-			modifier = {
-				factor = 0
-				reverse_opinion = { who = FROM value = 0 }
-			}
-			modifier = {
-				factor = 0
-				is_ruler = yes
-			}
-			modifier = {
-				factor = 0
-				is_pretender = no
-			}
-			modifier = {
-				factor = 0
+			factor = 0.5
+
+			trigger = {
+				is_pretender = yes
+				is_ruler = no
+
 				FROM = {
 					OR = {
+						culture_group = byzantine
+
+						any_owned_bloodline = {
+							has_bloodline_flag = bloodline_blinding
+							bloodline_is_active_for = PREV
+						}
+					}
+
+					OR = {
+						trait = wroth
+						trait = cruel
+						trait = possessed
+						trait = lunatic
+						trait = impaler
+					}
+
+					piety >= 100
+					war = no
+
+					opinion = {
+						who = ROOT
+						value < 0
+					}
+
+					NOR = {
 						trait = kind
 						trait = charitable
 					}
 				}
 			}
-			modifier = {
-				factor = 0
-				FROM = {
-					NOT = {
-						trait = wroth
-						trait = lunatic
-						trait = possessed
-						trait = impaler
-						trait = cruel
-					}
-				}
-			}
-			modifier = {
-				factor = 10
+
+			mult_modifier = {
+				factor = 2
+
 				is_pretender = yes
+
 				FROM = {
-					OR = {
-						culture_group = byzantine
-						culture_group = iranian
-					}
 					OR = {
 						is_pretender = yes
 						is_primary_heir = yes
+					}
+
+					OR = {
+						culture_group = byzantine
+						culture_group = iranian
 					}
 				}
 			}
 		}
 	}
-	
+
 	vassal_zun_judgement_decision = {
-		only_playable = yes
 		filter = court
 		ai_target_filter = court
 		ai_check_interval = 6
-	
+
+		only_playable = yes
+
 		from_potential = {
-			is_playable = yes
-			OR = {
-				religion = zun_pagan
-				religion = zun_pagan_reformed
-			}
+			religion_openly_zun_or_reformed_trigger = yes
+
 			NOT = {
-				has_alternate_start_parameter = { key = religion_names value = random }
+				has_alternate_start_parameter = {
+					key = religion_names
+					value = random
+				}
 			}
 		}
-	
+
 		potential = {
 			prisoner = yes
-			vassal_of = FROM
 			host = { character = FROM }
+			vassal_of = FROM
 			NOT = { has_character_modifier = zun_judgement }
 		}
+
 		allow = {
 			prisoner = yes
 		}
+
 		effect = {
-			character_event = { id = CM.15000 days = 1 }
+			character_event = {
+				id = CM.15000
+				days = 1
+			}
 		}
+
 		ai_will_do = {
-			factor = 1
-			
-			modifier = {
-				factor = 0
-				reverse_opinion = { who = FROM value = 40 }
+			factor = 0.5
+
+			trigger = {
+				FROM = {
+					opinion = {
+						who = ROOT
+						value < 40
+					}
+
+					NOT = { trait = kind }
+				}
 			}
-			modifier = {
-				factor = 0
-				FROM = { trait = kind }
-			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 2
 				FROM = { trait = cruel }
 			}
-			modifier = {
-				factor = 0.5 # Less likely to do it
-			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 2
+
 				is_pretender = yes
+
 				FROM = {
 					OR = {
 						is_pretender = yes
@@ -485,408 +556,113 @@ targeted_decisions = {
 
 	prisoner_to_oubilette = {
 		filter = court
-		ai_target_filter = court
-		ai_check_interval = 24
+
+		ai = no
 
 		from_potential = {
-			ai = no
 		}
-	
+
 		potential = {
 			host = { character = FROM }
 			prisoner = yes
 			NOT = { has_character_modifier = the_oubliette }
 		}
+
 		allow = {
 			prisoner = yes
 		}
+
 		effect = {
-			add_character_modifier = { 
+			add_character_modifier = {
 				name = the_oubliette
 				duration = -1
 			}
-			hidden_tooltip = {
+
+			hidden_effect = {
 				remove_character_modifier = the_dungeon
 				remove_character_modifier = house_arrest
 			}
 		}
-		
-		
+
 		ai_will_do = {
 			factor = 0
 		}
 	}
-	
+
 	prisoner_to_dungeon = {
 		filter = court
-		ai_target_filter = court
-		ai_check_interval = 36
+
+		ai = no
 
 		from_potential = {
-			ai = no
 		}
-	
+
 		potential = {
 			host = { character = FROM }
 			prisoner = yes
+
 			OR = {
 				has_character_modifier = the_oubliette
 				has_character_modifier = house_arrest
 			}
 		}
+
 		allow = {
 			prisoner = yes
 		}
+
 		effect = {
-			add_character_modifier = { 
+			add_character_modifier = {
 				name = the_dungeon
 				duration = -1
 			}
-			hidden_tooltip = {
+
+			hidden_effect = {
 				remove_character_modifier = the_oubliette
 				remove_character_modifier = house_arrest
 			}
 		}
-		
-		
+
 		ai_will_do = {
 			factor = 0
 		}
 	}
-	
+
 	prisoner_to_suite = {
 		filter = court
-		ai_target_filter = court
-		ai_check_interval = 36
+
+		ai = no
 
 		from_potential = {
-			ai = no
 		}
-	
+
 		potential = {
 			host = { character = FROM }
 			prisoner = yes
 			NOT = { has_character_modifier = house_arrest }
 		}
+
 		allow = {
 			prisoner = yes
 		}
+
 		effect = {
-			add_character_modifier = { 
+			add_character_modifier = {
 				name = house_arrest
 				duration = -1
 			}
-			hidden_tooltip = {
+
+			hidden_effect = {
 				remove_character_modifier = the_oubliette
 				remove_character_modifier = the_dungeon
+
 				character_event = { id = ZE.12219 } # Loses pet rat
 			}
 		}
-		
-		
+
 		ai_will_do = {
 			factor = 0
 		}
 	}
 
-	imperial_corrupt_councillor = {
-		filter = realm
-		ai_target_filter = realm
-		ai_check_interval = 12
-		from_potential = {
-			real_tier = EMPEROR
-			has_imperial_government_trigger = yes
-			NOR = {
-				uses_decadence = yes
-				any_demesne_title = { temporary = yes }
-			}
-		}
-		potential = {
-			OR = {
-				is_voter = yes
-				is_councillor = yes
-			}
-			ai = yes
-			NOT = { has_opinion_modifier = { who = FROM modifier = opinion_corrupted } }
-		}
-		allow = {
-			ROOT = {
-				has_regent = no
-				OR = {
-					trait = greedy
-					trait = gluttonous
-					trait = proud
-					trait = ambitious
-					trait = trusting
-					trait = slow
-					trait = imbecile
-				}
-				NOR = {
-					trait = just
-					trait = temperate
-					trait = diligent
-					trait = paranoid
-				}
-			}
-			FROM = {
-				prestige = 100
-				NOR = {
-					has_regent = yes
-					has_character_modifier = imperial_decadence_8
-					custom_tooltip = {
-						text = HAS_RECENTLY_CORRUPTED_COUNCILLOR
-						hidden_tooltip = { has_character_modifier = council_corruption_timer }
-					}
-				}
-			}
-		}
-		effect = {
-			ROOT = {
-				opinion = { who = FROM modifier = opinion_corrupted years = 5 }
-				hidden_tooltip = {
-					if = {
-						limit = {
-							NOT = { trait = ambitious }
-							NOT = { trait = content }
-						}
-						random = {
-							chance = 25
-							add_trait = ambitious
-						}
-					}
-					if = {
-						limit = {
-							NOT = { trait = gluttonous }
-							NOT = { trait = temperate }
-						}
-						random = {
-							chance = 25
-							add_trait = gluttonous
-						}
-					}
-					if = {
-						limit = {
-							NOT = { trait = greedy }
-							NOT = { trait = charitable }
-						}
-						random = {
-							chance = 25
-							add_trait = greedy
-						}
-					}
-					if = {
-						limit = { trait = charitable }
-						random = {
-							chance = 50
-							remove_trait = charitable
-						}
-					}
-					if = {
-						limit = {
-							NOT = { trait = humble }
-							NOT = { trait = proud }
-						}
-						random = {
-							chance = 25
-							add_trait = proud
-						}
-					}
-					if = {
-						limit = { trait = humble }
-						random = {
-							chance = 50
-							remove_trait = humble
-						}
-					}
-				}
-			}
-			FROM = {
-				prestige = -100
-				if = {
-					limit = {
-						OR = {
-							has_character_modifier = imperial_decadence_6
-							has_character_modifier = imperial_decadence_7
-						}
-					}
-					custom_tooltip = { text = IMPERIAL_DECADENCE_PLUS_1TO2 }
-					hidden_tooltip = {
-						random_list = {
-							20 = { primary_title = { change_variable = { which = "imperial_decadence" value = 1 } } }
-							10 = { primary_title = { change_variable = { which = "imperial_decadence" value = 2 } } }
-						}
-					}
-				}
-				if = {
-					limit = {
-						OR = {
-							has_character_modifier = imperial_decadence_4
-							has_character_modifier = imperial_decadence_5
-						}
-					}
-					custom_tooltip = { text = IMPERIAL_DECADENCE_PLUS_1TO3 }
-					hidden_tooltip = {
-						random_list = {
-							10 = { primary_title = { change_variable = { which = "imperial_decadence" value = 1 } } }
-							20 = { primary_title = { change_variable = { which = "imperial_decadence" value = 2 } } }
-							10 = { primary_title = { change_variable = { which = "imperial_decadence" value = 3 } } }
-						}
-					}
-				}
-				if = {
-					limit = {
-						OR = {
-							has_character_modifier = imperial_decadence_2
-							has_character_modifier = imperial_decadence_3
-						}
-					}
-					custom_tooltip = { text = IMPERIAL_DECADENCE_PLUS_2TO4 }
-					hidden_tooltip = {
-						random_list = {
-							10 = { primary_title = { change_variable = { which = "imperial_decadence" value = 2 } } }
-							20 = { primary_title = { change_variable = { which = "imperial_decadence" value = 3 } } }
-							10 = { primary_title = { change_variable = { which = "imperial_decadence" value = 4 } } }
-						}
-					}
-				}
-				if = {
-					limit = {
-						NOR = {
-							has_character_modifier = imperial_decadence_2
-							has_character_modifier = imperial_decadence_3
-							has_character_modifier = imperial_decadence_4
-							has_character_modifier = imperial_decadence_5
-							has_character_modifier = imperial_decadence_6
-							has_character_modifier = imperial_decadence_7
-							has_character_modifier = imperial_decadence_8
-						}
-					}
-					custom_tooltip = { text = IMPERIAL_DECADENCE_PLUS_3TO5 }
-					hidden_tooltip = {
-						random_list = {
-							10 = { primary_title = { change_variable = { which = "imperial_decadence" value = 3 } } }
-							20 = { primary_title = { change_variable = { which = "imperial_decadence" value = 4 } } }
-							10 = { primary_title = { change_variable = { which = "imperial_decadence" value = 5 } } }
-						}
-					}
-				}
-				hidden_tooltip = {
-					add_character_modifier = {
-						name = council_corruption_timer
-						duration = 365
-						hidden = yes
-					}
-					character_event = { id = Plus.1852 } # change the decadence modifier
-				}
-				if = {
-					limit = {
-						NOT = { trait = just }
-						NOT = { trait = arbitrary }
-					}
-					random = {
-						chance = 25
-						add_trait = arbitrary
-					}
-				}
-				if = {
-					limit = { trait = just }
-					random = {
-						chance = 50
-						remove_trait = just
-					}
-				}
-			}
-		}
-		ai_will_do = {
-			factor = 1
-			modifier = {
-				factor = 0
-				FROM = {
-					OR = {
-						trait = just
-						trait = honest
-						trait = diligent
-					}
-				}
-			}
-			modifier = {
-				factor = 0.5
-				FROM = {
-					OR = {
-						has_character_modifier = imperial_decadence_2
-						has_character_modifier = imperial_decadence_3
-					}
-					NOR = {
-						trait = lunatic
-						trait = possessed
-						is_dumb_trigger = yes
-					}
-				}
-			}
-			modifier = {
-				factor = 0.25
-				FROM = {
-					OR = {
-						has_character_modifier = imperial_decadence_4
-						has_character_modifier = imperial_decadence_5
-					}
-					NOR = {
-						trait = lunatic
-						trait = possessed
-						is_dumb_trigger = yes
-					}
-				}
-			}
-			modifier = {
-				factor = 0
-				FROM = {
-					OR = {
-						has_character_modifier = imperial_decadence_6
-						has_character_modifier = imperial_decadence_7
-					}
-					NOR = {
-						trait = lunatic
-						trait = possessed
-						is_dumb_trigger = yes
-					}
-				}
-			}
-			modifier = {
-				factor = 0
-				OR = {
-					opinion = { who = FROM value = 10 }
-					NOT = { opinion = { who = FROM value = -40 } }
-					has_non_aggression_pact_with = FROM
-					has_truce = FROM
-					crime_against_FROM_trigger = yes
-				}
-			}
-			modifier = {
-				factor = 0
-				NOR = {
-					AND = {
-						leads_faction = faction_powerful_vassal_takeover
-						faction_power = { faction = faction_powerful_vassal_takeover power = 0.7 }
-					}
-					AND = {
-						leads_faction = faction_increase_council_power
-						faction_power = { faction = faction_increase_council_power power = 0.7 }
-					}
-					AND = {
-						leads_faction = faction_separatist
-						faction_power = { faction = faction_separatist power = 0.7 }
-					}
-					AND = {
-						leads_faction = faction_pretender
-						faction_power = { faction = faction_pretender power = 0.7 }
-					}
-					AND = {
-						leads_faction = faction_succ_feudal_elective
-						faction_power = { faction = faction_succ_feudal_elective power = 0.7 }
-					}
-				}
-			}
-		}
-	}
 }
-
