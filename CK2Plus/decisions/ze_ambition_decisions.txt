@@ -7,14 +7,20 @@
 
 # Written by Markus Olsén
 
-decisions = {
+targeted_decisions = {
 
 	request_council_position = {
-		only_playable = yes
-		is_high_prio = yes
+		filter = liege
+		ai_target_filter = liege
 		ai_check_interval = 3
-		potential = {
+
+		is_high_prio = yes
+
+		only_playable = yes
+
+		from_potential = {
 			has_dlc = "Conclave"
+
 			OR = {
 				has_ambition = obj_become_chancellor
 				has_ambition = obj_become_marshal
@@ -22,85 +28,120 @@ decisions = {
 				has_ambition = obj_become_spymaster
 				has_ambition = obj_become_spiritual
 			}
-			OR = {
-				NOT = { has_character_flag = council_membership_requested }
-				had_character_flag = { flag = council_membership_requested days = 1825 }
+
+			trigger_if = {
+				limit = { has_character_flag = council_membership_requested }
+
+				had_character_flag = {
+					flag = council_membership_requested
+					years >= 5
+				}
 			}
 		}
+
 		allow = {
-			prisoner = no
-			is_voter = no
-			prestige = 100
-			NOR = {
-				in_revolt = yes
-				trait = incapable
-				is_inaccessible_trigger = yes
+			FROM = {
+				show_scope_change = no
+
+				prestige >= 100
+				in_revolt = no
+				is_not_in_regency_trigger = yes
+				is_inaccessible_trigger = no
+
 				liege = {
-					OR = {
-						in_revolt = yes
-						primary_title = { has_law = council_privileges_1 }
-						has_opinion_modifier = { who = ROOT modifier = requested_council_position }
-						has_opinion_modifier = { who = ROOT modifier = opinion_refused_council }
+					in_revolt = no
+
+					NOR = {
+						has_law = council_privileges_1
+
+						has_opinion_modifier = {
+							name = opinion_refused_council
+							who = ROOT_FROM
+						}
+
+						has_opinion_modifier = {
+							name = requested_council_position
+							who = ROOT_FROM
+						}
 					}
 				}
 			}
 		}
+
 		effect = {
-			prestige = -50
+			FROM = {
+				show_scope_change = no
+
+				prestige = -50
+			}
+
 			custom_tooltip = {
 				text = request_council_position_tooltip
-				hidden_tooltip = {
-					liege = {
-						opinion = {
-							modifier = requested_council_position
-							who = ROOT
-							years = 2
-						}
-						character_event = { id = ZE.6001 days = 3 }
-					}
+
+				opinion = {
+					name = requested_council_position
+					who = FROM
+					years = 2
+				}
+
+				character_event = {
+					id = ZE.6001
+					days = 3
 				}
 			}
 		}
+
 		ai_will_do = {
 			factor = 1
-			modifier = {
-				factor = 0
-				NOR = {
-					among_most_powerful_vassals = 5
-					relative_income_to_liege = 0.5
-					liege = { is_friend = ROOT }
-					liege = { owes_favor_to = ROOT }
-					AND = {
-						higher_tier_than = BARON
-						OR = {
-							trait = lunatic
-							AND = {
-								trait = proud
-								trait = ambitious
-							}
-							AND = {
-								has_ambition = obj_become_chancellor
-								liege = { job_chancellor = { is_rival = ROOT } }
-							}
-							AND = {
-								has_ambition = obj_become_marshal
-								liege = { job_marshal = { is_rival = ROOT } }
-							}
-							AND = {
-								has_ambition = obj_become_treasurer
-								liege = { job_treasurer = { is_rival = ROOT } }
-							}
-							AND = {
-								has_ambition = obj_become_spymaster
-								liege = { job_spymaster = { is_rival = ROOT } }
-							}
-							AND = {
-								has_ambition = obj_become_spiritual
-								liege = { job_spiritual = { is_rival = ROOT } }
-							}
-							AND = {
-								has_ambition = obj_become_spiritual
-								liege = { rightful_religious_head = ROOT }
+
+			trigger = {
+				FROM = {
+					OR = {
+						among_most_powerful_vassals = 5
+						relative_income_to_liege = 0.5
+						is_friend = liege
+						holds_favor_on = liege
+
+						trigger_if = {
+							limit = { higher_real_tier_than = BARON }
+
+							OR = {
+								trait = lunatic
+
+								AND = {
+									trait = proud
+									trait = ambitious
+								}
+
+								trigger_if = {
+									limit = { has_ambition = obj_become_chancellor }
+									liege = { job_chancellor = { is_rival = ROOT_FROM } }
+								}
+								trigger_else_if = {
+									limit = { has_ambition = obj_become_marshal }
+									liege = { job_marshal = { is_rival = ROOT_FROM } }
+								}
+								trigger_else_if = {
+									limit = { has_ambition = obj_become_treasurer }
+									liege = { job_treasurer = { is_rival = ROOT_FROM } }
+								}
+								trigger_else_if = {
+									limit = { has_ambition = obj_become_spymaster }
+									liege = { job_spymaster = { is_rival = ROOT_FROM } }
+								}
+								trigger_else = {
+									has_ambition = obj_become_spiritual
+
+									liege = {
+										OR = {
+											job_spiritual = {
+												is_rival = ROOT_FROM
+											}
+
+											rightful_religious_head = ROOT_FROM
+										}
+									}
+								}
 							}
 						}
 					}
@@ -110,145 +151,182 @@ decisions = {
 	}
 
 	ask_for_land = {
-		only_playable = yes
 		is_high_prio = yes
 		ai_check_interval = 12
-		potential = {
-			is_playable = yes
+
+		filter = liege
+		ai_target_filter = liege
+
+		only_playable = yes
+
+		from_potential = {
 			OR = {
 				has_ambition = obj_land_for_son
 				has_ambition = obj_land_for_daughter
 			}
-			higher_tier_than = BARON
+
+			higher_real_tier_than = BARON
 		}
+
 		allow = {
-			NOR = {
-				prisoner = yes
-				in_revolt = yes
-				trait = incapable
-				is_inaccessible_trigger = yes
-				liege = { in_revolt = yes }
-				liege = { has_opinion_modifier = { who = ROOT modifier = requested_land } }
-			}
-			OR = {
-				custom_tooltip = {
-					text = tooltip_land_for_son
-					has_ambition = obj_land_for_son
-					any_child = {
-						is_alive = yes
-						is_female = no
-						is_landed = no
-						is_adult = yes
-						prisoner = no
-						NOR = {
-							any_heir_title = { always = yes }
-							trait = bastard
-							trait = disinherited
-							trait = incapable
-							is_ascetic_trigger = yes
-							trait = desert_father
-							trait = eunuch
-							age = 50
+			FROM = {
+				in_revolt = no
+				is_not_in_regency_trigger = yes
+				is_inaccessible_trigger = no
+
+				OR = {
+					custom_tooltip = {
+						text = tooltip_land_for_son
+
+						# TODO: Should match obj_land_for_son trigger
+
+						any_child = {
+							is_female = no
+							is_alive = yes
+							vassal_of = ROOT
+							is_ruler = no
+							is_adult = yes
+							is_heir = no
+							prisoner = no
+							is_incapable = no
+							is_ascetic_trigger = no
+							practical_age < 50
+
+							NOR = {
+								trait = bastard
+								trait = disinherited
+								trait = desert_father
+								trait = eunuch
+
+								any_heir_title = {
+									always = yes
+								}
+							}
 						}
-						liege = {
-							character = ROOT
+					}
+
+					custom_tooltip = {
+						text = tooltip_land_for_daugther
+
+						# TODO: Should match obj_land_for_daughter trigger
+
+						any_child = {
+							is_female = no
+							is_alive = yes
+							vassal_of = ROOT
+							is_ruler = no
+							is_adult = yes
+							is_heir = no
+							prisoner = no
+							is_incapable = no
+							is_ascetic_trigger = no
+							practical_age < 50
+
+							NOR = {
+								trait = bastard
+								trait = disinherited
+								trait = desert_mother
+
+								any_heir_title = {
+									always = yes
+								}
+							}
 						}
 					}
 				}
-				custom_tooltip = {
-					text = tooltip_land_for_daughter
-					has_ambition = obj_land_for_daughter
-					any_child = {
-						is_alive = yes
-						is_female = yes
-						is_landed = no
-						is_adult = yes
-						prisoner = no
-						NOR = {
-							any_heir_title = { always = yes }
-							trait = bastard
-							trait = disinherited
-							trait = incapable
-							is_ascetic_trigger = yes
-							trait = eunuch
-							age = 50
-						}
-						liege = {
-							character = ROOT
-						}
+			}
+
+			ROOT = {
+				in_revolt = no
+				is_not_in_regency_trigger = yes
+				is_inaccessible_trigger = no
+
+				NOT = {
+					has_opinion_modifier = {
+						name = requested_land
+						who = PREV
 					}
 				}
-			}
-			liege = {
+
 				any_demesne_title = {
-					tier = COUNT
+					real_tier = COUNT
 					can_be_given_away = yes
-					NOT = {
-						location = {
-							is_capital = yes
-						}
+
+					location = {
+						show_scope_change = no
+
+						is_capital = no
 					}
 				}
 			}
 		}
+
 		effect = {
-			prestige = -20
+			FROM = {
+				show_scope_change = no
+
+				prestige = -20
+			}
+
 			custom_tooltip = {
 				text = ask_for_land_tooltip
-				hidden_tooltip = {
-					liege = {
-						opinion = {
-							modifier = requested_land
-							who = ROOT
-							years = 2
-						}
-						character_event = { id = ZE.6012 days = 3 }
-					}
+
+				opinion = {
+					name = requested_land
+					who = FROM
+					years = 2
+				}
+
+				character_event = {
+					id = ZE.6012
+					days = 3
 				}
 			}
 		}
+
 		ai_will_do = {
 			factor = 0.1
 
-			modifier = {
+			mult_modifier = {
 				factor = 2
-				trait = proud
+				FROM = { trait = proud }
 			}
 
-			modifier = {
+			mult_modifier = {
 				factor = 2
-				trait = stubborn
+				FROM = { trait = stubborn }
 			}
 
-			modifier = {
+			mult_modifier = {
 				factor = 2
-				trait = greedy
+				FROM = { trait = greedy }
 			}
 
-			modifier = {
+			mult_modifier = {
 				factor = 2
-				trait = ambitious
+				FROM = { trait = ambitious}
 			}
 
-			modifier = {
+			mult_modifier = {
 				factor = 0.5
-				trait = content
+				FROM = { trait = content }
 			}
 
-			modifier = {
+			mult_modifier = {
 				factor = 0.5
-				trait = shy
+				FROM = { trait = shy}
 			}
 
-			modifier = {
+			mult_modifier = {
 				factor = 0.5
-				trait = craven
+				FROM = { trait = craven}
 			}
 
-			modifier = {
+			mult_modifier = {
 				factor = 0.5
-				trait = humble
+				FROM = { trait = humble }
 			}
 		}
 	}
+
 }
