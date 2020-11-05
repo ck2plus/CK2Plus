@@ -1,4 +1,4 @@
-# Targetted decisions are possible vs _all_ other characters and shown are in the Diplomacy View, not the Intrigue View. The taker is in the FROM scope.
+# Targeted decisions are possible vs _all_ other characters and shown are in the Diplomacy View, not the Intrigue View. The taker is in the FROM scope.
 #
 # filter = [self/court/home_court/vassals/sub_realm/realm/dynasty/all] ('self' MUST be set for decisions targetting only the taker, the other filter types can be set to lessen CPU load)
 # ai_target_filter = [self/court/home_court/vassals/sub_realm/realm/dynasty/all] (which characters for which the AI evaluates the decision.)
@@ -12,69 +12,70 @@
 #	all: all living characters (Avoid if possible. VERY CPU-HEAVY!)
 #
 
-targetted_decisions = {
+targeted_decisions = {
 
 	commit_suicide = {
 		filter = self
+
 		ai_target_filter = self
 		ai_check_interval = 12
+
 		potential = {
-			is_adult = yes
 			OR = {
 				trait = depressed
-				AND = {
-					trait = incapable
-					has_dlc = "Reapers"
+
+				trigger_if = {
+					limit = { has_dlc = "Reapers" }
+					is_incapable = yes
 				}
 			}
+
+			is_adult = yes
 			immortal = no
+			prisoner = no
+			NOT = { has_character_flag = attempting_suicide }
 		}
+
 		allow = {
+			custom_tooltip = { text = commit_suicide_allow_tooltip }
+
 			custom_tooltip = {
-				text = commit_suicide_allow_tooltip
-				hidden_tooltip = {
-					OR = {
-						trait = depressed
-						trait = incapable
-					}
+				text = is_not_busy_trigger_tooltip
+
+				trigger_if = {
+					limit = { in_seclusion = no }
+					is_inaccessible_trigger = no
 				}
 			}
-			prisoner = no
-			is_inaccessible_trigger = no
-			custom_tooltip = {
-				NOT = { has_character_flag = attempting_suicide }
-				text = attempting_suicide_tooltip
-			}
 		}
+
 		effect = {
 			if = {
 				limit = { has_dlc = "Reapers" }
-
 				set_character_flag = attempting_suicide
 
 				if = {
-					limit = { NOT = { trait = incapable } }
-					character_event = { id = RIP.30200 }
-				}
-				if = {
-					limit = { trait = incapable }
+					limit = { is_incapable = yes }
 					character_event = { id = RIP.30210 }
 				}
+				else = {
+					character_event = { id = RIP.30200 }
+				}
 			}
-			if = {
-				limit = { NOT = { has_dlc = "Reapers" } }
-
+			else = {
 				prestige = -200
 
 				add_character_modifier = {
-					modifier = suicide
+					name = suicide
 					duration = -1
 				}
+
 				death = { death_reason = death_suicide }
+
 				random = {
 					chance = 35
 
-					modifier = {
+					mult_modifier = {
 						factor = 0.3
 						has_nickname = yes
 					}
@@ -83,102 +84,128 @@ targetted_decisions = {
 				}
 			}
 		}
+
 		ai_will_do = {
-			factor = 1
-			modifier = {
-				factor = 0.1
-				always = yes
+			factor = 0.1
+
+			trigger = {
+				NOT = { trait = zealous }
 			}
-			modifier = {
-				factor = 0
-				trait = zealous
-			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 2
-				NOT = { wealth = -100 }
+				wealth < -100
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 2.5
-				NOT = { wealth = -300 }
+				wealth < -300
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 2
 				trait = stressed
 			}
-			modifier = {
-				factor = 2 # Wracked with Guilt
+
+			mult_modifier = {
+				factor = 2 # Wrecked with Guilt
 				is_kinslayer_trigger = yes
 			}
 		}
 	}
 
 	legitimize_bastard = {
-		only_playable = yes
 		filter = close_relatives
+
 		ai_target_filter = close_relatives
 		ai_check_interval = 30
 
+		only_playable = yes
+
 		from_potential = {
 			religion_group = christian
-			is_playable = yes
+
 			OR = {
-				has_children = yes
+				any_child = {
+					trait = bastard
+					is_alive = yes
+				}
+
 				father_even_if_dead = {
+					is_alive = no
+
 					any_child = {
+						trait = bastard
+						is_alive = yes
 						NOT = { character = FROM }
 					}
 				}
+
 				mother_even_if_dead = {
+					is_alive = no
+
 					any_child = {
+						trait = bastard
+						is_alive = yes
 						NOT = { character = FROM }
 					}
 				}
 			}
+
 			has_polygamy = no
-			OR = {
-				is_female = no
-				AND = {
-					is_married_matrilineally = yes
-					is_female = yes
-				}
+
+			trigger_if = {
+				limit = { is_female = yes }
+				is_married_matrilineally = yes
 			}
 		}
+
 		potential = {
 			trait = bastard
-			NOT = { character = FROM }
+
 			OR = {
 				is_child_of = FROM
+
 				father_even_if_dead = {
 					is_alive = no
 					is_father = FROM
 				}
+
 				mother_even_if_dead = {
 					is_alive = no
 					is_mother = FROM
 				}
 			}
+
 			OR = {
-				is_liege_or_above = FROM
+				is_vassal_or_below_of = FROM
+
 				AND = {
 					same_realm = FROM
-					tier = FROM
+					real_tier = FROM
 				}
 			}
 		}
+
 		allow = {
-			conditional_tooltip = {
-				trigger = {
-					NOT = {
-						any_owned_bloodline = {
-							has_bloodline_flag = bloodline_legitimize
+			FROM = {
+				show_scope_change = no
+
+				trigger_if = {
+					limit = {
+						NOT = {
+							any_owned_bloodline = {
+								has_bloodline_flag = bloodline_legitimize
+								bloodline_is_active_for = PREV
+							}
 						}
 					}
-				}
-				FROM = {
-					piety = 50
+
+					piety >= 50
 				}
 			}
 		}
+
 		effect = {
 			if = {
 				limit = {
@@ -187,36 +214,46 @@ targetted_decisions = {
 				}
 				set_father = FROM
 			}
+
 			set_real_father = 0
-			hidden_tooltip = {
+
+			hidden_effect = {
 				any_child = {
 					limit = { dynasty = ROOT }
+
 					dynasty = FROM
+
 					any_child = {
 						limit = { dynasty = ROOT }
+
 						dynasty = FROM
 					}
 				}
 			}
+
 			dynasty = FROM
 			remove_trait = bastard
 			add_trait = legit_bastard
 			recalc_succession = yes
+
+			# Take the piety price from the legitimizer
 			FROM = {
 				show_scope_change = no
+
 				if = {
 					limit = {
 						NOT = {
 							any_owned_bloodline = {
 								has_bloodline_flag = bloodline_legitimize
+								bloodline_is_active_for = PREV
 							}
 						}
 					}
-					FROM = {
-						piety = -50
-					}
+					piety = -50
 				}
 			}
+
+			# Release Bastard if imprisoned
 			if = {
 				limit = {
 					prisoner = yes
@@ -224,56 +261,87 @@ targetted_decisions = {
 				}
 				imprison = no
 			}
+
+			# Bastard's other parent is pleased
 			if = {
 				limit = {
-					FROM = { is_female = no }
+					FROM = { is_female = yes }
 				}
-				mother = {
+
+				father = {
 					show_scope_change = no
+
 					opinion = {
+						name = legitimized_child
 						who = FROM
-						modifier = legitimized_child
 						years = 10
 					}
 				}
 			}
-			if = {
-				limit = {
-					is_child_of = FROM
-				}
-				FROM = {
+			else = {
+				mother = {
 					show_scope_change = no
-					spouse = {
-						show_scope_change = no
-						if = {
-							limit = {
-								NOT = {
-									any_child = {
-										character = ROOT
-									}
-								}
-							}
-							opinion = {
-								who = FROM
-								modifier = legitimized_bastard
-								years = 20
+
+					opinion = {
+						name = legitimized_child
+						who = FROM
+						years = 10
+					}
+				}
+			}
+
+			FROM = {
+				show_scope_change = no
+
+				# Spouses are angry
+				any_spouse = {
+					limit = { NOT = { is_parent_of = ROOT } }
+
+					opinion = {
+						name = legitimized_bastard
+						who = ROOT_FROM
+						years = 20
+					}
+				}
+
+				# Non-bastard children are angry
+				if = {
+					limit = {
+						any_child = {
+							dynasty = ROOT_FROM
+
+							NOR = {
+								character = ROOT
+								trait = legit_bastard
 							}
 						}
 					}
-					any_child = {
-						limit = {
-							NOT = { character = ROOT }
-							dynasty = FROM
-							NOT = { trait = bastard }
-						}
-						opinion = {
-							who = FROM
-							modifier = legitimized_bastard
-							months = 12
+
+					custom_tooltip = {
+						text = any_child_gets_angry_tt
+
+						any_child = {
+							show_scope_change = no
+
+							limit = {
+								dynasty = ROOT_FROM
+
+								NOR = {
+									character = ROOT
+									trait = legit_bastard
+								}
+							}
+
+							opinion = {
+								name = legitimized_bastard
+								who = ROOT_FROM
+								years = 1
+							}
 						}
 					}
 				}
 			}
+
 			if = {
 				limit = {
 					OR = {
@@ -281,341 +349,291 @@ targetted_decisions = {
 							is_alive = no
 							is_father = FROM
 						}
+
 						mother_even_if_dead = {
 							is_alive = no
 							is_father = FROM
 						}
 					}
 				}
+
 				FROM = {
+					show_scope_change  =no
+
 					any_sibling = {
+						show_scope_change = no
+
 						limit = {
-							NOT = { character = ROOT }
 							dynasty = FROM
-							NOT = { trait = bastard }
+
+							NOR = {
+								trait = legit_bastard
+								character = ROOT
+							}
 						}
+
 						opinion = {
+							name = legitimized_bastard
 							who = FROM
-							modifier = legitimized_bastard
-							months = 12
+							years = 1
 						}
 					}
+
 					any_child = {
 						limit = {
-							NOT = { character = ROOT }
 							dynasty = FROM
-							NOT = { trait = bastard }
+
+							NOR = {
+								trait = legit_bastard
+								character = ROOT
+							}
 						}
+
 						opinion = {
+							name = legitimized_bastard
 							who = FROM
-							modifier = legitimized_bastard
-							months = 60
+							years = 5
 						}
 					}
 				}
 			}
 
 		}
+
 		ai_will_do = {
 			factor = 1
-			modifier = {
-				factor = 0
-				FROM = { NOT = { has_character_flag = will_acknowledge_bastards } }
-			}
-			modifier = {
-				factor = 0
-				NOT = { has_character_flag = acknowledged_bastard }
-			}
-			modifier = {
-				factor = 0
+
+			trigger = {
+				has_character_flag = acknowledged_bastard
+
+				FROM = {
+					has_character_flag = will_acknowledge_bastards
+				}
+
 				father_even_if_dead = {
-					is_alive = no
+					is_alive = yes
 				}
 			}
 		}
 	}
 
-	# Muslim dynasty head tries to convince a dynasty member to lose the 'Decadent' Trait
+	# Muslim ruler tries to convince a dynasty member to lose the 'Decadent' Trait
 	convince_to_straighten_up = {
-		only_playable = yes
 		filter = dynasty
 		ai_target_filter = dynasty
 		ai_check_interval = 6
 
 		hide_in_decisions_list = yes # This decision is shown in the Religion View for each decadent character
 
+		only_playable = yes
+
 		from_potential = {
-			is_playable = yes
-			religion_group = muslim
-			OR = {
- 				independent = yes
- 				NOT = { any_dynasty_member = { is_vassal_or_below = FROM } }
- 			}
+			uses_decadence = yes
+
+			trigger_if = {
+				limit = { independent = no }
+
+				NOT = {
+					any_liege = {
+						dynasty = FROM
+					}
+				}
+			}
 		}
+
 		potential = {
 			trait = decadent
-			dynasty = FROM
-			is_female = no
-			prisoner = no
-			is_liege_or_above = FROM
-			NOT = { trait = incapable }
-			NOT = { trait = on_hajj }
+			lower_real_tier_than = FROM
+			is_incapable = no
 		}
+
 		allow = {
-			OR = {
-				custom_tooltip = {
-					text = NON_RULER_PIETY_50
-					hidden_tooltip = {
-						ROOT = { is_ruler = no }
-						FROM = { piety = 50 }
-					}
-				}
-				custom_tooltip = {
-					text = IS_RULER_PIETY_100
-					hidden_tooltip = {
-						ROOT = { is_ruler = yes }
-						FROM = { piety = 100 }
-					}
-				}
-			}
 			FROM = {
-				has_regent = no
+				OR = {
+					custom_tooltip = {
+						text = NON_RULER_PIETY_50
+
+						ROOT = { is_ruler = no }
+						piety >= 50
+					}
+
+					custom_tooltip = {
+						text = IS_RULER_PIETY_100
+
+						ROOT = { is_ruler = yes }
+						piety >= 100
+					}
+				}
+
 				NOT = { trait = decadent }
-			}
-			ROOT = {
+				has_regent = no
+
 				custom_tooltip = {
-					text = "NOT_ALREADY_NEGOTIATED"
-					NOT = { has_opinion_modifier = { who = FROM modifier = negotiated_to_drop_decadence } }
+					text = NOT_ALREADY_NEGOTIATED
+
+					ROOT = {
+						NOT = {
+							has_opinion_modifier = {
+								name = negotiated_to_drop_decadence
+								who = FROM
+							}
+						}
+					}
 				}
 			}
+
+			ROOT = {
+				has_regent = no
+				NOT = { trait = on_hajj }
+			}
 		}
+
 		effect = {
-			hidden_tooltip = {
+			FROM = {
+				show_scope_change = no
+
+				if = {
+					limit = { ROOT = { is_ruler = yes } }
+					piety = -100
+				}
+				else = {
+					piety = -50
+				}
+			}
+
+			hidden_effect = {
 				set_character_flag = negotiated_to_drop_decadence
-				opinion = { who = FROM modifier = negotiated_to_drop_decadence years = 100 }
-			}
-			if = {
-				limit = { is_ruler = no }
-				FROM = { piety = -50 }
-			}
-			if = {
-				limit = { is_ruler = yes }
-				FROM = { piety = -100 }
-			}
-			character_event = {
-				id = 91350
+
+				opinion = {
+					name = negotiated_to_drop_decadence
+					who = FROM
+					years = 100
+				}
+
+				character_event = { id = 91350 } # Try to convince to lose 'Decadent' trait
 			}
 		}
+
 		ai_will_do = {
-			factor = 1
-			modifier = {
-				factor = 0.1
-				always = yes
-			}
-			modifier = {
+			factor = 0.1
+
+			mult_modifier = {
 				factor = 0.5
-				reverse_opinion = { who = FROM value = 25 }
+
+				reverse_opinion = {
+					who = FROM
+					value >= 25
+				}
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.5
-				reverse_opinion = { who = FROM value = 50 }
+
+				reverse_opinion = {
+					who = FROM
+					value >= 50
+				}
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 2
-				NOT = { reverse_opinion = { who = FROM value = 0 } }
+
+				reverse_opinion = {
+					who = FROM
+					value < 0
+				}
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 2
-				NOT = { reverse_opinion = { who = FROM value = -25 } }
+
+				reverse_opinion = {
+					who = FROM
+					value < -25
+				}
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 2
-				NOT = { reverse_opinion = { who = FROM value = -50 } }
+
+				reverse_opinion = {
+					who = FROM
+					value < -50
+				}
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.5
 				FROM = { trait = slothful }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.5
 				FROM = { trait = kind }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.5
 				FROM = { trait = patient }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.5
 				FROM = { trait = content }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 2
 				FROM = { trait = diligent }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 2
 				FROM = { trait = cruel }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 2
 				FROM = { trait = wroth }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 5
 				FROM = { trait = zealous }
 			}
 		}
 	}
 
-	# Unhardcoded decision.
+	# Unhardcoded decision
 	order_to_take_vows = {
-		only_playable = yes
 		filter = court
 		ai_target_filter = court
-		ai_check_interval = 120 #Check every 120 months
+		ai_check_interval = 120
+
+		only_playable = yes
 
 		from_potential = {
-			is_playable = yes
-			has_regent = no
-			prisoner = no
-			is_adult = yes
 			has_dlc = "Sons of Abraham"
-			OR = {
-				AND = {
-					religion_group = christian
-					is_alternate_start = no
-				}
-				AND = {
-					religion_openly_hellenic_or_reformed_trigger = yes
-					is_alternate_start = no
-				}
-				AND = {
-					religion = hindu
-					is_alternate_start = no
-				}
-				AND = {
-					religion = buddhist
-					is_alternate_start = no
-				}
-				AND = {
-					religion = bon
-					is_alternate_start = no
-				}
-				AND = {
-					religion = jain
-					is_alternate_start = no
-				}
-				AND = {
-					religion = manichean
-					is_alternate_start = no
-				}
-				has_religion_feature = religion_monastic
-				has_religion_feature = religion_feature_west_african
-			}
-		}
-
-		potential = {
 			is_adult = yes
-			is_ruler = no
-			religion = FROM
-			NOR = {
-				trait = incapable
-				trait = monk
-				trait = nun
-				trait = muni
-				trait = aryika
-				trait = bhikkhu
-				trait = bhikkhuni
-				trait = sanyasi
-				trait = sanyasini
-			}
-			host = { character = FROM }
-		}
+			prisoner = no
+			has_regent = no
 
-		allow = {
 			OR = {
-				AND = {
-					is_married = no
-					custom_tooltip = {
-						text = NOT_HEIR_TITLE_TT
-						NOT = {
-                        	any_heir_title = {
-                            	always = yes
-                            }
-                        }
-                    }
-				}
-				prisoner = yes
-				conditional_tooltip = {
-					trigger = { dynasty = FROM }
-					custom_tooltip = { #Matilde's Bloodline
-						text = BLOODLINE_EASIER_VOWS_TOOLTIP
-						AND = {
-							FROM = {
-								dynasty = ROOT
-								any_owned_bloodline = {
-									has_bloodline_flag = bloodline_easy_monks
-									bloodline_is_active_for = PREV
-								}
-							}
-							ROOT = {
-								any_owned_bloodline = {
-									has_bloodline_flag = bloodline_easy_monks
-									bloodline_is_active_for = PREV
-								}
-							}
-						}
-					}
-				}
-			}
-			FROM = { piety = 50 }
-		}
+				trigger_if = {
+					limit = { is_alternate_start = no }
 
-		effect = {
-			FROM = { piety = -50 }
-			add_ascetic_trait_effect = yes #Adds religion-based monk-traits.
-			if = { #For pagans and Altstart
-				limit = {
-					NOR = {
-						religion_group = christian
-						religion = hindu
-						religion = buddhist
-						religion = jain
-					}
-					is_female = no
-				}
-				add_trait = monk
-			}
-			if = {
-				limit = {
-					NOR = {
-						religion_group = christian
-						religion = hindu
-						religion = buddhist
-						religion = jain
-					}
-					is_female = yes
-				}
-				add_trait = nun
-			}
-			if = {
-				limit = { prisoner = yes }
-				prisoner = no
-			}
-			if = {
-				limit = { is_married = yes }
-				any_spouse = { remove_spouse = ROOT }
-			}
-			if = {
-				limit = {
-					has_dlc = "Mystics"
-					is_in_society = no
 					OR = {
-						religion = hellenic_pagan
-						religion = roman_pagan
-						AND = {
-							culture = roman
-							OR = { #Somewhat compatible when mixed with Roman culture.
+						religion_group = christian
+						has_dharmic_religion_trigger = yes
+						religion = manichean
+						religion_openly_bon_or_reformed_trigger = yes
+						religion_openly_hellenic_or_reformed_trigger = yes
+						religion_openly_roman_or_reformed_trigger = yes
+
+						trigger_if = {
+							limit = { culture = roman }
+
+							OR = { # Somewhat compatible when mixed with Roman culture.
 								religion_group = christian
 								religion_group = jewish_group
 								religion = bon
@@ -624,473 +642,446 @@ targetted_decisions = {
 						}
 					}
 				}
-				custom_tooltip = { text = tooltip_vows_monk_joins_society }
-				hidden_tooltip = {
-					join_society = monastic_order_stoics
+
+				has_religion_feature = religion_monastic
+				has_religion_feature = religion_feature_west_african
+			}
+		}
+
+		potential = {
+			host = { character = FROM }
+			religion = FROM
+			is_ruler = no
+			is_adult = yes
+			is_incapable = no
+			is_not_ascetic_trigger = yes
+		}
+
+		allow = {
+			trigger_if = {
+				limit = {
+					dynasty = FROM
+
+					any_owned_bloodline = {
+						has_bloodline_flag = bloodline_easy_monks
+						bloodline_is_active_for = FROM
+						bloodline_is_active_for = ROOT
+					}
+				}
+
+				# Matilde's Bloodline
+				custom_tooltip = {
+					text = BLOODLINE_EASIER_VOWS_TOOLTIP
 				}
 			}
-			if = { #Make them actually become monks/nuns if you have Societies.
+			trigger_else = {
+				OR = {
+					prisoner = yes
+
+					AND = {
+						is_heir = no
+						is_married = no
+					}
+				}
+			}
+
+			FROM = {
+				piety >= 50
+			}
+		}
+
+		effect = {
+			FROM = {
+				show_scope_change = no
+				piety = -50
+			}
+
+			add_ascetic_trait_effect = yes # Adds religion-based monk-traits
+
+			# Prisoners are freed upon taking the vows
+			if = {
+				limit = { prisoner = yes }
+				imprison = no
+			}
+
+			# The vows mean no marriage
+			if = {
+				limit = { is_married = yes }
+
+				any_spouse = {
+					show_scope_change = no
+
+					remove_spouse = ROOT
+				}
+			}
+
+			# And no consorts
+			if = {
+				limit = { is_senior_consort_party = yes }
+
+				any_consort = {
+					show_scope_change = no
+
+					remove_consort = ROOT
+				}
+			}
+
+			# Monks and Mystics actually join societies
+			if = {
 				limit = {
 					has_dlc = "Mystics"
 					is_in_society = no
-					OR = {
-						religion = catholic
-						AND = {
-							is_heretic = no
-							OR = {
-								religion = fraticelli
-								religion = waldensian
-								religion = lollard
-								religion = cathar
+					is_heretic = no
+				}
+
+				if = {
+					limit = { is_catholic_branch = yes }
+
+					custom_tooltip = {
+						text = tooltip_vows_monk_joins_society
+
+						random_list = {
+							50 = {
+								trigger = { religion = catholic }
+								join_society = monastic_order_benedictine
+							}
+							50 = { join_society = monastic_order_dominican }
+						}
+					}
+				}
+				else_if = {
+					limit = { is_orthodox_branch = yes }
+
+					custom_tooltip = {
+						text = tooltip_vows_monk_joins_society
+						join_society = monastic_order_orthodox
+					}
+				}
+				else_if = {
+					limit = { is_nestorian_branch = yes }
+
+					custom_tooltip = {
+						text = tooltip_vows_monk_joins_society
+						join_society = monastic_order_nestorian
+					}
+				}
+				else_if = {
+					limit = { is_miaphysite_branch = yes }
+
+					custom_tooltip = {
+						text = tooltip_vows_monk_joins_society
+						join_society = monastic_order_monophysite
+					}
+				}
+				else_if = {
+					limit = { religion = hindu }
+
+					custom_tooltip = {
+						text = tooltip_vows_monk_joins_society
+						join_society = monastic_order_hindu
+					}
+				}
+				else_if = {
+					limit = { religion = buddhist }
+
+					custom_tooltip = {
+						text = tooltip_vows_monk_joins_society
+						join_society = monastic_order_buddhist
+					}
+				}
+				else_if = {
+					limit = { religion = jain }
+
+					custom_tooltip = {
+						text = tooltip_vows_monk_joins_society
+						join_society = monastic_order_jain
+					}
+				}
+				# CK2Plus
+				else_if = {
+					limit = { is_apostolic_branch = yes }
+
+					custom_tooltip = {
+						text = tooltip_vows_monk_joins_society
+						join_society = monastic_order_apostolic
+					}
+				}
+				else_if = {
+					limit = { religion_openly_bon_or_reformed_trigger = yes }
+
+					custom_tooltip = {
+						text = tooltip_vows_monk_joins_society
+						join_society = monastic_order_bon
+					}
+				}
+				else_if = {
+					limit = {
+						OR = {
+							religion_openly_hellenic_or_reformed_trigger = yes
+							religion_openly_roman_or_reformed_trigger = yes
+
+							trigger_if = {
+								limit = { culture = roman }
+
+								OR = { # Somewhat compatible when mixed with Roman culture.
+									religion_group = christian
+									religion_group = jewish_group
+									religion = bon
+									religion = buddhist
+								}
 							}
 						}
 					}
-				}
-				custom_tooltip = { text = tooltip_vows_monk_joins_society }
-				hidden_tooltip = {
-					random_list = {
-						50 = {
-							trigger = { religion = catholic }
-							join_society = monastic_order_benedictine
-						}
-						50 = { join_society = monastic_order_dominican }
+
+					custom_tooltip = {
+						text = tooltip_vows_monk_joins_society
+						join_society = monastic_order_stoics
 					}
 				}
 			}
+
+			# Moves to Theocracy
 			if = {
 				limit = {
-					has_dlc = "Mystics"
-					is_in_society = no
-					OR = {
-						religion = orthodox
-						AND = {
-							is_heretic = no
-							OR = {
-								religion = bogomilist
-								religion = monothelite
-								religion = iconoclast
-								religion = paulician
-							}
-						}
+					any_realm_lord = {
+						is_theocracy = yes
+						religion = ROOT
 					}
 				}
-				custom_tooltip = { text = tooltip_vows_monk_joins_society }
-				hidden_tooltip = {
-					join_society = monastic_order_orthodox
-				}
-			}
-			if = {
-				limit = {
-					has_dlc = "Mystics"
-					is_in_society = no
-					OR = {
-						religion = nestorian
-						AND = {
-							is_heretic = no
-							religion = messalian
-						}
-					}
-				}
-				custom_tooltip = { text = tooltip_vows_monk_joins_society }
-				hidden_tooltip = {
-					join_society = monastic_order_nestorian
-				}
-			}
-			if = {
-				limit = {
-					has_dlc = "Mystics"
-					is_in_society = no
-					OR = {
-						religion = miaphysite
-						AND = {
-							is_heretic = no
-							religion = monophysite
-						}
-					}
-				}
-				custom_tooltip = { text = tooltip_vows_monk_joins_society }
-				hidden_tooltip = {
-					join_society = monastic_order_monophysite
-				}
-			}
-			if = {
-				limit = {
-					has_dlc = "Mystics"
-					is_in_society = no
-					OR = {
-						religion = apostolic
-						AND = {
-							is_heretic = no
-							religion = tondrakian
-						}
-					}
-				}
-				custom_tooltip = { text = tooltip_vows_monk_joins_society }
-				hidden_tooltip = {
-					join_society = monastic_order_apostolic
-				}
-			}
-			if = {
-				limit = {
-					has_dlc = "Mystics"
-					is_in_society = no
-					religion = hindu
-				}
-				custom_tooltip = { text = tooltip_vows_monk_joins_society }
-				hidden_tooltip = {
-					join_society = monastic_order_hindu
-				}
-			}
-			if = {
-				limit = {
-					has_dlc = "Mystics"
-					is_in_society = no
-					religion = buddhist
-				}
-				custom_tooltip = { text = tooltip_vows_monk_joins_society }
-				hidden_tooltip = {
-					join_society = monastic_order_buddhist
-				}
-			}
-			if = {
-				limit = {
-					has_dlc = "Mystics"
-					is_in_society = no
-					religion = bon
-				}
-				custom_tooltip = { text = tooltip_vows_monk_joins_society }
-				hidden_tooltip = {
-					join_society = monastic_order_bon
-				}
-			}
-			if = {
-				limit = {
-					has_dlc = "Mystics"
-					is_in_society = no
-					religion = jain
-				}
-				custom_tooltip = { text = tooltip_vows_monk_joins_society }
-				hidden_tooltip = {
-					join_society = monastic_order_jain
-				}
-			}
-			if = {
-				limit = {
-					any_realm_lord = { is_theocracy = yes religion = ROOT }
-				}
-				custom_tooltip = { text = tooltip_vows_monk_goes_to_theocracy }
-				hidden_tooltip = {
+
+				custom_tooltip = {
+					text = tooltip_vows_monk_goes_to_theocracy
+
 					random_realm_lord = {
-						limit = { is_theocracy = yes religion = ROOT }
+						limit = {
+							is_theocracy = yes
+							religion = ROOT
+						}
+
 						preferred_limit = {
-							reverse_opinion = { who = FROM value = 20 }
+							reverse_opinion = {
+								who = FROM
+								value >= 20
+							}
 							vassal_of = FROM
-							same_society_as = ROOT #The one he just joined.
+							# The one they just joined
+							same_society_as = ROOT
 						}
+
 						preferred_limit = {
 							vassal_of = FROM
-							same_society_as = ROOT #The one he just joined.
+							# The one they just joined
+							same_society_as = ROOT
 						}
+
 						preferred_limit = {
-							same_society_as = ROOT #The one he just joined.
+							# The one they just joined
+							same_society_as = ROOT
 						}
+
 						preferred_limit = {
 							vassal_of = FROM
 						}
-						ROOT = {
-							move_character = PREV
-						}
+
+						ROOT = { move_character = PREV }
 					}
 				}
 			}
+
+			# People have opinions
 			if = {
-				limit = { NOR = { trait = zealous dynasty = FROM } }
-				opinion = { modifier = opinion_cloistered_me who = FROM years = 20 }
+				limit = {
+					dynasty = FROM
+					NOT = { trait = zealous }
+				}
+
+				opinion = {
+					name = opinion_cloistered_me_family
+					who = FROM
+					years = 20
+				}
 			}
-			if = {
-				limit = { NOT = { trait = zealous } dynasty = FROM }
-				opinion = { modifier = opinion_cloistered_me_family who = FROM years = 20 }
+			else_if = {
+				limit = {
+					NOR = {
+						dynasty = FROM
+						trait = zealous
+					}
+				}
+
+				opinion = {
+					name = opinion_cloistered_me
+					who = FROM
+					years = 20
+				}
 			}
+
+			# Child reacts
 			if = {
 				limit = { is_child_of = FROM }
-				hidden_tooltip = { FROM = { character_event = { id = HFP.23001 } } }
+
+				FROM = {
+					character_event = { id = HFP.23001 }
+				}
 			}
-
 		}
 
-		revoke_allowed = {
-			always = no
-		}
 		ai_will_do = {
 			factor = 1
-			modifier = { #Hate you too much to just send you off.
-				factor = 0
-				prisoner = yes
-				NOT = { is_child_of = FROM }
-				FROM = { is_benevolent_trigger = no }
-				NOT = {
-					reverse_opinion = {
-						who = FROM
-						value = -20
-					}
-				}
-			}
-			modifier = { #Like him too much to do it.
-				factor = 0
-				reverse_opinion = {
-					who = FROM
-					value = 50
-				}
-			}
-			modifier = { #I'm a good ruler and he is a dynastic heir.
-				factor = 0
-				is_child_of = FROM
-				dynasty = FROM
-				FROM = { is_benevolent_trigger = yes }
-				reverse_opinion = {
-					who = FROM
-					value = 0
-				}
-			}
-			modifier = { #Must protect the line.
-				factor = 5
-				is_child_of = FROM
-				NOT = { dynasty = FROM }
-			}
-			modifier = { #Hate you.
-				factor = 5
-				is_child_of = FROM
-				is_rival = FROM
-			}
-			modifier = { #There are better spares.
-				factor = 20
-				is_child_of = FROM
-				OR = {
-					has_negative_congenital_trigger = yes
-					has_infertile_trait_trigger = yes
-					has_severe_disability_trigger = yes
-				}
-				FROM = {
-					any_child = {
-						is_alive = yes
-						NOR = {
-							character = ROOT
-							has_negative_congenital_trigger = yes
-							has_infertile_trait_trigger = yes
-							has_severe_disability_trigger = yes
-						}
-					}
-				}
-			}
-			modifier = { #Must preserve the realm from falling to evil.
-				factor = 5
-				is_evil_trigger = yes
-				FROM = {
-					is_benevolent_trigger = yes
-					any_child = {
-						is_alive = yes
-						NOR = {
-							character = ROOT
-							is_evil_trigger = yes
-						}
-					}
-				}
-			}
-		}
-	}
-	send_child_into_hiding = {
-		only_rulers = yes
-		is_high_prio = yes
 
-		filter = dynasty
-		ai_target_filter = dynasty
-		ai_check_interval = 12
-
-		from_potential = {
-			is_ruler = yes
-			has_regent = no
-			has_children = yes
-			OR = {
-				ai = no
-				OR = {
-					trait = amateurish_plotter
-					trait = flamboyant_schemer
-					trait = intricate_webweaver
-					trait = elusive_shadow
-				}
-			}
-		}
-		potential = {
-			NOT = { is_inaccessible_trigger = yes }
-			is_ruler = no
-			liege = { character = FROM }
-			NOT = { is_plot_target_of = FROM }
-			OR = {
-				has_character_modifier = suspected_murder_plot
+			trigger = {
 				FROM = {
-					any_known_plotter = {
-						target = PREV
-						OR = {
-							has_plot = plot_kill_character
-							has_plot = plot_kill_spouse
+					opinion = {
+						who = ROOT
+						value < 50
+					}
+
+					# I'm not a good ruler or they are not a dynastic heir
+					trigger_if = {
+						limit = { is_benevolent_trigger = yes }
+
+						opinion = {
+							who = ROOT
+							value < 0
 						}
 					}
-				}
-			}
-			NOT = { any_spouse = { character = FROM } }
-			is_child_of = FROM
-			NOT = {
-				is_inaccessible_trigger = yes
-				has_character_modifier = went_out_of_hiding_timer
-			}
-		}
-		allow = {
-			in_command_trigger = no
-			prisoner = no
-			is_inaccessible_trigger = no
-			has_job_title = no
-			custom_tooltip = {
-				text = is_target_of_murder_plot_tooltip
-				hidden_tooltip = {
-					OR = {
-						has_character_modifier = suspected_murder_plot
-						FROM = {
-							any_known_plotter = {
-								target = ROOT
-								OR = {
-									has_plot = plot_kill_character
-									has_plot = plot_kill_spouse
-									has_plot = plot_take_revenge
+					trigger_else_if = {
+						limit = { is_parent_of = ROOT }
+						NOT = { dynasty = ROOT }
+					}
+
+					# Don't hate you enough to send you off
+					trigger_if = {
+						limit = { is_benevolent_trigger = yes }
+
+						ROOT = {
+							OR = {
+								is_child_of = FROM
+								prisoner = no
+
+								reverse_opinion = {
+									who = FROM
+									value >= -20
 								}
 							}
 						}
 					}
 				}
 			}
-			custom_tooltip = {
-				text = recently_went_out_of_hiding_tooltip
-				hidden_tooltip = {
-					NOT = { has_character_modifier = went_out_of_hiding_timer }
+
+			# Must protect the line
+			mult_modifier = {
+				factor = 5
+
+				ROOT = {
+					is_child_of = FROM
+					NOT = { dynasty = FROM }
+				}
+			}
+
+			# Hate you
+			mult_modifier = {
+				factor = 5
+
+				ROOT = {
+					is_child_of = FROM
+					is_rival = FROM
+				}
+			}
+
+			# There are better spares
+			mult_modifier = {
+				factor = 20
+
+				ROOT = {
+					is_child_of = FROM
+
+					OR = {
+						has_negative_congenital_trigger = yes
+						has_infertile_trait_trigger = yes
+						has_severe_disability_trigger = yes
+					}
+				}
+
+				FROM = {
+					any_child = {
+						is_alive = yes
+						has_negative_congenital_trigger = no
+						has_infertile_trait_trigger = no
+						has_severe_disability_trigger = no
+					}
+				}
+			}
+
+			# Must keep the realm from falling to evil
+			mult_modifier = {
+				factor = 5
+
+				ROOT = { is_evil_trigger = yes }
+
+				FROM = {
+					is_benevolent_trigger = yes
+
+					any_child = {
+						is_alive = yes
+						is_evil_trigger = no
+					}
 				}
 			}
 		}
-		effect = {
-			custom_tooltip = { text = go_into_hiding_info_tooltip }
-			add_trait = in_hiding
-			hidden_tooltip = {
-				set_character_flag = in_hiding_murder
-				ROOT = {
-					any_plotter = {
-						target = ROOT
-						limit = {
-							NOT = { has_character_flag = murder_in_motion }
-							NOT = { character = FROM }
-							OR = {
-								has_plot = plot_kill_character
-								has_plot = plot_kill_spouse
-							}
-						}
-						character_event = { id = CM.6004 }
-						any_backed_character = {
-							character_event = { id = CM.6004 }
-						}
+	}
+
+	send_child_into_hiding = {
+		filter = close_relatives
+		ai_target_filter = close_relatives
+		ai_check_interval = 12
+
+		is_high_prio = yes
+
+		only_rulers = yes
+
+		from_potential = {
+			has_living_children = yes
+			has_regent = no
+
+			trigger_if = {
+				limit = { ai = yes }
+				has_education_intrigue_trigger = yes
+			}
+		}
+
+		potential = {
+			is_child_of = FROM
+			host = { character = FROM }
+			is_ruler = no
+			prisoner = no
+
+			NOR = {
+				is_married = FROM
+				has_character_modifier = went_out_of_hiding_timer
+
+				# CleanSlate: Not if you're plotting against your own child (you monster)
+				trigger_if = {
+					limit = { is_plot_target_of = FROM }
+
+					FROM = {
+						has_plot = plot_kill_character
 					}
-					any_plotter = {
-						target = ROOT
-						limit = {
-							has_character_flag = murder_in_motion
-							OR = {
-								has_plot = plot_kill_character
-								has_plot = plot_kill_spouse
-							}
-						}
-						character_event = { id = CM.6180 }
-						any_backed_character = {
-							character_event = { id = CM.6004 }
-						}
-					}
-				}
-				father = {
-					if = {
-						limit = {
-							NOT = { character = FROM }
-							NOT = { plot_target_char = { character = ROOT } }
-							NOT = { any_backed_character = { plot_target_char = { character = ROOT } } }
-							NOT = { is_rival = ROOT }
-						}
-						character_event = { id = CM.6004 }
-					}
-				}
-				mother = {
-					if = {
-						limit = {
-							NOT = { character = FROM }
-							NOT = { plot_target_char = { character = ROOT } }
-							NOT = { any_backed_character = { plot_target_char = { character = ROOT } } }
-							NOT = { is_rival = ROOT }
-						}
-						character_event = { id = CM.6004 }
-					}
-				}
-				any_spouse = {
-					limit = {
-						NOT = { plot_target_char = { character = ROOT } }
-						NOT = { any_backed_character = { plot_target_char = { character = ROOT } } }
-						NOT = { is_rival = ROOT }
-					}
-					character_event = { id = CM.6004 }
-				}
-				any_child = {
-					limit = {
-						NOT = { plot_target_char = { character = ROOT } }
-						NOT = { any_backed_character = { plot_target_char = { character = ROOT } } }
-						NOT = { is_rival = ROOT }
-					}
-					character_event = { id = CM.6004 }
-				}
-				any_lover = {
-					limit = {
-						NOT = { plot_target_char = { character = ROOT } }
-						NOT = { any_backed_character = { plot_target_char = { character = ROOT } } }
-						NOT = { is_rival = ROOT }
-						NOT = { spouse = { character = ROOT } }
-					}
-					character_event = { id = CM.6004 }
-				}
-				any_sibling = {
-					limit = {
-						NOT = { plot_target_char = { character = ROOT } }
-						NOT = { any_backed_character = { plot_target_char = { character = ROOT } } }
-						NOT = { is_rival = ROOT }
-						NOT = { is_lover = ROOT }
-					}
-					character_event = { id = CM.6004 }
-				}
-				any_rival = {
-					limit = {
-						NOT = { character = FROM }
-						NOT = { plot_target_char = { character = ROOT } }
-						NOT = { any_backed_character = { plot_target_char = { character = ROOT } } }
-					}
-					character_event = { id = CM.6004 }
 				}
 			}
 		}
 
-		ai_will_do = {
-			factor = 1
-			modifier = {
-				factor = 0.3
-				always = yes
-			}
-			modifier = {
-				factor = 0
-				NOT = {
+		allow = {
+			custom_tooltip = {
+				text = is_target_of_murder_plot_tooltip
+
+				OR = {
 					has_character_modifier = suspected_murder_plot
+
 					FROM = {
 						any_known_plotter = {
 							target = ROOT
-							plot_power = 0.5
+
 							OR = {
 								has_plot = plot_kill_character
 								has_plot = plot_kill_spouse
@@ -1100,38 +1091,152 @@ targetted_decisions = {
 					}
 				}
 			}
-			modifier = {
-				factor = 0
-				NOT = {
-					is_female = no
-					is_primary_heir = yes
-					AND = {
-						is_female = yes
-						FROM = { has_law = true_cognatic_succession }
+
+			custom_tooltip = {
+				text = recently_went_out_of_hiding_tooltip
+
+				NOT = { has_character_modifier = went_out_of_hiding_timer }
+			}
+
+			is_inaccessible_trigger = no
+			has_job_title = no
+			in_command_trigger = no
+		}
+
+		effect = {
+			custom_tooltip = {
+				text = go_into_hiding_info_tooltip
+
+				add_trait = in_hiding
+				set_character_flag = do_not_disturb
+				set_character_flag = in_hiding_murder
+			}
+
+			hidden_effect = {
+				any_plotter = {
+					target = ROOT
+
+					limit = {
+						OR = {
+							has_plot = plot_kill_character
+							has_plot = plot_kill_spouse
+							has_plot = plot_take_revenge
+						}
+					}
+
+					if = {
+						# CleanSlate: Prevent the AI from firing unneeded notification events
+						limit = { ai = yes }
+
+						if = {
+							# CleanSlate: Clear the flag directly instead of firing the event that clears it
+							limit = { has_character_flag = murder_in_motion }
+							clr_character_flag = murder_in_motion
+						}
+					}
+					else = {
+						# CleanSlate: Players can have notification events
+						if = {
+							limit = { has_character_flag = murder_in_motion }
+							character_event = { id = CM.6180 } # Notify, remove flag
+						}
+						else = {
+							character_event = { id = CM.6004 } # Notify
+						}
+					}
+
+					any_backed_character = {
+						limit = { ai = no }
+						character_event = { id = CM.6004 } # Notify
+					}
+				}
+
+				any_player = {
+					limit = {
+						OR = {
+							is_married = ROOT
+							is_child_of = ROOT
+							is_lover = ROOT
+							is_parent_of = ROOT
+							is_rival = ROOT
+						}
+
+						NOR = {
+							character = FROM
+
+							plot_target_char = {
+								character = ROOT
+							}
+
+							any_backed_character = {
+								plot_target_char = {
+									character = ROOT
+								}
+							}
+						}
+					}
+
+					character_event = { id = CM.6004 } # Notify
+				}
+			}
+		}
+
+		ai_will_do = {
+			factor = 0.25
+
+			trigger = {
+				trigger_if = {
+					limit = {
+						NOT = { is_primary_heir = FROM }
+					}
+
+					trigger_if = {
+						limit = { is_female = yes }
+
+						OR = {
+							has_law = true_cognatic_succession
+							has_law = enatic_cognatic_succession
+							has_law = enatic_succession
+						}
+					}
+					trigger_else = {
+						OR = {
+							has_law = true_cognatic_succession
+							has_law = cognatic_succession
+							has_law = agnatic_succession
+						}
 					}
 				}
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.5
-				NOT = {
-					reverse_opinion = {
-						who = FROM
-						value = -24
+
+				FROM = {
+					opinion = {
+						who = ROOT
+						value < -25
 					}
 				}
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 1.5
-				reverse_opinion = {
-					who = FROM
-					value = 25
+
+				FROM = {
+					opinion = {
+						who = ROOT
+						value >= 25
+					}
 				}
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 5
-				FROM = { is_inaccessible_trigger = yes }
+				FROM = { trait = in_hiding }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 10
 				FROM = { trait = paranoid }
 			}
@@ -1139,95 +1244,88 @@ targetted_decisions = {
 	}
 
 	take_child_out_of_hiding = {
-		only_rulers = yes
-		is_high_prio = yes
-
-		filter = dynasty
-		ai_target_filter = dynasty
+		filter = close_relatives
+		ai_target_filter = close_relatives
 		ai_check_interval = 12
 
+		is_high_prio = yes
+
+		only_rulers = yes
+
 		from_potential = {
-			is_ruler = yes
+			has_living_children = yes
 			has_regent = no
-			has_children = yes
 		}
 
 		potential = {
-			is_inaccessible_trigger = yes
-			is_ruler = no
-			liege = { character = FROM }
 			is_child_of = FROM
-			prisoner = no
 			has_character_flag = in_hiding_murder
-			NOT = { any_spouse = { character = FROM } }
+			host = { character = FROM }
+			is_ruler = no
+			prisoner = no
+			NOT = { is_married = FROM }
 		}
 
 		allow = {
-			trait = in_hiding #Leave this as trait
+			trait = in_hiding
 		}
+
 		effect = {
-			custom_tooltip = { text = come_out_of_hiding_info_tooltip }
-			hidden_tooltip = {
-				remove_trait = in_hiding
+			custom_tooltip = {
+				text = come_out_of_hiding_info_tooltip
+
 				clr_character_flag = in_hiding_murder
+				clr_character_flag = do_not_disturb
+				remove_trait = in_hiding
+
 				add_character_modifier = {
 					name = went_out_of_hiding_timer
-					duration = 180
+					months = 6
 					hidden = yes
 				}
-				any_plotter = {
-					target = ROOT
+
+				# Notify player close family and plotters
+				any_player = {
 					limit = {
-						NOT = { character = FROM }
 						OR = {
-							has_plot = plot_kill_character
-							has_plot = plot_kill_spouse
-							has_plot = plot_take_revenge
+							AND = {
+								OR = {
+									has_plot = plot_kill_character
+									has_plot = plot_kill_spouse
+									has_plot = plot_take_revenge
+								}
+
+								plot_target_char = {
+									character = ROOT
+								}
+							}
+
+							is_parent_of = ROOT
+							sibling = ROOT
 						}
+
+						NOT = { character = FROM }
 					}
-					character_event = { id = CM.6005 }
-				}
-				father = {
-					if = {
-						limit = {
-							NOT = { character = FROM }
-						}
-						character_event = { id = CM.6005 }
-					}
-				}
-				mother = {
-					if = {
-						limit = {
-							NOT = { character = FROM }
-						}
-						character_event = { id = CM.6005 }
-					}
-				}
-				any_sibling = {
-					limit = {
-						NOT = {
-							plot_target_char = { character = ROOT }
-						}
-					}
-					character_event = { id = CM.6005 }
+
+					character_event = { id = CM.6005 } # Notify
 				}
 			}
 		}
 
 		ai_will_do = {
 			factor = 1
-			modifier = {
-				factor = 0.3
-				FROM = { trait = paranoid }
-			}
-			modifier = {
-				factor = 0
-				OR = {
+
+			trigger = {
+				# Don't take plot targets out of hiding
+				NOR = {
 					has_character_modifier = suspected_murder_plot
+
 					FROM = {
 						any_known_plotter = {
 							target = ROOT
-							plot_power = 0.5
+
+							plot_power >= 0.5
+
 							OR = {
 								has_plot = plot_kill_character
 								has_plot = plot_kill_spouse
@@ -1236,111 +1334,38 @@ targetted_decisions = {
 						}
 					}
 				}
+			}
+
+			mult_modifier = {
+				factor = 0.3
+				FROM = { trait = paranoid }
 			}
 		}
 	}
 
 	go_into_hiding = {
-		only_playable = yes
-		is_high_prio = yes
-
 		filter = self
 		ai_target_filter = self
 		ai_check_interval = 12
 
+		is_high_prio = yes
+
+		only_rulers = yes
+
 		potential = {
 			prisoner = no
-			is_inaccessible_trigger = no
-			OR = {
-				ai = no
-				trait = amateurish_plotter
-				trait = flamboyant_schemer
-				trait = intricate_webweaver
-				trait = elusive_shadow
-			}
 		}
+
 		allow = {
-			in_command_trigger = no
-			has_job_title = no
 			custom_tooltip = {
 				text = is_target_of_murder_plot_tooltip
-				hidden_tooltip = {
-					OR = {
-						has_character_modifier = suspected_murder_plot
-						any_known_plotter = {
-							target = ROOT
-							OR = {
-								has_plot = plot_kill_character
-								has_plot = plot_kill_spouse
-								has_plot = plot_take_revenge
-							}
-						}
-					}
-				}
-			}
-			custom_tooltip = {
-				text = recently_went_out_of_hiding_tooltip
-				hidden_tooltip = {
-					NOT = { has_character_modifier = went_out_of_hiding_timer }
-				}
-			}
-		}
-		effect = {
-			custom_tooltip = { text = go_into_hiding_info_tooltip }
-			add_trait = in_hiding
-			hidden_tooltip = {
-				set_character_flag = in_hiding_murder
-				ROOT = {
-					any_plotter = {
-						target = ROOT
-						limit = {
-							NOT = { has_character_flag = murder_in_motion }
-							OR = {
-								has_plot = plot_kill_character
-								has_plot = plot_kill_spouse
-								has_plot = plot_take_revenge
-							}
-						}
-						character_event = { id = CM.6000 }
-						any_backed_character = {
-							character_event = { id = CM.6000 }
-						}
-					}
-					any_plotter = {
-						target = ROOT
-						limit = {
-							has_character_flag = murder_in_motion
-							OR = {
-								has_plot = plot_kill_character
-								has_plot = plot_kill_spouse
-								has_plot = plot_take_revenge
-							}
-						}
-						character_event = { id = CM.6180 }
-						any_backed_character = {
-							character_event = { id = CM.6000 }
-						}
-					}
-				}
-				any_spouse = {
-					limit = {
-						NOT = { plot_target_char = { character = ROOT } }
-						NOT = { any_backed_character = { plot_target_char = { character = ROOT } } }
-						NOT = { is_rival = ROOT }
-					}
-					character_event = { id = CM.6000 }
-				}
-			}
-		}
-		ai_will_do = {
-			factor = 1
-			modifier = {
-				factor = 0
-				NOT = {
+
+				OR = {
 					has_character_modifier = suspected_murder_plot
+
 					any_known_plotter = {
 						target = ROOT
-						plot_power = 0.5
+
 						OR = {
 							has_plot = plot_kill_character
 							has_plot = plot_kill_spouse
@@ -1349,36 +1374,127 @@ targetted_decisions = {
 					}
 				}
 			}
-			modifier = {
-				factor = 0
-				ROOT = {
-					any_plotter = {
+
+			custom_tooltip = {
+				text = recently_went_out_of_hiding_tooltip
+
+				NOT = { has_character_modifier = went_out_of_hiding_timer }
+			}
+
+			is_inaccessible_trigger = no
+			has_job_title = no
+			in_command_trigger = no
+		}
+
+		effect = {
+			custom_tooltip = {
+				text = go_into_hiding_info_tooltip
+
+				add_trait = in_hiding
+				set_character_flag = do_not_disturb
+
+				# Notify close family and plotters
+				any_plotter = {
+					target = ROOT
+
+					limit = {
+						OR = {
+							has_plot = plot_kill_character
+							has_plot = plot_kill_spouse
+							has_plot = plot_take_revenge
+						}
+					}
+
+					# CleanSlate: AI doesn't need notification events
+					if = {
+						limit = { ai = yes }
+
+						if = {
+							limit = { has_character_flag = murder_in_motion }
+							clr_character_flag = murder_in_motion
+						}
+					}
+
+					# CleanSlate: Players do
+					else = {
+						if = {
+							limit = { has_character_flag = murder_in_motion }
+							character_event = { id = CM.6180 }
+						}
+
+						character_event = { id = CM.6000 }
+					}
+
+					any_backed_character = {
+						limit = { ai = no }
+						character_event = { id = CM.6000 }
+					}
+				}
+
+				any_player = {
+					limit = {
+						is_close_relative = ROOT
+
+						NOR = {
+							plot_target_char = {
+								character = ROOT
+							}
+
+							any_backed_character = {
+								plot_target_char = {
+									character = ROOT
+								}
+							}
+						}
+					}
+
+					character_event = { id = CM.6000 }
+				}
+			}
+		}
+
+		ai_will_do = {
+			factor = 0.5
+
+			trigger = {
+				OR = {
+					has_character_modifier = suspected_murder_plot
+
+					any_known_plotter = {
 						target = ROOT
-						is_primary_heir = yes
-						ai = no
+
+						plot_power >= 0.5
+
+						OR = {
+							has_plot = plot_kill_character
+							has_plot = plot_kill_spouse
+							has_plot = plot_take_revenge
+						}
 					}
 				}
 			}
-			modifier = {
-				factor = 0.5
-			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.1
-				age = 65
+				practical_age >= 65
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.1
 				trait = brave
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 2
 				trait = depressed
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 5
 				trait = craven
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 10
 				trait = paranoid
 			}
@@ -1386,87 +1502,102 @@ targetted_decisions = {
 	}
 
 	come_out_of_hiding = {
-		only_rulers = yes
-		is_high_prio = yes
-
 		filter = self
 		ai_target_filter = self
 		ai_check_interval = 12
 
+		is_high_prio = yes
+
+		only_rulers = yes
+
 		potential = {
-			is_ruler = yes
 			trait = in_hiding
 			has_character_flag = in_hiding_murder
 			NOT = { has_character_flag = in_religious_seclusion }
 		}
+
 		allow = {
-			OR = {
-				OR = {
-					age = 16
-					NOT = {	trait = incapable }
+			trigger_if = {
+				limit = {
+					OR = {
+						is_adult = no
+						is_incapable = yes
+					}
 				}
+
 				regent = {
-					NOT = { trait = deceitful }
-					NOT = { trait = ambitious }
-					NOT = { is_rival = ROOT }
+					NOR = {
+						trait = deceitful
+						trait = ambitious
+						is_rival = ROOT
+					}
 				}
 			}
 		}
+
 		effect = {
-			custom_tooltip = { text = come_out_of_hiding_info_tooltip }
-			hidden_tooltip = {
-				remove_trait = in_hiding
+			custom_tooltip = {
+				text = come_out_of_hiding_info_tooltip
+
+				clr_character_flag = do_not_disturb
 				clr_character_flag = in_hiding_murder
+				remove_trait = in_hiding
+
 				add_character_modifier = {
 					name = went_out_of_hiding_timer
-					duration = 180
+					months = 6
 					hidden = yes
 				}
-				ROOT = {
-					any_plotter = {
-						target = ROOT
-						limit = {
+
+				# Notify player close family and plotters
+				any_player = {
+					limit = {
+						trigger_if = {
+							limit = { is_close_relative = ROOT }
+
+							NOR = {
+								plot_target_char = {
+									character = ROOT
+								}
+
+								any_backed_character = {
+									plot_target_char = {
+										character = ROOT
+									}
+								}
+							}
+						}
+						trigger_else = {
 							OR = {
 								has_plot = plot_kill_character
 								has_plot = plot_kill_spouse
 								has_plot = plot_take_revenge
 							}
-						}
-						character_event = { id = CM.6001 }
-					}
-				}
-				any_spouse = {
-					limit = {
-						ROOT = {
-							NOT = { is_plot_target_of = THIS }
+
+							plot_target_char = {
+								character = ROOT
+							}
 						}
 					}
+
 					character_event = { id = CM.6001 }
 				}
 			}
 		}
+
 		ai_will_do = {
 			factor = 1
-			modifier = {
-				factor = 0.3
-				trait = paranoid
-			}
-			modifier = {
-				factor = 0
-				NOT = {
-					ROOT = {
-						any_plotter = {
-							target = ROOT
-							is_primary_heir = yes
-							ai = no
-						}
-					}
-				}
-				OR = {
+
+			trigger = {
+				# Stay in hiding if still a (suspected) target of a plot
+				NOR = {
 					has_character_modifier = suspected_murder_plot
+
 					any_known_plotter = {
 						target = ROOT
-						plot_power = 0.5
+
+						plot_power >= 0.5
+
 						OR = {
 							has_plot = plot_kill_character
 							has_plot = plot_kill_spouse
@@ -1474,118 +1605,88 @@ targetted_decisions = {
 						}
 					}
 				}
+			}
+
+			mult_modifier = {
+				factor = 0.3
+				trait = paranoid
 			}
 		}
 	}
 
 	send_spouse_into_hiding = {
-		only_rulers = yes
-		is_high_prio = yes
-
 		filter = spouse
 		ai_target_filter = spouse
 		ai_check_interval = 12
 
+		is_high_prio = yes
+
+		only_rulers = yes
+
 		from_potential = {
-			is_ruler = yes
+			is_married = yes
 			has_regent = no
-			OR = {
-				ai = no
-				OR = {
-					trait = amateurish_plotter
-					trait = flamboyant_schemer
-					trait = intricate_webweaver
-					trait = elusive_shadow
-				}
-			}
 		}
+
 		potential = {
-			is_inaccessible_trigger = no
+			host = { character = FROM }
 			is_ruler = no
-			is_married = FROM
-			liege = { character = FROM }
-			NOR = {
-				trait = in_hiding
-				AND = {
-					is_plot_target_of = FROM
-					FROM = {
-						OR = {
-							has_plot = plot_kill_character
-							has_plot = plot_kill_spouse
-							has_plot = plot_take_revenge
-						}
-					}
+			is_inaccessible_trigger = no
+
+			# CleanSlate: Not if you're plotting against your spouse yourself (you monster)
+			trigger_if = {
+				limit = { is_plot_target_of = FROM }
+
+				FROM = {
+					NOT = { has_plot = plot_kill_spouse }
 				}
 			}
 		}
+
 		allow = {
-			in_command_trigger = no
-			prisoner = no
-			has_job_title = no
 			custom_tooltip = {
 				text = is_target_of_murder_plot_tooltip
-				hidden_tooltip = {
-					OR = {
-						has_character_modifier = suspected_murder_plot
-						FROM = {
-							any_known_plotter = {
-								target = PREV
-								OR = {
-									has_plot = plot_kill_character
-									has_plot = plot_kill_spouse
-									has_plot = plot_take_revenge
-								}
+
+				OR = {
+					has_character_modifier = suspected_murder_plot
+
+					FROM = {
+						any_known_plotter = {
+							target = ROOT
+
+							OR = {
+								has_plot = plot_kill_character
+								has_plot = plot_kill_spouse
+								has_plot = plot_take_revenge
 							}
 						}
 					}
 				}
 			}
+
 			custom_tooltip = {
 				text = recently_went_out_of_hiding_tooltip
-				hidden_tooltip = {
-					NOT = { has_character_modifier = went_out_of_hiding_timer }
-				}
+
+				NOT = { has_character_modifier = went_out_of_hiding_timer }
 			}
+
+			has_job_title = no
+			in_command_trigger = no
+			prisoner = no
 		}
+
 		effect = {
-			custom_tooltip = { text = go_into_hiding_info_tooltip }
-			hidden_tooltip = {
+			custom_tooltip = {
+				text = go_into_hiding_info_tooltip
+
 				add_trait = in_hiding
+				set_character_flag = do_not_disturb
 				set_character_flag = in_hiding_murder
-				ROOT = {
-					any_plotter = {
-						target = ROOT
-						limit = {
-							NOT = { has_character_flag = murder_in_motion }
-							OR = {
-								has_plot = plot_kill_character
-								has_plot = plot_kill_spouse
-								has_plot = plot_take_revenge
-							}
-						}
-						character_event = { id = CM.6002 }
-						any_backed_character = {
-							character_event = { id = CM.6002 }
-						}
-					}
-					any_plotter = {
-						target = ROOT
-						limit = {
-							has_character_flag = murder_in_motion
-							OR = {
-								has_plot = plot_kill_character
-								has_plot = plot_kill_spouse
-								has_plot = plot_take_revenge
-							}
-						}
-						character_event = { id = CM.6180 }
-						any_backed_character = {
-							character_event = { id = CM.6002 }
-						}
-					}
-				}
+
+				# Notify player and close family and plotters
 				any_plotter = {
 					target = ROOT
+
 					limit = {
 						OR = {
 							has_plot = plot_kill_character
@@ -1593,22 +1694,71 @@ targetted_decisions = {
 							has_plot = plot_take_revenge
 						}
 					}
-					any_plot_backer = {
+
+					# CleanSlate: AI don't need notification events
+					if = {
+						limit = { ai = yes }
+
+						if = {
+							limit = { has_character_flag = murder_in_motion }
+							clr_character_flag = murder_in_motion
+						}
+					}
+
+					# CleanSlate: Players do
+					else = {
+						if = {
+							limit = { has_character_flag = murder_in_motion }
+							character_event = { id = CM.6180 }
+						}
+						else = {
+							character_event = { id = CM.6002 }
+						}
+					}
+
+					any_backed_character = {
+						limit = { ai = no }
 						character_event = { id = CM.6002 }
 					}
 				}
+
+				any_player = {
+					limit = {
+						is_close_relative = ROOT
+
+						NOR = {
+							character = FROM
+
+							plot_target_char = {
+								character = ROOT
+							}
+
+							any_backed_character = {
+								plot_target_char = {
+									character = ROOT
+								}
+							}
+						}
+					}
+
+					character_event = { id = CM.6002 }
+				}
 			}
 		}
+
 		ai_will_do = {
-			factor = 1
-			modifier = {
-				factor = 0
-				NOT = {
-					ROOT = { has_character_modifier = suspected_murder_plot }
+			factor = 0.25
+
+			trigger = {
+				OR = {
+					has_character_modifier = suspected_murder_plot
+
 					FROM = {
 						any_known_plotter = {
 							target = ROOT
-							plot_power = 0.5
+
+							plot_power >= 0.5
+
 							OR = {
 								has_plot = plot_kill_character
 								has_plot = plot_kill_spouse
@@ -1618,118 +1768,168 @@ targetted_decisions = {
 					}
 				}
 			}
-			modifier = {
-				factor = 0.5
-				always = yes
-			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.1
-				age = 65
+				practical_age >= 65
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.1
-				trait = pregnant
-				NOT = {
-					father_of_unborn = {
-						character = FROM
+
+				OR = {
+					FROM = {
+						trait = pregnant
+						father_of_unborn_known = yes
+						father_of_unborn = { NOT = { character = ROOT } }
+					}
+
+					ROOT = {
+						trait = pregnant
+						father_of_unborn_known = yes
+						father_of_unborn = { NOT = { character = FROM } }
 					}
 				}
 			}
-			modifier = {
-				factor = 0.5
-				NOT = {
-					reverse_opinion = {
-						who = FROM
-						value = -24
+
+			mult_modifier = {
+				factor = 10
+
+				OR = {
+					FROM = {
+						trait = pregnant
+						father_of_unborn_known = yes
+						father_of_unborn = { character = ROOT }
+					}
+
+					ROOT = {
+						trait = pregnant
+						father_of_unborn_known = yes
+						father_of_unborn = { character = FROM }
 					}
 				}
 			}
-			modifier = {
+
+			mult_modifier = {
+				factor = 0.5
+
+				FROM = {
+					opinion = {
+						who = ROOT
+						value < -25
+					}
+				}
+			}
+
+			mult_modifier = {
 				factor = 1.5
-				reverse_opinion = {
-					who = FROM
-					value = 25
+
+				FROM = {
+					opinion = {
+						who = ROOT
+						value >= 25
+					}
 				}
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 5
 				FROM = { trait = in_hiding }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 10
 				FROM = { trait = paranoid }
-			}
-			modifier = {
-				factor = 10
-				trait = pregnant
-				father_of_unborn = {
-					character = FROM
-				}
 			}
 		}
 	}
 
 	take_spouse_out_of_hiding = {
-		only_rulers = yes
-		is_high_prio = yes
-
 		filter = spouse
 		ai_target_filter = spouse
 		ai_check_interval = 12
 
+		is_high_prio = yes
+
+		only_rulers = yes
+
 		from_potential = {
-			is_ruler = yes
+			is_married = yes
 			has_regent = no
 		}
+
 		potential = {
 			trait = in_hiding
+			host = { character = FROM }
 			is_ruler = no
-			is_married = FROM
-			liege = { character = FROM }
 			prisoner = no
-			has_character_flag = in_hiding_murder
 		}
-		allow = {
-			trait = in_hiding
-		}
+
 		effect = {
-			custom_tooltip = { text = come_out_of_hiding_other_tooltip }
-			hidden_tooltip = {
+			custom_tooltip = {
+				text = come_out_of_hiding_info_tooltip
+
 				remove_trait = in_hiding
-				clr_character_flag = in_hiding_murder
+				clr_character_flag = do_not_disturb
+
 				add_character_modifier = {
 					name = went_out_of_hiding_timer
-					duration = 180
+					months = 6
 					hidden = yes
 				}
-				any_plotter = {
-					target = ROOT
+
+				# Notify player close family and plotters
+				any_player = {
 					limit = {
-						spouse = { NOT = { character = ROOT } }
-						OR = {
-							has_plot = plot_kill_character
-							has_plot = plot_kill_spouse
-							has_plot = plot_take_revenge
+						trigger_if = {
+							limit = { is_close_relative = ROOT }
+
+							NOR = {
+								character = FROM
+
+								plot_target_char = {
+									character = ROOT
+								}
+
+								any_backed_character = {
+									plot_target_char = {
+										character = ROOT
+									}
+								}
+							}
+						}
+						trigger_else = {
+							OR = {
+								has_plot = plot_kill_character
+								has_plot = plot_kill_spouse
+								has_plot = plot_take_revenge
+							}
+
+							plot_target_char = {
+								character = ROOT
+							}
 						}
 					}
+
 					character_event = { id = CM.6003 }
 				}
 			}
 		}
+
 		ai_will_do = {
 			factor = 1
-			modifier = {
-				factor = 0.1
-				FROM = { trait = paranoid }
-			}
-			modifier = {
-				factor = 0
-				OR = {
+
+			trigger = {
+				# Only if no longer a (suspected) plot target
+				NOR = {
 					has_character_modifier = suspected_murder_plot
+
 					FROM = {
 						any_known_plotter = {
 							target = ROOT
-							plot_power = 0.5
+
+							plot_power >= 0.5
+
 							OR = {
 								has_plot = plot_kill_character
 								has_plot = plot_kill_spouse
@@ -1739,7 +1939,11 @@ targetted_decisions = {
 					}
 				}
 			}
+
+			mult_modifier = {
+				factor = 0.1
+				FROM = { trait = paranoid }
+			}
 		}
 	}
 }
-

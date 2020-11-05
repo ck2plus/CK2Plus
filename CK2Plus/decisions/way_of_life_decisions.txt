@@ -1,46 +1,74 @@
-# Targetted decisions are possible vs _all_ other characters and shown are in the Diplomacy View, not the Intrigue View. The taker is in the FROM scope.
+# Targeted decisions are possible vs _all_ other characters and shown are in the Diplomacy View, not the Intrigue View. The taker is in the FROM scope.
 #
 # filter = [self/court/home_court/vassals/sub_realm/realm/dynasty/spouse/liege/religious_head/rivals/society/all] ('self' MUST be set for decisions targetting only the taker, the other filter types can be set to lessen CPU load)
 # ai_target_filter = [self/court/home_court/vassals/sub_realm/realm/dynasty/spouse/liege/religious_head/rivals/society/all] (which characters for which the AI evaluates the decision.)
-#	court: all characters in the AI's host court, including prisoners, and characters currently away (wards, prisoners, etc)
-#	home_court: all characters in the AI's home court, including prisoners, and characters currently away (wards, prisoners, etc)
+#	court: all characters in the host court, including prisoners, and characters currently away (wards, prisoners, etc)
+#	home_court: all characters in the home court, including prisoners, and characters currently away (wards, prisoners, etc)
 #	vassals: direct vassal rulers of the AI's employer
 #	sub_realm: all characters below the AI's employer
 #	realm: all characters in the same top realm as the AI
 #	dynasty: all members of the same dynasty (but not yourself)
 #	rivals: your rivals plus any character you have an opinion modifier with 'crime = yes' set (the same set of characters the 'is_foe' trigger evaluates)
-# society: the other members of your society (but not yourself)
+#	society: the other members of your society (but not yourself)
 #	all: all living characters (Avoid if possible. VERY CPU-HEAVY!)
 #
 
-targetted_decisions = {
+targeted_decisions = {
 
 	break_up_with_lover = {
 		ai_target_filter = court
 		ai_check_interval = 12
+
 		from_potential = {
 			has_dlc = "Way of Life"
 			has_lover = yes
 		}
+
 		potential = {
 			is_lover = FROM
-			NOT = { any_spouse = { character = FROM } }
-			NOT = { any_consort = { character = FROM } }
-		}
-		allow = {
-			always = yes
-		}
-		effect = {
-			FROM = { character_event = { id = WoL.1109 tooltip = EVTTOOLTIP64046 } }
-		}
-		ai_will_do = {
-			factor = 1
-			modifier = {
-				factor = 0.1
-				always = yes
+
+			NOR = {
+				is_married = FROM
+				is_consort = FROM
 			}
-			modifier = {
+		}
+
+		allow = {
+		}
+
+		effect = {
+			FROM = {
+				character_event = {
+					id = WoL.1109
+					tooltip = EVTTOOLTIP64046
+				}
+			}
+		}
+
+		ai_will_do = {
+			factor = 0.1
+
+
+			trigger = {
+				trigger_if = {
+					limit = { practical_age < 40 }
+
+					reverse_opinion = {
+						who = FROM
+						value < 25
+					}
+				}
+				trigger_else = {
+					reverse_opinion = {
+						who = FROM
+						value < 50
+					}
+				}
+			}
+
+			mult_modifier = {
 				factor = 0.1
+
 				FROM = {
 					OR = {
 						trait = lustful
@@ -48,44 +76,47 @@ targetted_decisions = {
 					}
 				}
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.5
-				reverse_opinion = { who = FROM value = 0 }
-			}
-			modifier = {
-				factor = 0
-				reverse_opinion = { who = FROM value = 25 }
-				NOT = { age = 40 }
-			}
-			modifier = {
-				factor = 0
-				reverse_opinion = { who = FROM value = 50 }
+
+				reverse_opinion = {
+					who = FROM
+					value >= 0
+				}
 			}
 		}
 	}
 
 	seduce_decision = {
 		ai_target_filter = realm
-		ai_check_interval = 12
+		ai_check_interval = 6
+
+		only_playable = yes
 
 		from_potential = {
 			OR = {
 				has_focus = focus_seduction
-				AND = {
-					has_dlc = "Way of Life"
-					NOT = { num_of_lovers = 1 }
+
+				trigger_if = {
+					limit = { has_dlc = "Way of Life" }
+
 					OR = {
 						trait = lustful
 						trait = seducer
 						trait = seductress
 					}
+
+					has_lover = no
 					at_location = ROOT
 				}
 			}
+
 			is_marriage_adult = yes
+			is_not_in_regency_trigger = yes
+			is_pregnant = no
+
 			NOT = {
-				is_pregnant = yes
-				trait = incapable
 				trait = eunuch
 				trait = infirm
 				trait = inbred
@@ -94,157 +125,117 @@ targetted_decisions = {
 				has_character_modifier = seduction_timer
 				has_character_modifier = messalian_prayer
 			}
-			OR = {
-				ai = no
-				AND = {
-					OR = {
-						is_female = no
-						trait = lustful
-						trait = hedonist
-						trait = homosexual
-						AND = {
-							any_spouse = { trait = homosexual }
-							NOT = { any_spouse = { NOT = { trait = homosexual } } }
-						}
-						AND = {
-							any_consort = { trait = homosexual }
-							is_ruler = no
-						}
-					}
-					NOT = {
-						trait = chaste
-						trait = shy
-						num_of_lovers = 5
-					}
-				}
-			}
-			prisoner = no
 		}
+
 		potential = {
-			is_marriage_adult = yes
+			is_valid_romance_target = FROM
 			prisoner = no
 
-			OR = {
-				AND = {
-					FROM = { NOT = { trait = homosexual } }
-					is_opposite_sex = FROM
-				}
-				AND = {
-					FROM = { trait = homosexual }
-					same_sex = FROM
-				}
-			}
-			OR = {
-				AND = {
-					NOT = { is_child_of = FROM }
-					NOT = { mother_even_if_dead = { is_child_of = FROM } }
-					NOT = { father_even_if_dead = { is_child_of = FROM } }
-					FROM = {
-						NOT = { is_child_of = ROOT }
-						NOT = { mother_even_if_dead = { is_child_of = ROOT } }
-						NOT = { father_even_if_dead = { is_child_of = ROOT } }
-					}
-				}
-				AND = {
-					is_pc_marriage_religion_trigger = yes
-					FROM = { is_pc_marriage_religion_trigger = yes }
-				}
-				AND = {
-					trait = lunatic
-					trait = syphilitic
-				}
-				AND = {
-					trait = possessed
-					trait = syphilitic
-				}
-			}
 			NOR = {
 				character = FROM
-				trait = incapable
-				trait = eunuch
-				trait = infirm
-				is_lover = FROM
-				is_former_lover = FROM
 				is_consort = FROM
+				is_former_lover = FROM
+				is_lover = FROM
 				is_married = FROM
 			}
 		}
+
 		allow = {
 			religion_group = FROM
+
 			custom_tooltip = {
 				text = SEDUCTION_TARGET_TIMER_RECENT
-				hidden_tooltip = {
-					NOT = { has_character_modifier = seduction_target_timer }
-				}
+
+				NOT = { has_character_modifier = seduction_target_timer }
 			}
+
 			custom_tooltip = {
 				text = SEDUCTION_DISTANCE_OKAY
-				hidden_tooltip = {
-					OR = {
-						location = { FROM = { location = { NOT = { distance = { where = PREVPREV value = 150 } } } } }
-						same_realm = FROM
+
+				OR = {
+					distance = {
+						who = FROM
+						value < 150
 					}
+
+					same_realm = FROM
 				}
 			}
+
 			is_ill = no
 			is_pregnant = no
 			NOT = { trait = celibate }
+
 			FROM = {
 				is_ill = no
 				NOT = { trait = celibate }
 			}
 		}
+
 		effect = {
-			hidden_tooltip = {
-				if = {
-					limit = { ai = no }
-					add_character_modifier = {
-						name = seduction_target_timer
-						duration = 730
-						hidden = yes
-					}
+			if = {
+				limit = { ai = no }
+
+				add_character_modifier = {
+					name = seduction_target_timer
+					years = 2
+					hidden = yes
 				}
-				if = {
-					limit = { ai = yes }
-					add_character_modifier = {
-						name = seduction_target_timer
-						duration = 90
-						hidden = yes
-					}
+			}
+			else = {
+				add_character_modifier = {
+					name = seduction_target_timer
+					months = 3
+					hidden = yes
 				}
+			}
+
+			hidden_effect = {
 				FROM = {
-					hidden_tooltip = { change_variable = { which = "lifestyle_hedonist" value = 1 } }
+					change_variable = {
+						which = lifestyle_hedonist
+						value = 1
+					}
+
 					if = {
 						limit = { ai = yes }
+
 						add_character_modifier = {
 							name = seduction_timer
-							duration = 365
+							years = 1
 							hidden = yes
 						}
 					}
+
 					opinion = {
+						name = opinion_seducing
 						who = ROOT
-						modifier = opinion_seducing
 						years = 1000
 					}
+
 					if = {
 						limit = {
 							is_close_relative = ROOT
 							is_bs_marriage_religion_trigger = no
 						}
-						character_event = { id = WoL.102 days = 1 } # Warning - Incest scandal risk
-						break = yes
-					}
-					if = {
-						limit = {
-							same_sex = ROOT
+
+						character_event = {
+							id = WoL.102 # Warning - Incest scandal risk
+							days = 1
 						}
-						character_event = { id = WoL.104 days = 1 } # Warning - Homosexual scandal risk
-						break = yes
 					}
-					if = {
+					else_if = {
+						limit = { same_sex = ROOT }
+
+						character_event = {
+							id = WoL.104 # Warning - Homosexual scandal risk
+							days = 1
+						}
+					}
+					else_if = {
 						limit = {
 							religion_group = christian
+
 							OR = {
 								is_priest = yes
 								is_ascetic_trigger = yes
@@ -252,297 +243,398 @@ targetted_decisions = {
 								ROOT = { is_ascetic_trigger = yes }
 							}
 						}
-						character_event = { id = WoL.103 days = 1 } # Warning - Priest scandal risk
-						break = yes
+
+						character_event = {
+							id = WoL.103 # Warning - Priest scandal risk
+							days = 1
+						}
 					}
-					if = {
+					else_if = {
 						limit = {
 							age_diff = {
 								who = ROOT
-								years = 25
+								years >= 25
 							}
 						}
-						character_event = { id = WoL.101 days = 1 } # Warning - Age scandal risk
-						break = yes
+
+						character_event = {
+							id = WoL.101 # Warning - Age scandal risk
+							days = 1
+						}
 					}
-					character_event = { id = WoL.100 days = 1 } # No warning - Let the chase begin!
+					else = {
+						character_event = {
+							id = WoL.100 # No warning - Let the chase begin!
+							days = 1
+						}
+					}
 				}
 			}
 		}
-		ai_will_do = {
-			factor = 1 		# 1 = 100% chance every month (for each allowed target!)
-			modifier = {
-				factor = 0.5
-				always = yes
-			}
-			modifier = {
-				factor = 0
-				has_game_rule = {
-					name = ai_seduction
-					value = off
-				}
-			}
-			modifier = {
-				factor = 0
-				is_female = yes
-				has_character_modifier = lustful_affair_timer
-			}
-			modifier = {
-				factor = 0
-				is_female = yes
-				age = 40
-			}
-			modifier = {
-				factor = 0
-				is_female = no
-				age = 60
-			}
-			#Target Traits (negative)
-			modifier = {
-				factor = 0
-				OR = {
-					trait = chaste
 
-					trait = imbecile
-					has_unattractive_trait_trigger = yes
+		ai_will_do = {
+			factor = 0.5
+
+			trigger = {
+				NOT = {
+					has_game_rule = {
+						name = ai_seduction
+						value = off
+					}
+				}
+
+				# Decision Taker
+				FROM = {
+					is_ill = no
+					num_of_lovers < 5
+
+					trigger_if = {
+						limit = { is_female = yes }
+
+						OR = {
+							trait = lustful
+							trait = seducer
+							trait = seductress
+
+							trigger_if = {
+								limit = {
+									any_spouse = {
+										trait = homosexual
+									}
+								}
+
+								NOT = {
+									any_spouse = {
+										NOT = { trait = homosexual }
+									}
+								}
+							}
+
+							trigger_if = {
+								limit = { is_ruler = no }
+
+								any_consort = {
+									trait = homosexual
+								}
+							}
+
+							trigger_if = {
+								limit = { trait = homosexual }
+
+								OR = {
+									is_married = yes
+									is_consort = yes
+								}
+							}
+						}
+					}
+
+					trigger_if = {
+						limit = { has_lover = yes }
+
+						OR = {
+							trait = lustful
+							trait = hedonist
+							trait = seducer
+							trait = seductress
+							has_focus = focus_seduction
+						}
+					}
+
+					NOR = {
+						trait = chaste
+						trait = shy
+					}
+				}
+
+				# Target
+				ROOT = {
+					is_ill = no
+					prisoner = no
+					has_unattractive_trait_trigger = no
+
+					trigger_if = {
+						limit = { is_female = yes }
+
+						practical_age < 40
+						is_pregnant = no
+						NOT = { has_character_modifier = lustful_affair_timer }
+					}
+					trigger_else = {
+						practical_age < 60
+					}
+
+					trigger_if = {
+						limit = { has_lover = yes }
+
+						OR = {
+							trait = lustful
+							trait = hedonist
+							trait = seducer
+							trait = seductress
+							has_focus = focus_seduction
+						}
+					}
+
+					trigger_if = {
+						limit = { is_close_relative = FROM }
+
+						FROM = {
+							OR = {
+								trait = lustful
+								trait = hedonist
+								trait = seducer
+								trait = seductress
+								has_focus = focus_seduction
+								trait = divine_blood
+								is_bs_marriage_religion_trigger = yes
+							}
+						}
+					}
+
+					# Don't target faithful spouses/concubines
+					trigger_if = {
+						limit = { is_married = yes }
+
+						opinion = {
+							who = spouse
+							value < 25
+						}
+					}
+
+					trigger_if = {
+						limit = { is_consort = yes }
+
+						opinion = {
+							who = consort
+							value < 50
+						}
+					}
+
+					# Don't target (top) liege's close relatives unless you're brave or reckless or hate them
+					FROM = {
+						trigger_if = {
+							limit = {
+								liege = {
+									is_parent_of = ROOT
+									is_grandparent_of = ROOT
+									is_child_of = ROOT
+									is_grandchild_of = ROOT
+									is_married = ROOT
+									is_consort = ROOT
+								}
+							}
+
+							OR = {
+								trait = brave
+								trait = seducer
+								trait = seductress
+
+								opinion = {
+									who = liege
+									value < -25
+								}
+							}
+						}
+
+						trigger_if = {
+							limit = {
+								top_liege = {
+									is_parent_of = ROOT
+									is_grandparent_of = ROOT
+									is_child_of = ROOT
+									is_grandchild_of = ROOT
+									is_married = ROOT
+									is_consort = ROOT
+								}
+							}
+
+							OR = {
+								trait = brave
+								trait = seducer
+								trait = seductress
+
+								opinion = {
+									who = top_liege
+									value < -25
+								}
+							}
+						}
+					}
 				}
 			}
-			modifier = {
-				factor = 0
-				is_close_relative = FROM
+
+			# Number of Children modifiers
+			mult_modifier = {
+				factor = 0.1
+
 				FROM = {
-					NOT = {
+					is_female = no
+					num_of_children >= 6
+				}
+			}
+
+			mult_modifier = {
+				factor = 0.5
+
+				FROM = {
+					is_female = no
+					num_of_children >= 3
+				}
+			}
+
+			mult_modifier = {
+				factor = 0.5
+
+				FROM = {
+					is_female = no
+					num_of_children >= 8
+				}
+			}
+
+			# Close relatives are gross
+			mult_modifier = {
+				factor = 0.25
+
+				is_close_relative = FROM
+
+				FROM = {
+					NOR = {
+						trait = arbitrary
+						trait = lunatic
 						trait = lustful
 						trait = hedonist
-						trait = divine_blood
-						is_bs_marriage_religion_trigger = yes
-					}
-				}
-			}
-			#don't target faithful spouses/concubines
-			modifier = {
-				factor = 0
-				is_married = yes
-				spouse = { reverse_opinion = { who = FROM value = 25 } }
-			}
-			modifier = {
-				factor = 0
-				is_consort = yes
-				liege = { reverse_opinion = { who = FROM value = 50 } }
-			}
-			#don't target liege's spouse or kids unless you're brave or reckless or hate them
-			modifier = {
-				factor = 0
-				FROM = {
-					liege = {
-						NOT = { character = FROM }
-						OR = {
-							any_child = { character = ROOT }
-							any_spouse = { character = ROOT }
-						}
-					}
-					NOT = {
-						trait = brave
 						trait = seducer
 						trait = seductress
-						opinion = { who = liege value = -25 }
+						trait = possessed
 					}
 				}
 			}
-			#same for the top liege
-			modifier = {
-				factor = 0
-				FROM = {
-					top_liege = {
-						NOT = { character = FROM }
-						OR = {
-							any_child = { character = ROOT }
-							any_spouse = { character = ROOT }
-						}
-					}
-					NOT = {
-						trait = brave
-						trait = seducer
-						trait = seductress
-						opinion = { who = top_liege value = -25 }
-					}
-				}
-			}
-			modifier = {
-				factor = 0
-				location = { FROM = { location = { NOT = { distance = { where = PREVPREV value = 150 } } } } }
-				NOT = { same_realm = FROM }
-			}
-			modifier = {
+
+			# Target players and their spouses less often
+			mult_modifier = {
 				factor = 0.1
+
 				OR = {
 					ai = no
 					any_spouse = { ai = no }
 					any_consort = { ai = no }
 				}
 			}
-			#"Dude, don't you have enough kids already?" factors
-			modifier = {
-				factor = 0.5
-				FROM = {
-					is_female = no
-					num_of_children = 3
-				}
-			}
-			modifier = {
-				factor = 0.1
-				FROM = {
-					is_female = no
-					num_of_children = 6
-				}
-			}
-			modifier = {
-				factor = 0.5
-				FROM = {
-					is_female = no
-					num_of_children = 8
-				}
-			}
 
-			modifier = {
-				factor = 2
-				NOT = { age = 20 }
-			}
-			modifier = {
-				factor = 0.5
-				age = 25
-			}
-			modifier = {
-				factor = 0.5
-				age = 30
-			}
-			modifier = {
-				factor = 0.25
-				age = 35
-			}
-
-
-
-			#enough lovers already
-			modifier = {
-				factor = 0
-				FROM = {
-					num_of_lovers = 1
-					NOT = {
-						trait = lustful
-						trait = hedonist
-						trait = seducer
-						trait = seductress
-					}
-				}
-			}
-			modifier = {
-				factor = 0.25
-				FROM = { num_of_lovers = 2 }
-			}
-			modifier = {
-				factor = 0.25
-				FROM = { num_of_lovers = 3 }
-			}
-			modifier = {
-				factor = 0.25
-				FROM = { num_of_lovers = 4 }
-			}
-			modifier = {
+			# Decision taker is influenced by their libido
+			mult_modifier = {
 				factor = 10
+
 				FROM = {
+					has_focus = focus_seduction
+
 					OR = {
 						trait = lustful
 						trait = hedonist
 						trait = seducer
 						trait = seductress
 					}
-					has_focus = focus_seduction
 				}
 			}
-			modifier = {
-				factor = 0.25
-				is_close_relative = FROM
-				FROM = {
-					OR = {
-						trait = lustful
-						trait = hedonist
-						trait = divine_blood
-						is_bs_marriage_religion_trigger = yes
-					}
-				}
-			}
-			modifier = {
+
+			# Target's words matter
+			mult_modifier = {
 				factor = 0.5
 				trait = uncouth
 			}
-			modifier = {
-				factor = 2
-				OR = {
-					trait = lustful
-					trait = hedonist
-				}
-			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 2
 				trait = gregarious
 			}
-			modifier = {
-				factor = 10
-				trait = fair
-			}
-			modifier = {
-				factor = 3
-				trait = groomed
-			}
-			modifier = {
-				factor = 0.5
-				NOT = { diplomacy = 4 }
-			}
-			modifier = {
-				factor = 0.5
-				NOT = { diplomacy = 8 }
-			}
-			modifier = {
-				factor = 1.5
-				diplomacy = 10
-			}
-			modifier = {
-				factor = 1.5
-				diplomacy = 12
-			}
-			modifier = {
-				factor = 1.5
-				diplomacy = 14
-			}
-			modifier = {
-				factor = 1.5
-				diplomacy = 16
-			}
-			modifier = {
-				factor = 1.5
-				diplomacy = 18
-			}
-			modifier = {
-				factor = 1.5
-				diplomacy = 20
-			}
-			modifier = {
-				factor = 5 # A more interesting quarry
+
+			# A more interesting quarry
+			mult_modifier = {
+				factor = 5
+
 				OR = {
 					is_playable = yes
 					is_married = yes
+					is_senior_consort_party = yes
+					is_consort = yes
+					any_close_relative = { is_alive = yes }
 				}
 			}
-			modifier = {
+
+			# Appearances are sometimes everything
+			mult_modifier = {
+				factor = 10
+				trait = fair
+			}
+
+			mult_modifier = {
+				factor = 3
+				trait = groomed
+			}
+
+			# Target players less often
+		#	mult_modifier = {
+		#		factor = 0.25
+		#		ai = no
+		#	}
+
+			# CK2Plus
+
+			# Alluring target
+			mult_modifier = {
 				factor = 0.5
+				diplomacy < 4
+			}
+
+			mult_modifier = {
+				factor = 0.5
+				diplomacy < 8
+			}
+
+			mult_modifier = {
+				factor = 1.5
+				diplomacy >= 10
+			}
+
+			mult_modifier = {
+				factor = 1.5
+				diplomacy >= 12
+			}
+
+			mult_modifier = {
+				factor = 1.5
+				diplomacy >= 14
+			}
+
+			mult_modifier = {
+				factor = 1.5
+				diplomacy >= 16
+			}
+
+			mult_modifier = {
+				factor = 1.5
+				diplomacy >= 18
+			}
+
+			mult_modifier = {
+				factor = 1.5
+				diplomacy >= 20
+			}
+
+			# Personal goals
+			mult_modifier = {
+				factor = 0.5
+
 				NOR = {
 					has_focus = focus_seduction
 					has_ambition = obj_find_lover
 				}
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.1
+
 				FROM = {
 					NOR = {
 						has_focus = focus_seduction
@@ -550,27 +642,60 @@ targetted_decisions = {
 					}
 				}
 			}
+
+			# Enough lovers already
+			mult_modifier = {
+				factor = 0.25
+				FROM = { num_of_lovers >= 2 }
+			}
+
+			mult_modifier = {
+				factor = 0.25
+				FROM = { num_of_lovers >= 3 }
+			}
+
+			mult_modifier = {
+				factor = 0.25
+				FROM = { num_of_lovers >= 4 }
+			}
+
+			mult_modifier = {
+				factor = 2
+
+				OR = {
+					trait = lustful
+					trait = hedonist
+				}
+			}
+
+			mult_modifier = {
+				factor = 2
+				practical_age < 20
+			}
+
+			mult_modifier = {
+				factor = 0.5
+				practical_age >= 25
+			}
+
+			mult_modifier = {
+				factor = 0.5
+				practical_age >= 30
+			}
+
+			mult_modifier = {
+				factor = 0.25
+				practical_age >= 35
+			}
 		}
 	}
 
 	stop_seduce_decision = {
 		filter = self
-		ai_target_filter = self
+
 		ai = no
 
 		potential = {
-			is_marriage_adult = yes
-			OR = {
-				has_focus = focus_seduction
-				AND = {
-					has_dlc = "Way of Life"
-					OR = {
-						trait = lustful
-						trait = seducer
-						trait = seductress
-					}
-				}
-			}
 			OR = {
 				has_character_flag = seduction_confirmed
 				has_any_opinion_modifier = opinion_seducing
@@ -582,16 +707,24 @@ targetted_decisions = {
 				limit = {
 					ROOT = {
 						has_opinion_modifier = {
+							name = opinion_seducing
 							who = PREV
-							modifier = opinion_seducing
 						}
 					}
 				}
+
 				save_event_target_as = target_seduced
-				ROOT = { character_event = { id = WoL.118 tooltip = stop_seduce_decision_tt } }
+
+				ROOT = {
+					show_scope_change = no
+
+					character_event = {
+						id = WoL.118
+						tooltip = stop_seduce_decision_tt
+					}
+				}
 			}
 		}
-
 
 		ai_will_do = {
 			factor = 0
@@ -599,22 +732,9 @@ targetted_decisions = {
 	}
 
 	stop_seduce_decision_target = {
-		ai_target_filter = realm
 		ai = no
 
 		from_potential = {
-			is_marriage_adult = yes
-			OR = {
-				has_focus = focus_seduction
-				AND = {
-					has_dlc = "Way of Life"
-					OR = {
-						trait = lustful
-						trait = seducer
-						trait = seductress
-					}
-				}
-			}
 			OR = {
 				has_character_flag = seduction_confirmed
 				has_any_opinion_modifier = opinion_seducing
@@ -624,19 +744,19 @@ targetted_decisions = {
 		potential = {
 			FROM = {
 				has_opinion_modifier = {
+					name = opinion_seducing
 					who = ROOT
-					modifier = opinion_seducing
 				}
 			}
 		}
 
 		effect = {
 			save_event_target_as = target_seduced
-			hidden_tooltip = {
-				FROM = { character_event = { id = WoL.118 } }
+
+			FROM = {
+				character_event = { id = WoL.118 }
 			}
 		}
-
 
 		ai_will_do = {
 			factor = 0
@@ -647,114 +767,156 @@ targetted_decisions = {
 		filter = realm
 		ai_target_filter = realm
 		ai_check_interval = 12
+
+		only_playable = yes
+
 		from_potential = {
 			OR = {
 				has_focus = focus_intrigue
-				AND = {
+
+				trigger_if = {
+					limit = { trait = schemer }
 					has_dlc = "Way of Life"
-					trait = schemer
 				}
 			}
-			has_regent = no
-			NOT = { has_any_opinion_modifier = opinion_spying_on }
-			NOT = { has_any_opinion_modifier = opinion_breaking_out }
-			prisoner = no
+
+			is_not_in_regency_trigger = yes
+
+			NOR = {
+				has_any_opinion_modifier = opinion_spying_on
+				has_any_opinion_modifier = opinion_breaking_out
+			}
 		}
+
 		potential = {
 			is_adult = yes
 			same_realm = FROM
 			NOT = { character = FROM }
 		}
+
 		allow = {
-			NOT = { trait = incapable }
 			prisoner = no
+			is_incapable = no
 			is_within_diplo_range = FROM
+
 			custom_tooltip = {
 				text = NOT_RECENTLY_SPIED_UPON
-				hidden_tooltip = {
-					NOT = { has_character_modifier = spying_target_timer }
-				}
+
+				NOT = { has_character_modifier = spying_target_timer }
 			}
+
 			FROM = {
 				custom_tooltip = {
 					text = NOT_RECENTLY_SPIED
-					hidden_tooltip = {
-						NOT = { has_character_modifier = spying_timer }
-					}
+
+					NOT = { has_character_modifier = spying_timer }
 				}
 			}
 		}
+
 		effect = {
-			hidden_tooltip = {
-				if = {
-					limit = { ai = no }
-					add_character_modifier = {
-						name = spying_target_timer
-						duration = 365
-						hidden = yes
-					}
+			if = {
+				limit = { ai = no }
+
+				add_character_modifier = {
+					name = spying_target_timer
+					years = 1
+					hidden = yes
 				}
-				if = {
-					limit = { ai = yes }
-					add_character_modifier = {
-						name = spying_target_timer
-						duration = 60
-						hidden = yes
-					}
+			}
+			else = {
+				add_character_modifier = {
+					name = spying_target_timer
+					months = 2
+					hidden = yes
 				}
+			}
+
+			hidden_effect = {
 				FROM = {
-					hidden_tooltip = { change_variable = { which = "lifestyle_intrigue" value = 1 } }
+					change_variable = {
+						which = lifestyle_intrigue
+						value = 1
+					}
+
 					any_opinion_modifier_target = {
 						limit = {
 							reverse_has_opinion_modifier = {
+								name = opinion_spying_on
 								who = PREV
-								modifier = opinion_spying_on
 							}
 						}
+
 						reverse_remove_opinion = {
+							name = opinion_spying_on
 							who = PREV
-							modifier = opinion_spying_on
 						}
 					}
+
 					opinion = {
+						name = opinion_spying_on
 						who = ROOT
-						modifier = opinion_spying_on
-						months = 12000
+						years = 1000
 					}
-					character_event = { id = WoL.2050 days = 1 }
+
+					character_event = {
+						id = WoL.2050
+						days = 1
+					}
 				}
 			}
 		}
 
 		ai_will_do = {
-			factor = 1 		# 1 = 100% chance every month (for each allowed target!)
-			modifier = {
-				factor = 0
-				NOR = {
+			factor = 1
+
+			trigger = {
+				OR = {
 					is_plot_target_of = FROM
 					is_rival = FROM
 					is_married = FROM
 					vassal_of = FROM
 					is_liege_of = FROM
+
 					AND = {
 						is_ruler = yes
 						same_liege = FROM
 					}
 				}
+
+				reverse_opinion = {
+					who = FROM
+					value < 0
+				}
 			}
-			modifier = {
-				factor = 0
-				reverse_opinion = { who = FROM value = 0 }
-			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 2.0
 				has_plot = yes
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 5.0
 				FROM = { trait = paranoid }
 			}
-			modifier = {
+
+		#	mult_modifier = {
+		#		factor = 10.0
+		#
+		#		in_faction = yes
+		#		vassal_of = FROM
+		#	}
+		#
+		#	mult_modifier = {
+		#		factor = 10.0
+		#
+		#		FROM = { leads_faction = yes }
+		#		in_faction = no
+		#		same_liege = FROM
+		#	}
+
+			# CK2Plus
+			mult_modifier = {
 				factor = 0.5
 				FROM = { trait = trusting }
 			}
@@ -763,17 +925,10 @@ targetted_decisions = {
 
 	stop_spy_on_decision = {
 		filter = self
-		ai_target_filter = self
+
 		ai = no
 
 		potential = {
-			OR = {
-				has_focus = focus_intrigue
-				AND = {
-					has_dlc = "Way of Life"
-					trait = schemer
-				}
-			}
 			has_any_opinion_modifier = opinion_spying_on
 		}
 
@@ -782,16 +937,22 @@ targetted_decisions = {
 				limit = {
 					ROOT = {
 						has_opinion_modifier = {
+							name = opinion_spying_on
 							who = PREV
-							modifier = opinion_spying_on
 						}
 					}
 				}
+
 				save_event_target_as = target_spy_on
-				ROOT = { character_event = { id = WoL.2069 tooltip = stop_spy_on_decision_tt } }
+
+				ROOT = {
+					character_event = {
+						id = WoL.2069
+						tooltip = stop_spy_on_decision_tt
+					}
+				}
 			}
 		}
-
 
 		ai_will_do = {
 			factor = 0
@@ -799,36 +960,28 @@ targetted_decisions = {
 	}
 
 	stop_spy_on_decision_target = {
-		ai_target_filter = realm
 		ai = no
 
 		from_potential = {
-			OR = {
-				has_focus = focus_intrigue
-				AND = {
-					has_dlc = "Way of Life"
-					trait = schemer
-				}
-			}
 			has_any_opinion_modifier = opinion_spying_on
 		}
 
 		potential = {
 			FROM = {
 				has_opinion_modifier = {
+					name = opinion_spying_on
 					who = ROOT
-					modifier = opinion_spying_on
 				}
 			}
 		}
 
 		effect = {
 			save_event_target_as = target_spy_on
-			hidden_tooltip = {
-				FROM = { character_event = { id = WoL.2069 } }
+
+			FROM = {
+				character_event = { id = WoL.2069 }
 			}
 		}
-
 
 		ai_will_do = {
 			factor = 0
@@ -837,261 +990,619 @@ targetted_decisions = {
 
 	decision_break_free = {
 		is_high_prio = yes
-		ai_check_interval = 12
 		filter = sub_realm
 		ai_target_filter = dynasty
+		ai_check_interval = 12
+
+		only_playable = yes
 
 		from_potential = {
 			OR = {
 				has_focus = focus_intrigue
-				AND = {
+
+				trigger_if = {
+					limit = { trait = schemer }
 					has_dlc = "Way of Life"
-					trait = schemer
 				}
 			}
-			NOT = { trait = incapable }
-			prisoner = no
-			NOT = { has_any_opinion_modifier = opinion_breaking_out }
-			NOT = { has_any_opinion_modifier = opinion_spying_on }
+
+			is_not_in_regency_trigger = yes
+
+			NOR = {
+				has_any_opinion_modifier = opinion_breaking_out
+				has_any_opinion_modifier = opinion_spying_on
+			}
 		}
 
 		potential = {
-			NOT = { character = FROM }
-			OR = {
-				AND = {
-					prisoner = yes
-					liege = { character = FROM }
-					host = { NOT = { character = FROM } }
-				}
-				AND = {
-					is_female = yes
-					is_consort = yes
-					prisoner = no
-					consort = {
-						NOT = { character = FROM }
-						reverse_has_opinion_modifier = {
-							who = ROOT
-							modifier = opinion_forced_consort
-						}
-					}
-					is_close_relative = FROM
+			trigger_if = {
+				limit = { prisoner = yes }
+
+				vassal_of = FROM
+
+				host = {
+					NOT = { character = FROM }
 				}
 			}
+			trigger_else = {
+				is_close_relative = FROM
+				is_female = yes
+				is_consort = yes
+
+				has_opinion_modifier = {
+					name = opinion_forced_consort
+					who = consort # senior party
+				}
+
+				NOT = { is_consort = FROM }
+			}
+
+			NOT = { character = FROM }
 		}
 
 		allow = {
-			NOT = { trait = incapable }
+			is_incapable = no
 			NOT = { has_character_modifier = failed_escape }
 		}
 
 		effect = {
-			hidden_tooltip = {
+			hidden_effect = {
 				FROM = {
-					hidden_tooltip = { change_variable = { which = "lifestyle_intrigue" value = 1 } }
-					opinion = {
-						who = ROOT
-						modifier = opinion_breaking_out
-						months = 12000
+					change_variable = {
+						which = lifestyle_intrigue
+						value = 1
 					}
+
+					opinion = {
+						name = opinion_breaking_out
+						who = ROOT
+						years = 1000
+					}
+
 					if = {
 						limit = { ROOT = { prisoner = yes } }
-						character_event = { id = WoL.2200 days = 1 }
+
+						character_event = {
+							id = WoL.2200
+							days = 1
+						}
 					}
-					if = {
-						limit = { ROOT = { prisoner = no } }
-						character_event = { id = WoL.2201 days = 1 }
+					else = {
+						character_event = {
+							id = WoL.2201
+							days = 1
+						}
 					}
 				}
 			}
 		}
 
-
 		ai_will_do = {
-			factor = 1 		# 1 = 100% chance every month (for each allowed target!)
-			modifier = {
+			factor = 0.5
+
+			trigger = {
+				NOT = { is_rival = FROM }
+
+				trigger_if = {
+					limit = { religion_group = muslim }
+					NOT = { trait = decadent }
+				}
+			}
+
+			mult_modifier = {
 				factor = 10
 				is_primary_heir = FROM
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 2
+
 				OR = {
 					is_married = FROM
+
 					AND = {
 						is_child_of = FROM
 						NOT = { trait = bastard }
 					}
 				}
 			}
-			modifier = {
-				factor = 0
-				is_rival = FROM
-			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.5
-				NOT = { reverse_opinion = { who = FROM value = 50 } }
+
+				reverse_opinion = {
+					who = FROM
+					value < 50
+				}
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.5
-				NOT = { reverse_opinion = { who = FROM value = 0 } }
-			}
-			modifier = {
-				factor = 0
-				trait = decadent
-				religion_group = muslim
+
+				reverse_opinion = {
+					who = FROM
+					value < 0
+				}
 			}
 		}
 	}
 
 	invite_to_party = {
-		only_playable = yes
 		is_high_prio = yes
 		ai_target_filter = realm
 		ai_check_interval = 4
 
+		only_playable = yes
+
 		from_potential = {
-			is_playable = yes
 			OR = {
 				has_focus = focus_carousing
-				trait = hedonist
-				trait = socializer
+
+				trigger_if = {
+					limit = {
+						OR = {
+							trait = hedonist
+							trait = socializer
+						}
+					}
+
+					has_dlc = "Way of Life"
+				}
 			}
-			has_regent = no
-			OR = {
-				is_inaccessible_trigger = no
+
+			is_not_in_regency_trigger = yes
+
+			trigger_if = {
+				limit = { is_inaccessible_trigger = yes }
 				has_character_modifier = organizing_party
 			}
-			NOT = { had_character_flag = { flag = inviting_guests_to_party_timer days = 90 } }
+
 			NOT = { has_character_flag = party_host }
-			prisoner = no
+
+			trigger_if = {
+				limit = { has_character_flag = inviting_guests_to_party_timer }
+
+				had_character_flag = {
+					flag = inviting_guests_to_party_timer
+					days < 90
+				}
+			}
 		}
+
 		potential = {
-			is_adult = yes
-			prisoner = no
-			NOT = { trait = incapable }
+			is_not_in_regency_trigger = yes
 			is_within_diplo_range = FROM
-			NOT = { has_character_flag = carousing_invite }
-			NOT = { character = FROM }                            # Can't do this decision on yourself...
 			is_abroad = no
+
+			NOR = {
+				has_character_flag = carousing_invite
+				character = FROM
+			}
 		}
+
 		allow = {
+			show_only_failed_conditions = yes
+
+			same_realm = FROM
+			war = no
+			is_inaccessible_trigger = no
 			NOT = { has_character_modifier = i_hate_carousing }
 			is_ill = no
 			is_pregnant = no
-			same_realm = FROM   # Can only invite characters in same realm!
-			is_inaccessible_trigger = no
-			NOT = { has_character_modifier = organizing_party }
-			NOT = { has_character_modifier = party_carousing }
-			war = no
-			NOT = {
+
+			NOR = {
+				has_character_modifier = organizing_party
+				has_character_modifier = party_carousing
+
 				reverse_has_opinion_modifier = {
-					modifier = opinion_declined_party
+					name = opinion_declined_party
 					who = FROM
 				}
 			}
+
 			FROM = {
 				war = no
 				NOT = { has_character_modifier = party_timer }
-				OR = {
-					NOT = { religion_group = muslim }
-					trait = decadent
-					trait = hedonist
-					trait = drunkard
+
+				trigger_if = {
+					limit = { religion_group = muslim }
+
+					OR = {
+						trait = decadent
+						trait = hedonist
+						trait = drunkard
+					}
 				}
 			}
 		}
+
 		effect = {
 			FROM = {
+				set_character_flag = do_not_disturb
+
 				if = {
-					limit = {
-						NOT = { has_character_modifier = organizing_party }
-					}
+					limit = { NOT = { has_character_modifier = organizing_party } }
+
 					add_character_modifier = {
 						name = organizing_party
-						duration = 120
+						months = 4
 					}
-					hidden_tooltip = { character_event = { id = WoL.4010 days = 120 } } # Party to be held in four months
+
 					set_character_flag = inviting_guests_to_party_timer
+
+					character_event = {
+						id = WoL.4010 # Party to be held in four months
+						months = 4
+					}
 				}
+
 				add_character_modifier = {
 					name = do_not_disturb
 					duration = 165
 					hidden = yes
 				}
 			}
-			hidden_tooltip = {
-				letter_event = { id = WoL.4000 days = 7 } # Invitee receives event - any number of invitees possible
-			}
+
 			set_character_flag = carousing_invite
+
+			letter_event = {
+				id = WoL.4000 # Invitee receives event - any number of invitees possible
+				days = 7
+			}
 		}
+
 		ai_will_do = {
-			factor = 1
-			modifier = {
-				factor = 0
-				reverse_opinion = { who = FROM value = 0 }
-			}
-			modifier = {
-				factor = 0
-				is_rival = FROM
-			}
-			modifier = {
-				factor = 0
-				NOT = {
+			factor = 0.5
+
+			trigger = {
+				OR = {
 					is_ruler = yes
 					has_job_title = yes
 					is_close_relative = FROM
 				}
-			}
-			modifier = {
-				factor = 0
-				lower_tier_than = COUNT
-				NOT = { vassal_of = FROM }
-			}
-			modifier = {
-				factor = 0
-				lower_tier_than = DUKE
-				NOT = {
+
+				trigger_if = {
+					limit = { lower_real_tier_than = COUNT }
 					vassal_of = FROM
-					capital_scope = {
-						any_neighbor_province = {
-							OR = {
-								owner = { character = ROOT }
-								owner = { vassal_of = ROOT }
+				}
+				trigger_else_if = {
+					limit = { lower_real_tier_than = DUKE }
+
+					OR = {
+						vassal_of = FROM
+
+						capital_scope = {
+							any_neighbor_province = {
+								owner = {
+									OR = {
+										character = ROOT
+										vassal_of = ROOT
+									}
+								}
 							}
 						}
 					}
 				}
-			}
-			modifier = {
-				factor = 0
-				FROM = { has_character_modifier = organizing_party } # AI will only invite one person
+
+				FROM = {
+					NOR = {
+						is_rival = ROOT
+						has_character_modifier = organizing_party # AI will only invite one person
+					}
+
+					opinion = {
+						who = ROOT
+						value < 0
+					}
+				}
 			}
 		}
 	}
 
 #	DEPRECATED: the new version of this can be found in hf_warrior_lodge_decisions.txt
 #	duel_decision = {
-#		only_playable = yes
 #		is_high_prio = yes
-		#
-#		#filter = rivals
+#
 #		ai_target_filter = rivals
-		#
+#
+#		only_playable = yes
+#
 #		from_potential = {
-#			is_playable = yes
+#			has_focus = focus_war
 #			is_adult = yes
 #			prisoner = no
 #			has_dlc = "Way of Life"
-#			has_focus = focus_war
 #			has_regent = no
 #			is_inaccessible_trigger = no
+#		}
 #
+#		potential = {
+#			is_adult = yes
+#			prisoner = no
+#			NOT = { character = FROM }
+#			is_inaccessible_trigger = no
+#
+#			trigger_if = {
+#				limit = {
+#					NOT = {
+#						has_game_rule = {
+#							name = dueling
+#							value = unrestricted
+#						}
+#					}
+#				}
+#
+#				OR = {
+#					is_rival = FROM
+#					is_foe = FROM
+#
+#					AND = {
+#						FROM = { trait = zealous }
+#
+#						OR = {
+#							excommunicated_for = FROM
+#
+#							AND = {
+#								FROM = { religion_group = muslim }
+#								trait = decadent
+#							}
+#						}
+#					}
+#				}
+#
+#				trigger_if = {
+#					limit = { is_female = yes }
+#
+#					# Both FROM and ROOT have gender equality
+#					OR = {
+#						trait = brave
+#						gender_equality_trigger = yes
+#						religion_group = pagan_group
+#						is_nomadic = yes
+#						religion = buddhist
+#						religion = bogomilist
+#					}
+#
+#					FROM = {
+#						OR = {
+#							gender_equality_trigger = yes
+#							religion_group = pagan_group
+#							is_nomadic = yes
+#							religion = buddhist
+#							religion = bogomilist
+#						}
+#					}
+#				}
+#			}
+#		}
+#
+#		allow = {
 #			OR = {
-#				ai = no
-				#
-#				is_female = no
-#
 #				AND = {
-#					is_female = yes
+#					# Valid reasons for duel
+#					OR = {
+#						custom_tooltip = {
+#							text = duel_tooltip_rivals
+#							is_rival = FROM
+#						}
+#
+#						custom_tooltip = {
+#							text = duel_tooltip_foes
+#							is_foe = FROM
+#						}
+#
+#						custom_tooltip = {
+#							text = duel_tooltip_excommunicated
+#
+#							excommunicated_for = FROM
+#							FROM = { trait = zealous }
+#						}
+#
+#						custom_tooltip = {
+#							text = duel_tooltip_decadent
+#
+#							trait = decadent
+#
+#							FROM = {
+#								religion_group = muslim
+#								trait = zealous
+#							}
+#						}
+#
+#						has_game_rule = {
+#							name = dueling
+#							value = restricted
+#						}
+#					}
+#
+#					# Both are healthy
+#					custom_tooltip = {
+#						text = duel_tooltip_sickness
+#
+#						FROM = {
+#							is_incapable = no
+#
+#							NOR = {
+#								trait = infirm
+#								trait = has_aztec_disease
+#								trait = has_small_pox
+#								trait = has_measles
+#								trait = has_bubonic_plague
+#								trait = has_typhus
+#								trait = has_typhoid_fever
+#								trait = has_tuberculosis
+#								trait = leper
+#								trait = pneumonic
+#							}
+#						}
+#
+#						ROOT = {
+#							is_incapable = no
+#							practical_age < 70
+#
+#							NOR = {
+#								trait = infirm
+#								trait = has_aztec_disease
+#								trait = has_small_pox
+#								trait = has_measles
+#								trait = has_bubonic_plague
+#								trait = has_typhus
+#								trait = has_typhoid_fever
+#								trait = has_tuberculosis
+#								trait = leper
+#								trait = pneumonic
+#							}
+#						}
+#					}
+#
+#					# Checks gender and some religious stuff
+#					custom_tooltip = {
+#						text = duel_tooltip_valid_target
+#
+#						### Not female or challenger religion accepts female warriors
+#						trigger_if = {
+#							limit = { is_female = yes }
+#
+#							# Both FROM and ROOT have gender equality
+#							OR = {
+#								trait = brave
+#								gender_equality_trigger = yes
+#								religion_group = pagan_group
+#								is_nomadic = yes
+#								religion = buddhist
+#								religion = bogomilist
+#							}
+#
+#							FROM = {
+#								OR = {
+#									gender_equality_trigger = yes
+#									religion_group = pagan_group
+#									is_nomadic = yes
+#									religion = buddhist
+#									religion = bogomilist
+#								}
+#							}
+#						}
+#
+#						### Not priest or challenger religion is pagan
+#						OR = {
+#							is_priest = no
+#							FROM = { religion_group = pagan_group }
+#						}
+#					}
+#				}
+#
+#				has_game_rule = {
+#					name = dueling
+#					value = unrestricted
+#				}
+#			}
+#
+#			custom_tooltip = {
+#				text = duel_tooltip_challenged_before
+#
+#				NOT = {
+#					has_opinion_modifier = {
+#						name = opinion_fought_duel
+#						who = FROM
+#					}
+#				}
+#
+#				FROM = {
+#					NOR = {
+#						has_opinion_modifier = {
+#							name = opinion_fought_duel
+#							who = ROOT
+#						}
+#
+#						has_opinion_modifier = {
+#							name = opinion_fled_duel
+#							who = ROOT
+#						}
+#					}
+#				}
+#			}
+#
+#			custom_tooltip = {
+#				text = duel_tooltip_recent_duel
+#
+#				FROM = { NOT = { has_character_modifier = recent_duel_timer } }
+#				NOT = { has_character_modifier = recent_duel_timer }
+#			}
+#
+#			custom_tooltip = {
+#				text = duel_tooltip_busy
+#
+#				FROM = {
+#					NOT = { has_character_flag = do_not_disturb }
+#					war = no
+#				}
+#
+#				NOT = { has_character_flag = do_not_disturb }
+#				war = no
+#			}
+#
+#			is_within_diplo_range = ROOT # CPU HEAVY!
+#		}
+#
+#		effect = {
+#			if = {
+#				limit = {
+#					OR = {
+#						practical_age >= 50
+#						trait = wounded
+#						is_maimed_trigger = yes
+#					}
+#				}
+#
+#				custom_tooltip = {
+#					text = dishonorable_duel_tooltip
+#
+#
+#					FROM = {
+#						any_realm_character = {
+#							limit = {
+#								NOT = { character = FROM }
+#
+#								OR = {
+#									trait = honest
+#									trait = kind
+#									trait = just
+#								}
+#							}
+#
+#							opinion = {
+#								name = opinion_dishonorable_duel
+#								who = PREV
+#								years = 3
+#							}
+#						}
+#					}
+#				}
+#			}
+#
+#			FROM = {
+#				pacifists_lose_piety_effect = yes
+#
+#				add_character_modifier = {
+#					name = recent_duel_timer
+#					years = 1
+#					hidden = yes
+#				}
+#			}
+#
+#			character_event = { id = WoL.11000 }
+#		}
+#
+#		ai_will_do = {
+#			factor = 0.01
+#
+#			trigger = {
+#				NOT = { has_character_modifier = declined_prestige_duel_timer }
+#
+#				trigger_if = {
+#					limit = { is_female = yes }
+#
 #					OR = {
 #						trait = brave
 #						religion_group = pagan_group
@@ -1103,269 +1614,8 @@ targetted_decisions = {
 #				}
 #			}
 #		}
-		#
-#		potential = {
-#			is_adult = yes
-#			prisoner = no
-#			NOT = { character = FROM }
-#			is_inaccessible_trigger = no
-#
-#			OR = {
-#				AND = {
-#					OR = {
-#						is_rival = FROM
-#						is_foe = FROM
-#						AND = {
-#							FROM = { trait = zealous }
-#							OR = {
-#								AND = {
-#									religion = FROM
-#									trait = excommunicated
-#								}
-#								AND = {
-#									FROM = { religion_group = muslim }
-#									trait = decadent
-#								}
-#							}
-#						}
-#						has_game_rule = {
-#							name = dueling
-#							value = restricted
-#						}
-#					}
-#					OR = {
-#						is_female = no
-#
-#						#Both FROM and ROOT have gender equality
-#						AND = {
-#							OR = {
-#								trait = brave
-#								gender_equality_trigger = yes
-#								religion_group = pagan_group
-#								is_nomadic = yes
-#								religion = buddhist
-#								religion = bogomilist
-#							}
-#							FROM = {
-#								OR = {
-#									gender_equality_trigger = yes
-#									religion_group = pagan_group
-#									is_nomadic = yes
-#									religion = buddhist
-#									religion = bogomilist
-#								}
-#							}
-#						}
-#					}
-#				}
-#				has_game_rule = {
-#					name = dueling
-#					value = unrestricted
-#				}
-#			}
-#		}
-		#
-#		allow = {
-#			OR = {
-#				AND = {
-#					#Valid reasons for duel
-#					OR = {
-#						custom_tooltip = {
-#							text = duel_tooltip_rivals
-#							is_rival = FROM
-#						}
-#						custom_tooltip = {
-#							text = duel_tooltip_foes
-#							is_foe = FROM
-#						}
-#						custom_tooltip = {
-#							text = duel_tooltip_excommunicated
-#							religion = FROM
-#							FROM = { trait = zealous }
-#							trait = excommunicated
-#						}
-#						custom_tooltip = {
-#							text = duel_tooltip_decadent
-#							FROM = { religion_group = muslim }
-#							FROM = { trait = zealous }
-#							trait = decadent
-#						}
-#						has_game_rule = {
-#							name = dueling
-#							value = restricted
-#						}
-#					}
-#
-#					#Both are healthy
-#					custom_tooltip = {
-#						text = duel_tooltip_sickness
-#						FROM = {
-#							NOR = {
-#								trait = incapable
-#								trait = infirm
-#								trait = has_aztec_disease
-#								trait = has_small_pox
-#								trait = has_measles
-#								trait = has_bubonic_plague
-#								trait = has_typhus
-#								trait = has_typhoid_fever
-#								trait = has_tuberculosis
-#								trait = leper
-#								trait = pneumonic
-#							}
-#						}
-#						ROOT = {
-#							NOR = {
-#								trait = incapable
-#								trait = infirm
-#								trait = has_aztec_disease
-#								trait = has_small_pox
-#								trait = has_measles
-#								trait = has_bubonic_plague
-#								trait = has_typhus
-#								trait = has_typhoid_fever
-#								trait = has_tuberculosis
-#								trait = leper
-#								trait = pneumonic
-#								age = 70
-#							}
-#						}
-#					}
-					#
-#					#Checks gender and some religious stuff
-#					custom_tooltip = {
-#						text = duel_tooltip_valid_target
-#						hidden_tooltip = { ### Not female or challenger religion accepts female warriors
-#							 OR = {
-#								is_female = no
-#
-#								#Both FROM and ROOT have gender equality
-#								AND = {
-#									OR = {
-#										trait = brave
-#										gender_equality_trigger = yes
-#										religion_group = pagan_group
-#										is_nomadic = yes
-#										religion = buddhist
-#										religion = bogomilist
-#									}
-#									FROM = {
-#										OR = {
-#											gender_equality_trigger = yes
-#											religion_group = pagan_group
-#											is_nomadic = yes
-#											religion = buddhist
-#											religion = bogomilist
-#										}
-#									}
-#								}
-#							}
-#							### Not priest or challenger religion is pagan
-#							OR = {
-#								is_priest = no
-#								FROM = { religion_group = pagan_group }
-#							}
-							#
-#						}
-#					}
-#				}
-#				has_game_rule = {
-#					name = dueling
-#					value = unrestricted
-#				}
-#			}
-#			custom_tooltip = {
-#				text = duel_tooltip_challenged_before
-#				hidden_tooltip = {
-#					NOT = {
-#						has_opinion_modifier = { who = FROM modifier = opinion_fought_duel }
-#					}
-#					FROM = {
-#						NOT = { has_opinion_modifier = { who = ROOT modifier = opinion_fought_duel } }
-#						NOT = { has_opinion_modifier = { who = ROOT modifier = opinion_fled_duel } }
-#					}
-#				}
-#			}
-#			custom_tooltip = {
-#				text = duel_tooltip_recent_duel
-#				hidden_tooltip = {
-#					FROM = { NOT = { has_character_modifier = recent_duel_timer } }
-#					NOT = { has_character_modifier = recent_duel_timer }
-#				}
-#			}
-#			custom_tooltip = {
-#				text = duel_tooltip_busy
-#				hidden_tooltip = {
-#					FROM = {
-#						NOT = { has_character_flag = do_not_disturb }
-#						NOT = { war = yes }
-#					}
-#					NOT = { has_character_flag = do_not_disturb }
-#					NOT = { war = yes }
-#				}
-#			}
-#			is_within_diplo_range = ROOT # CPU HEAVY!
-#		}
-		#
-#		effect = {
-#			if = {
-#				limit = {
-#					OR = {
-#						age = 50
-#						trait = wounded
-#						is_maimed_trigger = yes
-#					}
-#				}
-#				custom_tooltip = {
-#					text = dishonorable_duel_tooltip
-#					hidden_tooltip = {
-#						FROM = {
-#							any_realm_character = {
-#								limit = {
-#									NOT = { character = FROM }
-#									OR = {
-#										trait = honest
-#										trait = kind
-#										trait = just
-#									}
-#								}
-#								opinion = {
-#									modifier = opinion_dishonorable_duel
-#									who = PREV
-#									months = 36
-#								}
-#							}
-#						}
-#					}
-#				}
-#			}
-#			FROM = {
-#				pacifists_lose_piety_effect = yes
-#				add_character_modifier = {
-#					modifier = recent_duel_timer
-#					duration = 365
-#					hidden = yes
-#				}
-#			}
-#			hidden_tooltip = {
-#				character_event = { id = WoL.11000 }
-#			}
-#		}
-		#
-#		revoke_allowed = {
-#			always = no
-#		}
-#		ai_will_do = {
-#			factor = 1
-#			modifier = {
-#				factor = 0
-#				has_character_modifier = declined_prestige_duel_timer
-#			}
-#			modifier = {
-#				factor = 0.01
-#			}
-#		}
 #	}
+
 }
 
 ##################################
@@ -1374,55 +1624,62 @@ targetted_decisions = {
 
 decisions = {
 
-	# Build an observatory (learning focus)
+	# Build an observatory (scholarship focus)
 	build_observatory = {
-		only_playable = yes
 		is_high_prio = yes
 		ai_check_interval = 24
 
+		only_playable = yes
+
 		potential = {
-			is_playable = yes
 			has_focus = focus_scholarship
-			NOT = { trait = incapable }
-			NOT = { trait = scholar }
-			NOT = { trait = mystic }
-			NOT = { has_character_flag = building_observatory }
-			NOT = { has_character_flag = built_observatory }
-			NOT = { has_character_modifier = studying_the_stars }
-			NOT = { has_character_modifier = heliocentrist_scholar }
-			NOT = { has_character_modifier = weird_scholar }
-			prisoner = no
+			is_incapable = no
+
+			NOR = {
+				trait = scholar
+				trait = mystic
+				has_character_flag = building_observatory
+				has_character_flag = built_observatory
+				has_character_modifier = studying_the_stars
+				has_character_modifier = heliocentrist_scholar
+				has_character_modifier = weird_scholar
+			}
 		}
+
 		allow = {
-			prisoner = no
-			wealth = 25
-			is_adult = yes
+			wealth >= 25
+			is_not_in_regency_trigger = yes
 			is_inaccessible_trigger = no
 		}
+
 		effect = {
 			wealth = -25
 			set_character_flag = building_observatory
-			hidden_tooltip = { character_event = { id = WoL.6000 } }
+			character_event = { id = WoL.6000 }
 		}
+
 		ai_will_do = {
 			factor = 1
 
-			modifier = {
-				factor = 0
-				NOT = { wealth = 50 }
+			trigger = {
+				wealth >= 50
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.25
 				trait = zealous
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 2
 				trait = cynical
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.1
-				NOT = { age = 30 }
+				practical_age < 30
 			}
 		}
 	}
+
 }
