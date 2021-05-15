@@ -1,0 +1,319 @@
+###########################################
+#
+# Artifact events for Monks and Mystics
+#
+# Employ a smith
+# Search for artifact
+#
+#
+###########################################
+
+decisions = {
+	employ_a_smith = {
+		ai_check_interval = 48
+
+		only_playable = yes
+
+		potential = {
+			OR = {
+				has_dlc = "Mystics"
+				has_dlc = "Jade Dragon"
+			}
+
+			is_adult = yes
+			is_incapable = no
+			is_landed = yes
+
+			trigger_if = {
+				limit = { ai = yes }
+
+				higher_tier_than = COUNT
+				mercenary = no
+				NOT = { government = order_government }
+			}
+
+			# Block player from action if they have already gotten all of the artifacts which they can obtain from this action
+			NAND = {
+				have_all_armorsmith_artifacts_trigger = yes
+				have_all_weaponsmith_artifacts_trigger = yes
+				have_duplicate_goldsmith_artifacts_tier_1_trigger = yes
+				have_duplicate_goldsmith_artifacts_tier_2_trigger = yes
+				have_duplicate_goldsmith_artifacts_tier_3_trigger = yes
+				have_duplicate_goldsmith_artifacts_tier_4_trigger = yes
+			}
+		}
+
+		allow = {
+			trigger_if = {
+				limit = { ai = yes }
+				wealth >= 500
+			}
+
+			is_inaccessible_trigger = no
+
+			custom_tooltip = {
+				text = employ_a_smith_cooldown_tt
+
+				NOT = { has_character_modifier = employ_a_smith_cd }
+			}
+		}
+
+		effect = {
+			custom_tooltip = {
+				text = employ_a_smith_tt
+
+				add_character_modifier = {
+					name = employ_a_smith_cd
+					years = 2
+					hidden = yes
+				}
+
+				character_event = { id = MNM.9130 }
+			}
+		}
+
+		ai_will_do = {
+			factor = 1
+
+			trigger = {
+				NAND = {
+					any_artifact = { has_artifact_flag = combat_weapon }
+					any_artifact = { has_artifact_flag = armor_set }
+					any_artifact = { has_artifact_flag = crown_jewel }
+				}
+			}
+
+			mult_modifier = {
+				factor = 0.5
+				lower_real_tier_than = KING
+			}
+
+			mult_modifier = {
+				factor = 0.5
+				trait = greedy
+			}
+
+			mult_modifier = {
+				factor = 2
+				trait = ambitious
+			}
+
+			mult_modifier = {
+				factor = 0.1
+				trait = content
+			}
+
+			mult_modifier = { # CleanSlate: Was bizarrely located deeper in the event chain in vanilla
+				factor = 0.5
+				any_artifact = { has_artifact_flag = crown_jewel }
+
+				NOR = {
+					has_education_martial_trigger = yes
+					has_lifestyle_martial_trigger = yes
+				}
+			}
+		}
+	}
+}
+
+targeted_decisions = {
+
+	search_for_artifact = {
+		ai_target_filter = court
+		ai_check_interval = 12
+
+		only_playable = yes
+
+		from_potential = {
+			prisoner = no
+			is_inaccessible_trigger = no
+
+			OR = {
+				has_character_modifier = relic_rumor_major
+				has_character_modifier = relic_rumor_medium
+				has_character_modifier = relic_rumor_minor
+			}
+
+			trigger_if = {
+				limit = { ai = yes }
+
+				NOT = {
+					any_courtier_or_vassal = {
+						has_character_flag = relic_hunter
+					}
+				}
+			}
+		}
+
+		potential = {
+			is_councillor = yes
+			vassal_of = FROM
+			is_incapable = no
+			prisoner = no
+			is_inaccessible_trigger = no
+			NOT = { has_character_flag = relic_hunter }
+		}
+
+		allow = {
+			custom_tooltip = { text = search_for_artifact_allow_tt }
+		}
+
+		effect = {
+			if = {
+				limit = {
+					FROM = {
+						any_courtier_or_vassal = {
+							has_character_flag = relic_hunter
+						}
+					}
+				}
+
+				custom_tooltip = {
+					text = search_for_artifact_effect_replace_tt
+
+					FROM = {
+						any_courtier_or_vassal = {
+							limit = { has_character_flag = relic_hunter }
+							clr_character_flag = relic_hunter
+						}
+					}
+				}
+			}
+
+			custom_tooltip = {
+				text = search_for_artifact_effect_tt
+
+				set_character_flag = relic_hunter
+				save_event_target_as = relic_hunter
+
+				FROM = {
+					save_event_target_as = relic_ruler
+				}
+
+				character_event = {
+					id = MNM.9007 # The looping evaluation for progress increase/decrease begins...
+					months = 1
+				}
+			}
+
+			FROM = {
+				show_scope_change = no
+
+				if = {
+					limit = {
+						check_variable = {
+							which = relic_score
+							value >= 1
+						}
+					}
+
+					custom_tooltip = {
+						text = search_for_artifact_effect_progress_tt
+
+						multiply_variable = {
+							which = relic_score
+							value = 0.75
+						}
+					}
+				}
+
+				add_artifact_search_payment_effect = yes
+			}
+
+			custom_tooltip = { text = outcome_will_depend_on_roots_skill_tt }
+		}
+
+		ai_will_do = {
+			factor = 0.01
+
+			trigger = {
+				FROM = { wealth >= 50 }
+			}
+
+			mult_modifier = {
+				factor = 10
+				OR = {
+					diplomacy >= 14
+					martial >= 14
+					stewardship >= 14
+					intrigue >= 14
+					learning >= 14
+				}
+			}
+
+			mult_modifier = {
+				factor = 10
+				OR = {
+					is_friend = FROM
+
+					reverse_opinion = {
+						who = FROM
+						value >= 30
+					}
+				}
+			}
+		}
+	}
+
+	stop_artifact_search = {
+		ai_target_filter = court
+		ai_check_interval = 36
+
+		only_playable = yes
+
+		from_potential = {
+			is_ruler = yes
+
+			OR = {
+				has_character_modifier = relic_rumor_major
+				has_character_modifier = relic_rumor_medium
+				has_character_modifier = relic_rumor_minor
+			}
+
+			OR = {
+				has_character_modifier = pays_for_artifact_hunt_minor
+				has_character_modifier = pays_for_artifact_hunt_medium
+				has_character_modifier = pays_for_artifact_hunt_major
+			}
+
+			is_inaccessible_trigger = no
+			prisoner = no
+		}
+
+		potential = {
+			has_character_flag = relic_hunter
+		}
+
+		effect = {
+			custom_tooltip = {
+				text = stop_artifact_search_effect_tt
+
+				FROM = {
+					trigger_switch = {
+						on_trigger = has_character_modifier
+
+						pays_for_artifact_hunt_minor = { remove_character_modifier = pays_for_artifact_hunt_minor }
+						pays_for_artifact_hunt_medium = { remove_character_modifier = pays_for_artifact_hunt_medium }
+						pays_for_artifact_hunt_major = { remove_character_modifier = pays_for_artifact_hunt_major }
+					}
+				}
+
+				clr_character_flag = relic_hunter
+			}
+		}
+
+		ai_will_do = {
+			factor = 0.3
+
+			trigger = {
+				wealth < -100
+
+				check_variable = {
+					which = relic_score
+					value < -2
+				}
+			}
+		}
+	}
+
+}

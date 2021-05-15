@@ -5,7 +5,7 @@
 #
 #########################################################
 
-# Written by Henrik Fï¿½hraeus
+# Written by Henrik Fåhraeus
 
 namespace = HL
 
@@ -19,75 +19,88 @@ province_event = {
 
 	is_triggered_only = yes
 
+	has_dlc = "Horse Lords"
+
 	trigger = {
-		has_dlc = "Horse Lords"
+		culture = owner
+		has_empty_holding = yes # To allow a Clan capital
 		total_years_played >= 2
 
-		has_empty_holding = yes # To allow a Clan capital
-
 		owner = {
-			is_nomadic = yes
 			independent = yes
-			culture = ROOT
+			is_nomadic = yes
 			risks_minor_clan_rising = yes
 			in_revolt = no
+
 			capital_scope = {
 				NOT = { province = ROOT }
 			}
 		}
 
 		# Heretic revolts have prio
-		OR = {
-			is_heretic = no
-			owner = {
-				top_liege = {
-					NOT = { is_parent_religion = ROOT }
-				}
-			}
+		trigger_if = {
+			limit = { is_heretic = yes }
+			NOT = { is_heresy_of = top_liege }
 		}
 
 		# Religious revolts have prio
-		owner = {
-			top_liege = {
-				religion_group = ROOT
-			}
-		}
+		religion_group = top_liege
 
 		# Nationalist revolts have prio
 		OR = {
-			owner = { top_liege = { culture = ROOT } }
-			owner = { top_liege = { any_demesne_title = { temporary = yes } } }
 			owner = {
 				top_liege = {
-					is_theocracy = yes
 					OR = {
-						controls_religion = yes
-						has_landed_title = b_roma
-						has_landed_title = b_hagiasophia
+						culture = ROOT
+						any_demesne_title = { temporary = yes }
+
+						AND = {
+							is_theocracy = yes
+							religion = ROOT
+
+							OR = {
+								controls_religion = yes
+								has_landed_title = b_roma
+								has_landed_title = b_hagiasophia
+							}
+						}
 					}
-					religion = ROOT
 				}
 			}
-			kingdom = { NOT = { culture = ROOT } }
+
 			kingdom = {
-				holder_scope = {
-					culture = ROOT
-					top_liege = { any_realm_province = { province_id = ROOT } }
+				OR = {
+					NOT = { culture = ROOT }
+
+					holder_scope = {
+						culture = ROOT
+
+						top_liege = {
+							any_realm_province = { province = ROOT }
+						}
+					}
 				}
 			}
 		}
 
 		# Decadence revolts have prio
-		OR = {
-			NOT = { has_province_modifier = decadence_unrest }
-			owner = { top_liege = { NOT = { religion_group = muslim } } }
-			owner = { top_liege = { NOT = { trait = dynasty_decadence_high } } }
-		}
+		trigger_if = {
+			limit = { has_province_modifier = decadence_unrest }
 
-		#not if there is already an ongoing revolt
-		NOT = {
 			owner = {
 				top_liege = {
+					NAND = {
+						religion_group = muslim
+						trait = dynasty_decadence_high
+					}
+				}
+			}
+		}
+
+		# Not if there is already an ongoing revolt
+		owner = {
+			top_liege = {
+				NAND = {
 					has_character_flag = has_current_revolt
 					war = yes
 				}
@@ -96,7 +109,13 @@ province_event = {
 	}
 
 	immediate = {
-		owner = { save_event_target_as = province_top_liege }
+		owner = {
+			save_event_target_as = province_top_liege
+		}
+
+		county = {
+			save_event_target_as = province_county
+		}
 
 		create_character = {
 			random_traits = yes
@@ -107,18 +126,19 @@ province_event = {
 			age = 35
 			health = 7
 			fertility = 0.7
+			add_trait = brave
+			add_trait = ambitious
+			add_trait = skilled_tactician
+
 			attributes = {
 				martial = 8
 				diplomacy = 9
 			}
-			trait = brave
-			trait = ambitious
-			trait = skilled_tactician
 		}
+
 		new_character = {
 			diplomatic_immunity = yes
 			save_event_target_as = minor_clan_revolt_leader
-
 			wealth = 500
 			prestige = 500
 			population = 3000
@@ -128,66 +148,43 @@ province_event = {
 
 	option = {
 		name = EVTOPTA_HL_2000 # Give him the land
-		ai_chance = {
-			factor = 25
-			modifier = {
-				factor = 2
-				owner = { trait = craven }
-			}
-			modifier = {
-				factor = 2
-				owner = { trait = humble }
-			}
-			modifier = {
-				factor = 1.5
-				owner = { trait = kind }
-			}
-			modifier = {
-				factor = 1.5
-				owner = { trait = content }
-			}
-			modifier = {
-				factor = 2
-				owner = { NOT = { realm_levies = 1000 } }
-			}
-			modifier = {
-				factor = 2
-				owner = { NOT = { realm_levies = 500 } }
-			}
-			modifier = {
-				factor = 2
-				owner = {
-					NOT = {
-						any_vassal = {
-							tier = KING
-							is_nomadic = yes
-							count = 3
-						}
-					}
-				}
+
+		owner = {
+			show_scope_change = no
+
+			prestige = -100
+
+			hidden_effect = {
+				add_population_scaled = -0.1
 			}
 		}
-		owner = { prestige = -100 }
+
 		event_target:minor_clan_revolt_leader = {
-			ROOT = { county = { grant_title = PREVPREV } }
-			hidden_tooltip = { set_government_type = nomadic_government }
+			show_scope_change = no
+
+			grant_title = event_target:province_county
 			set_defacto_liege = event_target:province_top_liege
-			hidden_tooltip = {
+
+			hidden_effect = {
+				set_government_type = nomadic_government
 				wealth = 100
 				diplomatic_immunity = no
+
 				spawn_unit = {
 					province = ROOT
 					home = ROOT
 					owner = THIS
 					scaled_with_population_of = event_target:province_top_liege
 					for_population = 10000
+					attrition = 0.25
 					cannot_inherit = yes
+
 					troops = {
 						light_cavalry = { 200 200 }
 						horse_archers = { 800 800 }
 					}
-					attrition = 0.25
 				}
+
 				create_character = {
 					random_traits = yes
 					dynasty = none
@@ -195,29 +192,34 @@ province_event = {
 					culture = THIS
 					female = no
 					age = 16
+					add_trait = skilled_tactician
+
 					attributes = {
 						martial = 7
 					}
-					trait = skilled_tactician
 				}
+
 				new_character = {
 					dynasty = event_target:minor_clan_revolt_leader
 					set_father = event_target:minor_clan_revolt_leader
+
 					spawn_unit = {
 						province = ROOT
 						home = ROOT
 						owner = PREV
 						scaled_with_population_of = event_target:province_top_liege
 						for_population = 10000
+						attrition = 0.25
+						disband_on_peace = yes
 						cannot_inherit = yes
+
 						troops = {
 							light_cavalry = { 200 200 }
 							horse_archers = { 800 800 }
 						}
-						attrition = 0.25
-						disband_on_peace = yes
 					}
 				}
+
 				create_character = {
 					random_traits = yes
 					dynasty = none
@@ -225,88 +227,116 @@ province_event = {
 					culture = THIS
 					female = no
 					age = 17
+					add_trait = skilled_tactician
+
 					attributes = {
 						martial = 7
 					}
-					trait = skilled_tactician
 				}
+
 				new_character = {
 					dynasty = event_target:minor_clan_revolt_leader
 					set_father = event_target:minor_clan_revolt_leader
+
 					spawn_unit = {
 						province = ROOT
 						home = ROOT
 						owner = PREV
 						scaled_with_population_of = event_target:province_top_liege
 						for_population = 10000
+						attrition = 0.25
+						disband_on_peace = yes
 						cannot_inherit = yes
+
 						troops = {
 							light_cavalry = { 200 200 }
 							horse_archers = { 800 800 }
 						}
-						attrition = 0.25
-						disband_on_peace = yes
 					}
 				}
 			}
 		}
-		hidden_tooltip = {
-			owner = { add_population_scaled = -0.1 }
-		}
-	}
-	option = {
-		name = EVTOPTB_HL_2000 # Never!
+
 		ai_chance = {
-			factor = 75
-			modifier = {
-				factor = 0
+			factor = 25
+
+			mult_modifier = {
+				factor = 2
+				owner = { trait = craven }
+			}
+
+			mult_modifier = {
+				factor = 2
+				owner = { trait = humble }
+			}
+
+			mult_modifier = {
+				factor = 1.5
+				owner = { trait = kind }
+			}
+
+			mult_modifier = {
+				factor = 1.5
+				owner = { trait = content }
+			}
+
+			mult_modifier = {
+				factor = 2
+				owner = { realm_levies < 1000 }
+			}
+
+			mult_modifier = {
+				factor = 2
+				owner = { realm_levies < 500 }
+			}
+
+			mult_modifier = {
+				factor = 2
+
 				owner = {
-					OR = {
-						is_adult = no
-						prisoner = yes
-						trait = incapable
-					}
-				}
-			}
-			modifier = {
-				factor = 1.5
-				owner = { trait = ambitious }
-			}
-			modifier = {
-				factor = 1.5
-				owner = { trait = brave }
-			}
-			modifier = {
-				factor = 1.5
-				owner = { trait = proud }
-			}
-			modifier = {
-				factor = 1.5
-				owner = { trait = wroth }
-			}
-		}
-		event_target:minor_clan_revolt_leader = {
-			ROOT = {
-				owner = {
-					tooltip = {
-						reverse_war = {
-							target = PREVPREV
-							casus_belli = cb_minor_clan_revolt
-							thirdparty_title = ROOT # The county
+					NOT = {
+						any_vassal = {
+							is_nomadic = yes
+							real_tier = KING
+							count >= 3
 						}
 					}
-					reverse_opinion = {
-						who = PREVPREV
-						modifier = opinion_evil_tyrant
-					}
 				}
 			}
 		}
-		hidden_tooltip = {
+	}
+
+	option = {
+		name = EVTOPTB_HL_2000 # Never!
+
+		event_target:minor_clan_revolt_leader = {
+			show_scope_change = no
+
+			tooltip = {
+				war = {
+					target = event_target:province_top_liege
+					casus_belli = cb_minor_clan_revolt
+					thirdparty_title = ROOT
+				}
+			}
+
+			opinion = {
+				name = opinion_evil_tyrant
+				who = event_target:province_top_liege
+			}
+		}
+
+		hidden_effect = {
 			add_province_modifier = {
 				name = recent_county_uprising
-				duration = 3650 # ten years of -100% revolt risk in this county
+				years = 10 # -100% revolt risk in this county
 			}
+
+			owner = {
+				add_population_scaled = -0.1
+				set_character_flag = has_current_revolt
+			}
+
 			event_target:minor_clan_revolt_leader = {
 				create_title = {
 					tier = KING
@@ -314,7 +344,7 @@ province_event = {
 					temporary = yes
 					rebel = yes
 					culture = ROOT
-					name = "MINOR_CLAN_REVOLT"
+					name = MINOR_CLAN_REVOLT
 					holder = THIS
 					nomad = yes
 				}
@@ -328,257 +358,220 @@ province_event = {
 							province = ROOT
 							home = ROOT
 							owner = THIS
-							#leader = THIS
 							scaled_with_population_of = event_target:province_top_liege
 							for_population = 10000
+							attrition = 0.25
 							cannot_inherit = yes
+
 							troops = {
 								light_cavalry = { 200 200 }
 								horse_archers = { 800 800 }
 							}
-							attrition = 0.25
 						}
-						create_character = {
-							random_traits = yes
-							dynasty = none
-							religion = THIS
-							culture = THIS
-							female = no
-							age = 16
-							attributes = {
-								martial = 7
-							}
-							trait = skilled_tactician
-						}
-						new_character = {
-							dynasty = event_target:minor_clan_revolt_leader
-							set_father = event_target:minor_clan_revolt_leader
+
+						while = {
+							count = 2
+
 							spawn_unit = {
 								province = ROOT
 								home = ROOT
-								owner = PREV
+								owner = THIS
 								scaled_with_population_of = event_target:province_top_liege
 								for_population = 10000
+								attrition = 0.25
+								disband_on_peace = yes
 								cannot_inherit = yes
+
 								troops = {
 									light_cavalry = { 200 200 }
 									horse_archers = { 800 800 }
 								}
-								attrition = 0.25
-								disband_on_peace = yes
-							}
-						}
-						create_character = {
-							random_traits = yes
-							dynasty = none
-							religion = THIS
-							culture = THIS
-							female = no
-							age = 17
-							attributes = {
-								martial = 7
-							}
-							trait = skilled_tactician
-						}
-						new_character = {
-							dynasty = event_target:minor_clan_revolt_leader
-							set_father = event_target:minor_clan_revolt_leader
-							spawn_unit = {
-								province = ROOT
-								home = ROOT
-								owner = PREV
-								scaled_with_population_of = event_target:province_top_liege
-								for_population = 10000
-								cannot_inherit = yes
-								troops = {
-									light_cavalry = { 200 200 }
-									horse_archers = { 800 800 }
-								}
-								attrition = 0.25
-								disband_on_peace = yes
 							}
 						}
 					}
+
 					33 = {
 						spawn_unit = {
 							province = ROOT
 							home = ROOT
 							owner = THIS
-							#leader = THIS
 							scaled_with_population_of = event_target:province_top_liege
 							for_population = 10000
+							attrition = 0.25
 							cannot_inherit = yes
+
 							troops = {
 								light_cavalry = { 150 150 }
 								horse_archers = { 600 600 }
 							}
-							attrition = 0.25
 						}
-						create_character = {
-							random_traits = yes
-							dynasty = none
-							religion = THIS
-							culture = THIS
-							female = no
-							age = 16
-							attributes = {
-								martial = 7
-							}
-							trait = skilled_tactician
-						}
-						new_character = {
-							dynasty = event_target:minor_clan_revolt_leader
-							set_father = event_target:minor_clan_revolt_leader
+
+						while = {
+							count = 2
+
 							spawn_unit = {
 								province = ROOT
 								home = ROOT
-								owner = PREV
+								owner = THIS
 								scaled_with_population_of = event_target:province_top_liege
 								for_population = 10000
+								attrition = 0.25
+								disband_on_peace = yes
 								cannot_inherit = yes
+
 								troops = {
 									light_cavalry = { 150 150 }
 									horse_archers = { 600 600 }
 								}
-								attrition = 0.25
-								disband_on_peace = yes
-							}
-						}
-						create_character = {
-							random_traits = yes
-							dynasty = none
-							religion = THIS
-							culture = THIS
-							female = no
-							age = 17
-							attributes = {
-								martial = 7
-							}
-							trait = skilled_tactician
-						}
-						new_character = {
-							dynasty = event_target:minor_clan_revolt_leader
-							set_father = event_target:minor_clan_revolt_leader
-							spawn_unit = {
-								province = ROOT
-								home = ROOT
-								owner = PREV
-								scaled_with_population_of = event_target:province_top_liege
-								for_population = 10000
-								cannot_inherit = yes
-								troops = {
-									light_cavalry = { 150 150 }
-									horse_archers = { 600 600 }
-								}
-								attrition = 0.25
-								disband_on_peace = yes
 							}
 						}
 					}
+
 					33 = {
 						spawn_unit = {
 							province = ROOT
 							home = ROOT
 							owner = THIS
-							#leader = THIS
 							scaled_with_population_of = event_target:province_top_liege
 							for_population = 10000
+							attrition = 0.25
 							cannot_inherit = yes
+
 							troops = {
 								light_cavalry = { 100 100 }
 								horse_archers = { 400 400 }
 							}
-							attrition = 0.25
 						}
-						create_character = {
-							random_traits = yes
-							dynasty = none
-							religion = THIS
-							culture = THIS
-							female = no
-							age = 16
-							attributes = {
-								martial = 7
-							}
-							trait = skilled_tactician
-						}
-						new_character = {
-							dynasty = event_target:minor_clan_revolt_leader
-							set_father = event_target:minor_clan_revolt_leader
+
+						while = {
+							count = 2
+
 							spawn_unit = {
 								province = ROOT
 								home = ROOT
-								owner = PREV
+								owner = THIS
 								scaled_with_population_of = event_target:province_top_liege
 								for_population = 10000
+								attrition = 0.25
+								disband_on_peace = yes
 								cannot_inherit = yes
+
 								troops = {
 									light_cavalry = { 100 100 }
 									horse_archers = { 400 400 }
 								}
-								attrition = 0.25
-								disband_on_peace = yes
-							}
-						}
-						create_character = {
-							random_traits = yes
-							dynasty = none
-							religion = THIS
-							culture = THIS
-							female = no
-							age = 17
-							attributes = {
-								martial = 7
-							}
-							trait = skilled_tactician
-						}
-						new_character = {
-							dynasty = event_target:minor_clan_revolt_leader
-							set_father = event_target:minor_clan_revolt_leader
-							spawn_unit = {
-								province = ROOT
-								home = ROOT
-								owner = PREV
-								scaled_with_population_of = event_target:province_top_liege
-								for_population = 10000
-								cannot_inherit = yes
-								troops = {
-									light_cavalry = { 100 100 }
-									horse_archers = { 400 400 }
-								}
-								attrition = 0.25
-								disband_on_peace = yes
 							}
 						}
 					}
 				}
 
-				# DoW on the province top liege
-				ROOT = {
-					owner = {
-						add_population_scaled = -0.1
-						set_character_flag = has_current_revolt
-						reverse_war = {
-							target = PREVPREV
-							casus_belli = cb_minor_clan_revolt
-							thirdparty_title = ROOT # The county
-						}
+				# Create two sons, able commanders
+				create_character = {
+					random_traits = yes
+					dynasty = none
+					religion = THIS
+					culture = THIS
+					female = no
+					age = 16
+					add_trait = skilled_tactician
+
+					attributes = {
+						martial = 7
 					}
 				}
+
+				new_character = {
+					dynasty = event_target:minor_clan_revolt_leader
+					set_father = event_target:minor_clan_revolt_leader
+				}
+
+				create_character = {
+					random_traits = yes
+					dynasty = none
+					religion = THIS
+					culture = THIS
+					female = no
+					age = 17
+					add_trait = skilled_tactician
+
+					attributes = {
+						martial = 7
+					}
+				}
+
+				new_character = {
+					dynasty = event_target:minor_clan_revolt_leader
+					set_father = event_target:minor_clan_revolt_leader
+				}
+
+				# DoW on the province top liege
+				war = {
+					target = event_target:province_top_liege
+					casus_belli = cb_minor_clan_revolt
+					thirdparty_title = ROOT # The county
+				}
+			}
+		}
+
+		ai_chance = {
+			factor = 75
+
+			trigger = {
+				owner = {
+					is_adult = yes
+					prisoner = no
+					is_incapable = no
+				}
+			}
+
+			mult_modifier = {
+				factor = 1.5
+				owner = { trait = ambitious }
+			}
+
+			mult_modifier = {
+				factor = 1.5
+				owner = { trait = brave }
+			}
+
+			mult_modifier = {
+				factor = 1.5
+				owner = { trait = proud }
+			}
+
+			mult_modifier = {
+				factor = 1.5
+				owner = { trait = wroth }
 			}
 		}
 	}
 }
 
+# character_event = {
+# 	id = HL.2001
+# 	desc = EVTDESC_HL_2001
+# 	picture = GFX_evt_steppe_mercenaries
+# 	border = GFX_event_normal_frame_war
+#
+# 	is_triggered_only = yes
+#
+# 	ai = no
+#
+# 	option = {
+# 		name = EVTOPTA_HL_2000
+# 	}
+# }
+
 # Minor Clan rebels seize a holding. Fired from 'on_siege_over_winner'.
 character_event = {
 	id = HL.2005
 
-	hide_window = yes
 	is_triggered_only = yes
+	hide_window = yes
 
 	trigger = {
 		rebel = yes
+
 		any_war = {
 			attacker = { character = ROOT }
 			using_cb = cb_minor_clan_revolt
@@ -592,9 +585,10 @@ character_event = {
 					limit = {
 						NOT = { has_province_modifier = peasant_unrest }
 					}
+
 					add_province_modifier = {
 						name = peasant_unrest
-						duration = 730
+						years = 2
 					}
 				}
 			}
@@ -612,31 +606,33 @@ province_event = {
 
 	is_triggered_only = yes
 
+	has_dlc = "Horse Lords"
+
 	trigger = {
-		has_dlc = "Horse Lords"
-
-		any_province_holding = {
-			NOT = { holding_type = nomad }
-		}
-
 		# There is already an ongoing peasant revolt for this province
 		owner = {
 			top_liege = {
 				war = yes
+
 				any_war = {
 					defender = { character = PREV }
 					using_cb = cb_minor_clan_revolt
-#					war_title = ROOT # The county
 				}
 			}
+		}
+
+		OR = {
+			has_castle = yes
+			has_temple = yes
+			has_city = yes
+			has_tribal = yes
 		}
 	}
 
 	immediate = {
-
 		add_province_modifier = {
 			name = recent_county_uprising
-			duration = 3650 # Five years of -100% revolt risk in this county
+			years = 10 # -100% revolt risk in this county
 		}
 
 		owner = {
@@ -645,236 +641,133 @@ province_event = {
 					limit = {
 						defender = { character = PREV }
 						using_cb = cb_minor_clan_revolt
-#						war_title = ROOT # The county
 					}
+
 					attacker = {
 						random_list = {
 							34 = {
-								create_character = {
-									random_traits = yes
-									dynasty = none
-									religion = THIS
-									culture = THIS
-									female = no
-									age = 25
-									attributes = {
-										martial = 7
+								spawn_unit = {
+									province = ROOT
+									home = ROOT
+									owner = THIS
+									attrition = 0.25
+
+									troops = {
+										light_cavalry = { 200 200 }
+										horse_archers = { 800 800 }
 									}
-									trait = skilled_tactician
 								}
-								new_character = {
+
+								while = {
+									count = 2
+
 									spawn_unit = {
 										province = ROOT
 										home = ROOT
-										owner = PREV
-										troops = {
-											light_cavalry = { 200 200 }
-											horse_archers = { 800 800 }
-										}
-										attrition = 0.25
-									}
-								}
-								create_character = {
-									random_traits = yes
-									dynasty = none
-									religion = THIS
-									culture = THIS
-									female = no
-									age = 30
-									attributes = {
-										martial = 7
-									}
-									trait = skilled_tactician
-								}
-								new_character = {
-									spawn_unit = {
-										province = ROOT
-										home = ROOT
-										owner = PREV
-										troops = {
-											light_cavalry = { 200 200 }
-											horse_archers = { 800 800 }
-										}
+										owner = THIS
 										attrition = 0.25
 										disband_on_peace = yes
-									}
-								}
-								create_character = {
-									random_traits = yes
-									dynasty = none
-									religion = THIS
-									culture = THIS
-									female = no
-									age = 31
-									attributes = {
-										martial = 7
-									}
-									trait = skilled_tactician
-								}
-								new_character = {
-									spawn_unit = {
-										province = ROOT
-										home = ROOT
-										owner = PREV
+
 										troops = {
 											light_cavalry = { 200 200 }
 											horse_archers = { 800 800 }
 										}
-										attrition = 0.25
-										disband_on_peace = yes
 									}
 								}
 							}
+
 							33 = {
-								create_character = {
-									random_traits = yes
-									dynasty = none
-									religion = THIS
-									culture = THIS
-									female = no
-									age = 25
-									attributes = {
-										martial = 7
+								spawn_unit = {
+									province = ROOT
+									home = ROOT
+									owner = THIS
+									attrition = 0.25
+
+									troops = {
+										light_cavalry = { 150 150 }
+										horse_archers = { 600 600 }
 									}
-									trait = skilled_tactician
 								}
-								new_character = {
+
+								while = {
+									count = 2
+
 									spawn_unit = {
 										province = ROOT
 										home = ROOT
-										owner = PREV
-										troops = {
-											light_cavalry = { 150 150 }
-											horse_archers = { 600 600 }
-										}
-										attrition = 0.25
-									}
-								}
-								create_character = {
-									random_traits = yes
-									dynasty = none
-									religion = THIS
-									culture = THIS
-									female = no
-									age = 30
-									attributes = {
-										martial = 7
-									}
-									trait = skilled_tactician
-								}
-								new_character = {
-									spawn_unit = {
-										province = ROOT
-										home = ROOT
-										owner = PREV
-										troops = {
-											light_cavalry = { 150 150 }
-											horse_archers = { 600 600 }
-										}
+										owner = THIS
 										attrition = 0.25
 										disband_on_peace = yes
-									}
-								}
-								create_character = {
-									random_traits = yes
-									dynasty = none
-									religion = THIS
-									culture = THIS
-									female = no
-									age = 31
-									attributes = {
-										martial = 7
-									}
-									trait = skilled_tactician
-								}
-								new_character = {
-									spawn_unit = {
-										province = ROOT
-										home = ROOT
-										owner = PREV
+
 										troops = {
 											light_cavalry = { 150 150 }
 											horse_archers = { 600 600 }
 										}
-										attrition = 0.25
-										disband_on_peace = yes
 									}
 								}
 							}
+
 							33 = {
-								create_character = {
-									random_traits = yes
-									dynasty = none
-									religion = THIS
-									culture = THIS
-									female = no
-									age = 25
-									attributes = {
-										martial = 7
+								spawn_unit = {
+									province = ROOT
+									home = ROOT
+									owner = THIS
+									attrition = 0.25
+
+									troops = {
+										light_cavalry = { 100 100 }
+										horse_archers = { 400 400 }
 									}
-									trait = skilled_tactician
 								}
-								new_character = {
+
+								while = {
+									count = 2
+
 									spawn_unit = {
 										province = ROOT
 										home = ROOT
-										owner = PREV
-										troops = {
-											light_cavalry = { 100 100 }
-											horse_archers = { 400 400 }
-										}
-										attrition = 0.25
-									}
-								}
-								create_character = {
-									random_traits = yes
-									dynasty = none
-									religion = THIS
-									culture = THIS
-									female = no
-									age = 30
-									attributes = {
-										martial = 7
-									}
-									trait = skilled_tactician
-								}
-								new_character = {
-									spawn_unit = {
-										province = ROOT
-										home = ROOT
-										owner = PREV
-										troops = {
-											light_cavalry = { 100 100 }
-											horse_archers = { 400 400 }
-										}
+										owner = THIS
 										attrition = 0.25
 										disband_on_peace = yes
-									}
-								}
-								create_character = {
-									random_traits = yes
-									dynasty = none
-									religion = THIS
-									culture = THIS
-									female = no
-									age = 31
-									attributes = {
-										martial = 7
-									}
-									trait = skilled_tactician
-								}
-								new_character = {
-									spawn_unit = {
-										province = ROOT
-										home = ROOT
-										owner = PREV
+
 										troops = {
 											light_cavalry = { 100 100 }
 											horse_archers = { 400 400 }
 										}
-										attrition = 0.25
-										disband_on_peace = yes
 									}
+								}
+							}
+						}
+
+						# Spawn commanders if below the limit
+						while = {
+							limit = { can_grant_title = title_commander }
+
+							create_character = {
+								random_traits = yes
+								dynasty = none
+								religion = THIS
+								culture = THIS
+								female = no
+								age = 25
+								add_trait = skilled_tactician
+
+								attributes = {
+									martial = 7
+								}
+							}
+
+							new_character = {
+								give_minor_title = title_commander
+
+								random_list = {
+									1 = { add_age = 0 }
+									1 = { add_age = 1 }
+									1 = { add_age = 2 }
+									1 = { add_age = 3 }
+									1 = { add_age = 4 }
+									1 = { add_age = 5 }
+									1 = { add_age = 6 }
 								}
 							}
 						}
@@ -905,8 +798,9 @@ character_event = {
 
 	is_triggered_only = yes
 
+	ai = no
+
 	option = {
 		name = EVTOPTA_HL_2000
 	}
 }
-

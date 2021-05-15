@@ -1,0 +1,2962 @@
+# claim
+# claim_all
+# claim_on_liege
+# claim_on_liege_plot
+# claim_on_vassal_plot
+# other_claim
+# other_claim_on_liege
+
+claim = {
+	name = CB_NAME_CLAIM
+	war_name = WAR_NAME_CLAIM
+	sprite = 1
+	truce_days = 3650
+	infamy_modifier = 0.85
+	sort_priority = 1000
+
+	hostile_against_others = yes
+	can_ask_to_join_war = yes
+	allowed_to_target_tributaries = yes
+	press_claim = yes
+
+	can_use_gui = {
+		check_if_crusader_trigger = yes
+
+		# CK2Plus
+		# Attacker
+		ROOT = {
+			can_use_cb_preamble = yes
+		}
+	}
+
+	can_use_title = {
+		# Attacker
+		ROOT = {
+			# Gender requirements
+			trigger_if = {
+				limit = { is_female = yes }
+
+				NOR = {
+					has_religion_feature = religion_patriarchal
+					PREV = { has_law = agnatic_succession }
+				}
+			}
+			trigger_else = {
+				NOR = {
+					has_religion_feature = religion_matriarchal
+					PREV = { has_law = enatic_succession }
+				}
+			}
+
+			OR = {
+				has_strong_claim = PREV
+				has_character_flag = claimant_adventurer
+
+				trigger_if = {
+					limit = { has_weak_claim = PREV }
+
+					PREV = { # Claimed Title
+						OR = {
+							is_pretender = yes # Checks vs ROOT character
+							is_contested = yes # Already being contested in some war
+
+							holder_scope = {
+								OR = {
+									has_regent = yes
+									is_crowned_trigger = no
+								}
+							}
+
+							AND = {
+								holder_scope = {
+									is_female = yes
+
+									NOR = {
+										has_law = status_of_women_4
+										has_religion_feature = religion_matriarchal
+										has_religion_feature = religion_equal
+										has_religion_feature = religion_feature_bon
+										has_gender_equal_game_rule_trigger = yes
+									}
+								}
+
+								ROOT = {
+									trigger_if = {
+										limit = { is_female = yes }
+
+										OR = {
+											has_law = status_of_women_4
+											has_religion_feature = religion_matriarchal
+											has_religion_feature = religion_equal
+											has_religion_feature = religion_feature_bon
+											has_gender_equal_game_rule_trigger = yes
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+
+			# Hard to know if this is what Paradox originally intended, but seems to make the most sense
+			# Should prevent landless primary type rulers from claiming titles above their tier
+			trigger_if = {
+				limit = { is_landed = no }
+
+				primary_title = {
+					trigger_if = {
+						limit = { is_primary_type_title = yes } # Static Mercs, the Pope, Holy Orders, etc.
+						NOT = { lower_real_tier_than = PREVPREV } # Should not claim titles above their own tier
+					}
+				}
+			}
+		}
+
+		holder_scope = {
+			OR = {
+				character = FROM
+				is_vassal_or_below_of = FROM
+			}
+		}
+	}
+
+	is_valid_title = {
+		# Attacker
+		claimed_by = ROOT
+
+		holder_scope = {
+			OR = {
+				character = FROM
+				is_vassal_or_below_of = FROM
+			}
+		}
+	}
+
+	on_add = {
+		fire_haruspicy_event_effect = yes
+		anger_china_effect = yes
+	}
+
+	on_success_title = {
+		log = "[Root.GetBestName] (ID: [Root.GetID]) succeeded with [Root.GetHerHis] Claim war on the [This.GetFullName] against [From.GetBestName] (ID: [From.GetID])"
+
+		usurp_title_plus_barony_if_unlanded = {
+			target = attacker
+			type = claim
+		}
+
+		attacker = {
+			show_scope_change = no
+
+			participation_scaled_prestige = 200
+		}
+
+		any_attacker = {
+			limit = { NOT = { character = attacker } }
+			hidden_effect = { participation_scaled_prestige = 200 }
+		}
+
+		defender = {
+			show_scope_change = no
+
+			prestige = -100
+		}
+
+		hidden_effect = {
+			attacker = {
+				clr_character_flag = claimant_adventurer
+
+				if = {
+					limit = {
+						has_nickname = no
+						lower_real_tier_than = PREV
+					}
+
+					random = {
+						chance = 50
+						give_nickname = nick_the_usurper
+					}
+				}
+			}
+
+			if = {
+				limit = {
+					higher_real_tier_than = BARON
+					NOT = { culture = attacker }
+				}
+
+				conquest_culture = attacker
+			}
+
+			check_war_effect = yes
+
+			defender = {
+				landless_pope_effect = yes
+			}
+		}
+
+		# CK2Plus
+		# Decentralize target realm
+		title_reduce_CA_effect = yes
+		title_reduce_TO_effect = yes
+	}
+
+	on_fail_title = {
+		attacker = {
+			show_scope_change = no
+
+			prestige = -100
+
+			hidden_effect = {
+				disband_event_forces = yes
+				clr_character_flag = claimant_adventurer
+			}
+		}
+
+		defender = {
+			show_scope_change = no
+
+			participation_scaled_prestige = 100
+		}
+
+		any_defender = {
+			limit = { NOT = { character = defender } }
+			hidden_effect = { participation_scaled_prestige = 100 }
+		}
+	}
+
+	on_reverse_demand = {
+		attacker = {
+			show_scope_change = no
+
+			prestige = -200
+
+			transfer_scaled_wealth = {
+				to = defender
+				value = 4.0
+			}
+
+			if = {
+				limit = { has_character_flag = claimant_adventurer }
+				imprison = defender
+			}
+		}
+
+		defender = {
+			show_scope_change = no
+
+			participation_scaled_prestige = 200
+		}
+
+		any_defender = {
+			limit = { NOT = { character = defender } }
+			hidden_effect = { participation_scaled_prestige = 200 }
+		}
+
+		# China stuff
+		hidden_effect = {
+			# Attacker
+			attacker = {
+				if = {
+					limit = { has_landed_title = e_china_west_governor }
+
+					log = "China War Logging: China lost a claim war against [From.GetBestName]"
+
+					if = { # Makes China have a chance of leaving Expanionist policy...
+						limit = {
+							offmap_china = {
+								has_policy = china_expansionist
+							}
+						}
+
+						random = {
+							chance = 50
+
+							offmap_china = {
+								set_policy = china_open
+								log = "-------------------------------------"
+								log = "China Policy Logging:"
+								log = "China's new Policy is now OPEN"
+								log = "-------------------------------------"
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	on_reverse_demand_title = {
+		attacker = {
+			show_scope_change = no
+
+			remove_claim = PREV
+
+			hidden_effect = {
+				disband_event_forces = yes
+				clr_character_flag = claimant_adventurer
+			}
+		}
+	}
+
+	on_attacker_leader_death = {
+		if = {
+			limit = {
+				attacker = {
+					has_character_flag = EoD_prophet_attacker
+				}
+			}
+
+			defender = {
+				narrative_event = { id = RIP.15116 }
+			}
+		}
+
+		attacker = {
+			if = {
+				limit = {
+					OR = {
+						has_character_flag = claimant_adventurer
+						has_character_flag = EoD_prophet_attacker
+					}
+				}
+
+				hidden_effect = {
+					disband_event_forces = yes
+					clr_character_flag = claimant_adventurer
+					clr_character_flag = EoD_prophet_attacker
+				}
+
+				PREV = { end_war = invalid }
+			}
+		}
+	}
+
+	on_invalidation = {
+		log = "CB(claim): INVALIDATED: [Root.GetTitledFirstName] of [Root.PrimaryTitle.GetBaseName] (ID: [Root.GetID]) vs. [From.GetTitledFirstName] of [From.PrimaryTitle.GetBaseName] (ID: [From.GetID])"
+	}
+
+	attacker_ai_victory_worth = {
+		factor = -1 # always accept
+	}
+
+	attacker_ai_defeat_worth = {
+		factor = 100
+	}
+
+	defender_ai_victory_worth = {
+		factor = -1 # always accept
+	}
+
+	defender_ai_defeat_worth = {
+		factor = 100
+	}
+
+	ai_will_do = {
+		factor = 1
+
+		trigger = {
+			is_contested = no
+
+			attacker = {
+				sufficient_treasury_for_war_trigger = yes
+
+				# Most Christian and Jewish AI will not attack their religion head
+				can_attack_religion_head_trigger = yes
+
+				# AI will not fight for baronies held by a patriarch
+				can_attack_patriarch_trigger = yes
+
+				# Only dishonorable ai will break the a tributary's trust
+				can_attack_tributary_trigger = yes
+
+				# Only cynics or adventurers can press claims on same-faith holy orders unless one is a player
+				trigger_if = {
+					limit = {
+						FROM = {
+							ai = yes
+							holy_order = yes
+							lower_tier_than = king
+							religion = ROOT
+						}
+					}
+					OR = {
+						has_character_flag = claimant_adventurer
+						trait = cynical
+					}
+				}
+
+				trigger_if = {
+					limit = { controls_religion = yes }
+
+					realm_size >= 1
+				}
+
+				OR = {
+					FROM = { higher_tier_than = count }
+					religion_group = FROM
+					has_character_flag = claimant_adventurer
+				}
+			}
+
+			defender = {
+				# Disallow wrong gender ai from pressing claims on agnatic/enatic nomadic titles
+				trigger_if = {
+					limit = { is_nomadic = yes }
+
+					trigger_if = {
+						limit = {
+							ROOT = { is_female = yes }
+						}
+
+						NOT = { has_law = agnatic_succession }
+					}
+					trigger_else = {
+						NOT = { has_law = enatic_succession }
+					}
+				}
+			}
+		}
+
+		modifier = {
+			factor = 1.2
+
+			attacker = {
+				realm_levy_diff = {
+					who = defender
+					value >= 5000
+				}
+			}
+		}
+	}
+}
+
+claim_all = {
+	name = CB_NAME_CLAIM_ALL
+	war_name = WAR_NAME_CLAIM_ALL
+	sprite = 5
+	truce_days = 3650
+	sort_priority = 1100
+
+	can_ask_to_join_war = yes
+	is_claim_all = yes
+	allowed_to_target_tributaries = yes
+	is_permanent = yes
+
+	can_use_gui = {
+		check_if_crusader_trigger = yes
+
+		# CK2Plus
+		# Attacker
+		ROOT = {
+			can_use_cb_preamble = yes
+		}
+	}
+
+	can_use = {
+		# Attacker
+		ROOT = {
+			total_claims = {
+				who = FROM
+				value >= 2
+				strong = yes
+			}
+		}
+	}
+
+	is_valid = {
+		# Attacker
+		ROOT = {
+			total_claims = {
+				who = FROM
+				value >= 1
+				strong = yes
+			}
+		}
+	}
+
+	on_add = {
+		attacker = {
+			show_scope_change = no
+
+			any_claim = {
+				show_scope_change = no
+
+				limit = {
+					holder_scope = {
+						OR = {
+							character = defender
+							is_vassal_or_below_of = defender
+						}
+					}
+
+					attacker = { has_strong_claim = PREV }
+				}
+
+				press_claim = ROOT
+			}
+		}
+
+		fire_haruspicy_event_effect = yes
+		anger_china_effect = yes
+	}
+
+	on_success = {
+		log = "[Root.GetBestName] (ID: [Root.GetID]) succeeded with [Root.GetHerHis] Claim All war against [From.GetBestName] (ID: [From.GetID])"
+
+		# CK2Plus
+		defender = {
+			save_event_target_as = pf_lc_enemy
+		}
+
+		attacker = {
+			show_scope_change = no
+
+			participation_scaled_prestige = 200
+
+			any_claim = {
+				show_scope_change = no
+
+				limit = {
+					holder_scope = {
+						OR = {
+							character = defender
+							is_vassal_or_below_of = defender
+						}
+					}
+
+					attacker = { has_strong_claim = PREV }
+				}
+
+				usurp_title_plus_barony_if_unlanded = {
+					target = attacker
+					type = claim
+				}
+
+				hidden_effect = {
+					if = {
+						limit = {
+							higher_real_tier_than = BARON
+							NOT = { culture = attacker }
+						}
+
+						conquest_culture = attacker
+					}
+				}
+
+				# CK2Plus
+				title_reduce_CA_effect = yes
+				title_reduce_TO_effect = yes
+			}
+
+			if = { # China with no land calculates what to do with nomad provinces
+				limit = {
+					is_offmap_governor = yes
+					offmap_power = { is_offmap_tag = offmap_china }
+					offmap_china = { has_offmap_tmp_flag = WP_is_not_on_map }
+					wealth < 2500 # unless already rich from tributes
+				}
+
+				set_variable = {
+					which = WP_nomad_provinces
+					value = 0
+				}
+
+				any_realm_province = {
+					limit = {
+						has_province_modifier = nomad_agitation
+						has_settlement_construction = no
+					}
+
+					province_event = { id = JD.60100 } # increase counter for each nomad province
+				}
+
+				character_event = {
+					id = JD.60101 # calculate gold sent from china for building holdings
+					days = 1
+				}
+			}
+
+			roman_victory_triumph_effect = yes
+		}
+
+		any_attacker = {
+			limit = { NOT = { character = attacker } }
+			hidden_effect = { participation_scaled_prestige = 200 }
+		}
+
+		hidden_effect = {
+			check_if_reconquista_finished_effect = yes
+
+			defender = {
+				landless_pope_effect = yes
+			}
+
+			if = {
+				limit = {
+					has_character_flag = is_otto
+
+					defender = {
+						has_character_flag = is_giselbert
+					}
+				}
+
+				reverse_imprison = defender
+			}
+		}
+	}
+
+	on_fail = {
+		attacker = {
+			show_scope_change = no
+
+			prestige = -100
+		}
+
+		defender = {
+			show_scope_change = no
+
+			participation_scaled_prestige = 75
+		}
+
+		any_defender = {
+			limit = { NOT = { character = defender } }
+			hidden_effect = { participation_scaled_prestige = 75 }
+		}
+	}
+
+	on_reverse_demand = {
+		attacker = {
+			show_scope_change = no
+
+			prestige = -200
+
+			transfer_scaled_wealth = {
+				to = defender
+				value = 4.0
+			}
+
+			any_claim = {
+				show_scope_change = no
+
+				limit = {
+					holder_scope = {
+						OR = {
+							character = defender
+							is_vassal_or_below_of = defender
+						}
+					}
+
+					attacker = { has_strong_claim = PREV }
+				}
+
+				attacker = {
+					show_scope_change = no
+
+					remove_claim = PREV
+				}
+			}
+
+			hidden_effect = {
+				if = { #Makes China have a chance of leaving Expanionist policy...
+					limit = {
+						has_landed_title = e_china_west_governor
+
+						offmap_china = {
+							has_policy = china_expansionist
+						}
+					}
+
+					random = {
+						chance = 50
+
+						offmap_china = {
+							set_policy = china_open
+							log = "-------------------------------------"
+							log = "China Policy Logging:"
+							log = "Chinas new Policy is now OPEN"
+							log = "-------------------------------------"
+						}
+					}
+
+					log = "China War Logging: China lost a claim all war against [From.GetBestName]"
+				}
+			}
+		}
+
+		defender = {
+			show_scope_change = no
+
+			participation_scaled_prestige = 200
+			roman_victory_triumph_effect = yes
+		}
+
+		any_defender = {
+			limit = { NOT = { character = defender } }
+			hidden_effect = { participation_scaled_prestige = 200 }
+		}
+	}
+
+	on_attacker_leader_death = {
+		ROOT = {
+			if = {
+				limit = { has_character_flag = claimant_adventurer }
+
+				hidden_effect = {
+					disband_event_forces = claimant_adventure
+					clr_character_flag = claimant_adventurer
+				}
+
+				PREV = {
+					end_war = invalid
+				}
+			}
+		}
+	}
+
+	on_invalidation = {
+		log = "CB(claim_all): INVALIDATED: [Root.GetTitledFirstName] of [Root.PrimaryTitle.GetBaseName] (ID: [Root.GetID]) vs. [From.GetTitledFirstName] of [From.PrimaryTitle.GetBaseName] (ID: [From.GetID])"
+	}
+
+	attacker_ai_victory_worth = {
+		factor = -1 # always accept
+	}
+
+	attacker_ai_defeat_worth = {
+		factor = 100
+	}
+
+	defender_ai_victory_worth = {
+		factor = -1 # always accept
+	}
+
+	defender_ai_defeat_worth = {
+		factor = 100
+	}
+
+	ai_will_do = {
+		factor = 1
+
+		trigger = {
+			defender = {
+				trigger_if = {
+					limit = {
+						primary_title = { holy_order = yes }
+					}
+
+					OR = {
+						NOT = { religion = ROOT }
+						ROOT = { trait = cynical }
+					}
+				}
+			}
+
+			attacker = {
+				sufficient_treasury_for_war_trigger = yes
+
+				# Most Christian and Jewish AI will not attack their religion head
+				can_attack_religion_head_trigger = yes
+
+				# Only dishonorable ai will break the a tributary's trust
+				can_attack_tributary_trigger = yes
+
+				trigger_if = {
+					limit = { controls_religion = yes }
+					realm_size >= 1
+				}
+			}
+		}
+
+		mult_modifier = {
+			factor = 1.2
+
+			attacker = {
+				realm_levy_diff = {
+					who = defender
+					value >= 5000
+				}
+			}
+		}
+	}
+}
+
+# 2 - Disabled in CK2Plus
+claim_on_liege = {
+	name = CB_NAME_CLAIM
+	war_name = WAR_NAME_CLAIM_LIEGE
+	sprite = 3
+	truce_days = 3650
+	infamy_modifier = 0.85
+	sort_priority = 910
+
+	hostile_against_others = yes
+	press_claim = yes
+	can_call_vassals = no
+	major_revolt = yes
+	allowed_to_target_tributaries = no
+
+	can_use_gui = {
+		check_if_crusader_trigger = yes
+	}
+
+	can_use = {
+		always = no # Disabled in CK2Plus
+	}
+
+	can_use_title = {
+		# Attacker
+		ROOT = {
+			OR = {
+				has_strong_claim = PREV
+				has_character_flag = faction_claimant_ultimatum_taken
+
+				trigger_if = {
+					limit = { has_weak_claim = PREV }
+
+					PREV = { # Claimed Title
+						OR = {
+							is_pretender = yes # Checks vs ROOT character
+							is_contested = yes # Already being contested in some war
+							holder_scope = { has_regent = yes }
+
+							AND = {
+								ROOT = { # attacking claimant
+									trigger_if = {
+										limit = { is_female = yes }
+										has_law = status_of_women_4
+									}
+								}
+
+								holder_scope = { # title holder
+									is_female = yes
+
+									NOR = {
+										has_law = status_of_women_4
+
+										has_game_rule = {
+											name = gender
+											value = all
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		# Defender
+		holder_scope = {
+			OR = {
+				character = FROM
+				is_vassal_or_below_of = FROM
+			}
+		}
+
+		is_vice_royalty = no
+	}
+
+	is_valid = {
+		# Attacker
+		ROOT = {
+			liege_before_war = { character = FROM }
+		}
+
+		# Defender
+		FROM = {
+			in_revolt = no
+
+			liege_before_war = {
+				in_revolt = no
+
+				liege_before_war = {
+					in_revolt = no
+				}
+			}
+		}
+	}
+
+	is_valid_title = {
+		holder_scope = {
+			OR = {
+				character = FROM
+				is_vassal_or_below_of = FROM
+			}
+		}
+
+		OR = {
+			ROOT = { has_claim = PREV }
+			has_law = succ_feudal_elective
+			has_law = succ_hre_elective
+		}
+	}
+
+	on_add = {
+		fire_haruspicy_event_effect = yes
+		anger_china_effect = yes
+	}
+
+	on_success = {
+		attacker = {
+			show_scope_change = no
+
+			participation_scaled_prestige = 100
+
+			# Attacker (ROOT) is freed from Defender (FROM)
+			if = {
+				limit = {
+					prisoner = yes
+					host = { character = defender }
+				}
+
+				imprison = no
+			}
+
+			hidden_effect = { disband_event_forces = faction_revolters }
+		}
+
+		any_attacker = {
+			limit = { NOT = { character = defender } }
+
+			hidden_effect = {
+				participation_scaled_prestige = 100
+				disband_event_forces = faction_revolters
+			}
+		}
+
+		defender = {
+			hidden_effect = { disband_event_forces = faction_loyalists }
+
+			if = { # lower crown authority
+				limit = { NOT = { has_dlc = "Conclave" } }
+
+				any_demesne_title = {
+					limit = { is_crown_law_title = yes }
+
+					trigger_switch = {
+						on_trigger = has_law
+
+						crown_authority_1 = { add_law = crown_authority_0 }
+						crown_authority_2 = { add_law = crown_authority_1 }
+						crown_authority_3 = { add_law = crown_authority_2 }
+						crown_authority_4 = { add_law = crown_authority_3 }
+					}
+				}
+			}
+		}
+	}
+
+	on_success_title = {
+		defender = {
+			show_scope_change = no
+
+			if = {
+				limit = { primary_title = { title = PREVPREV } }
+				imprison = attacker
+			}
+
+			# If ROOT is now higher tier than FROM, ROOT becomes the liege of FROM
+			if = {
+				limit = {
+					PREV = { higher_real_tier_than = defender }
+				}
+
+				set_defacto_liege = attacker
+			}
+		}
+
+		usurp_title_plus_barony_if_unlanded_and_vassals_no_adj = {
+			target = attacker
+			type = claim
+		}
+
+		hidden_effect = {
+			# Conquest Culture
+			if = {
+				limit = {
+					higher_real_tier_than = BARON
+					NOT = { culture = attacker }
+				}
+
+				conquest_culture = attacker
+			}
+
+			attacker = {
+				if = {
+					limit = {
+						has_nickname = no
+						PREV = { higher_real_tier_than = COUNT }
+					}
+
+					random = {
+						chance = 50
+						give_nickname = nick_the_usurper
+					}
+				}
+			}
+
+			check_war_effect = yes
+
+			defender = {
+				landless_pope_effect = yes
+			}
+		}
+	}
+
+	on_fail = {
+		attacker = {
+			show_scope_change = no
+
+			prestige = -100
+			hidden_effect = { disband_event_forces = faction_revolters }
+		}
+
+		any_attacker = {
+			limit = { liege = { character = defender } }
+			hidden_effect = { disband_event_forces = faction_revolters }
+		}
+
+		defender = {
+			show_scope_change = no
+
+			participation_scaled_prestige = 50
+			hidden_effect = { disband_event_forces = faction_loyalists }
+		}
+
+		any_defender = {
+			limit = { NOT = { character = defender } }
+			hidden_effect = { participation_scaled_prestige = 50 }
+		}
+	}
+
+	on_reverse_demand = {
+		attacker = {
+			show_scope_change = no
+
+			prestige = -150
+			hidden_effect = { disband_event_forces = faction_revolters }
+		}
+
+		any_attacker = {
+			limit = { liege = { character = defender } }
+
+			hidden_effect = {
+				disband_event_forces = faction_revolters
+				imprison = defender
+			}
+		}
+
+		defender = {
+			show_scope_change = no
+
+			participation_scaled_prestige = 100
+
+			hidden_effect = {
+				if = {
+					limit = {
+						NOT = {
+							has_opinion_modifier = { # Allow free revocation of a title
+								name = opinion_traitor
+								who = attacker
+							}
+						}
+					}
+
+					opinion = {
+						name = opinion_traitor
+						who = attacker
+					}
+				}
+
+				disband_event_forces = faction_loyalists
+			}
+		}
+
+		any_defender = {
+			limit = { NOT = { character = defender } }
+
+			hidden_effect = {
+				participation_scaled_prestige = 100
+				disband_event_forces = faction_loyalists
+			}
+		}
+	}
+
+	on_attacker_leader_death = {
+		any_defender = {
+			letter_event = { id = 251 } # Our enemy has died, the war has ended
+		}
+
+		end_war = invalid
+	}
+
+	attacker_ai_victory_worth = {
+		factor = -1 # always accept
+	}
+
+	attacker_ai_defeat_worth = {
+		factor = 100
+	}
+
+	defender_ai_victory_worth = {
+		factor = -1 # always accept
+	}
+
+	defender_ai_defeat_worth = {
+		factor = 100
+	}
+}
+
+claim_on_liege_plot = {
+	name = CB_NAME_CLAIM
+	war_name = WAR_NAME_CLAIM_LIEGE
+	sprite = 3
+	truce_days = 3650
+	infamy_modifier = 0.85
+
+	hostile_against_others = yes
+	press_claim = yes
+	major_revolt = yes
+	can_call_allies = no
+	can_ask_to_join_war = no
+	allowed_to_target_tributaries = no
+
+	can_use_gui = {
+		check_if_crusader_trigger = yes
+	}
+
+	can_use_title = {
+		holder_scope = {
+			OR = {
+				character = FROM
+				is_vassal_or_below_of = FROM
+			}
+		}
+	}
+
+	is_valid = {
+		# Attacker
+		ROOT = {
+			liege_before_war = { character = FROM }
+		}
+
+		# Defender
+		FROM = {
+			in_revolt = no
+
+			liege_before_war = {
+				in_revolt = no
+
+				liege_before_war = {
+					in_revolt = no
+				}
+			}
+		}
+	}
+
+	is_valid_title = {
+		holder_scope = {
+			OR = {
+				character = FROM
+				is_vassal_or_below_of = FROM
+			}
+		}
+	}
+
+	on_add = {
+		log = "CB(claim_on_liege_plot): START: [Root.GetTitledFirstName] of [Root.PrimaryTitle.GetBaseName] (ID: [Root.GetID]) vs. [From.GetTitledFirstName] of [From.PrimaryTitle.GetBaseName] (ID: [From.GetID])"
+
+		fire_haruspicy_event_effect = yes
+		anger_china_effect = yes
+
+		# CK2Plus
+		FROM = { pf_log_state_effect = yes }
+		ROOT = { pf_log_state_effect = yes }
+	}
+
+	on_success = {
+		attacker = {
+			show_scope_change = no
+
+			participation_scaled_prestige = 200
+			hidden_effect = { disband_event_forces = faction_revolters }
+		}
+
+		any_attacker = {
+			limit = { NOT = { character = attacker } }
+
+			hidden_effect = {
+				participation_scaled_prestige = 200
+				disband_event_forces = faction_revolters
+			}
+		}
+
+		defender = {
+			hidden_effect = { disband_event_forces = faction_loyalists }
+
+			any_demesne_title = {
+				limit = { is_crown_law_title = yes }
+
+				trigger_switch = {
+					on_trigger = has_law
+
+					crown_authority_1 = { add_law = crown_authority_0 }
+					crown_authority_2 = { add_law = crown_authority_1 }
+					crown_authority_3 = { add_law = crown_authority_2 }
+					crown_authority_4 = { add_law = crown_authority_3 }
+				}
+			}
+
+			# CK2Plus
+			prestige = -500
+			imprison = attacker
+
+			hidden_effect = {
+				if = {
+					limit = { independent = yes }
+
+					any_vassal = {
+						character_event = {
+							id = Plus.430
+							days = 3
+						}
+					}
+				}
+			}
+		}
+	}
+
+	on_success_title = {
+		log = "CB(claim_on_liege_plot): VICTORY: [Root.GetTitledFirstName] of [Root.PrimaryTitle.GetBaseName] (ID: [Root.GetID]) vs. [From.GetTitledFirstName] of [From.PrimaryTitle.GetBaseName] (ID: [From.GetID])"
+
+		# Prevent on_new_holder / on_unlanded edge case handlers from tearing-down any civil war state while the CB
+		# completes due to, e.g., liege changes or gained titles.
+		set_global_flag = pf_teardown_lock
+
+		# Attacker
+		usurp_title_plus_barony_if_unlanded = {
+			target = attacker
+			type = claim
+		}
+
+		clr_global_flag = pf_teardown_lock
+
+		hidden_effect = {
+			if = {
+				limit = {
+					higher_real_tier_than = BARON
+					NOT = { culture = attacker }
+				}
+
+				conquest_culture = attacker
+			}
+		}
+
+		attacker = {
+			show_scope_change = no
+
+			plot_succeeds = yes
+		}
+
+		# CK2Plus
+		title_reduce_CA_effect = yes
+		title_reduce_TO_effect = yes
+
+		defender = {
+			any_demesne_title = {
+				title_reduce_CA_effect = yes
+				title_reduce_TO_effect = yes
+
+				if = {
+					limit = { can_destroy_title_trigger = yes }
+
+					set_title_flag = destroy_title
+
+					holder_scope = {
+						character_event = {
+							id = Plus.1620
+							days = 4
+						}
+					}
+				}
+			}
+
+			if = {
+				limit = { lower_real_tier_than = attacker }
+				set_defacto_liege = attacker
+			}
+		}
+
+		hidden_effect = {
+			# Civil War opinions
+			attacker = {
+				pf_civil_war_clear_old_opinions_effect = yes
+
+				opinion = {
+					name = opinion_civil_war_loser
+					who = defender
+					years = 5
+				}
+
+				# Remember those who chose to be neutral
+				any_vassal = {
+					limit = {
+						has_opinion_modifier = {
+							name = pf_neutral_toward
+							who = attacker
+						}
+					}
+
+					attacker = {
+						opinion = {
+							name = opinion_civil_war_neutral
+							who = PREV
+							years = 5
+						}
+					}
+				}
+			}
+
+			any_attacker = {
+				limit = {
+					NOT = { character = attacker }
+				}
+
+				attacker = {
+					opinion = {
+						name = opinion_civil_war_supporter
+						who = PREV
+						years = 5
+					}
+				}
+			}
+
+			any_defender = {
+				limit = {
+					NOT = { character = defender }
+				}
+
+				attacker = {
+					opinion = {
+						name = opinion_civil_war_loser
+						who = PREV
+						years = 5
+					}
+				}
+			}
+
+			# Clean up remaining TOMs
+			pf_civil_war_cleanup_effect = yes
+
+			# Check whether the title should be destroyed due to CA loss
+			if = {
+				limit = { can_destroy_title_trigger = yes }
+
+				set_title_flag = destroy_title
+
+				holder_scope = {
+					character_event = {
+						id = Plus.1620
+						days = 4
+					}
+				}
+			}
+
+			attacker = {
+				# Post civil war event to reward allies
+				character_event = { id = PlusFaction.450 }
+
+				# Faction mood change
+				character_event = {
+					id = PlusFaction.200
+					days = 1
+				}
+			}
+
+			defender = {
+				# Faction mood change
+				character_event = {
+					id = PlusFaction.200
+					days = 1
+				}
+			}
+		}
+	}
+
+	on_fail = {
+		log = "CB(claim_on_liege_plot): WHITEPEACE: [Root.GetTitledFirstName] of [Root.PrimaryTitle.GetBaseName] (ID: [Root.GetID]) vs. [From.GetTitledFirstName] of [From.PrimaryTitle.GetBaseName] (ID: [From.GetID])"
+
+		# Clean up remaining civil war state
+		pf_civil_war_cleanup_effect = yes
+
+		attacker = {
+			show_scope_change = no
+
+			prestige = -100
+
+			# CK2Plus
+			if = {
+				limit = { has_character_flag = no_whitepeace_prison }
+				clr_character_flag = no_whitepeace_prison
+			}
+			else = {
+				imprison = defender
+			}
+		}
+
+		defender = {
+			show_scope_change = no
+
+			participation_scaled_prestige = 50
+
+			hidden_effect = {
+				disband_event_forces = faction_revolters
+				disband_event_forces = faction_loyalists
+				landless_pope_effect = yes
+			}
+		}
+
+		any_defender = {
+			limit = { NOT = { character = defender } }
+
+			hidden_effect = {
+				participation_scaled_prestige = 50
+				disband_event_forces = faction_revolters
+			}
+		}
+
+		# Ck2Plus
+		hidden_effect = {
+			defender = {
+				remove_opinion = {
+					name = declared_war
+					who = attacker
+				}
+			}
+		}
+	}
+
+	on_fail_title = {
+		check_war_effect = yes
+	}
+
+	on_reverse_demand = {
+		log = "CB(claim_on_liege_plot): DEFEAT: [Root.GetTitledFirstName] of [Root.PrimaryTitle.GetBaseName] (ID: [Root.GetID]) vs. [From.GetTitledFirstName] of [From.PrimaryTitle.GetBaseName] (ID: [From.GetID])"
+
+		attacker = {
+			show_scope_change = no
+
+			prestige = -200
+			imprison = defender
+		}
+
+		defender = {
+			show_scope_change = no
+
+			participation_scaled_prestige = 200
+
+			hidden_effect = {
+				disband_event_forces = faction_revolters
+				disband_event_forces = faction_loyalists
+
+				if = {
+					limit = {
+						NOT = {
+							has_opinion_modifier = { # Allow free revocation of a title
+								name = opinion_traitor
+								who = attacker
+							}
+						}
+					}
+
+					opinion = {
+						who = attacker
+						name = opinion_traitor
+					}
+				}
+			}
+		}
+
+		any_defender = {
+			limit = { NOT = { character = defender } }
+
+			hidden_effect = {
+				participation_scaled_prestige = 200
+				disband_event_forces = faction_revolters
+			}
+		}
+
+		# CK2Plus
+		any_attacker = {
+			limit = { NOT = { character = attacker } }
+			imprison = defender
+		}
+	}
+
+	on_reverse_demand_title = {
+		remove_claim = attacker
+
+		attacker = {
+			show_scope_change = no
+
+			custom_tooltip = {
+				text = MAY_NOT_BECOME_PRETENDER_AGAIN
+
+				reverse_opinion = {
+					name = failed_to_claim_my_title
+					who = defender
+					years = 100
+				}
+			}
+		}
+
+		hidden_effect = {
+			# Civil War Opinions
+			defender = {
+				pf_civil_war_clear_old_opinions_effect = yes
+
+				opinion = {
+					name = opinion_civil_war_loser
+					who = attacker
+					years = 5
+				}
+
+				# remember those who chose to be neutral
+				any_vassal = {
+					limit = {
+						reverse_has_opinion_modifier = {
+							name = pf_neutral_to_me
+							who = PREV
+						}
+					}
+
+					defender = {
+						opinion = {
+							name = opinion_civil_war_neutral
+							who = PREV
+							years = 5
+						}
+					}
+				}
+			}
+
+			any_defender = {
+				limit = {
+					NOT = { character = defender }
+				}
+
+				defender = {
+					opinion = {
+						name = opinion_civil_war_supporter
+						who = PREV
+						years = 5
+					}
+				}
+			}
+
+			any_attacker = {
+				limit = {
+					NOT = { character = attacker }
+				}
+
+				defender = {
+					opinion = {
+						name = opinion_civil_war_loser
+						who = PREV
+						years = 5
+					}
+
+					opinion = {
+						name = opinion_coerced_into_leaving_faction
+						who = PREV
+						years = 5
+					}
+				}
+			}
+
+			# Clean up remaining TOMs
+			pf_civil_war_cleanup_effect = yes
+
+			defender = {
+				# Post-civil war event to reward allies
+				character_event = { id = PlusFaction.450 }
+
+				# Change faction moods
+				character_event = {
+					id = PlusFaction.200
+					days = 1
+				}
+			}
+
+			attacker = {
+				# Change faction moods
+				character_event = {
+					id = PlusFaction.200
+					days = 1
+				}
+			}
+
+		}
+	}
+
+	on_attacker_leader_death = {
+		any_defender = {
+			letter_event = { id = 251 } # Our enemy has died, the war has ended
+		}
+
+		end_war = invalid
+	}
+
+	on_invalidation = {
+		log = "CB(claim_on_liege_plot): INVALIDATED: [Root.GetTitledFirstName] of [Root.PrimaryTitle.GetBaseName] (ID: [Root.GetID]) vs. [From.GetTitledFirstName] of [From.PrimaryTitle.GetBaseName] (ID: [From.GetID])"
+
+		# Clean up remaining civil war state
+		pf_civil_war_cleanup_effect = yes
+	}
+
+	attacker_ai_victory_worth = {
+		factor = -1 # always accept
+	}
+
+	attacker_ai_defeat_worth = {
+		factor = 100
+	}
+
+	defender_ai_victory_worth = {
+		factor = -1 # always accept
+	}
+
+	defender_ai_defeat_worth = {
+		factor = 100
+	}
+}
+
+# 4 - Disabled in CK2Plus
+claim_on_vassal_plot = {
+	name = CB_NAME_CLAIM_VASSAL
+	war_name = WAR_NAME_CLAIM_VASSAL
+	sprite = 3
+	truce_days = 3650
+	infamy_modifier = 0.85
+
+	hostile_against_others = yes
+	reflect_titleholder_change = no
+	press_claim = yes
+	attacker_can_call_allies = no
+	can_attack_vassals = yes
+	allowed_to_target_tributaries = no
+
+	can_use_gui = {
+		check_if_crusader_trigger = yes
+	}
+
+	can_use = {
+		always = no # Disabled in CK2Plus
+	}
+
+	can_use_title = {
+		# Defender
+		FROM = {
+			has_landed_title = PREV # Target title of plot
+			de_facto_liege = ROOT # Attacker
+		}
+	}
+
+	is_valid_title = {
+		# Attacker
+		ROOT = {
+			has_plot = plot_gain_vassal_title
+		}
+
+		# Defender
+		FROM = {
+			has_landed_title = PREV
+		}
+	}
+
+	on_add = {
+		fire_haruspicy_event_effect = yes
+	}
+
+	on_success = {
+		attacker = {
+			show_scope_change = no
+
+			prestige = 50
+		}
+	}
+
+	on_success_title = {
+		# Attacker
+		usurp_title_plus_barony_if_unlanded = {
+			target = attacker
+			type = claim
+		}
+
+		attacker = {
+			show_scope_change = no
+
+			plot_succeeds = yes
+		}
+
+		hidden_effect = {
+			check_if_reconquista_finished_effect = yes
+
+			defender = {
+				landless_pope_effect = yes
+			}
+		}
+	}
+
+	on_fail = {
+		attacker = {
+			show_scope_change = no
+
+			prestige = -100
+			cancel_plot = plot_gain_vassal_title
+		}
+
+		defender = {
+			show_scope_change = no
+
+			participation_scaled_prestige = 50
+		}
+
+		any_defender = {
+			limit = { NOT = { character = defender } }
+			hidden_effect = { participation_scaled_prestige = 50 }
+		}
+	}
+
+	on_invalidation = {
+		attacker = {
+			show_scope_change = no
+
+			cancel_plot = plot_gain_vassal_title
+		}
+	}
+
+	on_reverse_demand = {
+		attacker = {
+			show_scope_change = no
+
+			prestige = -200
+			cancel_plot = plot_gain_vassal_title
+		}
+
+		defender = {
+			show_scope_change = no
+
+			participation_scaled_prestige = 100
+		}
+
+		any_defender = {
+			limit = { NOT = { character = defender } }
+			hidden_effect = { participation_scaled_prestige = 100 }
+		}
+	}
+
+	on_attacker_leader_death = {
+		any_defender = {
+			letter_event = { id = 251 } # Our enemy has died, the war has ended
+		}
+
+		end_war = invalid
+	}
+
+	on_defender_leader_death = {
+		attacker = {
+			show_scope_change = no
+
+			cancel_plot = plot_gain_vassal_title
+		}
+	}
+
+	attacker_ai_victory_worth = {
+		factor = -1 # always accept
+	}
+
+	attacker_ai_defeat_worth = {
+		factor = 100
+	}
+
+	defender_ai_victory_worth = {
+		factor = -1 # always accept
+	}
+
+	defender_ai_defeat_worth = {
+		factor = 100
+	}
+}
+
+other_claim = {
+	name = CB_NAME_CLAIM
+	war_name = WAR_NAME_OTHER_CLAIM
+	sprite = 2
+	truce_days = 3650
+	infamy_modifier = 0.5
+	sort_priority = 900
+
+	hostile_against_others = yes
+	can_ask_to_join_war = yes
+	press_claim = yes
+	allowed_to_target_tributaries = yes
+
+	# Starting scope is attacker
+	# ROOT is third-party claimant
+	# FROM is defender
+	# FROMFROM is title
+	can_use_gui = {
+		check_if_crusader_trigger = yes
+
+		# CK2Plus
+		can_use_cb_preamble = yes
+	}
+
+	# Starting scope is attacker
+	# ROOT is third-party claimant
+	# FROM is defender
+	# FROMFROM is attacker
+	can_use = {
+		# Third-party claimant
+		ROOT = {
+			mercenary = no
+		}
+	}
+
+	# Starting scope is claimed title
+	# ROOT is third-party claimant
+	# FROM is defender
+	# FROMFROM is attacker
+	can_use_title = {
+		holder_scope = {
+			OR = {
+				character = FROM
+				is_vassal_or_below_of = FROM
+			}
+		}
+
+		# Claimant
+		ROOT = {
+			# gender requirements
+			trigger_if = {
+				limit = { is_female = yes }
+
+				NOR = {
+					has_law = agnatic_succession
+					FROMFROM = { has_law = agnatic_succession }
+
+					PREV = { # Claimed Title
+						succ_law_title = { has_law = agnatic_succession }
+					}
+
+					has_religion_feature = religion_patriarchal
+				}
+			}
+			trigger_else = {
+				NOR = {
+					has_law = enatic_succession
+					FROMFROM = { has_law = enatic_succession }
+
+					PREV = {
+						succ_law_title = { has_law = enatic_succession }
+					}
+
+					has_religion_feature = religion_matriarchal
+				}
+			}
+
+			# claimant requirements
+			trigger_if = {
+				limit = {
+					NOT = {	has_strong_claim = PREV	}
+				}
+
+				has_weak_claim = PREV
+
+				PREV = { # claimed title
+					trigger_if = {
+						limit = {
+							is_pretender = no # Checks vs ROOT character
+							is_contested = no # Already being contested in some war
+
+							holder_scope = {
+								has_regent = no
+								is_crowned_trigger = yes
+							}
+						}
+
+						ROOT = { # claimant
+							trigger_if = {
+								limit = { is_female = yes }
+								has_law = status_of_women_4
+							}
+						}
+
+						holder_scope = { # title holder
+							is_female = yes
+
+							NOR = {
+								has_law = status_of_women_4
+
+								has_game_rule = {
+									name = gender
+									value = all
+								}
+							}
+						}
+					}
+				}
+			}
+
+			# Hard to know if this is what Paradox originally intended, but seems to make the most sense
+			# Should prevent landless primary type rulers from claiming titles above their tier
+			trigger_if = {
+				limit = { is_landed = no }
+
+				primary_title = {
+					trigger_if = {
+						limit = { is_primary_type_title = yes } # Static Mercs, the Pope, Holy Orders, etc.
+						NOT = { lower_real_tier_than = PREVPREV } # Should not titles above their own tier
+					}
+				}
+			}
+		}
+
+		# War Check - Claimant isn't already fighting for it
+		NOT = {
+			any_war = { # when used in title scope, checks all wars for that title
+				attacker = {
+					character = ROOT
+				}
+			}
+		}
+
+		# Multiplayer third-party claim check
+		trigger_if = {
+			limit = {
+				multiplayer = yes
+				FROMFROM = { ai = no }
+			}
+
+			trigger_if = {
+				limit = { higher_real_tier_than = DUKE }
+
+				has_game_rule = {
+					name = multiplayer_third_party_claims
+					value = on
+				}
+			}
+			trigger_else = {
+				NOT = {
+					has_game_rule = {
+						name = multiplayer_third_party_claims
+						value = off
+					}
+				}
+			}
+		}
+
+		# CK2Plus
+		# You can't press claims against someone you installed into that title
+		holder_scope = {
+			NOT = {
+				has_opinion_modifier = {
+					name = pressed_my_claim
+					who = FROMFROM
+				}
+			}
+		}
+	}
+
+	# Starting scope is claimed title
+	# ROOT is third-party claimant
+	# FROM is defender
+	# FROMFROM is attacker
+	is_valid_title = {
+		# Third-party claimant
+		claimed_by = ROOT
+
+		holder_scope = {
+			OR = {
+				character = FROM
+				is_vassal_or_below_of = FROM
+			}
+		}
+	}
+
+	on_add = {
+		fire_haruspicy_event_effect = yes
+		anger_china_effect = yes
+
+		# CK2Plus
+		ROOT = { set_character_flag = claim_being_pressed }
+	}
+
+	# Starting scope is attacker
+	# ROOT is third-party claimant
+	# FROM is defender
+	# FROMFROM is attacker
+	on_success = {
+		ROOT = {
+			show_scope_change = no
+
+			participation_scaled_prestige = 200
+
+			hidden_effect = {
+				opinion = {
+					name = pressed_my_claim
+					who = PREV
+					multiplier = 2
+				}
+			}
+		}
+
+		any_attacker = {
+			limit = { NOT = { character = ROOT } }
+			hidden_effect = { participation_scaled_prestige = 200 }
+		}
+
+		defender = {
+			show_scope_change = no
+
+			prestige = -200
+		}
+
+		# CK2Plus
+		hidden_effect = {
+			ROOT = {
+				add_character_modifier = {
+					name = new_land_timer
+					duration = 1
+					hidden = yes
+				}
+
+				clr_character_flag = claim_being_pressed
+			}
+		}
+	}
+
+	# Starting scope is claimed title
+	# ROOT is third-party claimant
+	# FROM is defender
+	# FROMFROM is attacker
+	on_success_title = {
+		log = "[FromFrom.GetBestName] (ID: [FromFrom.GetID]) succeeded with [FromFrom.GetHerHis] war for [Root.GetBestName]'s (ID: [Root.GetID]) claim on the [This.GetFullName] against [From.GetBestName] (ID: [From.GetID])"
+
+		hidden_effect = {
+			ROOT = {
+				show_scope_change = no
+
+				if = {
+					limit = {
+						has_nickname = no
+						lower_real_tier_than = PREV
+					}
+
+					random = {
+						chance = 50
+						give_nickname = nick_the_usurper
+					}
+				}
+			}
+
+			# Anti-Popes take all the gold of the Vatican
+			if = {
+				limit = {
+					OR = {
+						title = k_papacy
+						title = d_fraticelli
+					}
+				}
+
+				defender = {
+					show_scope_change = no
+
+					transfer_scaled_wealth = {
+						to = ROOT
+						value = all
+					}
+				}
+			}
+		}
+
+		# Popes vassalized by third party
+		if = {
+			limit = {
+				controls_religion = yes
+
+				holder_scope = {
+					OR = {
+						religion = catholic
+						religion = fraticelli
+					}
+				}
+			}
+
+			holder_scope = {
+				show_scope_change = no
+
+				abdicate_to = ROOT
+			}
+
+			ROOT = {
+				show_scope_change = no
+
+				if = {
+					limit = { lower_real_tier_than = FROMFROM }
+					set_defacto_liege = FROMFROM
+				}
+				else = {
+					set_defacto_liege = THIS
+				}
+			}
+		}
+
+		# Vassalize to attacker
+		else_if = {
+			limit = {
+				lower_real_tier_than = FROMFROM
+
+				ROOT = {
+					OR = {
+						PREV = {
+							de_jure_liege_or_above = FROMFROM
+						}
+
+						dynasty = FROMFROM
+
+						trigger_if = {
+							limit = {
+								is_ruler = yes
+
+								# Not gaining a higher tier title
+								NOT = { lower_real_tier_than = PREV }
+							}
+
+							is_vassal_or_below_of = FROMFROM
+						}
+					}
+				}
+			}
+
+			usurp_title_plus_barony_if_unlanded = {
+				target = ROOT
+				type = claim
+			}
+
+			ROOT = {
+				show_scope_change = no
+
+				set_defacto_liege = FROMFROM
+			}
+		}
+
+		# Retain vassalage to title's current liege
+		else_if = {
+			limit = {
+				FROMFROM = {
+					independent = no
+					same_realm = defender
+				}
+			}
+
+			usurp_title_plus_barony_if_unlanded = {
+				target = ROOT
+				type = claim
+			}
+
+			FROMFROM = {
+				show_scope_change = no
+
+				liege = {
+					show_scope_change = no
+
+					set_defacto_vassal = ROOT
+				}
+			}
+		}
+
+		# FREEDOM!
+		else = {
+			usurp_title_plus_barony_if_unlanded = {
+				target = ROOT
+				type = claim
+			}
+
+			ROOT = {
+				show_scope_change = no
+
+				set_defacto_liege = THIS
+			}
+		}
+
+		# Keep the family together
+		hidden_effect = {
+			ROOT = {
+				any_child = {
+					limit = {
+						is_ruler = no
+						is_married = no
+						prisoner = no
+						is_adult = no
+						is_within_diplo_range = ROOT
+					}
+
+					move_character = ROOT
+				}
+
+				any_spouse = {
+					limit = {
+						is_ruler = no
+						prisoner = no
+						is_within_diplo_range = ROOT
+					}
+
+					move_character = ROOT
+				}
+
+				any_consort = {
+					limit = {
+						is_ruler = no
+						prisoner = no
+						is_within_diplo_range = ROOT
+					}
+
+					move_character = ROOT
+				}
+			}
+		}
+
+		hidden_effect = {
+			# Conquest Culture
+			if = {
+				limit = {
+					higher_real_tier_than = BARON
+					NOT = { culture = ROOT }
+				}
+
+				conquest_culture = ROOT
+			}
+
+			# Reconquista stuff
+			check_if_reconquista_finished_effect = yes
+
+			defender = {
+				landless_pope_effect = yes
+			}
+		}
+
+		# CK2Plus
+		# Decentralize target title
+		title_reduce_CA_effect = yes
+		title_reduce_TO_effect = yes
+	}
+
+	# Starting scope is attacker
+	# ROOT is third-party claimant
+	# FROM is defender
+	# FROMFROM is attacker
+	on_fail = {
+		# Attacker
+		prestige = -200
+
+		ROOT = {
+			show_scope_change = no
+
+			prestige = -200
+		}
+
+		defender = {
+			show_scope_change = no
+
+			participation_scaled_prestige = 200
+		}
+
+		any_defender = {
+			limit = { NOT = { character = defender } }
+			hidden_effect = { participation_scaled_prestige = 200 }
+		}
+
+		# CK2Plus
+		ROOT = { clr_character_flag = claim_being_pressed }
+	}
+
+	on_invalidation = {
+		log = "CB(other_claim): INVALIDATED: [Root.GetTitledFirstName] of [Root.PrimaryTitle.GetBaseName] (ID: [Root.GetID]) vs. [From.GetTitledFirstName] of [From.PrimaryTitle.GetBaseName] (ID: [From.GetID])"
+
+		# CK2Plus
+		ROOT = { clr_character_flag = claim_being_pressed }
+	}
+
+	# Starting scope is attacker
+	# ROOT is third-party claimant
+	# FROM is defender
+	# FROMFROM is attacker
+	on_reverse_demand = {
+		# Attacker
+		prestige = -20
+
+		transfer_scaled_wealth = {
+			to = defender
+			value = 4.0
+		}
+
+		ROOT = {
+			show_scope_change = no
+
+			prestige = -200
+			imprison = defender
+		}
+
+		defender = {
+			show_scope_change = no
+
+			participation_scaled_prestige = 200
+		}
+
+		any_defender = {
+			limit = { NOT = { character = defender } }
+			hidden_effect = { participation_scaled_prestige = 200 }
+		}
+	}
+
+	# Starting scope is claimed title
+	# ROOT is third-party claimant
+	# FROM is defender
+	# FROMFROM is attacker
+	on_reverse_demand_title = {
+		ROOT = {
+			show_scope_change = no
+
+			remove_claim = PREV
+		}
+	}
+
+	attacker_ai_victory_worth = {
+		factor = -1 # always accept
+	}
+
+	attacker_ai_defeat_worth = {
+		factor = 100
+	}
+
+	defender_ai_victory_worth = {
+		factor = -1 # always accept
+	}
+
+	defender_ai_defeat_worth = {
+		factor = 100
+	}
+
+	ai_will_do = {
+		factor = 1
+
+		trigger = {
+			# The AI doesn't want involved in messy situations
+			is_contested = no
+
+			attacker = {
+				sufficient_treasury_for_war_trigger = yes
+
+				# Most Christian and Jewish AI will not attack their religion head
+				can_attack_religion_head_trigger = yes
+
+				# AI will not fight for baronies held by a patriarch
+				can_attack_patriarch_trigger = yes
+
+				# Only dishonorable ai will break the a tributary's trust
+				can_attack_tributary_trigger = yes
+
+				trigger_if = {
+					limit = { lower_real_tier_than = DUKE }
+
+					ROOT = { religion_group = FROMFROM }
+				}
+			}
+
+			trigger_if = {
+				limit = {
+					OR = {
+						has_law = enatic_succession
+						has_law = enatic_cognatic_succession
+					}
+				}
+
+				ROOT = {
+					trigger_if = {
+						limit = { is_female = no }
+					}
+
+					OR = {
+						attacker = { is_feminist_trigger = no }
+						has_religion_feature = religion_patriarchal
+
+						trigger_if = {
+							limit = { practical_age < 40 }
+
+							OR = {
+								any_child = {
+									is_female = yes
+									NOT = { trait = bastard }
+								}
+
+								calc_true_if = {
+									amount >= 2
+
+									diplomacy >= 12
+									diplomacy >= 20
+									intrigue >= 12
+									prestige >= 1000
+									is_ruler = yes
+								}
+							}
+						}
+					}
+				}
+			}
+			trigger_else = {
+				ROOT = {
+					trigger_if = {
+						limit = { is_female = yes }
+
+						OR = {
+							FROMFROM = { is_feminist_trigger = yes }
+							has_religion_feature = religion_matriarchal
+
+							trigger_if = {
+								limit = { practical_age < 40 }
+
+								OR = {
+									any_child = {
+										is_female = no
+										NOT = { trait = bastard }
+									}
+
+									calc_true_if = {
+										amount >= 2
+
+										diplomacy >= 12
+										diplomacy >= 20
+										intrigue >= 12
+										prestige >= 1000
+										is_ruler = yes
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+
+			# If the attacker is not the de jure liege of the target, attacker has some other reason to want to press the claim.
+			trigger_if = {
+				limit = {
+					NOT = { de_jure_liege_or_above = FROMFROM }
+				}
+
+				trigger_if = {
+					limit = { controls_religion = yes }
+
+					attacker = { religion = FROM }
+					ROOT = { religion = FROM }
+				}
+				trigger_else = {
+					ROOT = {
+						any_liege = {
+							character = attacker
+
+							OR = {
+								higher_real_tier_than = PREVPREV
+								any_lover = { character = FROMFROM }
+								any_spouse = { character = FROMFROM }
+								any_friend = { character = FROMFROM }
+							}
+						}
+					}
+				}
+			}
+
+			# Only cynics can press claims against holy orders of their religion unless they have other kingdoms.
+			trigger_if = {
+				limit = {
+					holder = FROM
+					holy_order = yes
+				}
+
+				ROOT = { religion = FROM } # Make sure you're not trying to install a heretic
+
+				attacker = {
+					OR = {
+						trait = cynical
+						NOT = { religion = FROM }
+					}
+				}
+			}
+			trigger_else_if = {
+				limit = {
+					FROM = { holy_order = yes }
+				}
+
+				attacker = {
+					OR = {
+						trait = cynical
+						NOT = { religion = FROM }
+						FROM = { higher_real_tier_than = DUKE }
+					}
+				}
+			}
+		}
+
+		mult_modifier = {
+			factor = 10
+			controls_religion = yes
+		}
+	}
+}
+
+# 5 - Disabled in CK2Plus
+other_claim_on_liege = {
+	name = CB_NAME_CLAIM
+	war_name = WAR_NAME_OTHER_CLAIM
+	sprite = 4
+	truce_days = 3650
+	infamy_modifier = 0.5
+	sort_priority = 850
+
+	hostile_against_others = yes
+	can_ask_to_join_war = no
+	press_claim = yes
+	can_call_vassals = no
+	major_revolt = yes
+	allowed_to_target_tributaries = no
+	is_permanent = no # Disabled in CK2Plus
+
+	can_use_gui = {
+		check_if_crusader_trigger = yes
+	}
+
+	can_use = {
+		always = no # Disabled in CK2Plus
+	}
+
+	# Starting scope is claimed title
+	# ROOT is third-party claimant
+	# FROM is defender
+	# FROMFROM is attacker
+	can_use_title = {
+		holder = FROM
+		is_vice_royalty = no
+
+		OR = {
+			# Third-party claimant
+			ROOT = { is_female = no }
+			NOT = { has_law = agnatic_succession }
+
+			AND = {
+				lower_real_tier_than = KING
+				is_primary_holder_title = no
+			}
+
+			# Attacker
+			FROMFROM = { has_character_flag = faction_claimant_ultimatum_taken2 } # Faction war. Ignore title requirements.
+		}
+
+		OR = {
+			# Third-party claimant
+			ROOT = { has_strong_claim = PREV }
+
+			# Attacker
+			FROMFROM = { has_character_flag = faction_claimant_ultimatum_taken2 } # Faction war. Ignore claim strength.
+
+			AND = {
+				# Third-party claimant
+				ROOT = { has_weak_claim = PREV }
+
+				OR = {
+					is_pretender = yes # Checks vs ROOT character
+					is_contested = yes # Is already being contested in some form of Claim or Succession War
+					holder_scope = { has_regent = yes }
+
+					AND = {
+						# Claimant
+						ROOT = {
+							trigger_if = {
+								limit = { is_female = yes }
+								has_law = status_of_women_4
+							}
+						}
+
+						holder_scope = {
+							is_female = yes
+
+							NOR = {
+								has_law = status_of_women_4
+
+								has_game_rule = {
+									name = gender
+									value = all
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	# Starting scope is attacker
+	# ROOT is third-party claimant
+	# FROM is defender
+	# FROMFROM is attacker
+	is_valid = {
+		# Attacker
+		liege_before_war = { character = FROM }
+
+		# Defender
+		FROM = {
+			in_revolt = no
+
+			liege_before_war = {
+				in_revolt = no
+
+				liege_before_war = {
+					in_revolt = no
+				}
+			}
+		}
+	}
+
+	# Starting scope is claimed title
+	# ROOT is third-party claimant
+	# FROM is defender
+	# FROMFROM is attacker
+	is_valid_title = {
+		holder_scope = {
+			OR = {
+				character = FROM
+				is_vassal_or_below_of = FROM
+			}
+		}
+
+		OR = {
+			claimed_by = ROOT
+			has_law = succ_feudal_elective
+			has_law = succ_hre_elective
+		}
+
+		NOT = { # claimant isn't already attacking for the same claim
+			any_war = { # when used in title scope, checks all wars for that title
+				attacker = {
+					character = ROOT
+				}
+			}
+		}
+	}
+
+	# Starting scope is attacker
+	# ROOT is third-party claimant
+	# FROM is defender
+	# FROMFROM is attacker
+	on_add = {
+		fire_haruspicy_event_effect = yes
+		anger_china_effect = yes
+	}
+
+	# Starting scope is attacker
+	# ROOT is third-party claimant
+	# FROM is defender
+	# FROMFROM is attacker
+	on_success = {
+		# Attacker
+		participation_scaled_prestige = 100
+		hidden_effect = { disband_event_forces = faction_revolters }
+
+		# Claimant
+		ROOT = {
+			show_scope_change = no
+
+			participation_scaled_prestige = 100
+			hidden_effect = { disband_event_forces = faction_revolters }
+
+			opinion = {
+				name = pressed_my_claim
+				who = PREV
+			}
+
+			if = {
+				limit = {
+					prisoner = yes
+					host = { character = defender }
+				}
+
+				imprison = no
+			}
+		}
+
+		any_attacker = {
+			limit = {
+				NOR = {
+					character = ROOT
+					character = PREV
+				}
+			}
+
+			hidden_effect = {
+				participation_scaled_prestige = 100
+				disband_event_forces = faction_revolters
+			}
+		}
+
+		# Defender
+		defender = {
+			hidden_effect = { disband_event_forces = faction_loyalists }
+
+			if = { # lower crown authority
+				limit = { NOT = { has_dlc = "Conclave" } }
+
+				any_demesne_title = {
+					limit = { is_crown_law_title = yes }
+
+					trigger_switch = {
+						on_trigger = has_law
+
+						crown_authority_1 = { add_law = crown_authority_0 }
+						crown_authority_2 = { add_law = crown_authority_1 }
+						crown_authority_3 = { add_law = crown_authority_2 }
+						crown_authority_4 = { add_law = crown_authority_3 }
+					}
+				}
+			}
+		}
+	}
+
+	# Starting scope is claimed title
+	# ROOT is third-party claimant
+	# FROM is defender
+	# FROMFROM is attacker
+	on_success_title = {
+		hidden_effect = {
+			if = {
+				limit = { is_primary_holder_title = yes }
+
+				defender = {
+					set_character_flag = temp_other_claim_on_liege_prison
+				}
+			}
+
+			ROOT = {
+				if = {
+					limit = {
+						has_nickname = no
+						lower_real_tier_than = PREV
+					}
+
+					random = {
+						chance = 50
+						give_nickname = nick_the_usurper
+					}
+				}
+			}
+
+			# If the claimant has the wrong government type, take care of that first.
+			if = {
+				limit = {
+					higher_real_tier_than = ROOT
+
+					holder_scope = {
+						is_feudal = yes
+					}
+
+					ROOT = {
+						is_ruler = yes
+
+						OR = {
+							is_theocracy = yes
+							is_republic = yes
+						}
+					}
+				}
+
+				ROOT = {
+					abdicate = { move = no }
+				}
+			}
+		}
+
+		usurp_title_plus_barony_if_unlanded_and_vassals_no_adj = {
+			target = ROOT
+			type = claim
+		}
+
+		hidden_effect = {
+			check_if_reconquista_finished_effect = yes
+
+			defender = {
+				landless_pope_effect = yes
+			}
+
+			if = {
+				limit = {
+					higher_real_tier_than = BARON
+					NOT = { culture = ROOT }
+				}
+
+				conquest_culture = ROOT
+			}
+		}
+	}
+
+	# Starting scope is attacker
+	# ROOT is claimant
+	# FROM is defender
+	# FROMFROM is attacker
+	on_success_posttitle = {
+		hidden_effect = {
+			if = {
+				limit = { higher_real_tier_than = ROOT }
+				set_defacto_vassal = ROOT
+			}
+			else_if = {
+				limit = {
+					liege = {
+						higher_real_tier_than = ROOT
+						independent = no
+					}
+				}
+
+				liege = {
+					set_defacto_vassal = ROOT
+				}
+			}
+			else_if = {
+				limit = {
+					top_liege = {
+						higher_real_tier_than = ROOT
+					}
+				}
+
+				top_liege = {
+					set_defacto_vassal = ROOT
+				}
+			}
+			else = {
+				ROOT = {
+					set_defacto_liege = ROOT
+				}
+			}
+
+			defender = {
+				if = {
+					limit = {
+						has_character_flag = temp_other_claim_on_liege_prison
+						lower_real_tier_than = PREV
+					}
+
+					imprison = ROOT
+					clr_character_flag = temp_other_claim_on_liege_prison
+				}
+			}
+		}
+	}
+
+	# Starting scope is attacker
+	# ROOT is claimant
+	# FROM is defender
+	# FROMFROM is attacker
+	on_fail = {
+		# Third-party claimant
+		prestige = -100
+		imprison = defender
+
+		defender = {
+			show_scope_change = no
+
+			participation_scaled_prestige = 50
+		}
+
+		hidden_effect = {
+			any_attacker = {
+				disband_event_forces = faction_revolters
+			}
+
+			defender = {
+				disband_event_forces = faction_loyalists
+			}
+
+			any_defender = {
+				limit = { NOT = { character = defender } }
+				participation_scaled_prestige = 50
+			}
+		}
+	}
+
+	# Starting scope is attacker
+	# ROOT is claimant
+	# FROM is defender
+	# FROMFROM is attacker
+	on_reverse_demand = {
+		# Claimant
+		prestige = -200
+		imprison = defender
+
+		defender = {
+			show_scope_change = no
+
+			participation_scaled_prestige = 100
+
+			hidden_effect = {
+				disband_event_forces = faction_loyalists
+
+				if = { # Allow free revocation of a title
+					limit = {
+						NOT = {
+							has_opinion_modifier = {
+								name = opinion_traitor
+								who = ROOT
+							}
+						}
+					}
+
+					opinion = {
+						name = opinion_traitor
+						who = ROOT
+					}
+				}
+			}
+		}
+
+		hidden_effect = {
+			any_attacker = {
+				limit = { vassal_of = defender }
+
+				disband_event_forces = faction_revolters
+				imprison = defender
+			}
+
+			any_defender = {
+				limit = { NOT = { character = defender } }
+				participation_scaled_prestige = 100
+			}
+		}
+	}
+
+	attacker_ai_victory_worth = {
+		factor = -1 # always accept
+	}
+
+	attacker_ai_defeat_worth = {
+		factor = 100
+	}
+
+	defender_ai_victory_worth = {
+		factor = -1 # always accept
+	}
+
+	defender_ai_defeat_worth = {
+		factor = 100
+	}
+}
+

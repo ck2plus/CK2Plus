@@ -8,24 +8,19 @@ targeted_decisions = {
 		ai_check_interval = 10
 
 		from_potential = {
-			trigger_if = {
-				limit = { has_dlc = "Way of Life" }
+			OR = {
+				has_focus = focus_war # Way of Life
 
-				OR = {
-					has_focus = focus_war
-					trait = duelist
-				}
-			}
-			trigger_else = {
-				has_dlc = "Holy Fury"
+				trigger_if = {
+					limit = { has_dlc = "Holy Fury" }
 
-				OR = {
-					trait = duelist
-					is_member_of_any_warrior_lodge_trigger = yes
+					OR = {
+						is_member_of_any_warrior_lodge_trigger = yes
 
-					any_bloodline = {
-						has_bloodline_flag = duelist_bloodline
-						bloodline_is_active_for = PREV
+						any_bloodline = {
+							has_bloodline_flag = duelist_bloodline
+							bloodline_is_active_for = PREV
+						}
 					}
 				}
 			}
@@ -70,7 +65,6 @@ targeted_decisions = {
 			}
 
 			prisoner = no
-			NOT = { character = FROM }
 			is_inaccessible_trigger = no
 		}
 
@@ -147,13 +141,13 @@ targeted_decisions = {
 						has_character_modifier = severe_illness
 						is_incapable = yes
 						trait = infirm
-						trait = has_aztec_disease
-						trait = has_small_pox
-						trait = has_measles
-						trait = has_bubonic_plague
-						trait = has_typhus
-						trait = has_typhoid_fever
-						trait = has_tuberculosis
+						trait = aztec_disease
+						trait = smallpox
+						trait = measles
+						trait = bubonic_plague
+						trait = camp_fever
+						trait = slow_fever
+						trait = consumption
 						trait = leper
 						trait = pneumonic
 					}
@@ -165,13 +159,13 @@ targeted_decisions = {
 						has_character_modifier = severe_illness
 						is_incapable = yes
 						trait = infirm
-						trait = has_aztec_disease
-						trait = has_small_pox
-						trait = has_measles
-						trait = has_bubonic_plague
-						trait = has_typhus
-						trait = has_typhoid_fever
-						trait = has_tuberculosis
+						trait = aztec_disease
+						trait = smallpox
+						trait = measles
+						trait = bubonic_plague
+						trait = camp_fever
+						trait = slow_fever
+						trait = consumption
 						trait = leper
 						trait = pneumonic
 						practical_age >= 70
@@ -236,6 +230,8 @@ targeted_decisions = {
 			apply_any_applicable_harsh_penalties_effect = yes # if your target is someone
 
 			FROM = {
+				show_scope_change = no
+
 				pacifists_lose_piety_effect = yes
 
 				if = {
@@ -468,8 +464,8 @@ targeted_decisions = {
 				}
 				FROM = {
 					add_character_modifier = {
-						modifier = recently_challenged_rule_timer
-						duration = 90
+						name = recently_challenged_rule_timer
+						months = 3
 						hidden = yes
 					}
 				}
@@ -509,6 +505,8 @@ targeted_decisions = {
 	recruit_child_decision = {
 		is_high_prio = yes
 		diplomacy_icon = GFX_duel_decision
+		filter = close_relatives
+		ai_target_filter = close_relatives
 		ai_check_interval = 36
 
 		only_playable = yes
@@ -516,6 +514,7 @@ targeted_decisions = {
 		from_potential = {
 			has_dlc = "Holy Fury"
 			is_member_of_any_warrior_lodge_trigger = yes
+			has_living_children = yes
 			is_adult = yes
 			prisoner = no
 			has_regent = no
@@ -524,15 +523,13 @@ targeted_decisions = {
 
 		potential = {
 			is_child_of = FROM
-			NOT = { character = FROM }
 			prisoner = no
+			NOT = { has_character_flag = flag_child_abandoned_lodge }
 
 			trigger_if = {
 				limit = { FROM = { ai = yes } }
 				is_primary_heir = FROM
 			}
-
-			NOT = { has_character_flag = flag_child_abandoned_lodge }
 		}
 
 		allow = {
@@ -542,10 +539,9 @@ targeted_decisions = {
 				limit = { # Can't be in a society already...
 					is_in_society = yes
 
-					NOR = { # except a secret one...
-						is_devil_worshiper_trigger = yes
-						society_member_of = the_assassins
-					}
+					# except a secret one...
+					society_is_criminal = no
+					NOT = { society_member_of = the_assassins }
 				}
 
 				is_in_society = no
@@ -641,16 +637,14 @@ targeted_decisions = {
 			custom_tooltip = {
 				text = characters_are_not_busy_tt
 
-				FROM = {
-					NOT = { has_character_flag = do_not_disturb }
-					war = no
-				}
-				NOT = { has_character_flag = do_not_disturb }
+				FROM = { war = no }
 				war = no
 			}
 
-			trigger_if = {
-				limit = { NOT = { is_within_diplo_range = FROM } }
+			ROOT = {
+				show_scope_change = no
+				show_only_failed_conditions = yes
+
 				is_within_diplo_range = FROM # CPU HEAVY!
 			}
 
@@ -691,8 +685,6 @@ targeted_decisions = {
 		}
 
 		effect = {
-			FROM = { save_event_target_as = recruiting_parent }
-
 			if = {
 				limit = {
 					NOR = { #If no one has a bloodline that matters...
@@ -731,8 +723,10 @@ targeted_decisions = {
 			set_character_flag = awaiting_initiation_trial
 			set_character_flag = is_being_recruited_to_warrior_lodge_by_parent
 
-			# Used later for joining correct society:
 			FROM = {
+				save_event_target_as = recruiting_parent
+
+				# Used later for joining correct society:
 				society = {
 					save_event_target_as = warrior_lodge_to_join
 				}
@@ -786,18 +780,14 @@ targeted_decisions = {
 		}
 
 		effect = {
-			hidden_effect = {
-				set_character_flag = choosing_military_aspect
+			set_character_flag = choosing_military_aspect
 
-				if = {
-					limit = { has_lifestyle_martial_trigger = yes }
-					character_event = { id = HF.10020 } # Choose which trait to replace your current with...!
-				}
-
-				if = {
-					limit = { lifestyle_traits < 1 }
-					character_event = { id = HF.10021 } # Choose a path to go down...
-				}
+			if = {
+				limit = { lifestyle_traits < 1 }
+				character_event = { id = HF.10021 } # Choose a path to go down...
+			}
+			else = {
+				character_event = { id = HF.10020 } # Choose which trait to replace your current with...!
 			}
 
 			detract_society_currency_minor_effect = yes
@@ -807,7 +797,7 @@ targeted_decisions = {
 			factor = 1
 
 			trigger = {
-				lifestyle_traits < 1
+				can_have_more_leadership_traits = yes
 			}
 		}
 	}
@@ -875,19 +865,13 @@ targeted_decisions = {
 		potential = {
 			has_dlc = "Holy Fury"
 			society_member_of = warrior_lodge_bon
-			society_rank = 1
+			society_rank >= 1
 			is_adult = yes
-			NOT = { has_character_flag = using_toughness } # to stop you spamming the button
 		}
 
 		allow = {
 			has_society_currency_minor_trigger = yes
 			has_religion_matching_joined_warrior_lodge_trigger = yes
-
-			custom_tooltip = {
-				text = not_already_using_toughness_tt
-				NOT = { has_character_flag = using_toughness }
-			}
 
 			OR = {
 				trait = wounded
@@ -895,6 +879,15 @@ targeted_decisions = {
 				trait = maimed
 				trait = mangled
 				trait = infection
+			}
+
+			trigger_if = {
+				limit = { has_character_flag = using_toughness } # to stop you spamming the button
+
+				custom_tooltip = {
+					text = not_already_using_toughness_tt
+					always = no
+				}
 			}
 		}
 
@@ -933,23 +926,25 @@ targeted_decisions = {
 		potential = {
 			has_dlc = "Holy Fury"
 			society_member_of = warrior_lodge_norse
-			society_rank = 1
 			is_adult = yes
-			NOT = { has_character_flag = going_berserk } # to stop you spamming the button
 		}
 
 		allow = {
 			has_society_currency_minor_trigger = yes
 			has_religion_matching_joined_warrior_lodge_trigger = yes
 
-			custom_tooltip = {
-				text = not_already_going_berserk_tt
-				NOT = { has_character_flag = going_berserk }
-			}
-
 			OR = {
 				NOT = { trait = berserker }
 				prisoner = yes
+			}
+
+			trigger_if = {
+				limit = { has_character_flag = going_berserk } # to stop you spamming the button
+
+				custom_tooltip = {
+					text = not_already_going_berserk_tt
+					always = no
+				}
 			}
 		}
 
@@ -958,22 +953,14 @@ targeted_decisions = {
 				limit = { NOT = { trait = berserker } }
 
 				# Specifies what the trait gives: must be updated if trait is
-				custom_tooltip = {
-					text = gain_berserker_tt
-				}
+				custom_tooltip = { text = gain_berserker_tt }
 			}
 
 			set_character_flag = special_berserker # Will last for at least 10 years
 
 			hidden_effect = {
-				if = {
-					limit = { trait = patient }
-					remove_trait = patient
-				}
-				else_if = {
-					limit = { NOT = { trait = wroth } }
-					add_trait = wroth
-				}
+				add_trait_silently_wroth_effect = yes
+				remove_trait_silently_patient_effect = yes
 
 				if = {
 					limit = { trait = defensive_leader }
@@ -981,10 +968,7 @@ targeted_decisions = {
 				}
 
 				if = {
-					limit = {
-						leader_traits < 1
-						NOT = { trait = aggressive_leader }
-					}
+					limit = { leader_traits < 1 }
 					add_trait = aggressive_leader
 				}
 
@@ -1040,7 +1024,7 @@ targeted_decisions = {
 		potential = {
 			has_dlc = "Holy Fury"
 			is_member_of_any_warrior_lodge_trigger = yes
-			society_rank = 4
+			society_rank == 4
 			is_adult = yes
 			NOT = { has_character_modifier = call_to_glory }
 
@@ -1073,14 +1057,14 @@ targeted_decisions = {
 					value = 0
 				}
 
-				# First recurring event
-				character_event = { id = HF.25030 }
-
 				# Removed by recurring event and on_action when at peace or if leaving society
 				add_character_modifier = {
-					modifier = call_to_glory
+					name = call_to_glory
 					duration = -1
 				}
+
+				# First recurring event
+				character_event = { id = HF.25030 }
 			}
 		}
 
@@ -1310,7 +1294,7 @@ society_decisions = {
 					remove_trait = dull
 					remove_trait = mystic
 					remove_trait = socializer
-					remove_trait = gamer
+					remove_trait = game_master
 					remove_trait = hedonist
 					remove_trait = duelist
 					remove_trait = hunter
@@ -1318,10 +1302,10 @@ society_decisions = {
 					remove_trait = administrator
 					remove_trait = architect
 					remove_trait = gardener
-					remove_trait = schemer
+					remove_trait = master_schemer
 					remove_trait = impaler
-					remove_trait = seducer
-					remove_trait = seductress
+					remove_trait = master_seducer
+					remove_trait = master_seductress
 					remove_trait = theologian
 					remove_trait = scholar
 
@@ -1344,38 +1328,20 @@ society_decisions = {
 					}
 
 					random_list = { # Flavor Randomization
-						35 = {
-							# Nothing
-						}
-						15 = {
-							change_martial = 2
-						}
-						10 = {
-							add_trait = robust
-						}
-						10 = {
-							add_trait = duelist
-						}
-						10 = {
-							add_trait = hunter
-						}
-						5 = {
-							add_trait = strategist
-						}
-						5 = {
-							change_martial = 4
-						}
-						5 = {
+						35 = { } # Nothing
+						15 = { change_martial = 2 }
+						10 = { add_trait = brawny }
+						10 = { add_trait = duelist }
+						10 = { add_trait = hunter }
+						 5 = { add_trait = strategist }
+						 5 = { change_martial = 4 }
+						 5 = { add_trait = shrewd }
+						 3 = { add_trait = giant }
+						 5 = {
 							if = {
 								limit = { has_dlc = "Reapers" }
 								add_trait = one_eyed
 							}
-						}
-						5 = {
-							add_trait = shrewd
-						}
-						3 = {
-							add_trait = giant
 						}
 					}
 
@@ -1631,22 +1597,25 @@ society_decisions = {
 			custom_tooltip = {
 				text = tooltip_stand_together_candidate_exists
 
-				any_society_member = {
-					is_ruler = no
-					religion = ROOT
-					is_incapable = yes
-					is_inaccessible_trigger = no
-					in_command = no
+				society = {
+					any_society_member = {
+						is_ruler = no
+						religion = ROOT
+						is_unimportant_trigger = yes
+						prisoner = no
+						is_incapable = no
+						is_inaccessible_trigger = no
+						in_command = no
 
-					host = {
-						ai = yes
-						NOT = { character = ROOT }
-					}
+						host = {
+							ai = yes
+							NOT = { character = ROOT }
+						}
 
-					NOR = {
-						is_heir = ROOT
-						has_minor_title = title_commander
-						has_job_title = job_marshal
+						NOR = {
+							is_heir = ROOT
+							has_character_flag = no_court_invites
+						}
 					}
 				}
 			}
@@ -1658,10 +1627,10 @@ society_decisions = {
 			custom_tooltip = {
 				text = tooltip_slavic_stand_together
 
-				character_event = { id = HF.25007 } # Find society member
+				character_event = { id = HF.25008 } # Find society member
 
 				add_character_modifier = {
-					modifier = lodge_slavic_stand_together_cooldown
+					name = lodge_slavic_stand_together_cooldown
 					duration = -1 #Removed on_action when player is back at peace.
 					hidden = yes
 				}
@@ -1722,12 +1691,9 @@ society_decisions = {
 				}
 			}
 			else = {
-				custom_tooltip = {
-					text = tooltip_call_of_the_steppe_feudal
-
-					character_event = { id = HF.25005 } # Give reward
-					set_character_flag = flag_using_call_of_the_steppes
-				}
+				custom_tooltip = { text = tooltip_call_of_the_steppe_feudal }
+				character_event = { id = HF.25005 } # Give reward
+				set_character_flag = flag_using_call_of_the_steppes
 			}
 		}
 
@@ -1840,7 +1806,7 @@ society_decisions = {
 
 					NOR = {
 						religion = hellenic_pagan
-						religion = bon
+						religion = bon_pagan
 					}
 				}
 			}
@@ -2214,7 +2180,7 @@ settlement_decisions = {
 	# Power, rank 3: Inspire Warriors
 	warrior_lodge_inspire_warriors = {
 		ai_check_interval = 80
-		filter = owned
+		# filter = owned # CleanSlate: Nonfunctional
 		ai_target_filter = owned
 
 		is_in_society = yes
@@ -2270,8 +2236,9 @@ settlement_decisions = {
 				}
 			}
 
-			modifier = { # I am losing the war, help!
+			mult_modifier = { # I am losing the war, help!
 				factor = 1.5
+
 				any_war = {
 					is_primary_war_defender = yes
 					war_score < -50
@@ -2283,7 +2250,7 @@ settlement_decisions = {
 	# Power, rank 3: Baltic Holds
 	warrior_lodge_romuva_baltic_holds = {
 		ai_check_interval = 80
-		filter = owned
+		# filter = owned # CleanSlate: Nonfunctional
 		ai_target_filter = owned
 		is_high_prio = yes
 

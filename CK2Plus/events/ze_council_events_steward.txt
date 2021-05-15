@@ -1,45 +1,47 @@
-#Written by Markus Olsén
-#ZE.3000 - ZE.3001 Steward borrows money
-#ZE.3002 - ZE.3003 Steward collects money but wants land
-#ZE.3004 - ZE.3010 Steward builds statue for liege
-#ZE.3011 - ZE.3014 Steward wants to educate liege in stewardship
-
+# Written by Markus Olsén
+# ZE.3000 - ZE.3001 Steward borrows money
+# ZE.3002 - ZE.3003 Steward collects money but wants land
+# ZE.3004 - ZE.3010 Steward builds statue for liege
+# ZE.3011 - ZE.3014 Steward wants to educate liege in stewardship
 
 namespace = ZE
 
-#Steward has low stewardship and is proud, borrows money from jews
+# Steward has low stewardship and is proud, borrows money from jews
 character_event = {
 	id = ZE.3000
+	desc = EVTDESC_ZE_3000
 	picture = GFX_evt_courtiers_talking
 	border = GFX_event_normal_frame_economy
-	desc = EVTDESC_ZE_3000
+	portrait = job_treasurer
 
-	is_triggered_only = yes
-	only_playable = yes
+	is_triggered_only = yes # on_yearly_pulse, random_events
+
 	min_age = 16
-	prisoner = no
+	only_playable = yes
+	has_dlc = "Sons of Abraham"
+	has_dlc = "Conclave"
 	only_capable = yes
+	prisoner = no
 
 	trigger = {
-		has_dlc = "Sons of Abraham"
-		has_dlc = "Conclave"
 		job_treasurer = {
 			trait = proud
-			NOR = {
-				stewardship = 8
-				trait = incapable
-				is_inaccessible_trigger = yes
-			}
+			stewardship < 8
+			is_incapable = no
 			prisoner = no
+			is_inaccessible_trigger = no
 		}
+
 		OR = {
 			religion_group = christian
 			religion_group = muslim
 			religion_group = zoroastrian_group
 		}
+
 		is_nomadic = no
+		is_inaccessible_trigger = no
+
 		NOR = {
-			is_inaccessible_trigger = yes
 			religion_group = jewish_group
 			has_character_modifier = borrowed_from_jews
 			has_character_modifier = expelled_jewish
@@ -47,9 +49,13 @@ character_event = {
 			has_character_flag = offended_moneylenders
 			has_character_flag = pogrom
 		}
+
 		top_liege = {
-			NOT = { has_character_modifier = expelled_jewish }
-			NOT = { religion_group = jewish_group }
+			NOR = {
+				has_character_modifier = expelled_jewish
+				religion_group = jewish_group
+			}
+
 			any_realm_title = {
 				tier = BARON
 				OR = {
@@ -62,150 +68,202 @@ character_event = {
 		}
 	}
 
-
 	immediate = {
 		set_character_flag = ZE.3000_flag
+
 		add_character_modifier = {
 			name = borrowed_from_jews
 			duration = -1
 			inherit = yes
 			hidden = yes
 		}
+
 		add_character_modifier = {
 			name = loan_timer
 			years = 2
 			inherit = yes
 		}
+
 		change_variable = {
 			which = loan_amount
 			value = 300
 		}
-		job_treasurer = { save_event_target_as = target_treasurer }
+
+		job_treasurer = {
+			save_event_target_as = target_treasurer
+		}
 	}
 
 	option = {
 		name = EVTOPTA_ZE_3000
+
 		wealth = 300
-		hidden_tooltip = {
-			character_event = { id = ZE.3001 days = 14 }
+
+		character_event = {
+			id = ZE.3001
+			days = 14
 		}
 	}
 }
 
 
-#Jewish merchants approach court to talk payment plan, player finds out steward lent money
+# Jewish merchants approach court to talk payment plan, player finds out steward lent money
 character_event = {
 	id = ZE.3001
+	desc = EVTDESC_ZE_3001
 	picture = GFX_evt_jewish_market
 	border = GFX_event_normal_frame_economy
-	desc = EVTDESC_ZE_3001
 
 	is_triggered_only = yes
+
 	only_playable = yes
 
-	#Fire the steward
+	# Fire the steward
 	option = {
-		trigger = {
-			event_target:target_treasurer = { has_job_title = job_treasurer	}
-		}
-
 		name = EVTOPTA_ZE_3001
 
-		if = {
-			limit = {
-				NOT = { trait = just }
-				NOT = { trait = arbitrary }
+		trigger = {
+			event_target:target_treasurer = {
+				has_job_title = job_treasurer
 			}
-			add_trait = just
 		}
+
 		if = {
 			limit = { trait = arbitrary }
 			remove_trait = arbitrary
 		}
+		else_if = {
+			limit = {
+				NOT = { trait = just }
+			}
+			add_trait = just
+		}
+
 		opinion = {
-			modifier = opinion_very_disappointed
+			name = opinion_very_disappointed
 			who = event_target:target_treasurer
 			years = 5
 		}
+
 		event_target:target_treasurer = {
 			show_scope_change = no
-			if = { limit = { has_job_title = job_treasurer} remove_title = job_treasurer }
+
+			remove_title = job_treasurer
 		}
 	}
 
-	#punish steward
+	# Punish steward
 	option = {
-		trigger = {
-			trait = wroth
-		}
 		name = EVTOPTB_ZE_3001
-		#effects on you
-		if = { limit = { trait = kind } remove_trait = kind }
-		if = { limit = { NOT = { trait = cruel } } add_trait = cruel }
-		#steward
+		tooltip_info = wroth
+
+		trigger = { trait = wroth }
+
+		# Effects on you
+		if = {
+			limit = { trait = kind }
+			remove_trait = kind
+		}
+		else_if = {
+			limit = {
+				NOT = { trait = cruel }
+			}
+
+			add_trait = cruel
+		}
+
 		event_target:target_treasurer = {
 			show_scope_change = no
+
 			add_rival = ROOT
-			if = { limit = { has_job_title = job_treasurer} remove_title = job_treasurer }
-			if = { limit = { is_maimed_trigger = yes } death = { death_reason = death_execution killer = ROOT } break = yes }
-			if = { limit = { trait = wounded } add_maimed_trait_effect = yes }
-			if = { limit = { NOT = { trait = wounded } } add_trait = wounded }
+
+			if = {
+				limit = { has_job_title = job_treasurer }
+				remove_title = job_treasurer
+			}
+
+			if = {
+				limit = { is_maimed_trigger = yes }
+
+				death = {
+					death_reason = death_execution
+					killer = ROOT
+				}
+			}
+			else_if = {
+				limit = { trait = wounded }
+				add_maimed_trait_effect = yes
+			}
+			else = {
+				add_trait = wounded
+			}
 		}
 	}
 
-	#Do nothing
+	# Do nothing
 	option = {
 		name = EVTOPTC_ZE_3001
-		if = { limit = { trait = wroth } remove_trait = wroth }
-		if = { limit = { NOT = { trait = patient }} add_trait = patient }
-		event_target:target_treasurer = {
-			show_scope_change = no
-			opinion = {
-				modifier = opinion_grateful
-				who = ROOT
-				years = 5
+
+		if = {
+			limit = { trait = wroth }
+			remove_trait = wroth
+		}
+		else_if = {
+			limit = {
+				NOT = { trait = patient }
 			}
+
+			add_trait = patient
+		}
+
+		reverse_opinion = {
+			name = opinion_grateful
+			who = event_target:target_treasurer
+			years = 5
 		}
 	}
 }
 
-#Steward has high stewardship, makes extra money
+# Steward has high stewardship, makes extra money
 character_event = {
 	id = ZE.3002
+	desc = EVTDESC_ZE_3000
 	picture = GFX_evt_courtiers_talking
 	border = GFX_event_normal_frame_economy
-	desc = EVTDESC_ZE_3000
+	portrait = job_treasurer
 
-	is_triggered_only = yes
-	only_playable = yes
+	is_triggered_only = yes # on_yearly_pulse, random_events
+
 	min_age = 16
-	only_capable = yes
-	prisoner = no
+	only_playable = yes
 	has_dlc = "Conclave"
+	prisoner = no
+	only_capable = yes
 	war = no
 
 	trigger = {
-		higher_tier_than = COUNT
+		higher_real_tier_than = COUNT
 		is_nomadic = no
 		has_regent = no
-		NOR = {
-			is_inaccessible_trigger = yes
-			has_character_flag = ZE.3002_flag
-		}
+		is_inaccessible_trigger = no
+		NOT = { has_character_flag = ZE.3002_flag }
+
 		job_treasurer = {
-			is_ruler = no
-			NOR = {
-				trait = incapable
-				is_inaccessible_trigger = yes
-				trait = content
-				trait = slothful
-			}
-			prisoner = no
 			OR = {
 				trait = ambitious
 				trait = greedy
 			}
-			stewardship = 15
+
+			stewardship >= 15
+			is_ruler = no
+			is_incapable = no
+			is_inaccessible_trigger = no
+			prisoner = no
+
+			NOR = {
+				trait = content
+				trait = slothful
+			}
 		}
 	}
 
@@ -216,113 +274,148 @@ character_event = {
 
 	option = {
 		name = EVTOPTA_ZE_3000
-		scaled_wealth = 1.0
-		hidden_tooltip = {
-			character_event = { id = ZE.3003 days = 14 }
+
+		scaled_wealth = 1
+
+		character_event = {
+			id = ZE.3003
+			days = 14
 		}
 	}
 }
 
-#Steward is ambitious and wants land for work done
+# Steward is ambitious and wants land for work done
 character_event = {
 	id = ZE.3003
+	desc = EVTDESC_ZE_3003
 	picture = GFX_evt_relaxed_ruler
 	border = GFX_event_normal_frame_economy
-	desc = EVTDESC_ZE_3003
+	portrait = event_target:target_treasurer
 
 	is_triggered_only = yes
+
 	only_playable = yes
 
 	trigger = {
 		any_demesne_title = {
-			tier = COUNT
+			real_tier = COUNT
 			can_be_given_away = yes
-			NOT = {
-				location = {
-					is_capital = yes
-				}
+			num_of_settlements >= 1
+
+			location = {
+				is_capital = no
 			}
-			num_of_settlements = 1
-			location = { is_capital = no }
 		}
 	}
 
 	immediate = {
 		random_demesne_title = {
 			limit = {
-				tier = COUNT
+				real_tier = COUNT
 				can_be_given_away = yes
-				num_of_settlements = 1
-				location = { is_capital = no }
+				num_of_settlements >= 1
+
+				location = {
+					is_capital = no
+				}
 			}
+
 			save_event_target_as = requested_province
 		}
 	}
 
-	#approve request, granting province title
+	# Approve request, granting province title
 	option = {
 		name = EVTOPTA_ZE_3003
-		if = { limit = { trait = arbitrary } remove_trait = arbitrary }
-		if = { limit = { NOT = { trait = just } } add_trait = just }
+
+		if = {
+			limit = { trait = arbitrary }
+			remove_trait = arbitrary
+		}
+		else_if = {
+			limit = {
+				NOT = { trait = just }
+			}
+
+			add_trait = just
+		}
+
 		wealth = 200
+
 		event_target:target_treasurer = {
+			show_scope_change = no
+
 			grant_title = event_target:requested_province
 		}
 	}
 
-	#deny request but owe favor to steward
+	# Deny request but owe favor to steward
 	option = {
-		trigger = {
-			NOT = {
-				owes_favor_to = event_target:target_treasurer
-			}
-		}
 		name = EVTOPTB_ZE_3003
+
+		trigger = {
+			NOT = { owes_favor_to = event_target:target_treasurer }
+		}
+
 		reverse_add_favor = event_target:target_treasurer
 	}
 
-	#deny request
+	# Deny request
 	option = {
 		name = EVTOPTC_ZE_3003
-		if = { limit = { trait = charitable } remove_trait = charitable }
-		if = { limit = { NOT = { trait = greedy } } add_trait = greedy }
-		event_target:target_treasurer = {
-			add_rival = ROOT
+
+		if = {
+			limit = { trait = charitable }
+			remove_trait = charitable
 		}
+		else_if = {
+			limit = {
+				NOT = { trait = greedy }
+			}
+
+			add_trait = greedy
+		}
+
+		add_rival = event_target:target_treasurer
 	}
 }
 
-#Steward wants to build a statue in the capital
-#Depending on traits, statue outcome will change
+# Steward wants to build a statue in the capital
+# Depending on traits, statue outcome will change
 character_event = {
 	id = ZE.3004
+	desc = EVTDESC_ZE_3004
 	picture = GFX_evt_relaxed_ruler
 	border = GFX_event_normal_frame_economy
-	desc = EVTDESC_ZE_3004
+	portrait = job_treasurer
 
 	is_triggered_only = yes
-	only_playable = yes
-	prisoner = no
-	only_capable = yes
+
 	min_age = 16
+	only_playable = yes
+	has_dlc = "Conclave"
+	only_capable = yes
+	prisoner = no
+	war = no
 
 	trigger = {
-		has_dlc = "Conclave"
-		higher_tier_than = DUKE
+		higher_real_tier_than = DUKE
 		scaled_wealth = 2
-		war = no
+		is_inaccessible_trigger = no
+
 		NOR = {
 			has_character_flag = ZE.3004_flag
-			has_character_flag = loan_taken
-			check_variable = { which = "loan_amount" value = 49.5 }
 			trait = blinded
-			is_inaccessible_trigger = yes
+			has_character_flag = loan_taken
+		}
+
+		check_variable = {
+			which = loan_amount
+			value < 50
 		}
 		job_treasurer = {
-			NOR = {
-				trait = incapable
-				is_inaccessible_trigger = yes
-			}
+			is_incapable = no
+			is_inaccessible_trigger = no
 			prisoner = no
 		}
 	}
@@ -332,462 +425,624 @@ character_event = {
 		set_character_flag = ZE.3004_flag
 	}
 
-	#approve request, pay the gold and wait
+	# Approve request, pay the gold and wait
 	option = {
 		name = EVTOPTA_ZE_3004
+
 		scaled_wealth = -1
+
 		event_target:target_treasurer = {
 			show_scope_change = no
+
 			opinion = {
-				modifier = opinion_grateful
+				name = opinion_grateful
 				who = ROOT
 				years = 1
 			}
-			hidden_tooltip = {
+
+			hidden_effect = {
 				if = { #lunatic = a giant ear
-					limit = { event_target:target_treasurer = { trait = lunatic } }
-					ROOT = { character_event = { id = ZE.3006 days = 365 } }
-					break = yes
+					limit = { trait = lunatic }
+					ROOT = { character_event = { id = ZE.3006 years = 1 } }
 				}
-				if = { #possessed = demon on a throne
-					limit = { event_target:target_treasurer = { trait = possessed } }
-					ROOT = { character_event = { id = ZE.3009 days = 365 } }
-					break = yes
+				else_if = { #possessed = demon on a throne
+					limit = { trait = possessed }
+					ROOT = { character_event = { id = ZE.3009 years = 1 } }
 				}
-				if = { #zealous = head of religion +piety
+				else_if = { #zealous = head of religion +piety
 					limit = {
-						event_target:target_treasurer = { trait = zealous }
+						trait = zealous
 						religion_head = { always = yes }
-						NOT = { religion_head = { character = ROOT } }
+						NOT = { rightful_religious_head = ROOT }
 					}
-					religion_head = { save_event_target_as = religious_head }
-					ROOT = { character_event = { id = ZE.3005 days = 365 } }
-					break = yes
+
+					rightful_religious_head_scope = { save_event_target_as = religious_head }
+					ROOT = { character_event = { id = ZE.3005 years = 1 } }
 				}
-				if = { #proud = him/her self +nothing happens
+				else_if = { #proud = him/her self +nothing happens
 					limit = { event_target:target_treasurer = { trait = proud } }
-					ROOT = { character_event = { id = ZE.3007 days = 365 } }
-					break = yes
+					ROOT = { character_event = { id = ZE.3007 years = 1 } }
 				}
-				if = { #lustful = something vulgar -piety
+				else_if = { #lustful = something vulgar -piety
 					limit = { event_target:target_treasurer = { trait = lustful } }
-					ROOT = { character_event = { id = ZE.3008 days = 365 } }
-					break = yes
+					ROOT = { character_event = { id = ZE.3008 years = 1 } }
 				}
-				ROOT = { character_event = { id = ZE.3010 days = 365 } }
+				else = {
+					ROOT = { character_event = { id = ZE.3010 years = 1 } }
+				}
 			}
 		}
 	}
 
-
-	#deny request
+	# Ddeny request
 	option = {
 		name = EVTOPTB_ZE_3004
-		event_target:target_treasurer = {
-			show_scope_change = no
-			opinion = {
-				modifier = opinion_disappointed
-				who = ROOT
-				years = 2
-			}
+
+		reverse_opinion = {
+			name = opinion_disappointed
+			who = event_target:target_treasurer
+			years = 2
 		}
 	}
 }
 
-#statue completed and revealed, zealous type
+# Statue completed and revealed, zealous type
 character_event = {
 	id = ZE.3005
+	desc = EVTDESC_ZE_3005
 	picture = GFX_evt_relaxed_ruler
 	border = GFX_event_normal_frame_economy
-	desc = EVTDESC_ZE_3005
+	portrait = event_target:target_treasurer
 
 	is_triggered_only = yes
+
 	only_playable = yes
 
-	#Statue revealed
+	# Statue revealed
 	option = {
 		name = EVTOPTA_ZE_3005
+
 		piety = 100
 	}
 }
 
-#statue completed and revealed, lunatic type
+# Statue completed and revealed, lunatic type
 character_event = {
 	id = ZE.3006
+	desc = EVTDESC_ZE_3006
 	picture = GFX_evt_relaxed_ruler
 	border = GFX_event_normal_frame_economy
-	desc = EVTDESC_ZE_3006
+	portrait = event_target:target_treasurer
 
 	is_triggered_only = yes
+
 	only_playable = yes
 
-	#Statue revealed
+	# Statue revealed
 	option = {
-		trigger = {
-			NOT = {
-				trait = lunatic
-			}
-		}
 		name = EVTOPTA_ZE_3006
+
+		trigger = {
+			NOT = { trait = lunatic }
+		}
+
 		prestige = 100
 	}
 
 	option = {
-		trigger = {
-			trait = lunatic
-		}
 		name = EVTOPTB_ZE_3006
-		if = { limit = { trait = craven } remove_trait = craven }
-		if = { limit = { NOT = { trait = brave }} add_trait = brave }
+		tooltip_info = lunatic
+
+		trigger = { trait = lunatic }
+
+		if = {
+			limit = { trait = craven }
+			remove_trait = craven
+		}
+		else_if = {
+			limit = {
+				NOT = { trait = brave }
+			}
+
+			add_trait = brave
+		}
+
 		prestige = 200
 	}
 }
 
-#statue completed and revealed, proud type
+# Statue completed and revealed, proud type
 character_event = {
 	id = ZE.3007
+	desc = EVTDESC_ZE_3007
 	picture = GFX_evt_relaxed_ruler
 	border = GFX_event_normal_frame_economy
-	desc = EVTDESC_ZE_3007
+	portrait = event_target:target_treasurer
 
 	is_triggered_only = yes
+
 	only_playable = yes
 
-	#be disappointed
+	# Be disappointed
 	option = {
 		name = EVTOPTA_ZE_3007
+
 		opinion = {
-			modifier = opinion_very_disappointed
+			name = opinion_very_disappointed
 			who = event_target:target_treasurer
 			years = 5
 		}
-		event_target:target_treasurer = { prestige = 200 }
+
+		event_target:target_treasurer = {
+			show_scope_change = no
+
+			prestige = 200
+		}
 	}
 
-	#become rival, tear statue down
+	# Become rival, tear statue down
 	option = {
 		name = EVTOPTB_ZE_3007
-		ROOT = { add_rival = event_target:target_treasurer }
+
+		add_rival = event_target:target_treasurer
 	}
 }
 
-#statue completed and revealed, lustful type
+# Statue completed and revealed, lustful type
 character_event = {
 	id = ZE.3008
+	desc = EVTDESC_ZE_3008
 	picture = GFX_evt_relaxed_ruler
 	border = GFX_event_normal_frame_economy
-	desc = EVTDESC_ZE_3008
+	portrait = event_target:target_treasurer
 
 	is_triggered_only = yes
+
 	only_playable = yes
 
 	#Accept statue
 	option = {
 		name = EVTOPTA_ZE_3008
+
 		piety = -100
-		if = { limit = { trait = chaste } remove_trait = chaste }
-		if = { limit = { NOT = { trait = lustful }} add_trait = lustful }
+
+		if = {
+			limit = { trait = chaste }
+			remove_trait = chaste
+		}
+		else_if = {
+			limit = {
+				NOT = { trait = lustful }
+			}
+
+			add_trait = lustful
+		}
 	}
 
-	#Tear it down
+	# Tear it down
 	option = {
 		name = EVTOPTB_ZE_3008
+
 		opinion = {
-			modifier = opinion_very_disappointed
+			name = opinion_very_disappointed
 			who = event_target:target_treasurer
 			years = 2
 		}
-		if = { limit = { trait = lustful } remove_trait = lustful }
-		if = { limit = { NOT = { trait = chaste }} add_trait = chaste }
+
+		if = {
+			limit = { trait = lustful }
+			remove_trait = lustful
+		}
+		else_if = {
+			limit = {
+				NOT = { trait = chaste }
+			}
+
+			add_trait = chaste
+		}
 	}
 }
 
-#statue completed and revealed, possessed type
+# Statue completed and revealed, possessed type
 character_event = {
 	id = ZE.3009
+	desc = EVTDESC_ZE_3009
 	picture = GFX_evt_relaxed_ruler
 	border = GFX_event_normal_frame_economy
-	desc = EVTDESC_ZE_3009
+	portrait = event_target:target_treasurer
 
 	is_triggered_only = yes
+
 	only_playable = yes
 
-	#Statue revealed
+	# Statue revealed
 	option = {
 		name = EVTOPTA_ZE_3009
+
 		piety = -200
 	}
 }
 
-#statue completed and revealed, none of above type
+# Statue completed and revealed, none of above type
 character_event = {
 	id = ZE.3010
+	desc = EVTDESC_ZE_3010
 	picture = GFX_evt_relaxed_ruler
 	border = GFX_event_normal_frame_economy
-	desc = EVTDESC_ZE_3010
+	portrait = event_target:target_treasurer
 
 	is_triggered_only = yes
+
 	only_playable = yes
 
-	#Statue revealed
+	# Statue revealed
 	option = {
 		name = EVTOPTA_ZE_3010
+
 		prestige = 200
+
 		opinion = {
-			modifier = opinion_grateful
+			name = opinion_grateful
 			who = event_target:target_treasurer
 			years = 2
 		}
 	}
 
-	#Statue revealed, take it down
+	# Statue revealed, take it down
 	option = {
 		name = EVTOPTB_ZE_3010
-		if = { limit = { trait = proud } remove_trait = proud }
-		if = { limit = { NOT = { trait = humble } } add_trait = humble }
-		event_target:target_treasurer = {
-			opinion = {
-				modifier = opinion_disappointed
-				who = ROOT
-				years = 2
+
+		if = {
+			limit = { trait = proud }
+			remove_trait = proud
+		}
+		else_if = {
+			limit = {
+				NOT = { trait = humble }
 			}
+
+			add_trait = humble
+		}
+
+		reverse_opinion = {
+			name = opinion_disappointed
+			who = event_target:target_treasurer
+			years = 2
 		}
 	}
 }
 
-#Steward offers to teach liege some stewardship
+# Steward offers to teach liege some stewardship
 character_event = {
 	id = ZE.3011
+	desc = EVTDESC_ZE_3011
 	picture = GFX_evt_relaxed_ruler
 	border = GFX_event_normal_frame_economy
-	desc = EVTDESC_ZE_3011
+	portrait = job_treasurer
 
 	is_triggered_only = yes
-	only_playable = yes
+
 	min_age = 16
-	prisoner = no
+	only_playable = yes
+	has_dlc = "Conclave"
 	only_capable = yes
+	prisoner = no
+	war = no
 
 	trigger = {
-		has_dlc = "Conclave"
 		job_treasurer = {
-			NOR = { trait = incapable is_inaccessible_trigger = yes }
-			prisoner = no
-			stewardship = 15
+			stewardship >= 15
+
 			OR = {
 				trait = kind
 				trait = ambitious
 				trait = proud
 			}
+
+			prisoner = no
+			is_incapable = no
+			is_inaccessible_trigger = no
 		}
-		war = no
+
+		stewardship < 10
+		is_inaccessible_trigger = no
+
 		NOR = {
 			trait = imbecile
-			stewardship = 10
 			has_character_flag = ZE.3011_flag
-			is_inaccessible_trigger = yes
 		}
 	}
 
 	immediate = {
 		job_treasurer = { save_event_target_as = steward }
-		ROOT = { set_character_flag = ZE.3011_flag }
+		set_character_flag = ZE.3011_flag
 	}
 
-	#accept
+	# Accept
 	option = {
 		name = EVTOPTA_ZE_3011
-		hidden_tooltip = {
-			character_event = { id = ZE.3012 days = 2 }
+
+		character_event = {
+			id = ZE.3012
+			days = 2
 		}
 	}
 
-	#decline
+	# Decline
 	option = {
 		name = EVTOPTB_ZE_3011
-		event_target:steward = {
-			opinion = {
-				modifier = opinion_disappointed
-				who = ROOT
-				years = 2
-			}
+
+		reverse_opinion = {
+			name = opinion_disappointed
+			who = event_target:steward
+			years = 2
 		}
-		hidden_tooltip = {
-			character_event = { id = ZE.3012 days = 2 }
+
+		character_event = {
+			id = ZE.3012
+			days = 2
 		}
 	}
 }
 
-#Steward takes liege tax collecting
+# Steward takes liege tax collecting
 character_event = {
 	id = ZE.3012
+	desc = EVTDESC_ZE_3012
 	picture = GFX_evt_relaxed_ruler
 	border = GFX_event_normal_frame_economy
-	desc = EVTDESC_ZE_3012
+	portrait = event_target:target_treasurer
 
 	is_triggered_only = yes
+
 	only_playable = yes
 
-	#earn respect to earn money
+	# Earn respect to earn money
 	option = {
 		name = EVTOPTA_ZE_3012
-		hidden_tooltip = {
-			character_event = { id = ZE.3013 days = 1 }
+
+		character_event = {
+			id = ZE.3013
+			days = 1
 		}
-		if = { limit = { trait = deceitful } remove_trait = deceitful }
-		if = { limit = { NOT = { trait = honest } } add_trait = honest  }
+
+		if = {
+			limit = { trait = deceitful }
+			remove_trait = deceitful
+		}
+		else_if = {
+			limit = {
+				NOT = { trait = honest }
+			}
+
+			add_trait = honest
+		}
 	}
 
-	#demand more money
+	# Demand more money
 	option = {
 		name = EVTOPTB_ZE_3012
 		scaled_wealth = 0.2
-		if = { limit = { trait = charitable } remove_trait = charitable }
-		if = { limit = { NOT = { trait = greedy } } add_trait = greedy }
-		hidden_tooltip = {
-			set_character_flag = ZE.3011_failed_flag
-			character_event = { id = ZE.3013 days = 1 }
+
+		if = {
+			limit = { trait = charitable }
+			remove_trait = charitable
+		}
+		else_if = {
+			limit = {
+				NOT = { trait = greedy }
+			}
+
+			add_trait = greedy
+		}
+
+		set_character_flag = ZE.3011_failed_flag
+
+		character_event = {
+			id = ZE.3013
+			days = 1
 		}
 	}
 }
 
-#Steward takes liege to construction site
+# Steward takes liege to construction site
 character_event = {
 	id = ZE.3013
+	desc = EVTDESC_ZE_3013
 	picture = GFX_evt_relaxed_ruler
 	border = GFX_event_normal_frame_economy
-	desc = EVTDESC_ZE_3013
+	portrait = event_target:target_treasurer
 
 	is_triggered_only = yes
+
 	only_playable = yes
 
-	#Be stern, but fair
+	# Be stern, but fair
 	option = {
 		name = EVTOPTA_ZE_3013
-		if = { limit = { trait = shy } remove_trait = shy}
-		hidden_tooltip = {
-			character_event = { id = ZE.3014 days = 1 }
+
+		if = {
+			limit = { trait = shy }
+			remove_trait = shy
+		}
+		else_if = {
+			limit = {
+				NOT = { trait = gregarious }
+			}
+
+			add_trait = gregarious
+		}
+
+		character_event = {
+			id = ZE.3014
+			days = 1
 		}
 	}
 
-	#give builders money
+	# Give builders money
 	option = {
 		name = EVTOPTB_ZE_3013
+
 		scaled_wealth = -0.2
-		if = { limit = { trait = paranoid } remove_trait = paranoid}
-		if = { limit = { NOT = { trait = trusting } } add_trait = trusting }
-		hidden_tooltip = {
-			set_character_flag = ZE.3011_failed_flag
-			character_event = { id = ZE.3014 days = 1 }
+
+		if = {
+			limit = { trait = paranoid }
+			remove_trait = paranoid
+		}
+		else_if = {
+			limit = {
+				NOT = { trait = trusting }
+			}
+
+			add_trait = trusting
+		}
+
+		set_character_flag = ZE.3011_failed_flag
+
+		character_event = {
+			id = ZE.3014
+			days = 1
 		}
 	}
 
-	#make sure their reputation is ruined
+	# Make sure their reputation is ruined
 	option = {
 		name = EVTOPTC_ZE_3013
-		if = { limit = { trait = kind } remove_trait = kind}
-		if = { limit = { NOT = { trait = wroth } } add_trait = wroth }
-		event_target:steward = {
-			opinion = {
-				modifier = opinion_disappointed
-				who = ROOT
-				years = 2
-			}
+
+		if = {
+			limit = { trait = kind }
+			remove_trait = kind
 		}
-		hidden_tooltip = {
-			set_character_flag = ZE.3011_failed_flag
-			character_event = { id = ZE.3014 days = 1 }
+		else_if = {
+			limit = {
+				NOT = { trait = wroth }
+			}
+
+			add_trait = wroth
+		}
+
+		reverse_opinion = {
+			name = opinion_disappointed
+			who = event_target:steward
+			years = 2
+		}
+
+		set_character_flag = ZE.3011_failed_flag
+
+		character_event = {
+			id = ZE.3014
+			days = 1
 		}
 	}
 }
 
-#Steward gets visit from friend asking about your experiences doing steward work
+# Steward gets visit from friend asking about your experiences doing steward work
 character_event = {
 	id = ZE.3014
+	desc = EVTDESC_ZE_3014
 	picture = GFX_evt_relaxed_ruler
 	border = GFX_event_normal_frame_economy
-	desc = EVTDESC_ZE_3014
+	portrait = event_target:target_treasurer
 
 	is_triggered_only = yes
 	only_playable = yes
 
-	#it was interesting
-	#remove any level 1 educations, add thrifty_clerk instead
+	# It was interesting
+	# Remove any level 1 educations, add thrifty_clerk instead
 	option = {
+		name = EVTOPTA_ZE_3014
+
 		trigger = {
 			NOT = { has_character_flag = ZE.3011_failed_flag }
 		}
-		name = EVTOPTA_ZE_3014
+
 		if = {
 			limit = { has_bottom_tier_education_trait_trigger = yes }
+
 			trigger_switch = {
 				on_trigger = trait
-				detached_priest = {
-					remove_trait = detached_priest
-					add_trait = thrifty_clerk
-				}
-				misguided_warrior = {
-					remove_trait = misguided_warrior
-					add_trait = thrifty_clerk
-				}
-				indulgent_wastrel = {
-					remove_trait = indulgent_wastrel
-					add_trait = thrifty_clerk
-				}
-				naive_appeaser = {
-					remove_trait = naive_appeaser
-					add_trait = thrifty_clerk
-				}
-				amateurish_plotter = {
-					remove_trait = amateurish_plotter
-					add_trait = thrifty_clerk
-				}
+
+				detached_priest = { remove_trait = detached_priest }
+				misguided_warrior = { remove_trait = misguided_warrior }
+				indulgent_wastrel = { remove_trait = indulgent_wastrel }
+				naive_appeaser = { remove_trait = naive_appeaser }
+				amateurish_plotter = { remove_trait = amateurish_plotter }
 			}
+
+			add_trait = thrifty_clerk
+		}
+		else_if = {
+			limit = { trait = arbitrary }
+			remove_trait = arbitrary
+		}
+		else_if = {
+			limit = {
+				NOT = { trait = just }
+			}
+
+			add_trait = just
+			change_stewardship = 1
 		}
 		else = {
-			if = {
-				limit = { trait = arbitrary }
-				remove_trait = arbitrary
-			}
-			if = {
-				limit = { NOT = { trait = just } }
-				add_trait = just
-				change_stewardship = 1
-				break = yes
-			}
 			change_stewardship = 3
 		}
 	}
 
-	#wasnt for me
+	# Wasn't for me
 	option = {
 		name = EVTOPTB_ZE_3014
-		if = { limit = { trait = greedy } remove_trait = greedy}
-		if = { limit = { NOT = { trait = charitable } } add_trait = charitable }
-		if = { limit = { trait = gregarious } remove_trait = gregarious }
-		if = { limit = { NOT = { trait = shy } } add_trait = shy }
-		event_target:steward = {
-			opinion = {
-				modifier = opinion_disappointed
-				who = ROOT
-				years = 2
+
+		if = {
+			limit = { trait = greedy }
+			remove_trait = greedy
+		}
+		else_if = {
+			limit = {
+				NOT = { trait = charitable }
 			}
+
+			add_trait = charitable
+		}
+
+		if = {
+			limit = { trait = gregarious }
+			remove_trait = gregarious
+		}
+		else_if = {
+			limit = {
+				NOT = { trait = shy }
+			}
+
+			add_trait = shy
+		}
+
+		reverse_opinion = {
+			name = opinion_disappointed
+			who = event_target:steward
+			years = 2
 		}
 	}
 
-
-	#it was horrible we should take their money by force!
+	# It was horrible we should take their money by force!
 	option = {
 		name = EVTOPTC_ZE_3014
-		if = { limit = { trait = diligent } remove_trait = diligent }
-		if = { limit = { NOT = { trait = slothful } } add_trait = slothful }
-		event_target:steward = {
-			opinion = {
-				modifier = opinion_very_disappointed
-				who = ROOT
-				years = 2
+
+		if = {
+			limit = { trait = diligent }
+			remove_trait = diligent
+		}
+		else_if = {
+			limit = {
+				NOT = { trait = slothful }
 			}
+
+			add_trait = slothful
+		}
+
+		reverse_opinion = {
+			name = opinion_very_disappointed
+			who = event_target:steward
+			years = 2
 		}
 	}
 }
-
