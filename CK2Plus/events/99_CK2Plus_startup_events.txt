@@ -1,0 +1,138 @@
+#####################################
+#
+#	001 - 100: Start-up events
+#
+#####################################
+#
+#	INDEX
+#
+#	001: New-game set-up
+#	002: Apply Plus game rules
+#
+#####################################
+
+namespace = PlusStartUp
+
+character_event = {
+	id = PlusStartUp.001
+
+	hide_window = yes
+	is_triggered_only = yes # on_startup
+
+	only_playable = yes
+
+	trigger = {
+		owns = event_target:pulse_province
+		is_save_game = no
+	}
+
+	immediate = {
+		log_scopes = yes
+		log = "PlusStartUp.001"
+		character_event = { id = PlusStartUp.002 } # Apply Plus game rules
+		set_global_flag = plus_startup
+	}
+}
+
+character_event = { # Apply Plus game rules
+	id = PlusStartUp.002
+
+	is_triggered_only = yes
+	hide_window = yes
+
+	trigger = {
+		NOT = { has_global_flag = plus_rules_applied }
+	}
+
+	immediate = {
+		set_global_flag = plus_rules_applied
+		log = "Applying Plus game rules"
+
+		### GREAT SCHISM ###
+
+		# Applying Great Schism normally pre-1054
+		if = {
+			limit = {
+				has_game_rule = {
+					name = great_schism
+					value = default
+				}
+
+				start_date < 1054.7.16
+			}
+
+			log = "APPLYING DEFAULT GREAT SCHISM SETUP"
+			character_event = { id = PlusGreatSchism.001 }
+		}
+
+		# Trigger Great Schism
+		else_if = {
+			limit = {
+				# Great Schism hasn't happened already, i.e. post 1054 starts.
+				has_game_rule = {
+					name = great_schism
+					value = split
+				}
+
+				NOT = { has_global_flag = great_schism_happened }
+			}
+
+			# Required in order for the event to bypass normal checks
+			log = "OVERRIDING GREAT SCHISM BY GAME RULE"
+			set_global_flag = great_schism_manual_override
+			character_event = { id = PlusGreatSchism.001 }
+		}
+
+		# Revert Great Schism
+		else_if = {
+			limit = {
+				# Great Schism has happened, but we want it reverted (not mended) immediately
+				has_global_flag = great_schism_happened
+
+				has_game_rule = {
+					name = great_schism
+					value = join
+				}
+			}
+
+			log = "REVERTING GREAT SCHISM"
+			clr_global_flag = great_schism_happened
+			set_global_flag = great_schism_reverted
+			character_event = { id = PlusGreatSchism.001 }
+		}
+
+		# Revert and Disable Great Schism
+		else_if = {
+			limit = {
+				# Great Schism has happened, but we want it reverted (not mended) immediately
+				has_game_rule = {
+					name = great_schism
+					value = disabled
+				}
+
+				has_global_flag = great_schism_happened
+			}
+
+			log = "REVERTING AND DISABLING GREAT SCHISM BY GAME RULE"
+			clr_global_flag = great_schism_happened
+			set_global_flag = great_schism_reverted
+			set_global_flag = great_schism_disabled
+			character_event = { id = PlusGreatSchism.001 }
+		}
+
+		# Disable Great Schism
+		else_if = {
+			limit = {
+				# Great Schism has not happened, and we want to disable it
+				has_game_rule = {
+					name = great_schism
+					value = disabled
+				}
+
+				NOT = { has_global_flag = great_schism_happened }
+			}
+
+			set_global_flag = great_schism_disabled
+		}
+	}
+}
