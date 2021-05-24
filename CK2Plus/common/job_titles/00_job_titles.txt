@@ -1,5 +1,5 @@
 ##########################################
-# COUNCILOR TITLES
+# COUNCILLOR TITLES
 ##########################################
 
 #	attribute: This attribute is added to the ruler's for governance purposes
@@ -9,13 +9,18 @@
 #	lose_effect: fires when a title is lost through most causes
 #	retire_effect: fires when a title is lost due to the character stepping down, or getting a different liege
 #	death_effect: fires when a title is lost due to the character dying
-#	The other fields are all character modifiers.
+#	The other fields are all character modifiers
+
+#	ROOT is councillor
+#	FROM is liege
 
 # NOTE: Plus has a different implementation of safe guards for negative opinion effect when swapping councillors. I'm keeping our version.
 
 job_chancellor = {
 	is_chancellor = yes
 	is_voter = yes
+	lift_fow = yes
+
 	attribute = diplomacy
 	dignity = 0.33
 	opinion_effect = 10
@@ -25,22 +30,21 @@ job_chancellor = {
 	#2.6: vanilla went from .015 to .75 for all non-spymaster jobs (except spiritual, which is .5)
 	#Plus value was .025 so a buff that dramatic seemed worth updating
 
+	action = action_statecraft			# Offmap, Monks and Mystics
+	action = action_improve_relations
+	action = action_fabricate_claims
+	action = action_clan_sentiment		# Replaces Fabricate Claims for Nomads
+	action = action_sow_dissent
+
 	allow = {
 		can_be_chancellor_trigger = yes
 	}
-	gain_effect = {
-		remove_opinion = { who = FROM modifier = opinion_fired_from_council }
-		remove_opinion = { who = FROM modifier = opinion_recently_fired }
-		if = {
-			limit = { FROM = { primary_title = { has_law = council_privileges_1 } } }
-			opinion = { who = FROM modifier = grateful_council_term months = 12 }
-		}
-	}
+
 	dismiss_trigger = {
 		trigger_if = {
 			limit = {
 				FROM = {
-					primary_title = { has_law = council_privileges_1 }
+					has_law = council_privileges_1 
 				}
 			}
 			OR = {
@@ -49,61 +53,81 @@ job_chancellor = {
 			}
 		}
 	}
+
+	gain_effect = {
+		remove_opinion = { who = FROM name = opinion_fired_from_council }
+		remove_opinion = { who = FROM name = opinion_recently_fired }
+		
+		if = {
+			limit = { FROM = { has_law = council_privileges_1 } }
+			
+			opinion = { 
+				name = grateful_council_term 
+				who = FROM 
+				years = 1
+			}
+		}
+	}
+
 	lose_effect = {
 		if = {
 			limit = {
-				NOT = { has_character_flag = is_moving_councillor }
-				NOT = { has_character_flag = given_title }
-				NOT = { is_incapable = yes }
-				NOT = { trait = sick_incapable }
+				NOR = { 
+					has_character_flag = is_moving_councillor 
+					has_character_flag = given_title 
+				}
+
+				is_incapable = no
 			}
-			opinion = { who = FROM modifier = opinion_fired_from_council }
-			opinion = { who = FROM modifier = opinion_recently_fired }
+
+			opinion = { who = FROM name = opinion_fired_from_council }
+			opinion = { who = FROM name = opinion_recently_fired }
 		}
+		
 		clr_character_flag = is_moving_councillor
 		clr_character_flag = given_title
-		remove_opinion = { who = FROM modifier = grateful_council_term }
+		
+		remove_opinion = { 
+			name = grateful_council_term 
+			who = FROM 
+		}
+		
 		if = {
 			limit = { has_character_flag = relic_hunter }
-			character_event = { id = MNM.9034 }
+			character_event = { id = MNM.9034 } # Artifact hunter councllior fired/retires ping
 		}
 	}
+
 	retire_effect = {
 		if = {
 			limit = { has_character_flag = relic_hunter }
-			character_event = { id = MNM.9034 }
+			character_event = { id = MNM.9034 } # Artifact hunter councllior fired/retires ping
 		}
+
 		if = {
 			limit = {
-				NOT = {
-					age = 65
-				}
-				health = 3
-				NOT = {
-					is_sick_or_injured_trigger = yes
-				}
+				practical_age < 65
+				health >= 3
+				is_sick_or_injured_trigger = no
 				can_be_councilmember_king_trigger = yes
 			}
 
 			FROM = {
-				opinion = { who = ROOT modifier = opinion_resigned_from_council }
+				opinion = {
+					name = opinion_resigned_from_council
+					who = ROOT
+				}
 			}
 		}
 	}
-
-	action = action_statecraft
-	action = action_improve_relations
-	action = action_fabricate_claims
-	action = action_clan_sentiment # Replaces Fabricate Claims for Nomads
-	action = action_sow_dissent
-
-	lift_fow = yes
 }
 
 # NOTE: The allow trigger for this job also determines who can command armies!
 job_marshal = {
 	is_marshal = yes
 	is_voter = yes
+	lift_fow = yes
+
 	attribute = martial
 	dignity = 0.33
 	opinion_effect = 10
@@ -111,89 +135,22 @@ job_marshal = {
 	monthly_salary = 0.2
 	monthly_prestige = 0.75
 
+	action = action_organize_army			# Offmap, Monks and Mystics
+	action = action_assist_arrest
+	action = action_train_troops
+	action = action_train_troops_nomadic
+	action = action_advance_mil_tech
+	action = action_organize_raid			# Replaces action_advance_mil_tech for Tribes
+
 	allow = {
 		can_be_marshal_trigger = yes
 	}
-	gain_effect = {
-		remove_opinion = { who = FROM modifier = opinion_fired_from_council }
-		remove_opinion = { who = FROM modifier = opinion_recently_fired }
-		if = {
-			limit = { FROM = { primary_title = { has_law = council_privileges_1 } } }
-			opinion = { who = FROM modifier = grateful_council_term months = 12 }
-		}
-		if = {
-			limit = {
-				FROM = {
-					has_law = succ_byzantine_elective
-					any_courtier_or_vassal = {
-						attribute_diff = { character = PREVPREV attribute = martial value = 5 } #Check if any other vassal or courtier has higher martial than current character. And check that said vassal or courtier would be a viable marshal.
-						can_be_marshal_trigger = yes
-						NOT = {
-							character = ROOT
-						}
-					}
-				}
-			}
-			if = {
-				limit = {
-					NOT = {
-						martial = 2
-					}
-				}
-				FROM = { change_variable = { which = byzantine_credibility_appointed_sycophant value = -10 } }
-			}
-			else_if = {
-				limit = {
-					martial = 2
-					NOT = {
-						martial = 4
-					}
-				}
-				FROM = { change_variable = { which = byzantine_credibility_appointed_sycophant value = -5 } }
-			}
-			else_if = {
-				limit = {
-					martial = 4
-					NOT = {
-						martial = 6
-					}
-				}
-				FROM = { change_variable = { which = byzantine_credibility_appointed_sycophant value = -4 } }
-			}
-			else_if = {
-				limit = {
-					martial = 6
-					NOT = {
-						martial = 8
-					}
-				}
-				FROM = { change_variable = { which = byzantine_credibility_appointed_sycophant value = -3 } }
-			}
-			else_if = {
-				limit = {
-					martial = 8
-					NOT = {
-						martial = 10
-					}
-				}
-				FROM = { change_variable = { which = byzantine_credibility_appointed_sycophant value = -2 } }
-			}
-			else_if = {
-				limit = {
-					martial = 10
-					NOT = {
-						martial = 12
-					}
-				}
-				FROM = { change_variable = { which = byzantine_credibility_appointed_sycophant value = -1 } }
-			}
-		}
-	}
+
 	dismiss_trigger = {
 		trigger_if = {
 			limit = {
 				FROM = {
-					primary_title = { has_law = council_privileges_1 }
+					has_law = council_privileges_1 
 				}
 			}
 			OR = {
@@ -202,63 +159,162 @@ job_marshal = {
 			}
 		}
 	}
-	lose_effect = {
+
+	gain_effect = {
+		remove_opinion = { who = FROM name = opinion_fired_from_council }
+		remove_opinion = { who = FROM name = opinion_recently_fired }
+		
 		if = {
-			limit = {
-				NOT = { has_character_flag = is_moving_councillor }
-				NOT = { has_character_flag = given_title }
-				NOT = { is_incapable = yes }
-				NOT = { trait = sick_incapable }
+			limit = { FROM = { has_law = council_privileges_1 } } 
+			
+			opinion = { 
+				name = grateful_council_term 
+				who = FROM 
+				years = 1
 			}
-			opinion = { who = FROM modifier = opinion_fired_from_council }
-			opinion = { who = FROM modifier = opinion_recently_fired }
-			character_event = { id = HFP.20806 days = 1 }
-		}
-		clr_character_flag = is_moving_councillor
-		clr_character_flag = given_title
-		remove_opinion = { who = FROM modifier = grateful_council_term }
-		if = {
-			limit = { has_character_flag = relic_hunter }
-			character_event = { id = MNM.9034 }
-		}
-	}
-	retire_effect = {
-		if = {
-			limit = { has_character_flag = relic_hunter }
-			character_event = { id = MNM.9034 }
 		}
 
 		if = {
 			limit = {
-				NOT = {
-					age = 65
+				FROM = {
+					has_law = succ_byzantine_elective
+
+					any_courtier_or_vassal = {
+						# Check if any other vassal or courtier has higher martial than current character
+						attribute_diff = {
+							character = ROOT
+							attribute = martial
+							value > 5
+						}
+
+						# Check that said vassal or courtier would be a viable marshal
+						can_be_marshal_trigger = yes
+					}
 				}
-				health = 3
-				NOT = {
-					is_sick_or_injured_trigger = yes
+			}
+
+			if = {
+				limit = { martial < 2 }
+
+				FROM = {
+					change_variable = {
+						which = byzantine_credibility_appointed_sycophant
+						value = -10
+					}
 				}
+			}
+			else_if = {
+				limit = { martial < 4 }
+
+				FROM = {
+					change_variable = {
+						which = byzantine_credibility_appointed_sycophant
+						value = -5
+					}
+				}
+			}
+			else_if = {
+				limit = { martial < 6 }
+
+				FROM = {
+					change_variable = {
+						which = byzantine_credibility_appointed_sycophant
+						value = -4
+					}
+				}
+			}
+			else_if = {
+				limit = { martial < 8 }
+
+				FROM = {
+					change_variable = {
+						which = byzantine_credibility_appointed_sycophant
+						value = -3
+					}
+				}
+			}
+			else_if = {
+				limit = { martial < 10 }
+
+				FROM = {
+					change_variable = {
+						which = byzantine_credibility_appointed_sycophant
+						value = -2
+					}
+				}
+			}
+			else_if = {
+				limit = { martial < 12 }
+
+				FROM = {
+					change_variable = {
+						which = byzantine_credibility_appointed_sycophant
+						value = -1
+					}
+				}
+			}
+		}
+	}
+
+	lose_effect = {
+		if = {
+			limit = {
+				NOR = { 
+					has_character_flag = is_moving_councillor 
+					has_character_flag = given_title 
+				}
+
+				is_incapable = no
+			}
+
+			opinion = { who = FROM name = opinion_fired_from_council }
+			opinion = { who = FROM name = opinion_recently_fired }
+
+			character_event = {
+				id = HFP.20806 # Good Byzantine Marshal was discharged
+				days = 1
+			}
+		}
+
+		if = {
+			limit = { has_character_flag = relic_hunter }
+			character_event = { id = MNM.9034 } # Artifact hunter councllior fired/retires ping
+		}
+		
+		clr_character_flag = is_moving_councillor
+		clr_character_flag = given_title
+		remove_opinion = { who = FROM modifier = grateful_council_term }
+	}
+
+	retire_effect = {
+		if = {
+			limit = { has_character_flag = relic_hunter }
+			character_event = { id = MNM.9034 } # Artifact hunter councllior fired/retires ping
+		}
+
+		if = {
+			limit = {
+				practical_age < 65
+				health >= 3
+				is_sick_or_injured_trigger = no
 				can_be_councilmember_king_trigger = yes
 			}
 
 			FROM = {
-				opinion = { who = ROOT modifier = opinion_resigned_from_council }
+				opinion = {
+					name = opinion_resigned_from_council
+					who = ROOT
+				}
 			}
 		}
 	}
-
-	action = action_organize_army
-	action = action_assist_arrest
-	action = action_train_troops
-	action = action_train_troops_nomadic
-	action = action_advance_mil_tech
-	action = action_organize_raid # Replaces action_advance_mil_tech for Tribes
-
-	lift_fow = yes
 }
 
 job_treasurer = {
 	is_treasurer = yes
 	is_voter = yes
+	lift_fow = yes
+
 	attribute = stewardship
 	dignity = 0.2
 	opinion_effect = 10
@@ -266,87 +322,106 @@ job_treasurer = {
 	monthly_salary = 0.2
 	monthly_prestige = 0.75
 
+	action = action_administer_realm
+	action = action_squeeze_peasants
+	action = action_collect_tribute			# Replaces action_squeeze_peasants for Nomads
+	action = action_settle_tribe			# Replaces action_squeeze_peasants for Tribes
+	action = action_oversee_construction
+	action = action_advance_eco_tech
+	action = action_build_legend			# Replaces action_advance_eco_tech for Tribes
+
 	allow = {
 		can_be_treasurer_trigger = yes
 	}
-	gain_effect = {
-		remove_opinion = { who = FROM modifier = opinion_fired_from_council }
-		remove_opinion = { who = FROM modifier = opinion_recently_fired }
-		if = {
-			limit = { FROM = { primary_title = { has_law = council_privileges_1 } } }
-			opinion = { who = FROM modifier = grateful_council_term months = 12 }
-		}
-	}
+
 	dismiss_trigger = {
 		trigger_if = {
 			limit = {
 				FROM = {
-					primary_title = { has_law = council_privileges_1 }
+					has_law = council_privileges_1 
 				}
 			}
+
 			OR = {
 				is_incapable = yes
 				is_inaccessible_trigger = yes
 			}
 		}
 	}
+
+	gain_effect = {
+		remove_opinion = { who = FROM name = opinion_fired_from_council }
+		remove_opinion = { who = FROM name = opinion_recently_fired }
+		
+		if = {
+			limit = { FROM = { has_law = council_privileges_1 } } 
+			
+			opinion = { 
+				name = grateful_council_term 
+				who = FROM 
+				years = 1
+			}
+		}
+	}
+
 	lose_effect = {
 		if = {
 			limit = {
-				NOT = { has_character_flag = is_moving_councillor }
-				NOT = { has_character_flag = given_title }
-				NOT = { is_incapable = yes }
-				NOT = { trait = sick_incapable }
+				NOR = { 
+					has_character_flag = is_moving_councillor 
+					has_character_flag = given_title 
+				}
+
+				is_incapable = no
 			}
-			opinion = { who = FROM modifier = opinion_fired_from_council }
-			opinion = { who = FROM modifier = opinion_recently_fired }
+
+			opinion = { who = FROM name = opinion_fired_from_council }
+			opinion = { who = FROM name = opinion_recently_fired }
 		}
+		
 		clr_character_flag = is_moving_councillor
 		clr_character_flag = given_title
-		remove_opinion = { who = FROM modifier = grateful_council_term }
+
+		remove_opinion = { 
+			name = grateful_council_term 
+			who = FROM 
+		}
+		
 		if = {
 			limit = { has_character_flag = relic_hunter }
-			character_event = { id = MNM.9034 }
+			character_event = { id = MNM.9034 } # Artifact hunter councllior fired/retires ping
 		}
 	}
+
 	retire_effect = {
 		if = {
 			limit = { has_character_flag = relic_hunter }
-			character_event = { id = MNM.9034 }
+			character_event = { id = MNM.9034 } # Artifact hunter councllior fired/retires ping
 		}
 
 		if = {
 			limit = {
-				NOT = {
-					age = 65
-				}
-				health = 3
-				NOT = {
-					is_sick_or_injured_trigger = yes
-				}
+				practical_age < 65
+				health >= 3
+				is_sick_or_injured_trigger = no
 				can_be_councilmember_king_trigger = yes
 			}
 
 			FROM = {
-				opinion = { who = ROOT modifier = opinion_resigned_from_council }
+				opinion = {
+					name = opinion_resigned_from_council
+					who = ROOT
+				}
 			}
 		}
 	}
-
-	action = action_administer_realm
-	action = action_squeeze_peasants
-	action = action_collect_tribute # Replaces action_squeeze_peasants for Nomads
-	action = action_settle_tribe # Replaces action_squeeze_peasants for Tribes
-	action = action_oversee_construction
-	action = action_advance_eco_tech
-	action = action_build_legend # Replaces action_advance_eco_tech for Tribes
-
-	lift_fow = yes
 }
 
 job_spymaster = {
 	is_spymaster = yes
 	is_voter = yes
+	lift_neighbor_fow = yes
+
 	attribute = intrigue
 	dignity = 0.1
 	opinion_effect = 10
@@ -354,22 +429,21 @@ job_spymaster = {
 	monthly_salary = 0.2
 	monthly_prestige = 0.75
 
+	action = action_uncover_plots
+	action = action_uncover_plots_offmap	# Replaces action_uncover_plots if mystics is activated.
+	action = action_sabotage_province
+	action = action_organize_spies
+	action = action_study_technology
+
 	allow = {
 		can_be_spymaster_trigger = yes
 	}
-	gain_effect = {
-		remove_opinion = { who = FROM modifier = opinion_fired_from_council }
-		remove_opinion = { who = FROM modifier = opinion_recently_fired }
-		if = {
-			limit = { FROM = { primary_title = { has_law = council_privileges_1 } } }
-			opinion = { who = FROM modifier = grateful_council_term months = 12 }
-		}
-	}
+
 	dismiss_trigger = {
 		trigger_if = {
 			limit = {
 				FROM = {
-					primary_title = { has_law = council_privileges_1 }
+					has_law = council_privileges_1 
 				}
 			}
 			OR = {
@@ -378,61 +452,80 @@ job_spymaster = {
 			}
 		}
 	}
+
+	gain_effect = {
+		remove_opinion = { who = FROM name = opinion_fired_from_council }
+		remove_opinion = { who = FROM name = opinion_recently_fired }
+		
+		if = {
+			limit = { FROM = { has_law = council_privileges_1 } }
+			
+			opinion = { 
+				name = grateful_council_term 
+				who = FROM 
+				years = 1
+			}
+		}
+	}
+
 	lose_effect = {
 		if = {
 			limit = {
-				NOT = { has_character_flag = is_moving_councillor }
-				NOT = { has_character_flag = given_title }
-				NOT = { is_incapable = yes }
-				NOT = { trait = sick_incapable }
+				NOR = { 
+					has_character_flag = is_moving_councillor 
+					has_character_flag = given_title 
+				}
+
+				is_incapable = no
 			}
-			opinion = { who = FROM modifier = opinion_fired_from_council }
-			opinion = { who = FROM modifier = opinion_recently_fired }
+
+			opinion = { who = FROM name = opinion_fired_from_council }
+			opinion = { who = FROM name = opinion_recently_fired }
 		}
+
 		clr_character_flag = is_moving_councillor
 		clr_character_flag = given_title
-		remove_opinion = { who = FROM modifier = grateful_council_term }
+		
+		remove_opinion = { 
+			name = grateful_council_term 
+			who = FROM 
+		}
+		
 		if = {
 			limit = { has_character_flag = relic_hunter }
-			character_event = { id = MNM.9034 }
+			character_event = { id = MNM.9034 } # Artifact hunter councllior fired/retires ping
 		}
 	}
+
 	retire_effect = {
 		if = {
 			limit = { has_character_flag = relic_hunter }
-			character_event = { id = MNM.9034 }
+			character_event = { id = MNM.9034 } # Artifact hunter councllior fired/retires ping
 		}
 
 		if = {
 			limit = {
-				NOT = {
-					age = 65
-				}
-				health = 3
-				NOT = {
-					is_sick_or_injured_trigger = yes
-				}
+				practical_age < 65
+				health >= 3
+				is_sick_or_injured_trigger = no
 				can_be_councilmember_king_trigger = yes
 			}
 
 			FROM = {
-				opinion = { who = ROOT modifier = opinion_resigned_from_council }
+				opinion = {
+					name = opinion_resigned_from_council
+					who = ROOT
+				}
 			}
 		}
 	}
-
-	action = action_uncover_plots
-	action = action_uncover_plots_offmap	# Replaces action_uncover_plots if mystics is activated.
-	action = action_sabotage_province
-	action = action_organize_spies
-	action = action_study_technology
-
-	lift_neighbor_fow = yes
 }
 
 job_spiritual = {
 	is_spiritual = yes
 	is_voter = yes
+	lift_fow = yes
+
 	attribute = learning
 	dignity = 0.15
 	opinion_effect = 10
@@ -440,45 +533,22 @@ job_spiritual = {
 	monthly_salary = 0.2
 	monthly_piety = 0.5
 
+	action = action_hunt_heretics			# Offmap, Monks and Mystics
+	action = action_inquisition
+	action = action_advance_cul_tech
+	action = action_improve_rel_relations
+	action = action_charity
+	action = action_build_zeal				# Tribal replacement for 'action_advance_cul_tech'
+
 	allow = {
 		can_be_spiritual_trigger = yes
 	}
-	gain_effect = {
-		remove_opinion = { who = FROM modifier = opinion_fired_from_council }
-		remove_opinion = { who = FROM modifier = opinion_recently_fired }
-		if = {
-			limit = { FROM = { primary_title = { has_law = council_privileges_1 } } }
-			opinion = { who = FROM modifier = grateful_council_term months = 12 }
-		}
-	}
-	retire_effect = {
-		if = {
-			limit = { has_character_flag = relic_hunter }
-			character_event = { id = MNM.9034 }
-		}
 
-		if = {
-			limit = {
-				NOT = {
-					age = 65
-				}
-				health = 3
-				NOT = {
-					is_sick_or_injured_trigger = yes
-				}
-				can_be_councilmember_king_trigger = yes
-			}
-
-			FROM = {
-				opinion = { who = ROOT modifier = opinion_resigned_from_council }
-			}
-		}
-	}
 	dismiss_trigger = {
 		trigger_if = {
 			limit = {
 				FROM = {
-					primary_title = { has_law = council_privileges_1 }
+					has_law = council_privileges_1 
 				}
 			}
 			OR = {
@@ -488,17 +558,28 @@ job_spiritual = {
 			}
 		}
 	}
-	lose_effect = {
+	
+	gain_effect = {
+		remove_opinion = { who = FROM name = opinion_fired_from_council }
+		remove_opinion = { who = FROM name = opinion_recently_fired }
+		
 		if = {
-			limit = { has_character_flag = relic_hunter }
-			character_event = { id = MNM.9034 }
+			limit = { FROM = { has_law = council_privileges_1  } }
+			
+			opinion = { 
+				name = grateful_council_term 
+				who = FROM 
+				years = 1
+			}
 		}
+	}
+
+	lose_effect = {
 		if = {
 			limit = {
 				NOT = { has_character_flag = is_moving_councillor }
 				NOT = { has_character_flag = given_title }
-				NOT = { is_incapable = yes }
-				NOT = { trait = sick_incapable }
+				is_incapable = no
 			}
 			opinion = { who = FROM modifier = opinion_fired_from_council }
 			opinion = { who = FROM modifier = opinion_recently_fired }
@@ -506,15 +587,33 @@ job_spiritual = {
 		clr_character_flag = is_moving_councillor
 		clr_character_flag = given_title
 		remove_opinion = { who = FROM modifier = grateful_council_term }
+
+		if = {
+			limit = { has_character_flag = relic_hunter }
+			character_event = { id = MNM.9034 } # Artifact hunter councllior fired/retires ping
+		}
 	}
 
-	action = action_hunt_heretics
-	action = action_inquisition
-	action = action_advance_cul_tech
-	action = action_improve_rel_relations
-	action = action_charity
-	action = action_build_zeal # Tribal replacement for 'action_advance_cul_tech'
+	retire_effect = {
+		if = {
+			limit = { has_character_flag = relic_hunter }
+			character_event = { id = MNM.9034 } # Artifact hunter councllior fired/retires ping
+		}
 
-	lift_fow = yes
+		if = {
+			limit = {
+				practical_age < 65
+				health >= 3
+				is_sick_or_injured_trigger = no
+				can_be_councilmember_king_trigger = yes
+			}
+
+			FROM = {
+				opinion = {
+					name = opinion_resigned_from_council
+					who = ROOT
+				}
+			}
+		}
+	}
 }
-
