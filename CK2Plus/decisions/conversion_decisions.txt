@@ -3349,19 +3349,36 @@ decisions = {
 
 		potential = {
 			has_landed_title = e_byzantium
-			religion = chalcedonian
 			has_dlc = "Charlemagne"
 			year < 900
 
-			any_realm_lord = {
-				has_landed_title = d_iconoclast
-				religion = chalcedonian
-				trait = iconoclast_rites
+			trigger_if = {
+				limit = { religion = chalcedonian }
+
+				k_orthodox = {
+					holder_scope = {
+						is_vassal_or_below_of = ROOT
+						religion = chalcedonian
+						trait = iconoclast_rites
+					}
+				}
+
+				NOT = { has_global_flag = great_schism_happened }
+			}
+			trigger_else = {
+				religion = iconoclast
+				any_realm_province = { religion = orthodox }
+
+				d_iconoclast = {
+					holder_scope = {
+						is_vassal_or_below_of = ROOT
+						religion = iconoclast
+					}
+				}
 			}
 
 			NOR = {
 				has_character_flag = renounced_iconoclasm
-				has_global_flag = schism_happened
 
 				has_alternate_start_parameter = {
 					key = religion_names
@@ -3379,7 +3396,36 @@ decisions = {
 		effect = {
 			set_character_flag = renounced_iconoclasm
 
-			# TODO: Add some religion modifier to boost Chalcedonian MA a bit?
+			if = {
+				limit = { religion = chalcedonian }
+
+				remove_trait = iconoclast_rites
+				add_trait = greek_rites
+			}
+			else = {
+				tooltip = {
+					religion = orthodox
+				}
+
+				religion_authority = {
+					name = ruler_converted_from
+				}
+
+				orthodox = {
+					show_scope_change = no
+
+					religion_authority = {
+						name = ruler_converted_to
+					}
+				}
+
+				hidden_effect = {
+					religion = orthodox
+				}
+			}
+
+			# TODO: Add some religion modifier to boost Chalcedonian MA a bit
+			# TODO: Adjust global_schism_tracker?
 
 			custom_tooltip = {
 				text = renounce_iconoclasm_muslim_opinion_tooltip
@@ -3405,13 +3451,16 @@ decisions = {
 				text = renounce_iconoclasm_province_tooltip
 
 				any_realm_province = {
-					if = {
-						limit = { religion = chalcedonian }
-
-						add_province_modifier = {
-							name = appeased_religious
-							years = 5
+					limit = {
+						OR = {
+							religion = chalcedonian
+							religion = iconoclast
 						}
+					}
+
+					add_province_modifier = {
+						name = appeased_religious
+						years = 5
 					}
 				}
 			}
@@ -3431,45 +3480,62 @@ decisions = {
 			}
 
 			hidden_effect = {
-				any_realm_character = {
+				if = {
+					limit = { religion = chalcedonian }
+
+					k_orthodox = {
+						holder_scope = {
+							add_trait = greek_rites
+						}
+					}
+				}
+				else = {
+					d_iconoclast = {
+						show_scope_change = no
+
+						holder_scope = {
+							show_scope_change = no
+
+							# Workaround for automatic usurption of theocratic characters
+
+							set_character_flag = needs_temporary_fake_theocracy_government
+							set_government_type = temporary_fake_theocracy_government
+							unsafe_religion = orthodox
+							set_government_type = theocracy_government
+							clr_character_flag = needs_temporary_fake_theocracy_government
+
+							activate_title = {
+								title = k_orthodox
+								status = yes
+							}
+
+							grant_title = k_orthodox
+							set_defacto_liege = ROOT
+							unsafe_destroy_landed_title = d_iconoclast
+
+							activate_title = {
+								title = d_iconoclast
+								status = no
+							}
+
+							set_name = "" # Name changes upon becoming a religious head
+						}
+					}
+				}
+
+				any_character = {
 					limit = {
-						religion = iconoclast
-						NOT = { character = ROOT }
-						can_change_religion = yes
+						trigger_if = {
+							limit = { religion = chalcedonian }
+							trait = iconoclast_rites
+						}
+						trigger_else = {
+							religion = iconoclast
+							can_change_religion = yes
+						}
 					}
 
 					character_event = { id = CM.4200 } # Chance to convert
-				}
-			}
-
-			hidden_effect = {
-				d_iconoclast = {
-					show_scope_change = no
-
-					holder_scope = {
-						show_scope_change = no
-
-						# Workaround for automatic usurption of theocratic characters
-						set_character_flag = needs_temporary_fake_theocracy_government
-						set_government_type = temporary_fake_theocracy_government
-						unsafe_religion = orthodox
-						set_government_type = theocracy_government
-						clr_character_flag = needs_temporary_fake_theocracy_government
-						activate_title = {
-							title = k_orthodox
-							status = yes
-						}
-
-						grant_title = k_orthodox
-						set_defacto_liege = ROOT
-						pf_liege_change_effect = yes
-						unsafe_destroy_landed_title = d_iconoclast
-
-						activate_title = {
-							title = d_iconoclast
-							status = no
-						}
-					}
 				}
 			}
 		}
@@ -3519,7 +3585,7 @@ decisions = {
 		}
 
 		allow = {
-			capital_scope = { province = 333 }
+			capital_scope = { province = c_roma }
 			ruled_years >= 10
 			war = no
 		}
@@ -3649,18 +3715,16 @@ decisions = {
 		ai_will_do = {
 			factor = 1
 
-			modifier = {
+			mult_modifier = {
 				factor = 3
 				religion = hellenic_pagan_reformed
 			}
 
-			modifier = {
+			mult_modifier = {
 				factor = 0.01 # Would consider it a step down
 				culture = greek
 			}
-
 		}
-
 	}
 
 	embrace_roman_culture = {
