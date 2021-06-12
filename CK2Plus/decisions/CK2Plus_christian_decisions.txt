@@ -2,30 +2,37 @@ targeted_decisions = {
 	lollard_revoke_temple = {
 		is_high_prio = yes
 		ai_check_interval = 12
-		filter = sub_realm
-		ai_target_filter = sub_realm
+		filter = vassals
+		ai_target_filter = vassals
+
 		only_rulers = yes
 
 		from_potential = {
-			is_ruler = yes
 			religion = lollard
 		}
+
 		potential = {
+			vassal_of = FROM
 			is_ruler = yes
 			holy_order = no
-			vassal_of = FROM
 			capital_holding = { holding_type = temple }
-			OR = {
-				NOT = { religion = lollard }
-				trait = bad_priest_christian
-				higher_tier_than = COUNT
+
+			trigger_if = {
+				limit = { religion = lollard }
+
+				OR = {
+					trait = bad_priest_christian
+					higher_real_tier_than = COUNT
+				}
 			}
+
 			NOR = {
 				has_character_flag = lollard_revoking_titles
 				any_demesne_title = { temporary = yes }
 				reverse_has_truce = FROM
 				has_non_aggression_pact_with = FROM
 			}
+
 			is_inaccessible_trigger = no
 		}
 		allow = {
@@ -34,32 +41,47 @@ targeted_decisions = {
 			}
 			FROM = {
 				war = no
-				has_regent = no
+				is_not_under_regency_trigger = yes
 			}
 		}
+
 		effect = {
-			hidden_tooltip = {
-				FROM = { add_character_modifier = { name = do_not_disturb duration = 3 hidden = yes } }
-				set_character_flag = lollard_revoking_titles
-				letter_event = { id = Plus.2021 days = 3 }
-			}
-		}
-		ai_will_do = {
-			factor = 1
-			modifier = {
-				factor = 0
-				FROM = {
-					trait = cynical
-					NOT = {
-						trait = ambitious
-						trait = greedy
-						trait = envious
-					}
+			FROM = {
+				add_character_modifier = {
+					name = do_not_disturb
+					days = 3
+					hidden = yes
 				}
 			}
-			modifier = {
-				factor = 0
-				reverse_opinion = { who = FROM value = 0 }
+
+			set_character_flag = lollard_revoking_titles
+
+			letter_event = {
+				id = Plus.2021
+				days = 3
+			}
+		}
+
+		ai_will_do = {
+			factor = 1
+
+			trigger = {
+				FROM = {
+					trigger_if = {
+						limit = { trait = cynical }
+
+						OR = {
+							trait = ambitious
+							trait = greedy
+							trait = envious
+						}
+					}
+
+					opinion = {
+						who = ROOT
+						value < 0
+					}
+				}
 			}
 		}
 	}
@@ -68,21 +90,26 @@ targeted_decisions = {
 		filter = self
 		ai_target_filter = self
 		ai_check_interval = 12
+
 		potential = {
-			is_female = no
-			is_adult = yes
-			prisoner = no
 			religion = messalian
+
 			OR = {
 				trait = lunatic
 				trait = possessed
 				trait = depressed
 			}
-			NOT = {
+
+			is_female = no
+			is_adult = yes
+			prisoner = no
+
+			NOR = {
 				trait = eunuch
 				trait = incapable
 			}
 		}
+
 		allow = {
 			OR = {
 				trait = lunatic
@@ -90,40 +117,42 @@ targeted_decisions = {
 				trait = depressed
 			}
 		}
+
 		effect = {
 			piety = 300
 			add_trait = eunuch
+
 			if = {
 				limit = { has_nickname = no }
 				give_nickname = nick_the_ballless
 			}
+
 			if = {
 				limit = { NOT = { religion_authority = 0.7 } }
+
 				religion_authority = {
-					modifier = apokopos
+					name = apokopos
 					years = 10
 				}
 			}
-
 		}
+
 		ai_will_do = {
-			factor = 1
-			modifier = {
-				factor = 0.1
-				always = yes
+			factor = 0.1
+
+			trigger = {
+				NOR = {
+					trait = cynical
+					trait = craven
+				}
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 10
+
 				OR = {
 					trait = zealous
 					trait = lunatic
-				}
-			}
-			modifier = {
-				factor = 0
-				OR = {
-					trait = cynical
-					trait = craven
 				}
 			}
 		}
@@ -133,23 +162,27 @@ targeted_decisions = {
 decisions = {
 	cathar_consolamentum = {
 		ai_check_interval = 12
+
 		potential = {
 			OR = {
 				religion = cathar
 				religion = bogomilist
 			}
+
 			NOR = {
 				trait = perfecti
 				has_character_modifier = voice_of_satan
 				has_character_flag = consolamentum_taken
 			}
 		}
+
 		allow = {
 			is_adult = yes
 			prisoner = no
-			piety = 0
+			is_incapable = no
+			piety >= 0
+
 			NOR = {
-				trait = incapable
 				trait = cynical
 				trait = lustful
 				trait = hedonist
@@ -157,73 +190,76 @@ decisions = {
 				trait = master_seductress
 			}
 		}
+
 		effect = {
 			set_character_flag = consolamentum_taken
 			add_trait = perfecti
-			if = {
-				limit = { NOT = { trait = zealous } }
-				add_trait = zealous
-			}
+			add_trait_silently_zealous_effect = yes
 		}
+
 		ai_will_do = {
 			factor = 1
-			modifier = {
+
+			trigger = {
+				age > 25
+
+				OR = {
+					trait = zealous
+					trait = possessed
+					trait = lunatic
+					has_education_learning_trigger = yes
+					is_theocracy = yes
+				}
+
+				trigger_if = {
+					limit = {
+						has_job_title = job_spiritual
+						religion = bogomilist
+						NOT = { trait = zealous }
+					}
+
+					liege = {
+						OR = {
+							has_law = bogomilist_church_3
+							has_law = bogomilist_church_4
+						}
+					}
+				}
+			}
+
+			mult_modifier = {
 				factor = 10
 				is_theocracy = yes
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 5
 				trait = zealous
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.25
+
 				OR = {
 					trait = gluttonous
 					trait = envious
 					trait = greedy
 				}
 			}
-			modifier = {
-				factor = 0
-				religion = bogomilist
-				has_job_title = job_spiritual
-				NOT = { trait = zealous }
-				liege = {
-					NOR = {
-						has_law = bogomilist_church_3
-						has_law = bogomilist_church_4
-					}
-				}
-			}
-			modifier = {
-				factor = 0
-				NOT = { age = 25 }
-			}
-			modifier = {
-				factor = 0
-				NOR = {
-					trait = zealous
-					trait = possessed
-					trait = lunatic
-					trait = detached_priest
-					trait = dutiful_cleric
-					trait = scholarly_theologian
-					trait = mastermind_theologian
-					is_theocracy = yes
-				}
-			}
 		}
 	}
 
 	cathar_adoption = {
-		only_playable = yes
 		ai_check_interval = 12
+
+		only_playable = yes
+
 		potential = {
-			is_playable = yes
 			OR = {
 				religion = cathar
 				religion = bogomilist
 			}
+
 			NOT = {
 				any_child = {
 					is_alive = yes
@@ -231,25 +267,36 @@ decisions = {
 				}
 			}
 		}
+
 		allow = {
-			war = no
-			has_regent = no
-			any_realm_province = { religion = ROOT }
 			OR = {
 				trait = perfecti
 				trait = celibate
-				age = 45
-				NOT = { fertility = 0.05 }
+				practical_age >= 45
+				fertility < 0.05
+			}
+
+			any_realm_province = { religion = ROOT }
+
+			war = no
+			is_not_under_regency_trigger = yes
+			is_inaccessible_trigger = no
+		}
+
+		effect = {
+			character_event = {
+				id = Plus.2006
+				tooltip = SEARCH_ADOPTED_CHILD
 			}
 		}
-		effect = {
-			character_event = { id = Plus.2006 tooltip = SEARCH_ADOPTED_CHILD }
-		}
+
 		ai_will_do = {
 			factor = 1
-			modifier = {
-				factor = 0
-				current_heir = { dynasty = ROOT }
+
+			trigger = {
+				NOT = {
+					player_heir = { always = yes }
+				}
 			}
 		}
 	}
@@ -257,29 +304,39 @@ decisions = {
 	create_cathar_papacy = {
 		is_high_prio = yes
 		ai_check_interval = 24
+
 		only_playable = yes
+
 		potential = {
-			is_playable = yes
 			religion = cathar
-			d_cathar = { has_holder = no }
-			NOT = {
-				any_demesne_title = { temporary = yes }
+
+			NOR = {
+				is_title_active = d_cathar
 				has_global_flag = cathar_papacy_founded
+				any_demesne_title = { temporary = yes }
 			}
 		}
+
 		allow = {
-			war = no
-			has_regent = no
 			independent = yes
+			piety >= 1000
+			higher_real_tier_than = DUKE
 			trait = perfecti
-			piety = 1000
-			higher_tier_than = DUKE
-			any_realm_title = { is_holy_site = ROOT }
+			num_of_holy_sites >= 1
+			war = no
+			is_not_under_regency_trigger = yes
+			is_inaccessible_trigger = no
 		}
+
 		effect = {
-			character_event = { id = Plus.2012 tooltip = CREATE_CATHAR_POPE }
 			set_global_flag = cathar_papacy
+
+			character_event = {
+				id = Plus.2012
+				tooltip = CREATE_CATHAR_POPE
+			}
 		}
+
 		ai_will_do = {
 			factor = 1
 		}
@@ -289,23 +346,26 @@ decisions = {
 		ai_check_interval = 12
 		potential = {
 			religion = lollard
+
 			OR = {
 				trait = monk
 				trait = nun
 				trait = celibate
 			}
+
 			is_adult = yes
-			prisoner = no
-			NOT = {
-				trait = incapable
-				has_character_modifier = lollard_former_monk
-			}
+			NOT = { has_character_modifier = lollard_former_monk }
 		}
+
 		allow = {
-			piety = 10
+			piety >= 10
+			prisoner = no
+			is_incapable = no
 		}
+
 		effect = {
 			piety = -50
+
 			if = {
 				limit = {
 					OR = {
@@ -313,37 +373,47 @@ decisions = {
 						trait = nun
 					}
 				}
+
 				add_character_modifier = {
 					name = lollard_former_monk
 					duration = -1
 				}
 			}
+
 			if = {
 				limit = { trait = monk }
 				remove_trait = monk
 			}
+
 			if = {
 				limit = { trait = nun }
 				remove_trait = nun
 			}
+
 			if = {
 				limit = { trait = celibate }
 				remove_trait = celibate
 			}
 		}
+
 		ai_will_do = {
 			factor = 1
-			modifier = {
-				factor = 0
-				OR = {
-					trait = zealous
-					trait = content
-					trait = humble
-					trait = diligent
-				}
-				NOT = {
-					trait = ambitious
-					trait = cynical
+
+			trigger = {
+				trigger_if = {
+					limit = {
+						OR = {
+							trait = zealous
+							trait = content
+							trait = humble
+							trait = diligent
+						}
+					}
+
+					OR = {
+						trait = ambitious
+						trait = cynical
+					}
 				}
 			}
 		}
@@ -352,84 +422,113 @@ decisions = {
 	lollard_translate_bible = {
 		is_high_prio = yes
 		ai_check_interval = 12
-		only_rulers = yes
+
+		only_playable = yes
+
 		potential = {
-			is_ruler = yes
-			higher_tier_than = DUKE
+			higher_real_tier_than = DUKE
+
 			OR = {
 				religion = lollard
 				religion = waldensian
 			}
-			has_regent = no
+
 			OR = {
 				has_focus = focus_theology
 				has_focus = focus_scholarship
 			}
-			NOT = {
+
+			NOR = {
 				has_character_flag = bible_translation_begun
 				has_global_flag = bible_translation_finished
 			}
 		}
+
 		allow = {
-			war = no
-			realm_size = 100
-			realm_learning = 25
+			realm_learning >= 25
+			realm_size >= 100
 			scaled_wealth = 3.0
 			NOT = { trait = cynical }
+			war = no
+			is_not_under_regency_trigger = yes
+			is_inaccessible_trigger = no
 		}
+
 		effect = {
 			set_character_flag = bible_translation_begun
 			scaled_wealth = -3.0
-			custom_tooltip = { text = BEGIN_TRANSLATING_BIBLE }
-			random_list = {
-				50 = {
-					modifier = {
-						factor = 1.1
-						learning = 12
+
+			custom_tooltip = {
+				text = BEGIN_TRANSLATING_BIBLE
+
+				random_list = {
+					50 = {
+						mult_modifier = {
+							factor = 1.1
+							learning >= 12
+						}
+
+						mult_modifier = {
+							factor = 1.1
+							learning >= 14
+						}
+
+						mult_modifier = {
+							factor = 1.2
+							learning >= 16
+						}
+
+						mult_modifier = {
+							factor = 1.2
+							learning >= 18
+						}
+
+						mult_modifier = {
+							factor = 1.2
+							learning >= 20
+						}
+
+						narrative_event = {
+							id = Plus.2017
+							days = 300
+							random = 500
+							tooltip = BIBLE_TRANSLATION_GOOD
+						}
 					}
-					modifier = {
-						factor = 1.1
-						learning = 14
+
+					50 = {
+						mult_modifier = {
+							factor = 0.8
+							learning < 8
+						}
+
+						mult_modifier = {
+							factor = 0.8
+							learning < 6
+						}
+
+						mult_modifier = {
+							factor = 0.8
+							learning < 4
+						}
+
+						narrative_event = {
+							id = Plus.2018
+							days = 300
+							random = 500
+							tooltip = BIBLE_TRANSLATION_POOR
+						}
 					}
-					modifier = {
-						factor = 1.2
-						learning = 16
-					}
-					modifier = {
-						factor = 1.2
-						learning = 18
-					}
-					modifier = {
-						factor = 1.2
-						learning = 20
-					}
-					narrative_event = { id = Plus.2017 days = 300 random = 500 tooltip = BIBLE_TRANSLATION_GOOD }
-				}
-				50 = {
-					modifier = {
-						factor = 0.8
-						NOT = { learning = 8 }
-					}
-					modifier = {
-						factor = 0.8
-						NOT = { learning = 6 }
-					}
-					modifier = {
-						factor = 0.8
-						NOT = { learning = 4 }
-					}
-					narrative_event = { id = Plus.2018 days = 300 random = 500 tooltip = BIBLE_TRANSLATION_POOR }
 				}
 			}
 		}
+
 		ai_will_do = {
 			factor = 1
-			modifier = {
-				factor = 0
-				OR = {
-					NOT = { scaled_wealth = 5.0 }
-					has_character_modifier = ai_austerity
-				}
+
+			trigger = {
+				scaled_wealth = 5.0 }
+				NOT = { has_character_modifier = ai_austerity }
 			}
 		}
 	}
@@ -437,96 +536,66 @@ decisions = {
 	waldensian_choose_path = {
 		is_high_prio = yes
 		ai_check_interval = 12
+
 		potential = {
-			is_adult = yes
-			prisoner = no
 			religion = waldensian
-			NOT = {
-				trait = incapable
+
+			NOR = {
 				trait = sandaliati
 				trait = novellani
 				trait = doctores
 				has_character_flag = wald_chose_path
 			}
 		}
+
 		allow = {
-			always = yes
+			is_adult = yes
+			is_incapable = no
+			prisoner = no
 		}
+
 		effect = {
 			set_character_flag = wald_chose_path
 			character_event = { id = Plus.2031 }
 		}
+
 		ai_will_do = {
 			factor = 1
 		}
 	}
 
 	waldensian_charity = {
-		only_rulers = yes
 		ai_check_interval = 12
+
+		only_playable = yes
+
 		potential = {
 			religion = waldensian
 			is_adult = yes
-			is_ruler = yes
-			any_realm_province = { religion = waldensian }
 			NOT = { has_character_flag = voluntary_charity }
+
+			any_realm_province = {
+				religion = waldensian
+				NOT = { has_province_modifier = wald_charity }
+			}
 		}
+
 		allow = {
 			scaled_wealth = 1.0
 			NOT = { trait = greedy }
 		}
+
 		effect = {
 			set_character_flag = voluntary_charity
+
 			if = {
 				limit = { NOT = { trait = charitable } }
 				add_trait = charitable
 			}
+
 			scaled_wealth = -1.0
 			piety = 100
-			if = {
-				limit = {
-					NOT = {
-						any_demesne_province = {
-							religion = waldensian
-							NOT = { has_province_modifier = wald_charity }
-						}
-					}
-				}
-				random_realm_province = {
-					limit = {
-						religion = waldensian
-						NOT = { has_province_modifier = wald_charity }
-					}
-					add_province_modifier = {
-						name = wald_charity
-						duration = 1000
-					}
-				}
-			}
-			if = {
-				limit = {
-					NOT = {
-						capital_scope = {
-							religion = waldensian
-							NOT = { has_province_modifier = wald_charity }
-						}
-					}
-					any_demesne_province = {
-						religion = waldensian
-						NOT = { has_province_modifier = wald_charity }
-					}
-				}
-				random_demesne_province = {
-					limit = {
-						religion = waldensian
-						NOT = { has_province_modifier = wald_charity }
-					}
-					add_province_modifier = {
-						name = wald_charity
-						duration = 1000
-					}
-				}
-			}
+
 			if = {
 				limit = {
 					capital_scope = {
@@ -534,77 +603,129 @@ decisions = {
 						NOT = { has_province_modifier = wald_charity }
 					}
 				}
+
 				capital_scope = {
+					show_scope_change = no
+
 					add_province_modifier = {
 						name = wald_charity
-						duration = 1000
+						years = 3
+					}
+				}
+			}
+			else_if = {
+				limit = {
+					any_demesne_province = {
+						religion = waldensian
+						NOT = { has_province_modifier = wald_charity }
+					}
+				}
+
+				random_demesne_province = {
+					show_scope_change = no
+
+					limit = {
+						religion = waldensian
+						NOT = { has_province_modifier = wald_charity }
+					}
+
+					add_province_modifier = {
+						name = wald_charity
+						years = 3
+					}
+				}
+			}
+			else = {
+				random_realm_province = {
+					show_scope_change = no
+
+					limit = {
+						religion = waldensian
+						NOT = { has_province_modifier = wald_charity }
+					}
+
+					add_province_modifier = {
+						name = wald_charity
+						years = 3
 					}
 				}
 			}
 		}
+
 		ai_will_do = {
 			factor = 1
-			modifier = {
-				factor = 0
-				OR = {
-					has_character_modifier = ai_austerity
-					NOT = { scaled_wealth = 3.0 }
-					piety = 50
-				}
+
+			trigger = {
+				scaled_wealth = 3.0
+				piety < 50
+				NOT = { has_character_modifier = ai_austerity }
 			}
 		}
 	}
 
 	waldensian_hospital = {
 		ai_check_interval = 12
+
+		only_playable = yes
+
 		potential = {
-			religion = waldensian
 			higher_real_tier_than = DUKE
+			religion = waldensian
 			has_focus = focus_rulership
+
 			capital_scope = {
 				NOT = { has_province_modifier = wald_hospital }
 			}
 		}
+
 		allow = {
+			wealth >= 500
 			war = no
-			has_regent = no
-			wealth = 500
+			is_not_under_regency_trigger = yes
+			is_inaccessible_trigger = no
 		}
+
 		effect = {
 			wealth = -500
 			piety = 100
+
 			capital_scope = {
+				show_scope_change = no
+
 				if = {
 					limit = { NOT = { religion = waldensian } }
 					religion = waldensian
 				}
+
 				add_province_modifier = {
 					name = wald_hospital
 					duration = -1
 				}
 			}
 		}
+
 		ai_will_do = {
 			factor = 1
-			modifier = {
-				factor = 0
-				OR = {
-					has_character_modifier = ai_austerity
-					NOT = { wealth = 1000 }
-				}
+
+			trigger = {
+				wealth >= 1000
+				NOT = { has_character_modifier = ai_austerity }
 			}
 		}
 	}
 
 	messalian_abandon_prayers = {
 		ai_check_interval = 12
+
 		potential = {
 			religion = messalian
 			has_character_modifier = messalian_prayer
 		}
+
 		allow = {
 			has_character_modifier = messalian_prayer
 		}
+
 		effect = {
 			prestige = -50
 			piety = -50
@@ -620,30 +741,34 @@ decisions = {
 			clr_character_flag = driving_out_possession
 			clr_character_flag = driving_out_lunacy
 			clr_character_flag = messalian_temptation
+
 			random = {
 				chance = 25
 				add_trait = depressed
 			}
+
 			add_character_modifier = {
 				name = messalian_prayer_timer
-				duration = 1095
+				years = 3
 				hidden = yes
 			}
 		}
+
 		ai_will_do = {
 			factor = 1
-			modifier = {
-				factor = 0
-				religion = messalian
-				NOT = { trait = cynical }
+
+			trigger = {
+				trait = cynical
 			}
 		}
 	}
 
 	messalian_expel_daemon = {
 		ai_check_interval = 12
+
 		potential = {
 			religion = messalian
+
 			OR = {
 				trait = lustful
 				trait = hedonist
@@ -657,52 +782,65 @@ decisions = {
 				trait = possessed
 				trait = lunatic
 			}
-			NOT = {
+
+			NOR = {
 				has_character_modifier = messalian_prayer
 				trait = messalian_master
 			}
 		}
+
 		allow = {
-			piety = 50
+			piety >= 50
 			is_adult = yes
 			prisoner = no
 			is_ill = no
 			in_command_trigger = no
+			is_incapable = no
 			NOT = { trait = cynical }
-			NOT = { trait = incapable }
+
 			custom_tooltip = {
 				text = NOT_STOPPED_PRAYER_LAST_3_YEARS
-				hidden_tooltip = {
-					NOT = { has_character_modifier = messalian_prayer_timer }
-				}
+				NOT = { has_character_modifier = messalian_prayer_timer }
 			}
 		}
+
 		effect = {
 			piety = -50
+
 			add_character_modifier = {
 				name = messalian_prayer
 				duration = -1
 			}
-			character_event = { id = Plus.2041 tooltip = BEGIN_DRIVING_OUT_DAEMONS }
+
+			character_event = {
+				id = Plus.2041
+				tooltip = BEGIN_DRIVING_OUT_DAEMONS
+			}
 		}
+
 		ai_will_do = {
 			factor = 1
-			modifier = {
+
+			mult_modifier = {
 				factor = 10
 				trait = zealous
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 10
+
 				OR = {
 					trait = possessed
 					trait = lunatic
 				}
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.1
 				trait = craven
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.1
 				trait = content
 			}
@@ -710,18 +848,17 @@ decisions = {
 	}
 
 	messalian_choose_patron_saint = {
-		only_playable = yes
 		ai_check_interval = 12
+
 		potential = {
 			religion = messalian
+
 			OR = {
 				is_playable = yes
-				capital_holding = { holding_type = temple }
-				trait = detached_priest
-				trait = dutiful_cleric
-				trait = scholarly_theologian
-				trait = mastermind_theologian
+				is_theocracy = yes
+				has_education_learning_trigger = yes
 			}
+
 			NOR = {
 				has_character_modifier = patron_nestor
 				has_character_modifier = patron_lucifer
@@ -729,22 +866,30 @@ decisions = {
 				has_character_modifier = patron_adelphius
 			}
 		}
+
 		allow = {
 			war = no
 			is_adult = yes
 			prisoner = no
 			NOT = { trait = incapable }
 		}
+
 		effect = {
-			character_event = { id = Plus.2055 tooltip = choose_messalian_saint }
+			character_event = {
+				id = Plus.2055
+				tooltip = choose_messalian_saint
+			}
 		}
+
 		ai_will_do = {
 			factor = 1
-			modifier = {
+
+			mult_modifier = {
 				factor = 5
 				trait = zealous
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.5
 				trait = cynical
 			}
@@ -753,9 +898,11 @@ decisions = {
 
 	messalian_become_master = {
 		ai_check_interval = 12
+
 		potential = {
 			religion = messalian
-			NOT = {
+
+			NOR = {
 				trait = lustful
 				trait = gluttonous
 				trait = greedy
@@ -767,64 +914,53 @@ decisions = {
 				trait = possessed
 				trait = lunatic
 				trait = cult_of_lucifer
-			}
-			NOT = {
 				has_character_modifier = messalian_prayer
 				trait = messalian_master
 			}
 		}
+
 		allow = {
+			piety >= 500
+			religion_authority >= 0.7
 			is_adult = yes
 			prisoner = no
-			NOT = { trait = incapable }
-			piety = 500
-			religion_authority = 0.7
+			is_incapable = no
 		}
+
 		effect = {
 			piety = -500
+
 			religion_authority = {
-				modifier = m_master
+				name = m_master
 				years = 5
 			}
+
 			add_trait = messalian_master
+
 			random_list = {
 				20 = {
-					modifier = {
-						factor = 0
-						trait = hedonist
-					}
+					trigger = { NOT = { trait = hedonist } }
 					add_trait = hedonist
 				}
 				10 = {
-					modifier = {
-						factor = 0
-						trait = cruel
-					}
+					trigger = { NOT = { trait = cruel } }
 					add_trait = cruel
 				}
 				10 = {
-					modifier = {
-						factor = 0
-						trait = drunkard
-					}
+					trigger = { NOT = { trait = drunkard } }
 					add_trait = drunkard
 				}
 				10 = {
-					modifier = {
-						factor = 0
-						trait = lustful
-					}
+					trigger = { NOT = { trait = lustful } }
 					add_trait = lustful
 				}
 				10 = {
-					modifier = {
-						factor = 0
-						trait = gluttonous
-					}
+					trigger = { NOT = { trait = gluttonous } }
 					add_trait = gluttonous
 				}
 			}
 		}
+
 		ai_will_do = {
 			factor = 1
 		}
@@ -832,20 +968,23 @@ decisions = {
 
 	messalian_join_cult_of_lucifer = {
 		ai_check_interval = 24
+
 		potential = {
 			religion = messalian
 			is_adult = yes
 			prisoner = no
-			NOT = {
-				trait = incapable
+			is_incapable = no
+
+			NOR = {
 				trait = cult_of_lucifer
 				trait = messalian_master
 			}
 		}
 		allow = {
-			piety = 50
-			intrigue = 10
 			trait = proud
+			intrigue >= 10
+			piety >= 50
+
 			OR = {
 				has_character_modifier = patron_lucifer
 				trait = zealous
@@ -855,15 +994,14 @@ decisions = {
 				trait = theologian
 			}
 		}
+
 		effect = {
 			piety = 100
 			prestige = 100
 			tooltip = { add_trait = cult_of_lucifer }
-			hidden_tooltip = {
-				character_event = { id = Plus.2056 }
-			}
-
+			character_event = { id = Plus.2056 }
 		}
+
 		ai_will_do = {
 			factor = 1
 		}
@@ -872,163 +1010,206 @@ decisions = {
 	organise_army_of_lucifer = {
 		is_high_prio = yes
 		ai_check_interval = 12
-		only_rulers = yes
+
+		only_playable = yes
+
 		potential = {
-			is_ruler = yes
-			higher_tier_than = count
+			higher_real_tier_than = COUNT
 			religion = messalian
 			NOT = { is_title_active = d_army_lucifer }
 		}
+
 		allow = {
-			has_regent = no
-			higher_tier_than = duke
+			higher_real_tier_than = DUKE
 			prestige = 300
 			wealth = 300
+			is_not_under_regency_trigger = yes
+			is_inaccessible_trigger = no
 		}
+
 		effect = {
 			prestige = -300
 			wealth = -300
-			activate_title = { title = d_army_lucifer status = yes }
-			hidden_tooltip = {
+
+			activate_title = {
+				title = d_army_lucifer
+				status = yes
+			}
+
+			hidden_effect = {
 				narrative_event = { id = Plus.2057 }
+
 				create_character = {
 					random_traits = yes
 					religion = ROOT
 					culture = ROOT
-					dynasty = NONE
+					dynasty = none
 					female = no
 					age = 34
-					trait = skilled_tactician
-					trait = zealous
+					add_trait = skilled_tactician
+					add_trait = zealous
 				}
+
 				new_character = {
-					d_army_lucifer = {
-						grant_title = PREV
-					}
+					grant_title = d_army_lucifer
 				}
 			}
 		}
+
 		ai_will_do = {
 			factor = 1
-			modifier = {
-				factor = 0
-				OR = {
-					NOT = { prestige = 500 }
-					NOT = { wealth = 500 }
-				}
+
+			trigger = {
+				prestige >= 500
+				wealth >= 500
 			}
 		}
 	}
 
 	expel_army_of_lucifer = {
-		only_independent = yes
+		ai = no
+
 		potential = {
-			ai = no
-			has_dlc = "Sons of Abraham"
-			religion = messalian
-			higher_tier_than = DUKE
 			independent = yes
+			higher_real_tier_than = DUKE
+			has_dlc = "Sons of Abraham"
 			is_title_active = d_army_lucifer
+			religion = d_army_lucifer
 			NOT = { has_character_modifier = expelled_d_army_lucifer }
+
 			any_realm_province = {
 				any_province_lord = {
-					d_army_lucifer = {
-						holder_scope = {
-							OR = {
-								character = PREVPREV
-								is_vassal_or_below = PREVPREV
-							}
-						}
+					OR = {
+						character = d_army_lucifer
+						is_vassal_or_below_of = d_army_lucifer
 					}
 				}
 			}
 		}
+
 		allow = {
-			piety = 1000
-		}
-		effect = {
-			set_character_flag = expel_army_of_lucifer_check
+			piety >= 1000
+
 			custom_tooltip = {
-				text = expelling_holy_order_decision_tooltip_b
-				hidden_tooltip = {
-					character_event = { id = SoA.2990 }
-				}
+				text = expelling_holy_order_decision_tooltip
+				NOT = { has_character_flag = expel_army_of_lucifer_check }
 			}
 		}
+
+		effect = {
+			set_character_flag = expel_army_of_lucifer_check
+
+			d_army_lucifer = {
+				save_event_target_as = target_holy_order
+
+				holder_scope = {
+					save_event_target_as = target_grandmaster
+				}
+			}
+
+			character_event = {
+				id = SoA.2990
+				tooltip = expelling_holy_order_decision_tooltip_b
+			}
+		}
+
 		ai_will_do = {
 			factor = 0
 		}
 	}
 
 	donate_money_to_army_of_lucifer = {
-		ai_check_interval = 60
+		ai_check_interval = 80
+
+		only_playable = yes
+
 		potential = {
 			has_dlc = "Sons of Abraham"
-			religion = messalian
 			is_title_active = d_army_lucifer
-			NOR = {
-				has_character_modifier = expelled_d_army_lucifer
-				has_character_modifier = donated_to_holy_order
-				has_landed_title = d_army_lucifer
-			}
+			religion = d_army_lucifer
+
 			d_army_lucifer = {
 				holder_scope = {
-					liege = {
-						NOT = { character = ROOT }
-					}
+					is_within_diplo_range = ROOT
 				}
 			}
+
+			NOR = {
+				government = order_government
+				has_character_modifier = expelled_d_army_lucifer
+				is_liege_of = d_army_lucifer
+				has_landed_title = d_army_lucifer
+			}
 		}
+
 		allow = {
-			wealth = 300
+			wealth >= 300
+
+			custom_tooltip = {
+				text = holy_order_donate_cooldown_tt
+				NOT = { has_character_modifier = donate_to_holy_order_cooldown }
+			}
 		}
+
 		effect = {
 			wealth = -300
-			piety = 300
+			piety = 150
+
 			if = {
 				limit = {
 					NOT = { has_character_modifier = donated_to_holy_order }
 				}
+
 				add_character_modifier = {
 					name = donated_to_holy_order
 					duration = -1
 				}
 			}
-			hidden_tooltip = {
-				d_army_lucifer = {
-					holder_scope = {
-						character_event = {
-							id = Plus.2058
-						}
-					}
+
+			add_character_modifier = {
+				name = donate_to_holy_order_cooldown
+				years = 1
+				hidden = yes
+			}
+
+			d_army_lucifer = {
+				show_scope_change = no
+
+				save_event_target_as = target_holy_order
+
+				holder_scope = {
+					show_scope_change = no
+
+					save_event_target_as = target_grandmaster
+					wealth = 300
 				}
 			}
+
+			letter_event = { id = SoA.1141 }
 		}
+
 		ai_will_do = {
-			factor = 1
-			modifier = {
-				factor = 0
-				OR = {
+			factor = 0.12
+
+			trigger = {
+				piety < 1000
+				wealth >= 1000
+
+				NOR = {
 					trait = cynical
 					trait = greedy
-					piety = 1000
-					NOT = { wealth = 1000 }
+					has_character_modifier = ai_austerity
 				}
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 10
 				trait = zealous
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 10
-				NOT = { piety = 100 }
-			}
-			modifier = {
-				factor = 0.12 # Slow it down
-			}
-			modifier = {
-				factor = 0
-				has_character_modifier = ai_austerity
+				piety < 100
 			}
 		}
 	}
@@ -1036,77 +1217,91 @@ decisions = {
 	organize_bogomilist_church = {
 		is_high_prio = yes
 		ai_check_interval = 12
-		only_rulers = yes
+
+		only_playable = yes
 
 		potential = {
 			religion = bogomilist
-			is_ruler = yes
+
 			NOR = {
-				trait = incapable
+				is_title_active = d_bogomilist
+				has_global_flag = bogomilist_organized
 				has_law = bogomilist_church_2
 				has_law = bogomilist_church_3
 				has_law = bogomilist_church_4
-				d_bogomilist = { has_title_flag = bogomilist_organized }
-				is_title_active = d_bogomilist
 			}
 		}
+
 		allow = {
-			war = no
-			has_regent = no
 			independent = yes
-			num_of_holy_sites = 1
+			higher_real_tier_than = DUKE
+			num_of_holy_sites >= 1
 			has_law = bogomilist_church_1
 			trait = perfecti
-			higher_tier_than = DUKE
-			piety = 500
+			piety >= 500
+			war = no
+			is_not_under_regency_trigger = yes
+			is_inaccessible_trigger = no
 		}
+
 		effect = {
-			d_bogomilist = { set_title_flag = bogomilist_organized }
+			set_global_flag = bogomilist_organized
 			piety = -500
-			religion_authority = { modifier = bogomilism_organized }
-			primary_title = { add_law = bogomilist_church_2 }
-			any_realm_province = {
+			religion_authority = { name = bogomilism_organized }
+
+			primary_title = {
+				show_scope_change = no
+
+				add_law = bogomilist_church_2
+			}
+
+			any_demesne_province = {
 				limit = {
-					owner = { character = ROOT }
 					religion = bogomilist
 					NOT = { has_province_modifier = religious_unrest }
 				}
+
 				random_list = {
 					50 = {
 						add_province_modifier = {
 							name = religious_unrest
-							duration = 730
+							years = 2
 						}
 					}
+
 					25 = {
-						modifier = {
-							factor = 0
-							ROOT = { is_heretic = yes }
-						}
-						become_heretic = yes
-						add_province_modifier = {
-							name = religious_unrest
-							duration = 730
-						}
-					}
-					25 = {
-						modifier = {
-							factor = 0
+						trigger = {
 							ROOT = { is_heretic = no }
 						}
-						abandon_heresy = yes
+
+						become_heretic = yes
+
 						add_province_modifier = {
 							name = religious_unrest
-							duration = 730
+							years = 2
 						}
 					}
+
+					25 = {
+						trigger = {
+							ROOT = { is_heretic = yes }
+						}
+
+						abandon_heresy = yes
+
+						add_province_modifier = {
+							name = religious_unrest
+							years = 2
+						}
+					}
+
 					125 = {}
 				}
 			}
-			hidden_tooltip = {
-				narrative_event = { id = Plus.2130 }
-			}
+
+			narrative_event = { id = Plus.2130 }
 		}
+
 		ai_will_do = {
 			factor = 1
 		}
@@ -1115,13 +1310,14 @@ decisions = {
 	begin_formalize_bogomilist_church = {
 		is_high_prio = yes
 		ai_check_interval = 12
-		only_rulers = yes
+
+		only_playable = yes
 
 		potential = {
 			religion = bogomilist
-			is_ruler = yes
+			has_global_flag = bogomilist_organized
+
 			NOR = {
-				trait = incapable
 				has_law = bogomilist_church_0
 				has_law = bogomilist_church_1
 				has_law = bogomilist_church_3
@@ -1129,33 +1325,39 @@ decisions = {
 				has_character_modifier = formalizing_bogomilist
 				is_title_active = d_bogomilist
 			}
-			d_bogomilist = { has_title_flag = bogomilist_organized }
 		}
+
 		allow = {
-			war = no
-			has_regent = no
 			independent = yes
-			num_of_holy_sites = 1
+			num_of_holy_sites >= 1
 			has_law = bogomilist_church_2
 			trait = perfecti
 			higher_tier_than = DUKE
+
 			custom_tooltip = {
 				text = BOGO_ORGANIZED_TEN_YEARS
-				hidden_tooltip = {
-					d_bogomilist = { had_title_flag = { flag = bogomilist_organized days = 3650 } }
+
+				had_global_flag = {
+					flag = bogomilist_organized
+					years >= 10
 				}
 			}
+
+			war = no
+			is_not_under_regency_trigger = yes
+			is_inaccessible_trigger = no
 		}
+
 		effect = {
 			add_character_modifier = {
 				name = formalizing_bogomilist
 				duration = -1
 				inherit = yes
 			}
-			hidden_tooltip = {
-				character_event = { id = Plus.2112 }
-			}
+
+			character_event = { id = Plus.2112 }
 		}
+
 		ai_will_do = {
 			factor = 1
 		}
@@ -1164,50 +1366,68 @@ decisions = {
 	formalize_bogomilist_church = {
 		is_high_prio = yes
 		ai_check_interval = 12
-		only_rulers = yes
+
+		only_playable = yes
 
 		potential = {
 			religion = bogomilist
-			is_ruler = yes
+			has_global_flag = bogomilist_organized
+
+			check_variable = {
+				which = global_bogomil_formalization
+				value > 0
+			}
+
 			NOR = {
-				trait = incapable
 				has_law = bogomilist_church_0
 				has_law = bogomilist_church_1
 				has_law = bogomilist_church_3
 				has_law = bogomilist_church_4
 				is_title_active = d_bogomilist
-			}
-			d_bogomilist = {
-				has_title_flag = bogomilist_organized
-				NOT = { has_title_flag = bogomilist_formalized }
-				check_variable = { which = "bogomil_formalization" value = 0.5 }
+				has_global_flag = bogomilist_formalized
 			}
 		}
+
 		allow = {
-			war = no
-			has_regent = no
 			independent = yes
-			num_of_holy_sites = 1
+			higher_real_tier_than = DUKE
+			num_of_holy_sites >= 1
 			has_law = bogomilist_church_2
-			piety = 500
-			higher_tier_than = DUKE
+			piety >= 500
 			trait = perfecti
 			has_character_modifier = formalizing_bogomilist
+			war = no
+			is_not_under_regency_trigger = yes
+			is_inaccessible_trigger = no
+
 			custom_tooltip = {
 				text = BOGO_READY_TO_FORMALIZE
-				d_bogomilist = { check_variable = { which = "bogomil_formalization" value = 4 } }
+
+				check_variable = {
+					which = global_bogomil_formalization
+					value >= 4
+				}
 			}
 		}
+
 		effect = {
-			d_bogomilist = { set_title_flag = bogomilist_formalized }
+			set_global_flag = bogomilist_formalized
 			piety = -500
-			religion_authority = { modifier = bogomilism_formalized }
-			primary_title = { add_law = bogomilist_church_3 }
-			hidden_tooltip = {
-				remove_character_modifier = formalizing_bogomilist
-				narrative_event = { id = Plus.2132 }
+			religion_authority = { name = bogomilism_formalized }
+
+			primary_title = {
+				show_scope_change = no
+
+				add_law = bogomilist_church_3
 			}
+
+			hidden_effect = {
+				remove_character_modifier = formalizing_bogomilist
+			}
+
+			narrative_event = { id = Plus.2132 }
 		}
+
 		ai_will_do = {
 			factor = 1
 		}
@@ -1216,88 +1436,95 @@ decisions = {
 	force_formalize_bogomilist_church = {
 		is_high_prio = no
 		ai_check_interval = 12
-		only_rulers = yes
+
+		only_playable = yes
 
 		potential = {
-			religion = bogomilist
-			is_ruler = yes
-			NOR = {
-				trait = incapable
-				has_law = bogomilist_church_0
-				has_law = bogomilist_church_1
-				has_law = bogomilist_church_3
-				has_law = bogomilist_church_4
-				is_title_active = d_bogomilist
-			}
-			d_bogomilist = {
-				has_title_flag = bogomilist_organized
-				NOT = { has_title_flag = bogomilist_formalized }
-				check_variable = { which = "bogomil_formalization" value = 0.5 }
-			}
+			is_decision_potential = formalize_bogomilist_church
 		}
+
 		allow = {
-			war = no
-			has_regent = no
 			independent = yes
-			num_of_holy_sites = 1
+			num_of_holy_sites >= 1
 			has_law = bogomilist_church_2
-			piety = 500
-			higher_tier_than = DUKE
+			piety >= 500
+			higher_real_tier_than = DUKE
 			trait = perfecti
+
 			NOT = {
 				custom_tooltip = {
-					text = BOGO_READY_TO_FORMALIZE
-					d_bogomilist = { check_variable = { which = "bogomil_formalization" value = 4 } }
+					text = BOGO_READY_TO_FORMALIZE # TODO: Add negative tooltip text for better tooltip generation
+
+					check_variable = {
+						which = global_bogomil_formalization
+						value >= 4
+					}
 				}
 			}
+
+			war = no
+			is_not_under_regency_trigger = yes
+			is_inaccessible_trigger = no
 		}
+
 		effect = {
-			d_bogomilist = { set_title_flag = bogomilist_formalized }
+			set_global_flag = bogomilist_formalized
 			piety = -500
-			religion_authority = { modifier = bogomilism_formalized }
-			primary_title = { add_law = bogomilist_church_3 }
-			any_realm_province = {
+			religion_authority = { name = bogomilism_formalized }
+
+			primary_title = {
+				show_scope_change = no
+
+				add_law = bogomilist_church_3
+			}
+
+			any_demesne_province = {
 				limit = {
-					owner = { character = ROOT }
 					religion = bogomilist
 					NOT = { has_province_modifier = religious_unrest }
 				}
+
 				random_list = {
 					50 = {
 						add_province_modifier = {
 							name = religious_unrest
-							duration = 1095
+							years = 3
 						}
 					}
+
 					50 = {
-						modifier = {
-							factor = 0
-							ROOT = { is_heretic = yes }
-						}
-						become_heretic = yes
-						add_province_modifier = {
-							name = religious_unrest
-							duration = 1095
-						}
-					}
-					50 = {
-						modifier = {
-							factor = 0
+						trigger = {
 							ROOT = { is_heretic = no }
 						}
-						abandon_heresy = yes
+
+						become_heretic = yes
+
 						add_province_modifier = {
 							name = religious_unrest
-							duration = 1095
+							years = 3
 						}
 					}
+
+					50 = {
+						trigger = {
+							ROOT = { is_heretic = yes }
+						}
+
+						abandon_heresy = yes
+
+						add_province_modifier = {
+							name = religious_unrest
+							years = 3
+						}
+					}
+
 					100 = {}
 				}
 			}
-			hidden_tooltip = {
-				narrative_event = { id = Plus.2131 }
-			}
+
+			narrative_event = { id = Plus.2131 }
 		}
+
 		ai_will_do = {
 			factor = 0
 		}
@@ -1306,37 +1533,54 @@ decisions = {
 	create_bogomilist_patriarch = {
 		is_high_prio = yes
 		ai_check_interval = 12
-		only_rulers = yes
+
+		only_playable = yes
 
 		potential = {
 			religion = bogomilist
-			is_ruler = yes
 			NOT = { is_title_active = d_bogomilist }
 		}
+
 		allow = {
-			war = no
-			has_regent = no
 			independent = yes
-			higher_tier_than = DUKE
+			higher_real_tier_than = DUKE
 			has_law = bogomilist_church_3
-			wealth = 500
-			piety = 1000
-			prestige = 1000
+			wealth >= 500
+			piety >= 1000
+			prestige >= 1000
+			war = no
+			is_not_under_regency_trigger = yes
+			is_inaccessible_trigger = no
 		}
+
 		effect = {
 			piety = -1000
 			prestige = -1000
 			wealth = -500
+
 			if = {
 				limit = { is_heretic = yes }
-				set_parent_religion = { religion = bogomilist parent = 0 }
+
+				set_parent_religion = {
+					religion = bogomilist
+					parent = 0
+				}
 			}
-			primary_title = { add_law = bogomilist_church_4 }
-			activate_title = { title = d_bogomilist status = yes }
-			hidden_tooltip = {
-				character_event = { id = Plus.2133 }
+
+			primary_title = {
+				show_scope_change = no
+
+				add_law = bogomilist_church_4
 			}
+
+			activate_title = {
+				title = d_bogomilist
+				status = yes
+			}
+
+			character_event = { id = Plus.2133 }
 		}
+
 		ai_will_do = {
 			factor = 1
 		}
@@ -1345,48 +1589,73 @@ decisions = {
 	church_of_st_bogomil = {
 		is_high_prio = yes
 		ai_check_interval = 12
-		only_rulers = yes
+
+		only_playable = yes
 
 		potential = {
 			religion = bogomilist
-			is_ruler = yes
+
 			OR = {
 				has_law = bogomilist_church_2
 				has_law = bogomilist_church_3
 				has_law = bogomilist_church_4
 			}
-			499 = {
-				NOT = { has_province_flag = church_of_st_bogomil_built }
-				NOT = { has_province_modifier = building_st_bogomil }
+
+			c_tyrnovo = {
+				location = {
+					NOR = {
+						has_province_flag = church_of_st_bogomil_built
+						has_province_modifier = building_st_bogomil
+					}
+				}
 			}
 		}
+
 		allow = {
-			war = no
-			has_regent = no
 			completely_controls = c_tyrnovo
-			499 = {
-				religion = ROOT
-				num_of_empty_holdings = 1
+			wealth >= 1000
+
+			c_tyrnovo = {
+				location = {
+					show_scope_change = no
+
+					religion = ROOT
+					num_of_empty_holdings >= 1
+				}
 			}
+
 			OR = {
 				has_law = bogomilist_church_3
 				has_law = bogomilist_church_4
 			}
-			wealth = 1000
+
+			war = no
+			is_not_under_regency_trigger = yes
 		}
+
 		effect = {
-			499 = {
-				hidden_tooltip = {
+			wealth = -1000
+
+			c_tyrnovo = {
+				location = {
+					show_scope_change = no
+
 					province_event = { id = Plus.2135 } #begin construction
-					province_event = { id = Plus.2136 days = 1460 random = 50 } #finish construction
+
+					province_event = {
+						id = Plus.2136 # Finish construction
+						years = 4
+						random = 50
+					}
 				}
+
 				add_province_modifier = {
 					name = building_st_bogomil
 					duration = -1
 				}
 			}
-			wealth = -1000
 		}
+
 		ai_will_do = {
 			factor = 1
 		}
@@ -1396,42 +1665,39 @@ decisions = {
 		is_high_prio = yes
 		ai_check_interval = 12
 		icon_religion = bogomilist
+
 		only_rulers = yes
 
 		potential = {
-			ai = yes
 			religion = bogomilist
 			government = theocracy_government
-			is_ruler = yes
-			NOT = { capital_holding = { holding_type = temple } }
-			d_bogomilist = { NOT = { has_title_flag = bogomilist_formalized } }
+			capital_holding = { NOT = { holding_type = temple } }
+			NOT = { has_global_flag = bogomilist_formalized }
+			ai = yes
 		}
+
 		allow = {
 			war = no
-			has_regent = no
+			is_not_under_regency_trigger = yes
 		}
+
 		effect = {
 			if = {
 				limit = {
 					trait = perfecti
 					independent = no
 				}
+
 				piety = 25
-				liege = {
-					ROOT = {
-						any_demesne_title = {
-							limit = { is_theocracy = yes }
-							grant_title = PREV
-						}
-					}
-				}
+				abdicate_to = liege
 			}
 		}
+
 		ai_will_do = {
 			factor = 1
-			modifier = {
-				factor = 0
-				OR = {
+
+			trigger = {
+				NOR = {
 					trait = cynical
 					trait = bad_priest_christian
 				}
@@ -1443,43 +1709,33 @@ decisions = {
 		is_high_prio = yes
 		ai_check_interval = 12
 		icon_religion = bogomilist
+
 		only_rulers = yes
 
 		potential = {
-			ai = yes
 			religion = bogomilist
-			NOT = { government = theocracy_government }
-			is_ruler = yes
 			is_feudal = yes
-			d_bogomilist = { has_title_flag = bogomilist_formalized }
+			is_government_potential = theocracy_government
+			has_global_flag = bogomilist_formalized
+			ai = yes
 		}
+
 		allow = {
 			war = no
-			has_regent = no
+			is_not_under_regency_trigger = yes
 		}
+
 		effect = {
 			set_government_type = theocracy_government
 		}
+
 		ai_will_do = {
 			factor = 1
-			modifier = {
-				factor = 10
+
+			trigger = {
+				independent = no
+
 				OR = {
-					trait = perfecti
-					trait = zealous
-				}
-			}
-			modifier = {
-				factor = 0
-				OR = {
-					trait = cynical
-					trait = ambitious
-					independent = yes
-				}
-			}
-			modifier = {
-				factor = 0
-				NOR = {
 					trait = perfecti
 					trait = zealous
 					trait = humble
@@ -1489,314 +1745,385 @@ decisions = {
 					trait = scholarly_theologian
 					trait = mastermind_theologian
 				}
+
+				NOR = {
+					trait = cynical
+					trait = ambitious
+				}
 			}
-			modifier = {
+
+			mult_modifier = {
+				factor = 10
+
+				OR = {
+					trait = perfecti
+					trait = zealous
+				}
+			}
+
+
+			mult_modifier = {
 				factor = 0.1
 				higher_real_tier_than = COUNT
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.1
 				higher_real_tier_than = DUKE
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.1
-				tier = DUKE
-				num_of_duke_titles = 2
-			}
-			modifier = {
-				factor = 0
-				higher_real_tier_than = KING
+
+				real_tier = DUKE
+				num_of_duke_titles >= 2
 			}
 		}
 	}
 
 	organise_knights_of_saint_mark = {
 		is_high_prio = yes
-		only_rulers = yes
 		ai_check_interval = 12
+
+		only_playable = yes
+
 		potential = {
-			is_ruler = yes
-			higher_tier_than = count
-			OR = {
-				religion = miaphysite
-				religion = monophysite
-			}
+			higher_real_tier_than = COUNT
+			is_miaphysite_branch = yes
 			is_heretic = no
 			NOT = { is_title_active = d_knights_saint_mark }
 		}
+
 		allow = {
-			war = no
 			completely_controls = d_alexandria
-			has_regent = no
-			higher_tier_than = duke
-			piety = 500
-			wealth = 250
+			higher_real_tier_than = DUKE
+			piety >= 500
+			wealth >= 250
+			war = no
+			is_not_under_regency_trigger = yes
+			is_inaccessible_trigger = no
 		}
+
 		effect = {
 			piety = -500
 			wealth = -250
-			activate_title = { title = d_knights_saint_mark status = yes }
-			hidden_tooltip = {
-				narrative_event = { id = Plus.2064 }
+
+			activate_title = {
+				title = d_knights_saint_mark
+				status = yes
 			}
+
+			narrative_event = { id = Plus.2064 }
 		}
+
 		ai_will_do = {
 			factor = 1
 		}
 	}
 
 	expel_knights_of_saint_mark = {
-		only_independent = yes
+		ai = no
+
 		potential = {
-			ai = no
-			has_dlc = "Sons of Abraham"
-			OR = {
-				religion = miaphysite
-				religion = monophysite
-			}
-			is_heretic = no
-			higher_tier_than = DUKE
 			independent = yes
+			higher_real_tier_than = DUKE
+			has_dlc = "Sons of Abraham"
 			is_title_active = d_knights_saint_mark
+			religion = d_knights_saint_mark
 			NOT = { has_character_modifier = expelled_d_knights_saint_mark }
+
 			any_realm_province = {
 				any_province_lord = {
-					d_knights_saint_mark = {
-						holder_scope = {
-							OR = {
-								character = PREVPREV
-								is_vassal_or_below = PREVPREV
-							}
-						}
+					OR = {
+						character = d_knights_saint_mark
+						is_vassal_or_below_of = d_knights_saint_mark
 					}
 				}
 			}
 		}
+
 		allow = {
-			piety = 1000
-		}
-		effect = {
-			set_character_flag = expel_knights_of_saint_mark_check
+			piety >= 1000
+
 			custom_tooltip = {
-				text = expelling_holy_order_decision_tooltip_b
-				hidden_tooltip = {
-					character_event = { id = SoA.2990 }
-				}
+				text = expelling_holy_order_decision_tooltip
+				NOT = { has_character_flag = expel_knights_of_saint_mark_check }
 			}
 		}
+
+		effect = {
+			set_character_flag = expel_knights_of_saint_mark_check
+
+			d_knights_saint_mark = {
+				save_event_target_as = target_holy_order
+
+				holder_scope = {
+					save_event_target_as = target_grandmaster
+				}
+			}
+
+			character_event = {
+				id = SoA.2990
+				tooltip = expelling_holy_order_decision_tooltip_b
+			}
+		}
+
 		ai_will_do = {
 			factor = 0
 		}
 	}
 
 	donate_money_to_knights_of_saint_mark = {
-		ai_check_interval = 60
+		ai_check_interval = 80
+
+		only_playable = yes
+
 		potential = {
 			has_dlc = "Sons of Abraham"
-			OR = {
-				religion = miaphysite
-				religion = monophysite
-			}
-			is_heretic = no
 			is_title_active = d_knights_saint_mark
-			NOR = {
-				has_character_modifier = expelled_d_knights_saint_mark
-				has_character_modifier = donated_to_holy_order
-				has_landed_title = d_knights_saint_mark
-			}
+			religion = d_knights_saint_mark
+
 			d_knights_saint_mark = {
 				holder_scope = {
-					liege = {
-						NOT = { character = ROOT }
-					}
+					is_within_diplo_range = ROOT
 				}
 			}
+
+			NOR = {
+				government = order_government
+				has_character_modifier = expelled_d_knights_saint_mark
+				is_liege_of = d_knights_saint_mark
+				has_landed_title = d_knights_saint_mark
+			}
 		}
+
 		allow = {
-			wealth = 300
+			wealth >= 300
+
+			custom_tooltip = {
+				text = holy_order_donate_cooldown_tt
+				NOT = { has_character_modifier = donate_to_holy_order_cooldown }
+			}
 		}
+
 		effect = {
 			wealth = -300
-			piety = 300
+			piety = 150
+
 			if = {
 				limit = {
 					NOT = { has_character_modifier = donated_to_holy_order }
 				}
+
 				add_character_modifier = {
 					name = donated_to_holy_order
 					duration = -1
 				}
 			}
-			hidden_tooltip = {
-				d_knights_saint_mark = {
-					holder_scope = {
-						character_event = {
-							id = Plus.2058
-						}
-					}
+
+			add_character_modifier = {
+				name = donate_to_holy_order_cooldown
+				years = 1
+				hidden = yes
+			}
+
+			d_knights_saint_mark = {
+				show_scope_change = no
+
+				save_event_target_as = target_holy_order
+
+				holder_scope = {
+					show_scope_change = no
+
+					save_event_target_as = target_grandmaster
+					wealth = 300
 				}
 			}
+
+			letter_event = { id = SoA.1141 }
 		}
+
 		ai_will_do = {
-			factor = 1
-			modifier = {
-				factor = 0
-				OR = {
+			factor = 0.12
+
+			trigger = {
+				piety < 1000
+				wealth >= 1000
+
+				NOR = {
 					trait = cynical
 					trait = greedy
-					piety = 1000
-					NOT = { wealth = 1000 }
+					has_character_modifier = ai_austerity
 				}
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 10
 				trait = zealous
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 10
-				NOT = { piety = 100 }
-			}
-			modifier = {
-				factor = 0.12 # Slow it down
-			}
-			modifier = {
-				factor = 0
-				has_character_modifier = ai_austerity
+				piety < 100
 			}
 		}
 	}
 
 	expel_order_of_saint_blaise = {
-		only_independent = yes
+		ai = no
+
 		potential = {
-			ai = no
-			has_dlc = "Sons of Abraham"
-			OR = {
-				religion = apostolic
-				religion = paulician
-				religion = tondrakian
-			}
-			is_heretic = no
-			higher_tier_than = DUKE
 			independent = yes
+			higher_real_tier_than = DUKE
+			has_dlc = "Sons of Abraham"
 			is_title_active = d_saint_blaise
+			religion = d_saint_blaise
 			NOT = { has_character_modifier = expelled_d_saint_blaise }
+
 			any_realm_province = {
 				any_province_lord = {
-					d_saint_blaise = {
-						holder_scope = {
-							OR = {
-								character = PREVPREV
-								is_vassal_or_below = PREVPREV
-							}
-						}
+					OR = {
+						character = d_saint_blaise
+						is_vassal_or_below_of = d_saint_blaise
 					}
 				}
 			}
 		}
+
 		allow = {
-			piety = 1000
-		}
-		effect = {
-			set_character_flag = expel_order_of_saint_blaise_check
+			piety >= 1000
+
 			custom_tooltip = {
-				text = expelling_holy_order_decision_tooltip_b
-				hidden_tooltip = {
-					character_event = { id = SoA.2990 }
-				}
+				text = expelling_holy_order_decision_tooltip
+				NOT = { has_character_flag = expel_order_of_saint_blaise_check }
 			}
 		}
+
+		effect = {
+			set_character_flag = expel_order_of_saint_blaise_check
+
+			d_saint_blaise = {
+				save_event_target_as = target_holy_order
+
+				holder_scope = {
+					save_event_target_as = target_grandmaster
+				}
+			}
+
+			character_event = {
+				id = SoA.2990
+				tooltip = expelling_holy_order_decision_tooltip_b
+			}
+		}
+
 		ai_will_do = {
 			factor = 0
 		}
 	}
 
 	donate_money_to_order_of_saint_blaise = {
-		ai_check_interval = 60
+		ai_check_interval = 80
+
+		only_playable = yes
+
 		potential = {
 			has_dlc = "Sons of Abraham"
-			OR = {
-				religion = apostolic
-				religion = paulician
-				religion = tondrakian
-			}
-			is_heretic = no
 			is_title_active = d_saint_blaise
-			NOR = {
-				has_character_modifier = expelled_d_saint_blaise
-				has_character_modifier = donated_to_holy_order
-				has_landed_title = d_saint_blaise
-			}
+			religion = d_saint_blaise
+
 			d_saint_blaise = {
 				holder_scope = {
-					liege = {
-						NOT = { character = ROOT }
-					}
+					is_within_diplo_range = ROOT
 				}
 			}
+
+			NOR = {
+				government = order_government
+				has_character_modifier = expelled_d_saint_blaise
+				is_liege_of = d_saint_blaise
+				has_landed_title = d_saint_blaise
+			}
 		}
+
 		allow = {
-			wealth = 300
+			wealth >= 300
+
+			custom_tooltip = {
+				text = holy_order_donate_cooldown_tt
+				NOT = { has_character_modifier = donate_to_holy_order_cooldown }
+			}
 		}
+
 		effect = {
 			wealth = -300
-			piety = 300
+			piety = 150
+
 			if = {
 				limit = {
 					NOT = { has_character_modifier = donated_to_holy_order }
 				}
+
 				add_character_modifier = {
 					name = donated_to_holy_order
 					duration = -1
 				}
 			}
-			hidden_tooltip = {
-				d_saint_blaise = {
-					holder_scope = {
-						character_event = {
-							id = Plus.2058
-						}
-					}
+
+			add_character_modifier = {
+				name = donate_to_holy_order_cooldown
+				years = 1
+				hidden = yes
+			}
+
+			d_saint_blaise = {
+				show_scope_change = no
+
+				save_event_target_as = target_holy_order
+
+				holder_scope = {
+					show_scope_change = no
+
+					save_event_target_as = target_grandmaster
+					wealth = 300
 				}
 			}
+
+			letter_event = { id = SoA.1141 }
 		}
+
 		ai_will_do = {
-			factor = 1
-			modifier = {
-				factor = 0
-				OR = {
+			factor = 0.12
+
+			trigger = {
+				piety < 1000
+				wealth >= 1000
+
+				NOR = {
 					trait = cynical
 					trait = greedy
-					piety = 1000
-					NOT = { wealth = 1000 }
+					has_character_modifier = ai_austerity
 				}
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 10
 				trait = zealous
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 10
-				NOT = { piety = 100 }
-			}
-			modifier = {
-				factor = 0.12 # Slow it down
-			}
-			modifier = {
-				factor = 0
-				has_character_modifier = ai_austerity
+				piety < 100
 			}
 		}
 	}
 
 	miaphysite_desert_father = {
 		ai_check_interval = 12
+
 		potential = {
+			is_miaphysite_branch = yes
 			is_adult = yes
-			OR = {
-				religion = miaphysite
-				religion = monophysite
-			}
+
 			NOR = {
 				rightful_religious_head = ROOT
 				trait = desert_father
@@ -1804,14 +2131,16 @@ decisions = {
 				trait = monk
 				trait = nun
 			}
-			controls_religion = no
+
 			is_nomadic = no
 		}
+
 		allow = {
 			war = no
 			is_ill = no
 			prisoner = no
 			is_pregnant = no
+
 			NOR = {
 				trait = ambitious
 				trait = proud
@@ -1821,79 +2150,49 @@ decisions = {
 				any_liege = { war = yes }
 			}
 		}
+
 		effect = {
-			any_spouse = { remove_spouse = ROOT }
+			any_spouse = {
+				show_scope_change = no
+
+				remove_spouse = ROOT
+			}
+
 			set_character_flag = is_desert_mother_father
 			add_trait = chaste
+			change_learning = 1
+
 			if = {
 				limit = { is_female = no }
-				change_learning = 1
+
 				add_trait = desert_father
 				set_character_flag = title_desert_father
 				set_special_character_title = DESERT_FATHER_TITLE
 			}
-			if = {
-				limit = { is_female = yes }
-				change_learning = 1
+			else = {
 				add_trait = desert_mother
 				set_character_flag = title_desert_mother
 				set_special_character_title = DESERT_MOTHER_TITLE
 			}
 		}
+
 		ai_will_do = {
-			factor = 1
-			modifier = {
-				factor = 0.5
-				always = yes
-			}
-			modifier = {
-				factor = 10
-				has_character_modifier = voice_of_jesus
-			}
-			modifier = {
-				factor = 3
-				trait = zealous
-			}
-			modifier = {
-				factor = 0.5
-				trait = detached_priest
-			}
-			modifier = {
-				factor = 2
-				trait = scholarly_theologian
-			}
-			modifier = {
-				factor = 3
-				trait = mastermind_theologian
-			}
-			modifier = {
-				factor = 0.5
-				trait = proud
-			}
-			modifier = {
-				factor = 0.5
-				trait = slothful
-			}
-			modifier = {
-				factor = 1.5
-				trait = humble
-			}
-			modifier = {
-				factor = 1.5
-				trait = content
-			}
-			modifier = {
-				factor = 0.25
+			factor = 0.5
+
+			trigger = {
 				OR = {
-					father_even_if_dead = { higher_tier_than = COUNT }
-					mother_even_if_dead = { higher_tier_than = COUNT }
+					has_education_learning_trigger = yes
+
+					AND = {
+						trait = zealous
+						trait = humble
+					}
 				}
-			}
-			modifier = {
-				factor = 0
-				OR = {
-					is_theocracy = yes
-					is_councillor = yes
+
+				is_theocracy = no
+				is_councillor = no
+
+				NOR = {
 					trait = stressed
 					trait = depressed
 					trait = hedonist
@@ -1902,163 +2201,229 @@ decisions = {
 					trait = sympathy_zoroastrianism
 					trait = sympathy_judaism
 					trait = sympathy_indian
-					any_liege = { holy_order = yes }
-					any_liege = { mercenary = yes }
+
+					any_liege = {
+						OR = {
+							holy_order = yes
+							mercenary = yes
+						}
+					}
+
 					any_spouse = {
 						trait = pregnant
 						father_of_unborn = { character = ROOT }
 					}
+
 					liege = {
 						ai = no
+
 						OR = {
 							dynasty = ROOT
 							is_close_relative = ROOT
 						}
 					}
+
 					has_character_modifier = voice_of_satan
 					has_character_modifier = planning_claimant_adventure
 					has_character_flag = claimant_adventurer
 				}
-			}
-			modifier = {
-				factor = 0
-				NOR = {
-					trait = detached_priest
-					trait = dutiful_cleric
-					trait = scholarly_theologian
-					trait = mastermind_theologian
-					AND = {
-						trait = zealous
-						trait = humble
-					}
-				}
-			}
-			modifier = {
-				factor = 0.5
-				NOR = {
-					trait = detached_priest
-					trait = dutiful_cleric
-					trait = scholarly_theologian
-					trait = mastermind_theologian
-				}
-			}
-			modifier = {
-				factor = 0
-				any_heir_title = { always = yes }
-				NAND = {
+
+				trigger_if = {
+					limit = { any_heir_title = { always = yes } }
+
 					calc_true_if = {
-						amount = 2
+						amount >= 2
+
 						trait = zealous
 						trait = humble
 						trait = content
 						trait = possessed
 						has_character_modifier = voice_of_jesus
 					}
-					NOR = {
+
+					OR = {
 						trait = envious
 						trait = greedy
 					}
 				}
-			}
-			modifier = {
-				factor = 0
-				any_pretender_title = { always = yes }
-				NAND = {
+
+				trigger_if = {
+					limit = { any_pretender_title = { always = yes } }
+
 					OR = {
 						trait = zealous
 						trait = humble
 						trait = content
 						trait = possessed
 					}
+
 					NOR = {
 						trait = envious
 						trait = greedy
 					}
 				}
-			}
-			modifier = {
-				factor = 0
-				is_married = yes
-				NOR = {
-					trait = zealous
-					trait = lunatic
-					trait = possessed
-					has_called_crusade = yes
-					NOT = { any_spouse = { reverse_opinion = { who = ROOT value = 0 } } }
+
+				trigger_if = {
+					limit = { is_married = yes }
+
+					OR = {
+						trait = zealous
+						trait = lunatic
+						trait = possessed
+						has_called_crusade = yes
+
+						NOT = {
+							any_spouse = {
+								reverse_opinion = {
+									who = ROOT
+									value >= 0
+								}
+							}
+						}
+					}
 				}
+			}
+
+			mult_modifier = {
+				factor = 10
+				has_character_modifier = voice_of_jesus
+			}
+
+			mult_modifier = {
+				factor = 3
+				trait = zealous
+			}
+
+			mult_modifier = {
+				factor = 0.5
+				trait = detached_priest
+			}
+
+			mult_modifier = {
+				factor = 2
+				trait = scholarly_theologian
+			}
+
+			mult_modifier = {
+				factor = 3
+				trait = mastermind_theologian
+			}
+
+			mult_modifier = {
+				factor = 0.5
+				trait = proud
+			}
+
+			mult_modifier = {
+				factor = 0.5
+				trait = slothful
+			}
+
+			mult_modifier = {
+				factor = 1.5
+				trait = humble
+			}
+
+			mult_modifier = {
+				factor = 1.5
+				trait = content
+			}
+
+			mult_modifier = {
+				factor = 0.25
+
+				OR = {
+					father_even_if_dead = { higher_real_tier_than = COUNT }
+					mother_even_if_dead = { higher_real_tier_than = COUNT }
+				}
+			}
+
+			mult_modifier = {
+				factor = 0.5
+				has_education_learning_trigger = no
 			}
 		}
 	}
 
 	miaphysite_embrace_alexandrine = {
-		only_rulers = yes
 		ai_check_interval = 60
+
+		only_rulers = yes
+
 		potential = {
-			is_ruler = yes
-			learning = 8
+			learning >= 8
+
 			OR = {
-				religion = miaphysite
-				religion = monophysite
-				religion = apostolic
-				religion = paulician
+				is_miaphysite_branch = yes
+				is_apostolic_branch = yes
 				religion = nestorian
 				religion = monothelite
 			}
+
 			NOR = {
 				trait = alexandrine
 				trait = antiochene
 			}
 		}
+
 		allow = {
-			has_regent = no
-			piety = 50
+			piety >= 50
 			NOT = { trait = zealous }
+			is_not_under_regency_trigger = yes
+			is_inaccessible_trigger = no
 		}
+
 		effect = {
 			if = {
 				limit = {
-					num_of_count_titles = 1
-					demesne_size = 1
+					num_of_count_titles >= 1
+					demesne_size >= 1
 				}
+
 				economy_techpoints = 25
 				military_techpoints = 25
 			}
+
 			custom_tooltip = {
 				text = ALEXANDRINE_TOOLTIP
-				hidden_tooltip = { add_trait = alexandrine }
+				add_trait = alexandrine
 			}
 		}
+
 		ai_will_do = {
-			factor = 1
-			modifier = {
-				factor = 0.3
-				always = yes
-			}
-			modifier = {
+			factor = 0.3
+
+			mult_modifier = {
 				factor = 10
 				trait = cynical
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 2
-				learning = 10
+				learning >= 10
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 2
-				learning = 12
+				learning >= 12
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 2
-				learning = 14
+				learning >= 14
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 2
-				learning = 16
+				learning >= 16
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 2
-				learning = 18
+				learning >= 18
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 1.5
 				liege = { trait = alexandrine }
 			}
@@ -2066,19 +2431,20 @@ decisions = {
 	}
 
 	miaphysite_embrace_antiochene = {
-		only_rulers = yes
 		ai_check_interval = 60
+
+		only_rulers = yes
+
 		potential = {
-			is_ruler = yes
-			learning = 8
+			learning >= 8
+
 			OR = {
-				religion = miaphysite
-				religion = monophysite
-				religion = apostolic
-				religion = paulician
+				is_miaphysite_branch = yes
+				is_apostolic_branch = yes
 				religion = nestorian
 				religion = monothelite
 			}
+
 			NOR = {
 				trait = alexandrine
 				trait = antiochene
@@ -2086,60 +2452,67 @@ decisions = {
 		}
 
 		allow = {
-			has_regent = no
-			piety = 50
+			piety >= 50
 			NOT = { trait = cynical }
+			is_not_under_regency_trigger = yes
+			is_inaccessible_trigger = no
 		}
 
 		effect = {
 			piety = 100
+
 			if = {
 				limit = {
-					num_of_count_titles = 1
-					demesne_size = 1
+					num_of_count_titles >= 1
+					demesne_size >= 1
 				}
+
 				culture_techpoints = 25
 			}
+
 			custom_tooltip = {
 				text = ANTIOCHIAN_TOOLTIP
-				hidden_tooltip = { add_trait = antiochene }
+				add_trait = antiochene
 			}
 		}
+
 		ai_will_do = {
-			factor = 1
-			modifier = {
-				factor = 0.3
-				always = yes
-			}
-			modifier = {
+			factor = 0.3
+
+			mult_modifier = {
 				factor = 10
 				trait = zealous
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 2
-				learning = 10
+				learning >= 10
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 2
-				learning = 12
+				learning >= 12
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 2
-				learning = 14
+				learning >= 14
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 2
-				learning = 16
+				learning >= 16
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 2
-				learning = 18
+				learning >= 18
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 1.5
 				liege = { trait = antiochene }
 			}
 		}
 	}
 }
-
