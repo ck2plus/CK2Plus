@@ -5,58 +5,64 @@ decisions = {
 		ai_check_interval = 12
 
 		potential = {
-			is_married = yes
-			plot_target_char = {
-				any_spouse = { character = ROOT }
-			}
 			has_plot = plot_usurp_wife
 			NOT = { has_character_flag = plot_usurp_wife_decision_taken }
 		}
+
 		allow = {
-			war = no
-			custom_tooltip = {
-				text = IS_NOT_BUSY
-				hidden_tooltip = {
-					in_command_trigger = no
-				}
-			}
-			plot_target_char = {
-				war = no
-				custom_tooltip = {
-					text = IS_NOT_BUSY
-					hidden_tooltip = {
-						in_command_trigger = no
-					}
-				}
-				is_inaccessible_trigger = no
-			}
 			OR = {
 				AND = {
-					plot_power = 1.0
-					num_of_plot_backers = 1
+					plot_power >= 1.0
+					num_of_plot_backers >= 1
 					plot_target_char = { prisoner = no }
 				}
+
 				plot_target_char = {
 					prisoner = yes
 					host = { character = ROOT }
 				}
-				plot_target_char = {
-					plot_power = 0.5
-					trait = incapable
+
+				AND = {
+					plot_target_char = { is_incapable = yes }
+					plot_power >= 0.5
 				}
 			}
+
+			war = no
+
+			custom_tooltip = {
+				text = IS_NOT_BUSY
+				in_command_trigger = no
+			}
+
 			is_inaccessible_trigger = no
+
+			plot_target_char = {
+				war = no
+
+				custom_tooltip = {
+					text = IS_NOT_BUSY
+					in_command_trigger = no
+				}
+
+				is_inaccessible_trigger = no
+			}
 		}
+
 		effect = {
 			plot_target_char = {
+				show_scope_change = no
+
 				character_event = {
 					id = FemRule.360
 					tooltip = ATTEMPT_TO_USURP_WIFE
 				}
 			}
-			hidden_tooltip = {
+
+			hidden_effect = {
 				set_character_flag = plot_usurp_wife_decision_taken
 				activate_plot = yes
+
 				add_character_modifier = {
 					name = do_not_disturb
 					days = 7
@@ -64,24 +70,21 @@ decisions = {
 				}
 			}
 		}
+
 		ai_will_do = {
 			factor = 1
-			modifier = {
-				factor = 0
-				trait = content
-			}
-			modifier = {
-				factor = 0
-				plot_target_char = { trait = incapable }
-				NOT = { plot_power = 0.75 }
-			}
-			modifier = {
-				factor = 0
-				plot_target_char = {
-					NOT = { trait = incapable }
-					prisoner = no
+
+			trigger = {
+				NOT = { trait = content }
+
+				trigger_if = {
+					limit = { plot_target_char = { is_incapable = yes } }
+					plot_power >= 0.75
 				}
-				NOT = { plot_power = 1.25 }
+				trigger_else_if = {
+					limit = { plot_target_char = { prisoner = no } }
+					plot_power >= 1.25
+				}
 			}
 		}
 	}
@@ -94,73 +97,107 @@ targeted_decisions = {
 		ai_target_filter = realm
 		ai_check_interval = 5
 
+		only_rulers = yes
+
 		from_potential = {
-			OR = {
-				is_ruler = yes
-				is_patrician = yes
-			}
-			any_courtier = { has_job_title = job_spymaster }
+			job_spymaster = { always = yes }
 			NOT = { has_character_flag = attempted_blackmail }
 		}
+
 		potential = {
 			has_plot = yes
-			FROM = { any_known_plotter = { character = ROOT } }
-			plot_target_char = {
-				NOT = { character = FROM }
+			plot_is_known_by = FROM
+
+			FROM = {
+				NOT = { is_plot_target_of = ROOT }
 			}
 		}
+
 		allow = {
-			FROM = { has_regent = no }
-			NOT = { reverse_has_opinion_modifier = { who = FROM modifier = opinion_blackmailed } }
-			plot_target_char = {
-				is_adult = yes
-				custom_tooltip = {
-					text = NOT_AWARE_PLOT
-					hidden_tooltip = {
-						ROOT = { NOT = { plot_is_known_by = PREV } }
+			FROM = {
+				has_regent = no
+
+				NOT = {
+					has_opinion_modifier = {
+						name = opinion_blackmailed
+						who = ROOT
 					}
 				}
 			}
+
+			plot_target_char = {
+				is_adult = yes
+
+				custom_tooltip = {
+					text = NOT_AWARE_PLOT
+					ROOT = { NOT = { plot_is_known_by = PREV } }
+				}
+			}
 		}
+
 		effect = {
 			tooltip = {
 				ROOT = { reveal_plot = yes }
 			}
+
 			if = {
 				limit = { any_plot_backer = { character = FROM } }
-				FROM = { leave_plot = ROOT }
+
+				FROM = {
+					show_scope_change = no
+
+					leave_plot = ROOT
+				}
 			}
-			hidden_tooltip = {
-				plot_target_char = { letter_event = { id = Plus.285 } }
-				plot_target_char = { save_event_target_as = revealed_target }
-				character_event = { id = Plus.288 days = 7 }
+
+			plot_target_char = {
+				save_event_target_as = revealed_target
+				letter_event = { id = Plus.285 }
+			}
+
+			character_event = {
+				id = Plus.288
+				days = 7
 			}
 		}
+
 		ai_will_do = {
-			factor = 1
-			modifier = {
-				factor = 0.5
-				always = yes
-			}
-			modifier = {
-				factor = 0
-				any_plot_backer = { character = FROM }
-			}
-			modifier = {
-				factor = 0
+			factor = 0.5
+
+			trigger = {
+				NOT = {
+					any_plot_backer = { character = FROM }
+				}
+
 				plot_target_char = {
-					OR = {
-						FROM = { likes_better_than = { who = ROOT than = PREV } }
-						NOT = { reverse_opinion = { who = FROM value = 0 } }
-						has_opinion_modifier = { who = FROM modifier = opinion_recent_plot }
+					reverse_opinion = {
+						who = FROM
+						value >= 0
+					}
+
+					NOR = {
+						FROM = {
+							likes_better_than = {
+								who = ROOT
+								than = PREV
+							}
+						}
+
+						has_opinion_modifier = {
+							name = opinion_recent_plot
+							who = FROM
+						}
+
 						has_truce = FROM
 						has_non_aggression_pact_with = FROM
 						war_with = FROM
 					}
 				}
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 10
+
 				plot_target_char = {
 					OR = {
 						is_close_relative = FROM
@@ -175,105 +212,100 @@ targeted_decisions = {
 		ai_target_filter = realm
 		ai_check_interval = 5
 
+		only_rulers = yes
+
 		from_potential = {
-			OR = {
-				is_ruler = yes
-				is_patrician = yes
-			}
 			has_regent = no
-			any_courtier = { has_job_title = job_spymaster }
+			job_spymaster = {always = yes }
 			NOT = { has_character_flag = attempted_blackmail }
 		}
+
 		potential = {
 			has_plot = yes
-			FROM = { any_known_plotter = { character = ROOT } }
+			plot_is_known_by = FROM
 			plot_target_char = { NOT = { character = FROM } }
-			NOT = {
+
+			NOR = {
 				has_plot = plot_seduce
-				is_liege_or_above = FROM
-				is_vassal_or_below = FROM
-				reverse_has_opinion_modifier = { who = FROM modifier = opinion_blackmailed }
-				reverse_has_opinion_modifier = { who = FROM modifier = opinion_failed_blackmail }
+				is_vassal_or_below_of = FROM
+				is_liege_or_above_of = FROM
+				reverse_has_opinion_modifier = { who = FROM name = opinion_blackmailed }
+				reverse_has_opinion_modifier = { who = FROM name = opinion_failed_blackmail }
 			}
 		}
+
 		allow = {
-			ROOT = { wealth = 100 }
+			ROOT = { wealth >= 100 }
+
 			plot_target_char = {
 				custom_tooltip = {
 					text = NOT_AWARE_PLOT
-					hidden_tooltip = {
-						ROOT = { NOT = { plot_is_known_by = PREV } }
-					}
+					ROOT = { NOT = { plot_is_known_by = PREV } }
 				}
 			}
 		}
+
 		effect = {
 			FROM = {
 				set_character_flag = attempted_blackmail
-				hidden_tooltip = { character_event = { id = 7259 } }
-				if = {
-					limit = {
-						NOT = { trait = honest }
-						NOT = { trait = deceitful }
-					}
-					random = {
-						chance = 50
-						add_trait = deceitful
-					}
-				}
-				if = {
-					limit = { trait = honest }
-					random = {
-						chance = 50
-						remove_trait = honest
-					}
-				}
+				character_event = { id = 7259 }
+
 				if = {
 					limit = { trait = just }
+
 					random = {
 						chance = 25
 						remove_trait = just
 					}
 				}
+
+				random = {
+					chance = 50
+
+					add_trait_deceitful_effect = yes
+					remove_trait_honest_effect = yes
+				}
 			}
 		}
+
 		ai_will_do = {
-			factor = 1
-			modifier = {
-				factor = 0.5
-				always = yes
-			}
-			modifier = {
-				factor = 0
+			factor = 0.5
+
+			trigger = {
 				FROM = {
-					NOT = {
+					OR = {
 						trait = deceitful
 						trait = greedy
 						trait = envious
 					}
-				}
-			}
-			modifier = {
-				factor = 0
-				FROM = {
-					OR = {
+
+					NOR = {
 						trait = just
 						trait = diligent
-						opinion = { who = ROOT value = 0 }
+						any_plot_backer = { character = FROM }
+					}
+
+					opinion = {
+						who = ROOT
+						value < 0
 					}
 				}
-			}
-			modifier = {
-				factor = 0
-				any_plot_backer = { character = FROM }
-			}
-			modifier = {
-				factor = 0
+
 				plot_target_char = {
-					OR = {
-						FROM = { likes_better_than = { who = ROOT than = PREV } }
-						NOT = { reverse_opinion = { who = FROM value = 0 } }
-						has_opinion_modifier = { who = FROM modifier = opinion_recent_plot }
+					reverse_opinion = {
+						who = FROM
+						value >= 0
+					}
+
+					NOR = {
+						FROM = {
+							likes_better_than = {
+								who = ROOT
+								than = PREV
+							}
+						}
+
+						has_opinion_modifier = { who = FROM name = opinion_recent_plot }
 						has_truce = FROM
 						has_non_aggression_pact_with = FROM
 						war_with = FROM
