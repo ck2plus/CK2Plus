@@ -1,0 +1,999 @@
+namespace = HL
+
+##########################
+# Nomad Pillaging Events #
+##########################
+
+character_event = { # Pillaging Repeating Event
+	id = HL.4800
+
+	is_triggered_only = yes # 'pillage_settlement'-decision
+	hide_window = yes
+
+	trigger = {
+		any_demesne_title = {
+			has_holding_modifier = recently_burnt_the_land
+			NOT = { has_holding_modifier = stop_burning_land }
+		}
+	}
+
+	immediate = {
+		repeat_event = {
+			id = HL.4800
+			months = 6
+		}
+
+		add_character_modifier = {
+			name = pillage_cooldown
+			months = 6
+			hidden = yes
+		}
+
+		any_realm_province = {
+			any_province_holding = {
+				limit = {
+					holder = ROOT
+					has_holding_modifier = recently_burnt_the_land
+					NOT = { has_holding_modifier = stop_burning_land }
+				}
+
+				add_holding_modifier = {
+					name = recently_burnt_the_land
+					months = 7
+				}
+			}
+
+			any_province_holding = {
+				limit = {
+					holder = ROOT
+					has_holding_modifier = recently_burnt_the_land
+					NOT = { has_holding_modifier = stop_burning_land }
+					has_siege = no
+				}
+
+				if = {
+					limit = { holding_type = tribal }
+
+					ROOT = {
+						wealth = 25
+						population = 150
+					}
+				}
+				else = {
+					ROOT = {
+						wealth = 50
+
+						random_list = {
+							33 = { military_techpoints = 5 }
+							33 = { economy_techpoints = 5 }
+							33 = { culture_techpoints = 5 }
+						}
+					}
+				}
+
+				destroy_random_building = THIS
+				destroy_random_building = THIS
+
+				location = {
+					add_province_modifier = {
+						name = rampaging_nomads
+						years = 10
+					}
+
+					add_province_modifier = {
+						name = burnt_the_land
+						years = 10
+					}
+				}
+
+				if = {
+					limit = { has_any_building = no }
+
+					location = {
+						save_event_target_as = target_location
+
+						province_event = {
+							id = HL.4810
+							days = 1
+						}
+
+						province_event = {
+							id = HL.4814 # Notify
+							days = 2
+							random = 2
+						}
+					}
+
+					destroy_settlement = THIS
+				}
+			}
+		}
+	}
+}
+
+province_event = { # Clear the 'Rampaging Nomads'-Modifier when province is empty, also prosperity mods
+	id = HL.4810
+
+	is_triggered_only = yes # HL.4800, 'pillage_settlement'-decision
+	hide_window = yes
+
+	immediate = {
+		if = {
+			limit = {
+				has_castle = no
+				has_temple = no
+				has_city = no
+				has_tribal = no
+			}
+
+			remove_province_modifier = rampaging_nomads
+			remove_province_modifier = prosperity_modifier_1
+			remove_province_modifier = prosperity_modifier_2
+			remove_province_modifier = prosperity_modifier_3
+			remove_province_modifier = depopulated_1
+			remove_province_modifier = depopulated_2
+			remove_province_modifier = depopulated_3
+		}
+	}
+}
+
+character_event = { # Clear the 'Rampaging Nomads'-Modifier when conquered by a non-nomad
+	id = HL.4811
+
+	is_triggered_only = yes # on_new_holder(_usurpation)
+	hide_window = yes
+
+	trigger = {
+		FROM = {
+			tier = COUNT
+
+			location = {
+				has_province_modifier = rampaging_nomads
+			}
+		}
+
+		is_nomadic = no
+	}
+
+	immediate = {
+		FROM = {
+			location = {
+				remove_province_modifier = rampaging_nomads
+			}
+		}
+	}
+}
+
+character_event = { # Clear nomadic pillage holding modifiers upon succession/conquest
+	id = HL.4812
+
+	is_triggered_only = yes # on_new_holder(_inheritance/usurpation)
+	hide_window = yes
+
+	trigger = {
+		FROM = {
+			tier = COUNT
+
+			location = {
+				any_province_holding = {
+					OR = {
+						has_holding_modifier = recently_burnt_the_land
+						has_holding_modifier = stop_burning_land
+					}
+				}
+			}
+		}
+	}
+
+	immediate = {
+		FROM = {
+			location = {
+				any_province_holding = {
+					remove_holding_modifier = recently_burnt_the_land
+					remove_holding_modifier = stop_burning_land
+				}
+			}
+		}
+	}
+}
+
+character_event = { # Nomads may pillage holdings on siege
+	id = HL.4813
+	desc = EVTDESC_HL_4813
+	picture = GFX_evt_mongols_pillage_oldgods
+	border = GFX_event_normal_frame_war
+	portrait = event_target:top_liege_target
+
+	is_triggered_only = yes # on_siege_over_winner
+
+	trigger = {
+		is_nomadic = yes
+
+		FROM = {
+			OR = {
+				holding_type = city
+				holding_type = temple
+				holding_type = castle
+				holding_type = tribal
+			}
+
+			num_of_buildings >= 4
+
+			location = {
+				NOT = {
+					has_province_modifier = recently_burnt_the_land_not_owner
+				}
+			}
+		}
+	}
+
+	immediate = {
+		FROM = {
+			holder_scope = {
+				save_event_target_as = holder_target
+
+				top_liege = {
+					save_event_target_as = top_liege_target
+				}
+			}
+
+			location = {
+				add_province_modifier = {
+					name = recently_burnt_the_land_not_owner
+					years = 10
+				}
+			}
+		}
+	}
+
+	option = {
+		name = EVTOPTA_HL_4813
+
+		show_portrait = event_target:holder_target
+		show_portrait = event_target:top_liege_target
+
+		ai_chance = { factor = 95 }
+
+		if = {
+			limit = {
+				FROM = { holding_type = tribal }
+			}
+
+			wealth = 5
+			population = 75
+		}
+		else = {
+			wealth = 10
+
+			custom_tooltip = {
+				text = gain_tech_custom_tooltip
+
+				random_list = {
+					33 = { military_techpoints = 5 }
+					33 = { economy_techpoints = 5 }
+					33 = { culture_techpoints = 5 }
+				}
+			}
+		}
+
+		FROM = {
+			show_scope_change = no
+
+			destroy_random_building = THIS
+			destroy_random_building = THIS
+
+			location = {
+				show_scope_change = no
+
+				if = {
+					limit = { has_wonder = yes }
+
+					ROOT = {
+						show_scope_change = no
+
+						wealth = 50
+					}
+
+					random = {
+						chance = 30
+
+						wonder = {
+							show_scope_change = no
+
+							set_wonder_damaged = yes
+						}
+					}
+				}
+			}
+
+			holder_scope = {
+				show_scope_change = no
+
+				opinion = {
+					name = opinion_furious
+					who = ROOT
+					years = 3
+				}
+
+				top_liege = {
+					show_scope_change = no
+
+					opinion = {
+						name = opinion_furious
+						who = ROOT
+						years = 3
+					}
+				}
+			}
+		}
+	}
+
+	option = {
+		name = EVTOPTB_HL_4813
+
+		ai_chance = { factor = 5 }
+
+		prestige = 50
+	}
+}
+
+province_event = { # Notification event that a holding is destroyed
+	id = HL.4814
+	picture = GFX_evt_mongols_pillage_oldgods
+	border = GFX_event_normal_frame_war
+
+	desc = {
+		text = EVTDESC_HL_4814
+		trigger = {
+			owner = { is_nomadic = yes }
+		}
+	}
+	desc = {
+		text = EVTDESC_HL_4814_NON_NOMAD
+		trigger = {
+			owner = { is_nomadic = no }
+		}
+	}
+
+	is_triggered_only = yes
+
+	trigger = {
+		event_target:target_location = {
+			trigger_if = {
+				limit = { has_province_flag = destroyed_by_nomads }
+
+				had_province_flag = {
+					flag = destroyed_by_nomads
+					years >= 1
+				}
+			}
+		}
+	}
+
+	immediate = {
+		event_target:target_location = {
+			set_province_flag = destroyed_by_nomads
+		}
+	}
+
+	option = {
+		name = EVTOPTA_HL_4814
+
+		trigger = {
+			owner = {
+				OR = {
+					trait = gardener
+					trait = diligent
+				}
+			}
+
+			event_target:target_location = {
+				has_castle = no
+				has_temple = no
+				has_city = no
+				has_tribal = no
+			}
+		}
+
+		owner = {
+			show_scope_change = no
+
+			if = {
+				limit = { is_nomadic = yes }
+
+				capital_holding = {
+					show_scope_change = no
+
+					add_holding_modifier = {
+						name = nomad_population_boom
+						years = 10
+						stacking = yes
+					}
+				}
+			}
+		}
+
+		ai_chance = { factor = 95 }
+	}
+
+	option = {
+		name = EVTOPTB_HL_4814
+
+		trigger = {
+			owner = {
+				OR = {
+					trait = impaler
+					trait = cruel
+				}
+			}
+
+			event_target:target_location = {
+				has_castle = no
+				has_temple = no
+				has_city = no
+				has_tribal = no
+			}
+		}
+
+		event_target:target_location = {
+			show_scope_change = no
+
+			add_province_modifier = {
+				name = throne_of_skulls
+				years = 10
+			}
+		}
+
+		ai_chance = { factor = 95 }
+	}
+
+	option = {
+		name = EVTOPTC_HL_4814
+
+		trigger = {
+			owner = {
+				OR = {
+					trait = zealous
+					trait = possessed
+				}
+			}
+
+			event_target:target_location = {
+				has_castle = no
+				has_temple = no
+				has_city = no
+				has_tribal = no
+			}
+		}
+
+		event_target:target_location = {
+			show_scope_change = no
+
+			add_province_modifier = {
+				name = nomadic_rites
+				years = 10
+			}
+		}
+
+		ai_chance = { factor = 95 }
+	}
+
+	option = {
+		name = EXCELLENT
+
+		ai_chance = { factor = 5 }
+
+		owner = {
+			show_scope_change = no
+
+			prestige = 5
+		}
+	}
+}
+
+######################################
+# Nomad Cultural Preservation Events #
+######################################
+
+character_event = {
+	id = HL.4994
+	desc = EVTDESC_HL_4994
+	picture = GFX_evt_horsemanship
+
+	is_triggered_only = yes
+
+	option = {
+		name = EXCELLENT
+
+		reverse_opinion = {
+			name = opinion_loyal_servant
+			who = event_target:new_nomad
+			years = 10
+		}
+	}
+}
+
+character_event = {
+	id = HL.4995
+
+	is_triggered_only = yes
+	hide_window = yes
+
+	trigger = {
+		any_realm_province = {
+			any_neighbor_province = {
+				holder_scope = {
+					top_liege = {
+						real_tier = EMPEROR
+						is_nomadic = yes
+						culture = ROOT
+						NOT = { character = ROOT }
+					}
+				}
+			}
+		}
+	}
+
+	immediate = {
+		any_realm_province = {
+			any_neighbor_province = {
+				holder_scope = {
+					top_liege = {
+						if = {
+							limit = {
+								real_tier = EMPEROR
+								is_nomadic = yes
+								culture = ROOT
+								NOT = { character = ROOT }
+							}
+
+							save_event_target_as = new_nomad_liege
+						}
+					}
+				}
+			}
+		}
+
+		set_defacto_liege = event_target:new_nomad_liege
+
+		event_target:new_nomad_liege = {
+			character_event = { id = HL.4994 }
+		}
+	}
+}
+
+character_event = {
+	id = HL.4996
+
+	is_triggered_only = yes # on_new_holder(_usurpation)
+	hide_window = yes
+
+	trigger = {
+		is_nomadic = yes
+
+		FROM = {
+			tier = COUNT
+
+			location = {
+				has_province_modifier = nomad_agitation
+			}
+		}
+	}
+
+	immediate = {
+		FROM = {
+			location = {
+				remove_province_modifier = nomad_agitation
+			}
+		}
+	}
+}
+
+character_event = {
+	id = HL.4997
+	title = NOMADSLEAVINGTITLE
+	desc = EVTDESC_HL_4997
+	picture = GFX_evt_horsemanship
+
+	is_triggered_only = yes
+
+	ai = no
+
+	option = {
+		name = CURSES
+	}
+}
+
+character_event = {
+	id = HL.4998
+
+	is_triggered_only = yes # on_death
+	hide_window = yes
+
+	only_independent = yes
+
+	trigger = {
+		higher_tier_than = BARON
+		is_nomadic = no
+
+		any_realm_province = {
+			has_province_modifier = nomad_agitation
+			has_castle = no
+			has_city = no
+			# has_temple = no
+			has_settlement_construction = no
+
+			trigger_if = {
+				limit = {
+					any_province_holding = {
+						holding_type = tribal
+						num_of_buildings >= 2
+					}
+				}
+
+				ROOT = {
+					is_tribal = no
+				}
+			}
+
+			ROOT = {
+				NOT = { is_capital = PREV }
+			}
+		}
+
+		# Can't lose the entire realm
+		any_realm_province = {
+			NOT = { has_province_modifier = nomad_agitation }
+		}
+	}
+
+	immediate = {
+		while = {
+			limit = {
+				any_realm_province = {
+					has_province_modifier = nomad_agitation
+					has_castle = no
+					has_city = no
+					# has_temple = no
+					has_settlement_construction = no
+
+					trigger_if = {
+						limit = {
+							any_province_holding = {
+								holding_type = tribal
+								num_of_buildings >= 2
+							}
+						}
+
+						ROOT = {
+							is_tribal = no
+						}
+					}
+
+					ROOT = {
+						NOT = { is_capital = PREV }
+					}
+				}
+			}
+
+			random_realm_province = {
+				limit = {
+					has_province_modifier = nomad_agitation
+					has_castle = no
+					has_city = no
+					# has_temple = no
+					has_settlement_construction = no
+
+					trigger_if = {
+						limit = {
+							any_province_holding = {
+								holding_type = tribal
+								num_of_buildings >= 2
+							}
+						}
+
+						ROOT = {
+							is_tribal = no
+						}
+					}
+
+					ROOT = {
+						NOT = { is_capital = PREV }
+					}
+				}
+
+				remove_province_modifier = nomad_agitation
+				save_event_target_as = new_nomad_province
+
+				county = {
+					create_random_soldier = {
+						random_traits = yes
+						dynasty = random
+						religion = PREV
+						culture = PREV
+						female = no
+						age = 25
+					}
+
+					new_character = {
+						prestige = 800
+						wealth = 250
+						piety = 200
+
+						grant_title = {
+							target = PREV
+							type = revolt
+						}
+
+						set_defacto_liege = THIS
+						set_government_type = nomadic_government
+						save_event_target_as = new_nomad
+					}
+
+					create_random_soldier = {
+						random_traits = yes
+						dynasty = none
+						religion = PREV
+						culture = PREV
+						female = yes
+						age = 23
+					}
+
+					# Create a family
+					new_character = {
+						add_spouse = event_target:new_nomad
+						save_event_target_as = new_nomad_wife
+					}
+
+					create_character = {
+						age = 6
+						religion = PREV
+						culture = PREV
+						female = no
+					}
+
+					new_character = {
+						dynasty = event_target:new_nomad
+						set_father = event_target:new_nomad
+						set_mother = event_target:new_nomad_wife
+					}
+
+					create_character = {
+						age = 5
+						religion = PREV
+						culture = PREV
+						female = no
+					}
+
+					new_character = {
+						dynasty = event_target:new_nomad
+						set_father = event_target:new_nomad
+						set_mother = event_target:new_nomad_wife
+					}
+
+					create_character = {
+						age = 4
+						religion = PREV
+						culture = PREV
+						female = yes
+					}
+
+					new_character = {
+						dynasty = event_target:new_nomad
+						set_father = event_target:new_nomad
+						set_mother = event_target:new_nomad_wife
+					}
+
+					event_target:new_nomad = {
+						population = 1000
+						manpower = 250
+
+						spawn_unit = {
+							province = PREV
+
+							troops = {
+								horse_archers = { 225 225 }
+								light_cavalry = { 450 450 }
+								knights = { 75 75 }
+							}
+						}
+					}
+				}
+
+				any_province_holding = {
+					limit = { holding_type = tribal }
+					destroy_settlement = THIS
+				}
+			}
+
+			character_event = { id = HL.4997 } # Notify
+
+			# Also usurp all same culture provinces with nomad agitation in the realm
+			any_realm_province = {
+				limit = {
+					culture = event_target:new_nomad
+					has_province_modifier = nomad_agitation
+					has_castle = no
+					has_city = no
+					# has_temple = no
+					has_settlement_construction = no
+
+					trigger_if = {
+						limit = {
+							any_province_holding = {
+								holding_type = tribal
+								num_of_buildings >= 2
+							}
+						}
+
+						ROOT = {
+							is_tribal = no
+						}
+					}
+
+					ROOT = {
+						NOT = { is_capital = PREV }
+					}
+				}
+
+				remove_province_modifier = nomad_agitation
+
+				county = {
+					grant_title = {
+						target = event_target:new_nomad
+						type = revolt
+					}
+
+					event_target:new_nomad = {
+						population = 375
+						manpower = 100
+
+						spawn_unit = {
+							province = PREV
+
+							troops = {
+								horse_archers = { 75 75 }
+								light_cavalry = { 150 150 }
+								knights = { 25 25 }
+							}
+						}
+					}
+				}
+
+				any_province_holding = {
+					limit = { holding_type = tribal }
+					destroy_settlement = THIS
+				}
+			}
+
+			event_target:new_nomad = {
+				character_event = { id = HL.4995 } # Try to find neighbouring nomadic realm
+			}
+		}
+	}
+}
+
+character_event = {
+	id = HL.4999
+
+	is_triggered_only = yes # on_new_holder(_usurpation)
+	hide_window = yes
+
+	trigger = {
+		is_nomadic = no
+
+		# NAND = {
+		#	FROMFROM = {
+		#		culture = ROOT
+		#		is_nomadic = yes
+		#	}
+		#
+		#	ROOT = { is_nomadic = yes }
+		# }
+
+		FROM = {
+			tier = COUNT
+
+			location = {
+				has_castle = no
+				has_city = no
+				# has_temple = no
+				has_tribal = no
+				has_settlement_construction = no
+				NOT = { has_province_modifier = incredibly_poor }
+			}
+		}
+	}
+
+	immediate = {
+		if = {
+			limit = {
+				OR = {
+					AND = {
+						is_ruler = yes
+						is_landed = no
+						NOT = { is_offmap_governor = yes } # offmap governors do not become nomads
+					}
+
+					has_character_modifier = raiding_adventurer_nomad_timer
+				}
+
+				FROMFROM = {
+					is_nomadic = yes
+				}
+			}
+
+			# Raiding Adventurers of the same culture become Clan Chiefs
+			if = {
+				limit = { culture = FROMFROM }
+
+				set_government_type = nomadic_government
+
+				add_character_modifier = {
+					name = raiding_adventurer_nomad_timer
+					days = 10
+					hidden = yes
+				}
+
+				FROM = {
+					location = {
+						any_province_holding = {
+							limit = { holding_type = tribal }
+							destroy_settlement = THIS
+						}
+					}
+				}
+			}
+			# Raiding Adventurers of the wrong culture become Tribal Vassals
+			else = {
+				FROM = {
+					location = {
+						build_holding = {
+							type = tribal
+							holder = ROOT
+						}
+
+						if = {
+							limit = {
+								ROOT = { culture_group = altaic }
+							}
+
+							religion = ROOT
+							culture = ROOT
+						}
+						else = {
+							religion = FROMFROM
+							culture = FROMFROM
+						}
+					}
+				}
+
+				set_government_type = tribal_government
+
+				add_character_modifier = {
+					name = raiding_adventurer_tribal_timer
+					days = 10
+					hidden = yes
+				}
+			}
+		}
+		else = {
+			FROM = {
+				location = {
+					build_holding = {
+						type = tribal
+						holder = ROOT
+					}
+
+					religion = FROMFROM
+					culture = FROMFROM
+
+					add_province_modifier = {
+						name = nomad_agitation
+						years = 100
+					}
+				}
+			}
+		}
+	}
+}
