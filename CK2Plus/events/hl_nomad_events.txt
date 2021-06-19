@@ -4,109 +4,164 @@ namespace = HL
 # Nomad Pillaging Events #
 ##########################
 
-character_event = { # Pillaging Repeating Event
+character_event = { # Pillaging Repeating Event - heavily revised in Plus
 	id = HL.4800
 
 	is_triggered_only = yes # 'pillage_settlement'-decision
 	hide_window = yes
 
 	trigger = {
-		any_demesne_title = {
-			has_holding_modifier = recently_burnt_the_land
-			NOT = { has_holding_modifier = stop_burning_land }
+		event_target:pillaged_settlement = {
+			OR = {
+				holder = ROOT
+				controlled_by = ROOT
+			}
+
+			has_any_building = yes
+			has_title_flag = nomad_pillage_flag
 		}
 	}
 
 	immediate = {
-		repeat_event = {
-			id = HL.4800
-			months = 6
-		}
+		log = "[Root.GetTitledName] has pillaged [pillaged_settlement.GetName]"
 
-		add_character_modifier = {
-			name = pillage_cooldown
-			months = 6
-			hidden = yes
-		}
-
-		any_realm_province = {
-			any_province_holding = {
-				limit = {
-					holder = ROOT
-					has_holding_modifier = recently_burnt_the_land
-					NOT = { has_holding_modifier = stop_burning_land }
-				}
-
-				add_holding_modifier = {
-					name = recently_burnt_the_land
-					months = 7
-				}
-			}
-
-			any_province_holding = {
-				limit = {
-					holder = ROOT
-					has_holding_modifier = recently_burnt_the_land
-					NOT = { has_holding_modifier = stop_burning_land }
-					has_siege = no
-				}
-
-				if = {
-					limit = { holding_type = tribal }
-
-					ROOT = {
-						wealth = 25
-						population = 150
-					}
-				}
-				else = {
-					ROOT = {
-						wealth = 50
-
-						random_list = {
-							33 = { military_techpoints = 5 }
-							33 = { economy_techpoints = 5 }
-							33 = { culture_techpoints = 5 }
-						}
-					}
-				}
-
-				destroy_random_building = THIS
-				destroy_random_building = THIS
+		event_target:pillaged_settlement = {
+			if = {
+				limit = { holding_type = tribal }
 
 				location = {
-					add_province_modifier = {
-						name = rampaging_nomads
-						years = 10
+					if = {
+						limit = { owned_by = ROOT }
+						ROOT = { wealth = 25 }
 					}
-
-					add_province_modifier = {
-						name = burnt_the_land
-						years = 10
+					else = {
+						ROOT = { wealth = 5 }
 					}
-				}
-
-				if = {
-					limit = { has_any_building = no }
-
-					location = {
-						save_event_target_as = target_location
-
-						province_event = {
-							id = HL.4810
-							days = 1
-						}
-
-						province_event = {
-							id = HL.4814 # Notify
-							days = 2
-							random = 2
-						}
-					}
-
-					destroy_settlement = THIS
 				}
 			}
+			else = {
+				location = {
+					if = {
+						limit = { owned_by = ROOT }
+						ROOT = { wealth = 50 }
+					}
+					else = {
+						ROOT = { wealth = 10 }
+					}
+				}
+
+				ROOT = {
+					random_list = {
+						10 = { military_techpoints = 5 }
+						10 = { economy_techpoints = 5 }
+						10 = { culture_techpoints = 5 }
+					}
+				}
+			}
+
+			# Apply burnt_the_land modifiers
+			location = {
+				if = {
+					limit = {
+						OR = {
+							has_castle = yes
+							has_city = yes
+							has_temple = yes
+							has_tribal = yes
+						}
+					}
+
+					if = {
+						limit = { owned_by = ROOT }
+
+						add_province_modifier = {
+							name = burnt_the_land
+							years = 8
+							stacking = yes
+						}
+
+						add_province_modifier = {
+							name = recently_burnt_the_land
+							months = 6
+						}
+					}
+					else = {
+						add_province_modifier = {
+							name = recently_burnt_the_land_not_owner
+							years = 10
+						}
+					}
+				}
+			}
+
+			destroy_random_building = THIS
+
+			if = {
+				limit = { holder = ROOT }
+				destroy_random_building = THIS
+			}
+			else = {
+				destroy_random_building = THIS
+
+				holder_scope = {
+					opinion = {
+						name = opinion_outraged
+						who = ROOT
+					}
+				}
+			}
+
+			location = { save_event_target_as = nickname_location }
+
+			ROOT = {
+				if = { # Giveout nickname
+					limit = {
+						has_nickname = no
+						is_adult = yes
+						is_incapable = no
+					}
+
+					random_list = {
+						5 = { give_nickname = nick_the_destroyer }
+						5 = { give_nickname = nick_the_terror_of_provincename }
+
+						5 = {
+							give_nickname = nick_the_scourge_of_god
+							trigger = { NOT = { religion = event_target:nickname_location } }
+						}
+
+						5 = {
+							give_nickname = nick_the_slayer_of_culture
+							trigger = { NOT = { culture = event_target:nickname_location } }
+						}
+
+						5 = {
+							give_nickname = nick_the_culture_marauder
+							trigger = { NOT = { culture = event_target:nickname_location } }
+						}
+
+						99 = {}
+					}
+				}
+			}
+
+			clear_event_target = nickname_location
+			clear_event_target = nickname_receiver
+		}
+
+		if = {
+			limit = {
+				event_target:pillaged_settlement = { has_any_building = yes }
+			}
+
+			repeat_event = {
+				id = HL.4800
+				months = 6
+			}
+		}
+		else = {
+			event_target:pillaged_settlement = { clr_title_flag = nomad_pillage_flag }
+			clear_event_target = pillaged_settlement
 		}
 	}
 }
@@ -220,9 +275,7 @@ character_event = { # Nomads may pillage holdings on siege
 			num_of_buildings >= 4
 
 			location = {
-				NOT = {
-					has_province_modifier = recently_burnt_the_land_not_owner
-				}
+				NOT = { has_province_modifier = recently_burnt_the_land_not_owner }
 			}
 		}
 	}
@@ -488,6 +541,10 @@ province_event = { # Notification event that a holding is destroyed
 
 			prestige = 5
 		}
+	}
+
+	after = {
+		province_event = { id = HL.4810 } # Clear modifiers if all non-nomad holdings are gone
 	}
 }
 
