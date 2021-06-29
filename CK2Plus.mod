@@ -1,5 +1,7 @@
 name = "CK2Plus"
 path = "mod/CK2Plus"
+picture = "ck2plus.jpg"
+
 dependencies = {"CleanSlate"}
 replace_path = "history/provinces"
 replace_path = "history/titles"
