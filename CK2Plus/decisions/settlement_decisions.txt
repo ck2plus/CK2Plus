@@ -318,11 +318,11 @@ settlement_decisions = {
 
 	pillage_settlement = {
 		is_high_prio = yes
-		filter = realm_owned
-		ai_target_filter = realm_owned
+		filter = all
+		ai_target_filter = owned
 		ai_check_interval = 3
 
-		ai = no
+		only_playable = yes
 
 		from_potential = {
 			has_dlc = "Horse Lords"
@@ -334,14 +334,12 @@ settlement_decisions = {
 		}
 
 		potential = {
-			holder = FROM
-			has_any_building = yes
-
-			NOR = {
-				holding_type = nomad
-				has_title_flag = nomad_pillage_flag
-				is_allowed_holding_type = FROM
+			OR = {
+				holder = FROM
+				controlled_by = FROM # Not available to AI, due to filters
 			}
+
+			has_any_building = yes
 
 			trigger_if = {
 				limit = { holding_type = tribal }
@@ -356,34 +354,28 @@ settlement_decisions = {
 				}
 			}
 
+			NOR = {
+				holding_type = nomad
+				has_title_flag = nomad_pillage_flag
+				is_allowed_holding_type = FROM
+			}
 		}
 
 		allow = {
-			location = {
-				NOT = { has_province_modifier = recently_burnt_the_land }
-				owner = { character = FROM }
-			}
+			OR = {
+				FROM = { independent = yes }
 
-			FROM = {
-				OR = {
-					independent = yes
+				location = {
+					owner = { character = FROM }
+					NOT = { has_province_modifier = recently_burnt_the_land }
+				}
+
+				custom_tooltip = {
+					text = TT_NOT_SAME_REALM
 
 					location = {
-						owned_by = PREV
-						NOT = { has_province_modifier = recently_burnt_the_land }
-					}
-
-					custom_tooltip = {
-						text = TT_NOT_SAME_REALM
-
-						top_liege = {
-							PREVPREV = {
-								holder_scope = {
-									top_liege = {
-										NOT = { character = PREVPREVPREV }
-									}
-								}
-							}
+						owner = {
+							NOT = { same_realm = FROM }
 						}
 					}
 				}
@@ -401,42 +393,25 @@ settlement_decisions = {
 				location = {
 					show_scope_change = no
 
-					owner = {
-						show_scope_change = no
-
-						FROM = {
-							show_scope_change = no
-
-							if = {
-								limit = { character = PREV }
-								wealth = 25
-							}
-							else = {
-								wealth = 5
-							}
-						}
+					if = {
+						limit = { owned_by = FROM }
+						FROM = { show_scope_change = no wealth = 25 }
+					}
+					else = {
+						FROM = { show_scope_change = no wealth = 5 }
 					}
 				}
 			}
-
 			else = {
 				location = {
 					show_scope_change = no
 
-					owner = {
-						show_scope_change = no
-
-						FROM = {
-							show_scope_change = no
-
-							if = {
-								limit = { character = PREV }
-								wealth = 50
-							}
-							else = {
-								wealth = 10
-							}
-						}
+					if = {
+						limit = { owned_by = FROM }
+						FROM = { show_scope_change = no wealth = 50 }
+					}
+					else = {
+						FROM = { show_scope_change = no wealth = 10 }
 					}
 				}
 
@@ -456,10 +431,14 @@ settlement_decisions = {
 
 				if = {
 					limit = {
-						any_province_holding = {
-							NOT = { holding_type = nomad }
+						OR = {
+							has_castle = yes
+							has_city = yes
+							has_temple = yes
+							has_tribal = yes
 						}
 					}
+
 					if = {
 						limit = { owned_by = FROM }
 
@@ -486,15 +465,14 @@ settlement_decisions = {
 			custom_tooltip = {
 				text = PILLAGE_DESTROY_BUILDINGS
 
+				destroy_random_building = THIS
+
 				if = {
 					limit = { holder = FROM }
 					destroy_random_building = THIS
-					destroy_random_building = THIS
 				}
 				else = {
-					destroy_random_building = THIS
-
-					owner = {
+					holder_scope = {
 						opinion = {
 							who = FROM
 							name = opinion_outraged
@@ -553,8 +531,8 @@ settlement_decisions = {
 
 			FROM = {
 				character_event = {
-					id = Plus.2681
-					days = 180
+					id = HL.4800
+					months = 6
 				}
 			}
 		}
@@ -567,7 +545,7 @@ settlement_decisions = {
 	stop_pillage_settlement = {
 		is_high_prio = yes
 
-		filter = realm_owned
+		filter = all
 
 		ai = no
 
@@ -581,7 +559,11 @@ settlement_decisions = {
 		}
 
 		potential = {
-			holder = FROM # filter doesn't seem to be enough
+			OR = {
+				holder = FROM
+				controlled_by = FROM
+			}
+
 			has_title_flag = nomad_pillage_flag
 
 			trigger_if = {
@@ -622,13 +604,6 @@ settlement_decisions = {
 			trigger_if = {
 				limit = { ai = no }
 				has_safe_religion = yes
-			}
-
-			# TODO: Improve/rework, clarify intent
-			NOT = {
-				any_vassal = {
-					any_demesne_title = { temporary = yes }
-				}
 			}
 		}
 
@@ -697,17 +672,9 @@ settlement_decisions = {
 			# Change name of Avaria to Hungary if relevant.
 			if = {
 				limit = {
-					FROM = {
-						culture = hungarian
-					}
-
-					location = {
-						kingdom = { title = k_carpathia }
-					}
-
-					k_hungary = {
-						has_holder = no
-					}
+					FROM = { culture = hungarian }
+					kingdom = { title = k_carpathia }
+					k_hungary = { has_holder = no }
 				}
 
 				hidden_effect = {
@@ -732,6 +699,8 @@ settlement_decisions = {
 				}
 
 				k_hungary = {
+					show_scope_change = no
+
 					reset_coa = THIS
 					grant_title = FROM
 				}
@@ -771,30 +740,29 @@ settlement_decisions = {
 			# Usurp capital duchy
 			if = {
 				limit = {
-					location = {
-						duchy = {
-							has_holder = yes
-
-							holder_scope = { same_realm = FROM }
-						}
+					duchy = {
+						has_holder = yes
+						holder_scope = { same_realm = FROM }
 					}
 				}
 
-				location = {
+				duchy = {
 					show_scope_change = no
 
-					duchy = {
-						show_scope_change = no
-
-						usurp_title = FROM
-					}
+					usurp_title = FROM
 				}
 			}
 
 			# Usurp county
-			if = {
-				limit = { NOT = { holder = FROM } }
-				usurp_title = FROM
+			county = {
+				show_scope_change = no
+
+				save_event_target_as = base_title
+
+				if = {
+					limit = { NOT = { holder = FROM } }
+					usurp_title = FROM
+				}
 			}
 
 			if = {
@@ -813,24 +781,6 @@ settlement_decisions = {
 			FROM = {
 				show_scope_change = no
 
-				primary_title = {
-					show_scope_change = no
-
-					FROM = {
-						show_scope_change = no
-
-						custom_tooltip = { text = TT_KHAN_INDEPENDENCE }
-
-						most_prestigious_clan_vassal = {
-							show_scope_change = no
-
-							custom_tooltip = { text = TT_NEW_KHAN }
-						}
-					}
-
-					save_event_target_as = title_name_target
-				}
-
 				if = {
 					limit = { ai = no }
 
@@ -840,9 +790,11 @@ settlement_decisions = {
 					}
 				}
 
-				any_vassal = {
-					limit = { government = nomadic_government }
-					set_government_type = tribal_government
+				hidden_effect = {
+					any_vassal = {
+						limit = { government = nomadic_government }
+						set_government_type = tribal_government
+					}
 				}
 
 				set_government_type = tribal_government
@@ -858,7 +810,7 @@ settlement_decisions = {
 						culture = FROM
 						holder = FROM
 						name = TRIBAL_CUSTOM
-						base_title = event_target:title_name_target
+						base_title = event_target:base_title
 						copy_title_laws = yes
 					}
 				}
@@ -867,6 +819,8 @@ settlement_decisions = {
 					limit = { higher_real_tier_than = COUNT }
 
 					primary_title = {
+						show_scope_change = no
+
 						add_law = tribal_organization_0
 					}
 				}
@@ -876,8 +830,6 @@ settlement_decisions = {
 					narrative_event = { id = HL.2 }
 				}
 			}
-
-			clear_event_target = title_name_target
 		}
 
 		ai_will_do = {
@@ -900,10 +852,8 @@ settlement_decisions = {
 						}
 					}
 
-					location = {
-						kingdom = {
-							title = k_carpathia
-						}
+					kingdom = {
+						title = k_carpathia
 					}
 
 					k_hungary = {
@@ -917,7 +867,7 @@ settlement_decisions = {
 				factor = 0.5
 				NOT = { title = b_pest }
 				FROM = { culture = hungarian }
-				location = { kingdom = { title = k_carpathia } }
+				kingdom = { title = k_carpathia }
 				k_hungary = { has_holder = no }
 			}
 		}
@@ -1239,24 +1189,15 @@ settlement_decisions = {
 			}
 
 			FROM = {
-				capital = PREV
+				show_scope_change = no
 
-				primary_title = {
+				capital = PREV
+				custom_tooltip = { text = TT_KHAN_INDEPENDENCE }
+
+				most_prestigious_clan_vassal = {
 					show_scope_change = no
 
-					ROOT_FROM = {
-						show_scope_change = no
-
-						custom_tooltip = {
-							text = TT_KHAN_INDEPENDENCE
-						}
-
-						most_prestigious_clan_vassal = {
-							custom_tooltip = {
-								text = TT_NEW_KHAN
-							}
-						}
-					}
+					custom_tooltip = { text = TT_NEW_KHAN }
 				}
 
 				if = {
@@ -1435,7 +1376,7 @@ settlement_decisions = {
 				is_capital = yes
 
 				capital_scope = {
-					owned_by	 = FROM
+					owned_by = FROM
 				}
 			}
 
@@ -1622,24 +1563,12 @@ settlement_decisions = {
 				show_scope_change = no
 
 				capital = PREV
+				custom_tooltip = { text = TT_KHAN_INDEPENDENCE }
 
-				primary_title = {
+				most_prestigious_clan_vassal = {
 					show_scope_change = no
 
-					FROM = {
-						show_scope_change = no
-
-						custom_tooltip = {
-							text = TT_KHAN_INDEPENDENCE
-						}
-
-						most_prestigious_clan_vassal = {
-							show_scope_change = no
-							custom_tooltip = {
-								text = TT_NEW_KHAN
-							}
-						}
-					}
+					custom_tooltip = { text = TT_NEW_KHAN }
 				}
 			}
 
