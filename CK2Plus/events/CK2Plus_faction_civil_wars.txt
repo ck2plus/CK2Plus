@@ -1296,19 +1296,11 @@ character_event = {
 
 	immediate = {
 		set_character_flag = preparing_claimant_faction_war
+		set_character_flag = civil_war_faction_leader
 
-		# Allow the faction leader to now take the 'Make Ultimatum to Liege' decision
-		# and set the timer so the AI doesn't use the decision for 30 days (unless everyone has joined)
-		custom_tooltip = {
-			text = MAY_TAKE_ULTIMATUM_DECISION
-
-			set_character_flag = civil_war_faction_leader
-
-			add_character_modifier = {
-				name = declare_civil_war_timer
-				months = 1
-				hidden = yes
-			}
+		character_event = {
+			id = PlusFaction.417 # Follow-up event to present ultimatum
+			days = 7
 		}
 
 		# Invite all other vassals to join the coming civil war
@@ -1317,7 +1309,11 @@ character_event = {
 
 			liege = {
 				any_vassal = {
-					limit = { NOT = { in_faction = faction_pretender } }
+					limit = {
+						is_playable = yes
+						NOT = { in_faction = faction_pretender }
+					}
+
 					letter_event = { id = PlusFaction.422 }
 				}
 			}
@@ -1527,6 +1523,27 @@ letter_event = {
 		pf_war_trait_trigger = no
 	}
 
+	immediate = {
+		# AI uses flag below to wait for players to join up
+		if = {
+			limit = {
+				ai = no prisoner = no
+				is_incapable = no
+				is_adult = yes
+
+				NOR = {
+					has_truce = liege
+					has_non_aggression_pact_with = liege
+					has_opinion_modifier = { who = liege name = opinion_coerced_into_leaving_faction }
+					has_opinion_modifier = { who = liege name = opinion_subjugated }
+					has_opinion_modifier = { who = liege name = opinion_subjugated_other_rel }
+				}
+			}
+
+			set_character_flag = player_deciding_to_join_civil_war@FROM
+		}
+	}
+
 	option = {
 		name = EVTOPTA_PlusFaction_415 # Join the rebellion
 
@@ -1535,19 +1552,17 @@ letter_event = {
 			prisoner = no
 			is_incapable = no
 
-			liege = {
-				NOR = {
-					reverse_has_truce = ROOT
-					has_non_aggression_pact_with = ROOT
-					reverse_has_opinion_modifier = { who = ROOT name = opinion_coerced_into_leaving_faction }
-					reverse_has_opinion_modifier = { who = ROOT name = opinion_subjugated }
-					reverse_has_opinion_modifier = { who = ROOT name = opinion_subjugated_other_rel }
-				}
+			NOR = {
+				has_truce = liege
+				has_non_aggression_pact_with = liege
+				has_opinion_modifier = { who = liege name = opinion_coerced_into_leaving_faction }
+				has_opinion_modifier = { who = liege name = opinion_subjugated }
+				has_opinion_modifier = { who = liege name = opinion_subjugated_other_rel }
 			}
 		}
 
 		set_character_flag = will_join_civil_war
-		custom_tooltip = { text = MUST_MANUALLY_JOIN_FACTION }
+		pf_join_from_effect = yes
 
 		ai_chance = {
 			factor = 10
@@ -1771,6 +1786,411 @@ letter_event = {
 	}
 }
 
+# Pretender faction leader presents ultimatum to liege after gathering support from non-faction vassals
+character_event = {
+	id = PlusFaction.417
+	desc = EVTDESC_PlusFaction_417
+	border = GFX_event_character_frame_war
+
+	is_triggered_only = yes
+
+	has_character_flag = civil_war_faction_leader
+
+	trigger = {
+		leads_faction = faction_pretender
+		supported_claimant = { is_alive = yes }
+
+		NOR = {
+			war_with = liege
+			has_truce = liege
+		}
+
+		liege = {
+			in_revolt = no
+			pf_war_flag_trigger = no
+
+			trigger_if = {
+				limit = { independent = no }
+
+				will_liege_enforce_peace = no
+				has_liege_enforced_peace = no
+			}
+		}
+	}
+
+	option = { # Present ultimatum now (formerly 'faction_claimant_ultimatum'-decision)
+		name = EVTOPTA_PlusFaction_417
+
+		if = {
+			limit = {
+				multiplayer = yes
+
+				any_player = {
+					same_liege = ROOT
+					has_character_flag = player_deciding_to_join_civil_war@ROOT
+				}
+			}
+
+			custom_tooltip = { text = LET_PLAYERS_JOIN }
+
+			any_player = {
+				show_scope_change = no
+
+				limit = {
+					same_liege = ROOT
+					has_character_flag = player_deciding_to_join_civil_war@ROOT
+				}
+
+				custom_tooltip = { text = PLAYER_UNDECIDED }
+			}
+		}
+
+		clr_character_flag = preparing_claimant_faction_war
+		log = "[Root.GetTitledName] has issued a claimant faction ultimatum to [Root.Liege.GetTitledName]"
+		pf_punish_deceitful_player_effect = yes
+
+		liege = {
+			show_scope_change = no
+
+			letter_event = {
+				id = 8036
+				days = 7
+				tooltip = tt_faction_ultimatum
+			}
+		}
+
+		# Inform claimant
+		supported_claimant = {
+			if = {
+				limit = {
+					NOT = { character = ROOT }
+
+					NAND = {
+						same_liege = ROOT
+						in_faction = faction_pretender
+						supported_claimant = { character = PREV }
+					}
+				}
+
+				letter_event = {
+					id = 8037
+					days = 1
+				}
+			}
+		}
+
+		# AI will wait a while for players to join, but not too long
+		ai_chance = {
+			factor = 1
+
+			trigger = {
+				NOT = {
+					any_player = {
+						same_liege = ROOT
+						has_character_flag = player_deciding_to_join_civil_war@ROOT
+
+						had_character_flag = {
+							name = player_deciding_to_join_civil_war@ROOT
+							months < 1
+						}
+					}
+				}
+			}
+		}
+	}
+
+	option = { # Wait a bit longer
+		name = EVTOPTB_PlusFaction_417
+
+		repeat_event = {
+			id = PlusFaction.417
+			days = 7
+		}
+
+		# AI will wait a while for players to join, but not too long
+		trigger = {
+			multiplayer = yes
+			ai = yes
+
+			any_player = {
+				same_liege = ROOT
+				has_character_flag = player_deciding_to_join_civil_war@ROOT
+
+				had_character_flag = {
+					name = player_deciding_to_join_civil_war@ROOT
+					months < 1
+				}
+			}
+		}
+	}
+}
+
+# Non-pretender faction leader considers when to present ultimatum to liege after gathering support from non-faction vassals
+character_event = {
+	id = PlusFaction.418
+	desc = EVTDESC_PlusFaction_417
+	border = GFX_event_character_frame_war
+
+	is_triggered_only = yes
+
+	has_character_flag = civil_war_faction_leader
+
+	trigger = {
+		OR = {
+			pf_leader_trigger = yes
+			leads_faction = faction_succ_seniority
+			leads_faction = faction_succ_primogeniture
+			leads_faction = faction_succ_gavelkind
+			leads_faction = faction_succ_feudal_elective
+		}
+
+		pf_has_demands_trigger = yes
+
+		NOR = {
+			war_with = liege
+			has_truce = liege
+		}
+
+		liege = {
+			in_revolt = no
+			pf_war_flag_trigger = no
+
+			trigger_if = {
+				limit = { independent = no }
+
+				will_liege_enforce_peace = no
+				has_liege_enforced_peace = no
+			}
+		}
+	}
+
+	option = { # Present ultimatum now (formerly 'faction_claimant_ultimatum'-decision)
+		name = EVTOPTA_PlusFaction_417
+
+		if = {
+			limit = {
+				multiplayer = yes
+
+				any_player = {
+					same_liege = ROOT
+					has_character_flag = player_deciding_to_join_civil_war@ROOT
+				}
+			}
+
+			custom_tooltip = { text = LET_PLAYERS_JOIN }
+
+			any_player = {
+				show_scope_change = no
+
+				limit = {
+					same_liege = ROOT
+					has_character_flag = player_deciding_to_join_civil_war@ROOT
+				}
+
+				custom_tooltip = { text = PLAYER_UNDECIDED }
+			}
+		}
+
+		log = "[Root.GetTitledName] has issued a claimant faction ultimatum to [Root.Liege.GetTitledName]"
+		pf_punish_deceitful_player_effect = yes
+
+		custom_tooltip = {
+			text = SEND_REGULAR_ULTIMATUM
+
+			if = {
+				limit = {
+					OR = {
+						has_character_flag = demands_seniority
+						has_character_flag = demands_primogeniture
+						has_character_flag = demands_gavelkind
+						has_character_flag = demands_feudal_elective
+					}
+				}
+
+				log = "[Root.GetTitledName] has issued a succession faction ultimatum to [Root.Liege.GetTitledName]"
+
+				liege = {
+					show_scope_change = no
+					letter_event = { id = PlusFaction.470 }
+				}
+			}
+			else = {
+				log = "[Root.GetTitledName] has issued a regular faction ultimatum to [Root.Liege.GetTitledName]"
+
+				liege = {
+					show_scope_change = no
+					letter_event = { id = PlusFaction.400 }
+				}
+			}
+		}
+
+		# AI will wait a while for players to join, but not too long
+		ai_chance = {
+			factor = 1
+
+			trigger = {
+				NOT = {
+					any_player = {
+						same_liege = ROOT
+						has_character_flag = player_deciding_to_join_civil_war@ROOT
+
+						had_character_flag = {
+							name = player_deciding_to_join_civil_war@ROOT
+							months < 1
+						}
+					}
+				}
+			}
+		}
+	}
+
+	option = { # Wait a bit longer
+		name = EVTOPTB_PlusFaction_417
+
+		repeat_event = {
+			id = PlusFaction.418
+			days = 7
+		}
+
+		# AI will wait a while for players to join, but not too long
+		trigger = {
+			multiplayer = yes
+			ai = yes
+
+			any_player = {
+				same_liege = ROOT
+				has_character_flag = player_deciding_to_join_civil_war@ROOT
+
+				had_character_flag = {
+					name = player_deciding_to_join_civil_war@ROOT
+					months < 1
+				}
+			}
+		}
+	}
+}
+
+# Other faction leader considers when to present ultimatum to liege after gathering support from non-faction vassals
+character_event = {
+	id = PlusFaction.419
+	desc = EVTDESC_PlusFaction_417
+	border = GFX_event_character_frame_war
+
+	is_triggered_only = yes
+
+	has_character_flag = civil_war_faction_leader
+
+	trigger = {
+		has_character_flag = preparing_religious_faction_war
+
+		NOR = {
+			war_with = liege
+			has_truce = liege
+		}
+
+		liege = {
+			in_revolt = no
+
+			trigger_if = {
+				limit = { independent = no }
+
+				will_liege_enforce_peace = no
+				has_liege_enforced_peace = no
+			}
+		}
+	}
+
+	option = { # Present ultimatum now (formerly 'faction_claimant_ultimatum'-decision)
+		name = EVTOPTA_PlusFaction_417
+
+		if = {
+			limit = {
+				multiplayer = yes
+
+				any_player = {
+					same_liege = ROOT
+					has_character_flag = player_deciding_to_join_civil_war@ROOT
+				}
+			}
+
+			custom_tooltip = { text = LET_PLAYERS_JOIN }
+
+			any_player = {
+				show_scope_change = no
+
+				limit = {
+					same_liege = ROOT
+					has_character_flag = player_deciding_to_join_civil_war@ROOT
+				}
+
+				custom_tooltip = { text = PLAYER_UNDECIDED }
+			}
+		}
+
+		pf_punish_deceitful_player_effect = yes
+
+		if = {
+			limit = { has_character_flag = preparing_religious_faction_war }
+
+			clr_character_flag = preparing_religious_faction_war
+			log = "[Root.GetTitledName] has issued a religious faction ultimatum to [Root.Liege.GetTitledName]"
+
+			liege = {
+				show_scope_change = no
+
+				letter_event = {
+					id = Plus.250
+					tooltip = SEND_RELIGIOUS_ULTIMATUM
+				}
+			}
+		}
+
+		# AI will wait a while for players to join, but not too long
+		ai_chance = {
+			factor = 1
+
+			trigger = {
+				NOT = {
+					any_player = {
+						same_liege = ROOT
+						has_character_flag = player_deciding_to_join_civil_war@ROOT
+
+						had_character_flag = {
+							name = player_deciding_to_join_civil_war@ROOT
+							months < 1
+						}
+					}
+				}
+			}
+		}
+	}
+
+	option = { # Wait a bit longer
+		name = EVTOPTB_PlusFaction_417
+
+		repeat_event = {
+			id = PlusFaction.419
+			days = 7
+		}
+
+		# AI will wait a while for players to join, but not too long
+		trigger = {
+			multiplayer = yes
+			ai = yes
+
+			any_player = {
+				same_liege = ROOT
+				has_character_flag = player_deciding_to_join_civil_war@ROOT
+
+				had_character_flag = {
+					name = player_deciding_to_join_civil_war@ROOT
+					months < 1
+				}
+			}
+		}
+	}
+}
+
 # Vassal chooses sides at the outbreak of a pretender war
 letter_event = {
 	id = PlusFaction.422
@@ -1792,6 +2212,25 @@ letter_event = {
 				save_event_target_as = claimant
 			}
 		}
+
+		# AI uses flag below to wait for players to join up
+		if = {
+			limit = {
+				ai = no prisoner = no
+				is_incapable = no
+				is_adult = yes
+
+				NOR = {
+					has_truce = liege
+					has_non_aggression_pact_with = liege
+					has_opinion_modifier = { who = liege name = opinion_coerced_into_leaving_faction }
+					has_opinion_modifier = { who = liege name = opinion_subjugated }
+					has_opinion_modifier = { who = liege name = opinion_subjugated_other_rel }
+				}
+			}
+
+			set_character_flag = player_deciding_to_join_civil_war@FROM
+		}
 	}
 
 	option = {
@@ -1812,7 +2251,11 @@ letter_event = {
 		}
 
 		set_character_flag = will_join_civil_war
-		custom_tooltip = { text = MUST_MANUALLY_JOIN_FACTION }
+
+		join_faction = {
+			faction = faction_pretender
+			faction_leader = FROM
+		}
 
 		ai_chance = {
 			factor = 10
@@ -2013,6 +2456,8 @@ letter_event = {
 			who = FROM
 			years = 5
 		}
+
+		clr_character_flag = player_deciding_to_join_civil_war@FROM
 
 		ai_chance = {
 			factor = 100
@@ -2358,6 +2803,8 @@ character_event = {
 
 		# Tax penalty applied to the ruler's provinces
 		any_demesne_province = {
+			show_scope_change = no
+
 			hidden_effect = {
 				remove_province_modifier = tax_privileges
 				remove_province_modifier = tax_reduction
@@ -2387,6 +2834,8 @@ character_event = {
 
 		# Tax reward applied to any vassals who supported ruler
 		any_vassal = {
+			show_scope_change = no
+
 			limit = {
 				num_of_count_titles >= 1
 
@@ -2464,6 +2913,8 @@ character_event = {
 
 		# All supporters receive a prestige bonus
 		any_vassal = {
+			show_scope_change = no
+
 			limit = {
 				reverse_has_opinion_modifier = {
 					name = opinion_civil_war_supporter
@@ -3037,28 +3488,9 @@ letter_event = {
 
 	immediate = {
 		FROM = {
-			if = {
-				limit = { has_character_flag = demands_seniority }
-				faction_succ_seniority = { set_title_flag = succession_title }
+			supported_claimant_title = {
+				save_event_target_as = succession_title
 			}
-			if = {
-				limit = { has_character_flag = demands_primogeniture }
-				faction_succ_primogeniture = { set_title_flag = succession_title }
-			}
-			if = {
-				limit = { has_character_flag = demands_gavelkind }
-				faction_succ_gavelkind = { set_title_flag = succession_title }
-			}
-			if = {
-				limit = { has_character_flag = demands_feudal_elective }
-				faction_succ_feudal_elective = { set_title_flag = succession_title }
-			}
-		}
-
-		any_demesne_title = {
-			limit = { has_title_flag = succession_title }
-			clr_title_flag = succession_title
-			save_event_target_as = succession_title
 		}
 	}
 
