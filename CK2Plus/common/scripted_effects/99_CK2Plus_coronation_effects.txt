@@ -9,6 +9,7 @@ add_uncrowned_effect = {
 			is_offmap_trigger = no
 			NOT = { trait = uncrowned }
 		}
+
 		add_trait = uncrowned
 	}
 }
@@ -22,15 +23,18 @@ remove_crown_effect = {
 	remove_trait = weak_basileus
 	remove_trait = strong_basileus
 }
+
 remove_unworthy_crown_effect = {
 	if = {
 		limit = {
 			FROM = { title = e_hre }
+
 			FROMFROM = {
 				is_alive = yes
 				trait = crowned_by_pope
 			}
 		}
+
 		FROMFROM = {
 			remove_trait = crowned_by_pope
 			add_uncrowned_effect = yes
@@ -39,6 +43,7 @@ remove_unworthy_crown_effect = {
 	else_if = {
 		limit = {
 			FROM = { title = e_byzantium }
+
 			FROMFROM = {
 				is_alive = yes
 				OR = {
@@ -47,6 +52,7 @@ remove_unworthy_crown_effect = {
 				}
 			}
 		}
+
 		FROMFROM = {
 			remove_trait = strong_basileus
 			remove_trait = weak_basileus
@@ -61,73 +67,146 @@ remove_unworthy_crown_effect = {
 				lower_tier_than = KING
 			}
 		}
+
 		remove_crown_effect = yes
 	}
 }
 
 send_coronation_invitations_effect = {
-	any_character = {
-		limit = {
-			is_adult = yes
-			prisoner = no
-			is_within_diplo_range = ROOT
-			OR = {
-				is_vassal_or_below = ROOT
-				is_liege_or_above = ROOT
-				is_close_relative = ROOT
-				dynasty = ROOT
-				is_allied_with = ROOT
-				has_non_aggression_pact_with = ROOT
-				AND = {
-					same_realm = ROOT
-					higher_tier_than = BARON
-				}
-				AND = {
-					religion = ROOT
-					any_realm_province = {
-						ROOT = {
-							any_realm_province = {
-								NOT = { distance = { where = PREVPREV value = 125 } }
+	custom_tooltip = {
+		text = send_invitations
+
+		hidden_effect = {
+			any_character = {
+				limit = {
+					is_adult = yes
+					prisoner = no
+					is_incapable = no
+					is_within_diplo_range = ROOT
+
+					OR = {
+						is_vassal_or_below = ROOT
+						is_liege_or_above = ROOT
+						is_close_relative = ROOT
+						dynasty = ROOT
+						is_allied_with = ROOT
+						has_non_aggression_pact_with = ROOT
+
+						AND = {
+							same_realm = ROOT
+							higher_real_tier_than = BARON
+						}
+
+						AND = {
+							religion = ROOT
+
+							distance_from_realm = {
+								who = ROOT
+								value < 125
 							}
 						}
 					}
+
+					NOR = {
+						trait = excommunicated
+						has_truce = ROOT
+
+						has_opinion_modifier = {
+							name = opinion_performed_coronation
+							who = FROM
+						}
+
+						ROOT = {
+							rightful_religious_head = PREV # He's either performing it or not coming at all
+						}
+					}
 				}
-			}
-			NOR = {
-				character = ROOT
-				trait = incapable
-				trait = excommunicated
-				has_truce = ROOT
-				has_opinion_modifier = { who = FROM modifier = opinion_performed_coronation }
-				ROOT = { rightful_religious_head_scope = { character = PREVPREV } } #he's either performing it or not comming at all
+
+				letter_event = { id = Plus.1201 }
 			}
 		}
-		letter_event = { id = Plus.1201 }
 	}
 }
 
-#event_target:coronation_ruler is the coronation target
+# event_target:coronation_ruler is the coronation target
 will_perform_coronation_effect = {
-	reverse_opinion = { who = event_target:coronation_ruler modifier = opinion_performed_coronation months = 120 }
-	opinion = { who = event_target:coronation_ruler modifier = opinion_performed_coronation months = 120 }
-	if = {
-		limit = { NOT = { has_opinion_modifier = { who = event_target:coronation_ruler modifier = attending_coronation } } }
-		reverse_opinion = { who = event_target:coronation_ruler modifier = attending_coronation months = 12 }
-		opinion = { who = event_target:coronation_ruler modifier = attending_coronation months = 12 }
-		add_character_modifier = { name = do_not_disturb days = 200 hidden = yes }
-		end_inaccessibility_effect = yes
-	}
-	any_spouse = {
-		limit = {
-			is_ill = no
-			is_pregnant = no
-			is_ruler = no
-			war = no
-			is_inaccessible_trigger = no
-			NOT = { has_opinion_modifier = { who = event_target:coronation_ruler modifier = attending_coronation } }
+	hidden_effect = {
+		reverse_opinion = {
+			name = opinion_performed_coronation
+			who = event_target:coronation_ruler
+			years = 10
 		}
-		reverse_opinion = { who = event_target:coronation_ruler modifier = attending_coronation months = 12 }
-		opinion = { who = event_target:coronation_ruler modifier = attending_coronation months = 12 }
-		add_character_modifier = { name = do_not_disturb days = 200 hidden = yes }
+
+		opinion = {
+			name = opinion_performed_coronation
+			who = event_target:coronation_ruler
+			years = 10
+		}
+
+		if = {
+			limit = {
+				NOT = {
+					has_opinion_modifier = {
+						name = attending_coronation
+						who = event_target:coronation_ruler
+					}
+				}
+			}
+
+			reverse_opinion = {
+				name = attending_coronation
+				who = event_target:coronation_ruler
+				years = 1
+			}
+
+			opinion = {
+				name = attending_coronation
+				who = event_target:coronation_ruler
+				years = 1
+			}
+
+			add_character_modifier = {
+				name = do_not_disturb
+				days = 200
+				hidden = yes
+			}
+
+			end_inaccessibility_effect = yes
+		}
+
+		any_spouse = {
+			limit = {
+				is_ill = no
+				is_pregnant = no
+				is_ruler = no
+				war = no
+				is_inaccessible_trigger = no
+
+				NOT = {
+					has_opinion_modifier = {
+						name = attending_coronation
+						who = event_target:coronation_ruler
+					}
+				}
+			}
+
+			reverse_opinion = {
+				name = attending_coronation
+				who = event_target:coronation_ruler
+				years = 1
+			}
+
+			opinion = {
+				name = attending_coronation
+				who = event_target:coronation_ruler
+				years = 1
+			}
+
+			add_character_modifier = {
+				name = do_not_disturb
+				days = 200
+				hidden = yes
+			}
+		}
 	}
 }
