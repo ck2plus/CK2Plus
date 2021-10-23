@@ -3,7 +3,8 @@ namespace = trigger_schism
 
 # reserved Plus.2700 to Plus.2749
 
-character_event = { # Manually trigger the schism at any time
+# Manually trigger the schism at any time
+character_event = {
 	id = trigger_schism.1
 	desc = EVTDESC_Plus_2700
 	picture = GFX_evt_great_schism
@@ -14,9 +15,14 @@ character_event = { # Manually trigger the schism at any time
 	option = {
 		name = EVTOPTA_Plus_2700
 
-		hidden_tooltip = {
+		hidden_effect = {
 			set_global_flag = schism_manual_override # Required in order for the event to bypass normal checks
-			k_papacy = { holder_scope = { character_event = { id = PlusGreatSchism.004 } } } # Trigger the schism
+
+			event_target:pulse_province = {
+				owner = {
+					character_event = { id = PlusGreatSchism.004 } # Trigger the schism
+				}
+			}
 		}
 	}
 
@@ -25,15 +31,16 @@ character_event = { # Manually trigger the schism at any time
 	}
 }
 
-character_event = { # Setup player rules
+# Setup player rules
+character_event = {
 	id = Plus.2700
 
-	is_triggered_only = yes
+	is_triggered_only = yes # on_startup
 	hide_window = yes
 
 	trigger = {
+		owns = event_target:pulse_province
 		is_save_game = no
-		any_demesne_province = { has_flag = pulse_province }
 	}
 
 	immediate = {
@@ -45,6 +52,7 @@ character_event = { # Setup player rules
 					value = activate_immediately
 				}
 			}
+
 			set_global_flag = muslim_jihads_unlocked
 			set_global_flag = christian_crusades_unlocked
 			set_global_flag = pagan_ghws_unlocked
@@ -52,77 +60,26 @@ character_event = { # Setup player rules
 	}
 }
 
-character_event = { # This event deals with the setup of the scenario before conversion
+# This event deals with the setup of the scenario before conversion
+character_event = {
 	id = Plus.2702
 
-	is_triggered_only = yes
+	is_triggered_only = yes # currently untriggered
 	hide_window = yes
 
-	trigger = { NOT = { has_global_flag = ancient_religions_start } }
+	trigger = {
+		NOT = { has_global_flag = ancient_religions_start }
+	}
 
 	immediate = {
 		set_global_flag = ancient_religions_start
+
 		# First deal with the religious heads
-		d_sunni = {
-			destroy_landed_title = THIS
-		}
-		d_shiite = {
-			destroy_landed_title = THIS
-		}
-		if = {
-			limit = {
-				year = 1054
-				NOT = {
-					has_game_rule = {
-						name = ancient_religions
-						value = specific_provinces
-					}
-				}
-			}
-			k_papacy = { # Distribute the catholic pope's titles
-				owner = {
-					any_vassal = {
-						limit = {
-							higher_tier_than = baron
-						}
-						set_defacto_liege = THIS
-						save_event_target_as = holder_of_papal_lands
-					}
-					any_demesne_title = {
-						limit = {
-							OR = {
-								tier = count
-								tier = duke
-							}
-						}
-						event_target:holder_of_papal_lands = {
-							grant_title_no_opinion = PREV
-						}
-					}
-					any_demesne_title = {
-						limit = {
-							tier = baron
-						}
-						create_character = {
-							random_traits = yes
-							age = 21
-							female = no
-							culture = PREVPREV
-							religion = PREVPREV
-							dynasty = RANDOM
-						}
-						new_character = {
-							grant_title_no_opinion = PREV
-							set_defacto_liege = THIS
-						}
-					}
-				}
-			}
-		}
+		destroy_landed_title = d_sunni
+		destroy_landed_title = d_shiite
 
 		if = {
 			limit = {
-				NOT = { year = 1054 }
 				NOT = {
 					has_game_rule = {
 						name = ancient_religions
@@ -130,38 +87,39 @@ character_event = { # This event deals with the setup of the scenario before con
 					}
 				}
 			}
-			k_papacy = { # Distribute the chalcedon pope's titles
+
+			# Distribute the pope's titles
+			k_papacy = {
 				owner = {
 					any_vassal = {
-						limit = {
-							higher_tier_than = baron
-						}
+						limit = { higher_real_tier_than = BARON }
 						set_defacto_liege = THIS
 						save_event_target_as = holder_of_papal_lands
 					}
+
 					any_demesne_title = {
 						limit = {
 							OR = {
-								tier = count
-								tier = duke
+								real_tier = COUNT
+								real_tier = DUKE
 							}
 						}
-						event_target:holder_of_papal_lands = {
-							grant_title_no_opinion = PREV
-						}
+
+						grant_title_no_opinion = event_target:holder_of_papal_lands
 					}
+
 					any_demesne_title = {
-						limit = {
-							tier = baron
-						}
+						limit = { real_tier = BARON }
+
 						create_character = {
 							random_traits = yes
 							age = 21
 							female = no
 							culture = PREVPREV
 							religion = PREVPREV
-							dynasty = RANDOM
+							dynasty = random
 						}
+
 						new_character = {
 							grant_title_no_opinion = PREV
 							set_defacto_liege = THIS
@@ -176,6 +134,7 @@ character_event = { # This event deals with the setup of the scenario before con
 			limit = {
 				e_hre = {
 					has_holder = yes
+
 					OR = {
 						NOT = {
 							has_game_rule = {
@@ -183,6 +142,7 @@ character_event = { # This event deals with the setup of the scenario before con
 								value = specific_provinces
 							}
 						}
+
 						capital_scope = {
 							OR = {
 								region = custom_germany
@@ -192,68 +152,68 @@ character_event = { # This event deals with the setup of the scenario before con
 					}
 				}
 			}
-			e_hre = { owner = { save_event_target_as = hre_kaiser } }
 
-			event_target:hre_kaiser = { # Remove crowned by pope with the generic variant
-				if = {
-					limit = { trait = crowned_by_pope }
-					remove_trait = crowned_by_pope
-					add_trait = crowned # Lets keep ordinary trait here, papal coronation shouldn't matter to pagans.
+			e_hre = {
+				holder_scope = {
+					save_event_target_as = hre_kaiser
+
+					if = {
+						limit = { trait = crowned_by_pope }
+						remove_trait = crowned_by_pope
+						add_trait = crowned # Lets keep ordinary trait here, papal coronation shouldn't matter to pagans.
+					}
+
+					set_character_flag = centralize_without_penalties
 				}
 			}
-			event_target:hre_kaiser = {
-				set_character_flag = centralize_without_penalties
-			}
-			if = { # Activate e_germania if needed
-				limit = { NOT = { is_title_active = e_germania } }
-				activate_title = { title = e_germania status = yes }
-			}
 
-			e_germania = { # Copy the HRE's laws to Germany
-				hidden_tooltip = {
-					copy_title_laws = e_hre
+
+			e_germania = {
+				if = { # Activate e_germania if needed
+					limit = { NOT = { is_title_active = THIS } }
+
+					activate_title = {
+						title = THIS
+						status = yes
+					}
 				}
+
+				# Copy the HRE's laws to Germany
+				copy_title_laws = e_hre
 				gain_title = event_target:hre_kaiser
 				make_primary_title = yes
 			}
 
-			any_title = { # Replace e_hre claims with e_germania claims
-				limit = {
-					rebel = no
-					has_holder = yes
-					is_primary_holder_title = yes
-					holder_scope = { top_liege = { character = event_target:hre_kaiser } }
-				}
-				holder_scope = {
+			e_hre = {
+				# Replace e_hre claims with e_germania claims
+				any_claimant = {
 					if = {
-						limit = { has_weak_claim = e_hre }
-						add_weak_pressed_claim = e_germania
-						remove_claim = e_hre
-					}
-					if = {
-						limit = { has_strong_claim = e_hre }
+						limit = { has_strong_pressed_claim = e_hre }
 						add_pressed_claim = e_germania
 						remove_claim = e_hre
 					}
-					any_realm_character = {
-						if = {
-							limit = { has_weak_claim = e_hre }
-							add_weak_pressed_claim = e_germania
-							remove_claim = e_hre
-						}
-						if = {
-							limit = { has_strong_claim = e_hre }
-							add_pressed_claim = e_germania
-							remove_claim = e_hre
-						}
+					else_if = {
+						limit = { has_strong_claim = e_hre }
+						add_claim = e_germania
+						remove_claim = e_hre
+					}
+					else_if = {
+						limit = { has_weak_pressed_claim = e_hre }
+						add_weak_pressed_claim = e_germania
+						remove_claim = e_hre
+					}
+					else_if = {
+						limit = { has_weak_claim = e_hre }
+						add_weak_claim = e_germania
+						remove_claim = e_hre
 					}
 				}
-			}
 
-			e_hre = { # Migrate over the HRE's de Jure vassals
+				# Migrate over the HRE's de Jure vassals
 				any_direct_de_jure_vassal_title = {
 					de_jure_liege = e_germania
 				}
+
 				destroy_landed_title = yes
 			}
 
@@ -262,14 +222,10 @@ character_event = { # This event deals with the setup of the scenario before con
 			}
 		}
 
-		any_independent_ruler = { # Now that the world is set up, convert them all to ARs
+		any_independent_ruler = { # Now that the world is set up, convert them all to Ancient Relgions
 			any_realm_province = {
-				limit = {
-					any_province_holding = {
-						count = 1
-						tier = baron
-					}
-				}
+				limit = { num_of_settlements >= 1 }
+
 				if = {
 					limit = {
 						has_game_rule = {
@@ -277,8 +233,10 @@ character_event = { # This event deals with the setup of the scenario before con
 							value = regions
 						}
 					}
+
 					emf_nwo_generate_ancient_religion_provinces = yes
 				}
+
 				if = {
 					limit = {
 						OR = {
@@ -286,14 +244,17 @@ character_event = { # This event deals with the setup of the scenario before con
 								name = ancient_religions
 								value = cultures
 							}
+
 							has_game_rule = {
 								name = ancient_religions
 								value = cultures_characters
 							}
 						}
 					}
+
 					emf_nwo_generate_ancient_religion_provinces_culture = yes
 				}
+
 				if = {
 					limit = {
 						has_game_rule = {
@@ -301,6 +262,7 @@ character_event = { # This event deals with the setup of the scenario before con
 							value = specific_provinces
 						}
 					}
+
 					emf_nwo_generate_ancient_religion_provinces_specific = yes
 				}
 			}
@@ -312,28 +274,7 @@ character_event = { # This event deals with the setup of the scenario before con
 						has_province_flag = ar_setup
 					}
 				}
-				if = {
-					limit = {
-						NOT = {
-							has_game_rule = {
-								name = ancient_religions
-								value = cultures_characters
-							}
-						}
-					}
-					capital_scope = {
-						reverse_religion = PREV #change religion of independent ruler based on their capital
-					}
-					any_courtier = {
-						religion = PREV #match courtier religion to ruler religion
-					}
-					any_realm_lord = {
-						religion = PREV #match realm lord religion to ruler religion
-						any_courtier = {
-							religion = PREV #match courtier religion to realm lord religion
-						}
-					}
-				}
+
 				if = {
 					limit = {
 						has_game_rule = {
@@ -341,21 +282,41 @@ character_event = { # This event deals with the setup of the scenario before con
 							value = cultures_characters
 						}
 					}
+
 					capital_scope = {
 						emf_nwo_generate_ancient_religion_characters = yes #change religion of independent ruler based on their culture
 					}
+
 					any_courtier = {
 						emf_nwo_generate_ancient_religion_characters = yes #change courtier religion based on their culture
 					}
+
 					any_realm_lord = {
 						emf_nwo_generate_ancient_religion_characters = yes #change realm lord religion based on their culture
+
 						any_courtier = {
 							emf_nwo_generate_ancient_religion_characters = yes #change courtier religion based on their culture
 						}
 					}
 				}
+				else = {
+					religion = capital_scope # Change religion of independent ruler based on their capital
+
+					any_courtier = {
+						religion = PREV # Match courtier religion to ruler religion
+					}
+
+					any_realm_lord = {
+						religion = PREV # Match realm lord religion to ruler religion
+
+						any_courtier = {
+							religion = PREV # Match courtier religion to realm lord religion
+						}
+					}
+				}
 			}
 		}
+
 		if = {
 			limit = {
 				has_game_rule = {
@@ -363,34 +324,28 @@ character_event = { # This event deals with the setup of the scenario before con
 					value = cultures_characters
 				}
 			}
+
 			set_mercenaries_to_ar_culture_effect = yes # Set mercenaries to ancient religions based on their culture
 		}
-		if = {
-			limit = {
-				NOT = {
-					has_game_rule = {
-						name = ancient_religions
-						value = cultures_characters
-					}
-				}
-			}
+		else = {
 			set_mercenaries_to_ar_effect = yes # Set mercenaries to ancient religions based on their capital
 		}
 	}
 }
 
-character_event = { # Notify Player of normal end date
+# Notify Player of normal end date
+character_event = {
 	id = Plus.2706
 	desc = EVTDESC_Plus_2706
 	picture = GFX_evt_game_over
-	is_triggered_only = yes # on_yearly_pulse
 
+	is_triggered_only = yes # on_yearly_pulse
 	hide_from = yes
 
 	ai = no
 
 	trigger = {
-		year = 1453
+		year >= 1453
 		NOT = { has_global_flag = players_informed_of_end }
 	}
 
@@ -400,87 +355,73 @@ character_event = { # Notify Player of normal end date
 
 	option = {
 		name = EVTOPTA_Plus_2706 # Just a bit longer!
-
 	}
 }
 
-character_event = { #Turn tribal to feudal gov
+# Turn tribal to feudal gov
+character_event = {
 	id = Plus.2712
 
+	is_triggered_only = yes # on_startup
 	hide_window = yes
-	is_triggered_only = yes
 
 	trigger = {
+		owns = event_target:pulse_province
 		is_save_game = no
+
 		has_game_rule = {
 			name = government_conversion
 			value = gofeudal
 		}
-		has_landed_title = d_miaphysite
 	}
 
 	immediate = {
-		any_independent_ruler = {
-			any_demesne_province = {
-				limit = {
-					any_province_holding = {
-						holding_type = tribal
-					}
-				}
-				any_province_holding = {
-					limit = {
-						holding_type = tribal
-					}
-					convert_to = castle
-					hidden_tooltip = {
-						refill_holding_levy = yes
-					}
-				}
-				hidden_tooltip = {
-					add_province_modifier = {
-						name = new_buildings_timer
-						duration = 36500
-						hidden = yes
-					}
-				}
+		any_province = {
+			limit = { has_tribal = yes }
+
+			any_province_holding = {
+				limit = { holding_type = tribal }
+				convert_to = castle
+				refill_holding_levy = yes
 			}
 
-			if = {
-				limit = {
-					NOT = { religion_group = muslim }
-					NOT = { religion = bogomilist }
-					is_tribal = yes
-				}
-				set_government_type = feudal_government
+			add_province_modifier = {
+				name = new_buildings_timer
+				years = 100
+				hidden = yes
 			}
-			if = {
-				limit = {
-					religion_group = muslim
-					is_tribal = yes
+
+			owner = {
+				if = {
+					limit = { is_tribal = yes }
+
+					if = {
+						limit = { is_government_potential = feudal_government }
+						set_government_type = feudal_government
+					}
+					else_if = {
+						limit = { is_government_potential = muslim_government }
+						set_government_type = muslim_government
+					}
+					else_if = {
+						limit = { real_tier = EMPEROR }
+
+						primary_title = {
+							set_title_flag = non_manual_law_change # No prestige loss
+							add_law = feudal_administration
+							clr_title_flag = non_manual_law_change # No prestige loss
+						}
+					}
 				}
-				set_government_type = muslim_government
-			}
-			if = {
-				limit = {
-					higher_tier_than = king
-					is_tribal = yes
-				}
+
 				primary_title = {
-					set_title_flag = non_manual_law_change # No prestige loss
-					add_law = feudal_administration
-					clr_title_flag = non_manual_law_change # No prestige loss
-				}
-			}
-			primary_title = {
-				hidden_tooltip = {
 					revoke_law = tribal_organization_0
 					revoke_law = tribal_organization_1
 					revoke_law = tribal_organization_2
 					revoke_law = tribal_organization_3
 					revoke_law = tribal_organization_4
 				}
-			}
-			hidden_tooltip = {
+
 				any_demesne_title = {
 					if = {
 						limit = { is_crown_law_title = yes }
@@ -488,161 +429,55 @@ character_event = { #Turn tribal to feudal gov
 					}
 				}
 			}
-			any_realm_character = {
-				limit = {
-					is_ruler = yes
-				}
-				any_demesne_province = {
-					limit = {
-						any_province_holding = {
-							holding_type = tribal
-						}
-					}
-					any_province_holding = {
-						limit = {
-							holding_type = tribal
-						}
-						convert_to = castle
-						hidden_tooltip = {
-							refill_holding_levy = yes
-						}
-					}
-					hidden_tooltip = {
-						add_province_modifier = {
-							name = new_buildings_timer
-							duration = 36500
-							hidden = yes
-						}
-					}
-				}
-
-				if = {
-					limit = {
-						NOT = { religion_group = muslim }
-						NOT = { religion = bogomilist }
-						is_tribal = yes
-					}
-					set_government_type = feudal_government
-				}
-				if = {
-					limit = {
-						religion_group = muslim
-						is_tribal = yes
-					}
-					set_government_type = muslim_government
-				}
-				primary_title = {
-					hidden_tooltip = {
-						revoke_law = tribal_organization_0
-						revoke_law = tribal_organization_1
-						revoke_law = tribal_organization_2
-						revoke_law = tribal_organization_3
-						revoke_law = tribal_organization_4
-					}
-				}
-				hidden_tooltip = {
-					any_demesne_title = {
-						if = {
-							limit = { is_crown_law_title = yes }
-							set_title_flag = do_not_destroy
-						}
-					}
-				}
-			}
 		}
 	}
 }
 
-character_event = { #Go Tribal
+# Go Tribal
+character_event = {
 	id = Plus.2713
 
+	is_triggered_only = yes # on_startup
 	hide_window = yes
-	is_triggered_only = yes
 
 	trigger = {
+		owns = event_target:pulse_province
 		is_save_game = no
+
 		has_game_rule = {
 			name = government_conversion
 			value = gotribal
 		}
-		has_landed_title = d_miaphysite
 	}
 
 	immediate = {
-		any_independent_ruler = {
-			limit = {
-				OR = {
-					is_feudal = yes
-					is_republic = yes
-					is_theocracy = yes
-				}
-			}
-			any_demesne_province = {
-				capital_holding = {
-					if = {
-						limit = {
-							NOT = { holding_type = temple }
-						}
-						convert_to = tribal
-					}
-				}
-				any_province_holding = {
-					limit = {
-						NOT = { holding_type = tribal }
-						NOT = { holding_type = temple }
-					}
-					destroy_settlement = THIS
-				}
-			}
-			if = {
-				limit = {
-					is_theocracy = no
-				}
-				set_government_type = tribal_government
-				if = {
-					limit = { higher_tier_than = count }
-					primary_title = {
-						add_law = tribal_organization_0
-					}
-				}
+		any_province = {
+			limit = { has_tribal = no }
+
+			capital_holding = {
+				convert_to = tribal
 			}
 
-			any_realm_character = {
+			any_province_holding = {
 				limit = {
-					is_ruler = yes
 					OR = {
-						is_feudal = yes
-						is_republic = yes
-						is_theocracy = yes
+						holding_type = castle
+						holding_type = city
 					}
 				}
-				any_demesne_province = {
-					capital_holding = {
-						if = {
-							limit = {
-								NOT = { holding_type = temple }
-							}
-							convert_to = tribal
-						}
-					}
-					any_province_holding = {
-						limit = {
-							NOT = { holding_type = tribal }
-							NOT = { holding_type = temple }
-						}
-						destroy_settlement = THIS
-					}
-				}
+
+				destroy_settlement = THIS
+			}
+
+			owner = {
 				if = {
-					limit = {
-						is_theocracy = no
-					}
+					limit = { is_theocracy = no }
+
 					set_government_type = tribal_government
+
 					if = {
-						limit = { higher_tier_than = count }
-						primary_title = {
-							add_law = tribal_organization_0
-						}
+						limit = { higher_real_tier_than = COUNT }
+						primary_title = { add_law = tribal_organization_0 }
 					}
 				}
 			}

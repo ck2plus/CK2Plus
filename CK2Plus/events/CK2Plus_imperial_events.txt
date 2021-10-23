@@ -14,24 +14,29 @@ namespace = Plus
 character_event = {
 	id = Plus.1850
 
-	hide_window = yes
 	is_triggered_only = yes
+	hide_window = yes
 
 	trigger = {
 		OR = {
+			# Inheritance
 			AND = {
 				FROMFROM = { always = yes }
+
 				FROM = {
-					tier = EMPEROR
+					real_tier = EMPEROR
+					is_primary_holder_title = yes
 					temporary = no
 					is_tribal = no
 					is_nomadic = no
-					is_primary_holder_title = yes
 				}
-				NOT = { uses_decadence = yes }
+
+				uses_decadence = no
 				is_nomadic = no
 				is_tribal = no
 			}
+
+			# TODO: Why is this here?
 			AND = {
 				is_playable = yes
 				has_game_started = no
@@ -42,17 +47,17 @@ character_event = {
 
 	immediate = {
 		FROM = { save_event_target_as = imperial_decadence_title }
-		FROMFROM = { save_event_target_as = imperial_decadence_old_holder}
 
-		character_event = { id = Plus.1851 days = 1 }
-
-		# remove the decadence modifier from the former owner, if alive
 		FROMFROM = {
+			save_event_target_as = imperial_decadence_old_holder
+
+			# Remove the decadence modifier from the former owner, if alive
 			if = {
 				limit = {
 					is_alive = yes
-					lower_tier_than = EMPEROR
+					lower_real_tier_than = EMPEROR
 				}
+
 				remove_character_modifier = imperial_decadence_1
 				remove_character_modifier = imperial_decadence_2
 				remove_character_modifier = imperial_decadence_3
@@ -63,87 +68,104 @@ character_event = {
 				remove_character_modifier = imperial_decadence_8
 			}
 		}
+
+		character_event = {
+			id = Plus.1851
+			days = 1
+		}
 	}
 }
 
-# ROOT/FROM is the character, FROMFROM is the title, FROMFROMFROM is the old holder
+# ROOT/FROM is the character
+# FROMFROM is the title
+# FROMFROMFROM is the old holder
 character_event = {
 	id = Plus.1851
 
-	hide_window = yes
 	is_triggered_only = yes
+	hide_window = yes
+
 	only_rulers = yes
 
 	trigger = {
 		has_landed_title = event_target:imperial_decadence_title
-		NOT = { uses_decadence = yes }
+		uses_decadence = no
 		is_ironman = no
 		is_nomadic = no
 	}
 
 	immediate = {
-		# first look for other held imperial titles which have higher decadence, and copy their value over
+		# First look for other held imperial titles which have higher decadence, and copy their value over
 		any_demesne_title = {
 			limit = {
-				tier = EMPEROR
+				real_tier = EMPEROR
 				is_primary_holder_title = no
-				check_variable = { which = "imperial_decadence" which = event_target:imperial_decadence_title }
+
+				check_variable = {
+					which = imperial_decadence
+					which >= event_target:imperial_decadence_title
+				}
 			}
-			event_target:imperial_decadence_title = { set_variable = { which = "imperial_decadence" which = PREV } }
+
+			event_target:imperial_decadence_title = {
+				set_variable = {
+					which = imperial_decadence
+					which = PREV
+				}
+			}
 		}
 
 		event_target:imperial_decadence_title = {
-
-			# reset the decadence value to 0, in case it's negative
+			# Reset the decadence value to 0, in case it's negative
 			if = {
-				limit = { NOT = { check_variable = { which = "imperial_decadence" value = 0.5 } } }
-				set_variable = { which = "imperial_decadence" value = 0 }
+				limit = { check_variable = { which = imperial_decadence value < 0 } }
+				set_variable = { which = imperial_decadence value = 0 }
 			}
 
-			# set new ruler decadence to 0
-			set_variable = { which = "new_ruler_decadence" value = 0 }
+			# Set new ruler decadence to 0
+			set_variable = { which = local_new_ruler_decadence value = 0 }
 
-			# new ruler decadence base is dependant on inherited decadence
+			# New ruler decadence base is dependant on inherited decadence
 			if = {
-				limit = { NOT = { check_variable = { which = "imperial_decadence" value = 10.5 } } }
-				change_variable = { which = "new_ruler_decadence" value = 1 }
-
+				limit = { check_variable = { which = imperial_decadence value < 11 } }
+				change_variable = { which = local_new_ruler_decadence value = 1 }
 			}
 			else_if = {
-				limit = { NOT = { check_variable = { which = "imperial_decadence" value = 20.5 } } }
-				change_variable = { which = "new_ruler_decadence" value = 2 }
+				limit = { check_variable = { which = imperial_decadence value < 21 } }
+				change_variable = { which = local_new_ruler_decadence value = 2 }
 			}
 			else_if = {
-				limit = { NOT = { check_variable = { which = "imperial_decadence" value = 30.5 } } }
-				change_variable = { which = "new_ruler_decadence" value = 3 }
+				limit = { check_variable = { which = imperial_decadence value < 31 } }
+				change_variable = { which = local_new_ruler_decadence value = 3 }
 			}
 			else_if = {
-				limit = { NOT = { check_variable = { which = "imperial_decadence" value = 40.5 } } }
-				change_variable = { which = "new_ruler_decadence" value = 5 }
+				limit = { check_variable = { which = imperial_decadence value < 41 } }
+				change_variable = { which = local_new_ruler_decadence value = 5 }
 			}
 			else_if = {
-				limit = { NOT = { check_variable = { which = "imperial_decadence" value = 50.5 } } }
-				change_variable = { which = "new_ruler_decadence" value = 8 }
+				limit = { check_variable = { which = imperial_decadence value < 51 } }
+				change_variable = { which = local_new_ruler_decadence value = 8 }
 			}
 			else = {
-				change_variable = { which = "new_ruler_decadence" value = 13 }
+				change_variable = { which = local_new_ruler_decadence value = 13 }
 			}
 
-			# increase new ruler decadence by one if this is a continuing dynasty
+			# Increase new ruler decadence by one if this is a continuing dynasty
 			if = {
 				limit = { ROOT = { dynasty = event_target:imperial_decadence_old_holder } }
-				change_variable = { which = "new_ruler_decadence" value = 1 }
+				change_variable = { which = local_new_ruler_decadence value = 1 }
 			}
 
-			# increase more if this is a usurpation
+			# Increase more if this is a usurpation
 			if = {
 				limit = {
 					event_target:imperial_decadence_old_holder = {
-						is_alive = yes
 						has_claim = event_target:imperial_decadence_title
+						is_alive = yes
 					}
 				}
-				change_variable = { which = "new_ruler_decadence" value = 2 }
+
+				change_variable = { which = local_new_ruler_decadence value = 2 }
 			}
 
 			# Byzantium/Roman Empire/HRE gets an additional +1
@@ -157,75 +179,81 @@ character_event = {
 						}
 					}
 				}
-				change_variable = { which = "new_ruler_decadence" value = 1 }
+
+				change_variable = { which = local_new_ruler_decadence value = 1 }
 			}
 
-			# then determine how much the realm size should change it
+			# Then determine how much the realm size should change it
 			if = {
 				limit = { ROOT = { has_horde_culture = yes } }
-				change_variable = { which = "new_ruler_decadence" value = -2 }
+				change_variable = { which = local_new_ruler_decadence value = -2 }
 			}
+
 			if = {
-				limit = { ROOT = { NOT = { realm_size = 100 } } }
-				change_variable = { which = "new_ruler_decadence" value = -1 }
+				limit = { ROOT = { realm_size >= 500 } }
+				change_variable = { which = local_new_ruler_decadence value = 10 }
 			}
-			if = {
-				limit = { ROOT = { realm_size = 200 } }
-				change_variable = { which = "new_ruler_decadence" value = 1 }
+			else_if = {
+				limit = { ROOT = { realm_size >= 400 } }
+				change_variable = { which = local_new_ruler_decadence value = 6 }
 			}
-			if = {
-				limit = { ROOT = { realm_size = 300 } }
-				change_variable = { which = "new_ruler_decadence" value = 2 }
+			else_if = {
+				limit = { ROOT = { realm_size >= 300 } }
+				change_variable = { which = local_new_ruler_decadence value = 3 }
 			}
-			if = {
-				limit = { ROOT = { realm_size = 400 } }
-				change_variable = { which = "new_ruler_decadence" value = 3 }
+			else_if = {
+				limit = { ROOT = { realm_size >= 200 } }
+				change_variable = { which = local_new_ruler_decadence value = 1 }
 			}
-			if = {
-				limit = { ROOT = { realm_size = 500 } }
-				change_variable = { which = "new_ruler_decadence" value = 4 }
+			else_if = {
+				limit = { ROOT = { realm_size < 100 } }
+				change_variable = { which = local_new_ruler_decadence value = -1 }
 			}
-			# then determine how much CA should change it
+
+			# Then determine how much CA should change it
 			if = {
 				limit = { has_law = crown_authority_1 }
-				change_variable = { which = "new_ruler_decadence" value = 1 }
+				change_variable = { which = local_new_ruler_decadence value = 1 }
 			}
-			if = {
+			else_if = {
 				limit = { has_law = crown_authority_2 }
-				change_variable = { which = "new_ruler_decadence" value = 2 }
+				change_variable = { which = local_new_ruler_decadence value = 2 }
 			}
-			if = {
+			else_if = {
 				limit = { has_law = crown_authority_3 }
-				change_variable = { which = "new_ruler_decadence" value = 3 }
+				change_variable = { which = local_new_ruler_decadence value = 3 }
 			}
-			if = {
+			else_if = {
 				limit = { has_law = crown_authority_4 }
-				change_variable = { which = "new_ruler_decadence" value = 4 }
+				change_variable = { which = local_new_ruler_decadence value = 4 }
 			}
+
 			# One if imperial government
 			if = {
 				limit = { owner = { has_imperial_government_trigger = yes } }
-				change_variable = { which = "new_ruler_decadence" value = 1 }
-			}
-			# Reduce if low vasssal count
-			if = {
-				limit = { ROOT = { NOT = { num_of_vassals = 10 } } }
-				change_variable = { which = "new_ruler_decadence" value = -1 }
-			}
-			if = {
-				limit = { ROOT = { NOT = { num_of_vassals = 20 } } }
-				change_variable = { which = "new_ruler_decadence" value = -1 }
-			}
-			if = {
-				limit = { ROOT = { NOT = { num_of_vassals = 30 } } }
-				change_variable = { which = "new_ruler_decadence" value = -1 }
+				change_variable = { which = local_new_ruler_decadence value = 1 }
 			}
 
-			# cut inherited decadence by a fifth if continuing dynasty we've had normal dynastic succession, or elective
+			# Reduce if low vasssal count
+			if = {
+				limit = { ROOT = { num_of_vassals < 10 } }
+				change_variable = { which = local_new_ruler_decadence value = -3 }
+			}
+			else_if = {
+				limit = { ROOT = { num_of_vassals < 20 } }
+				change_variable = { which = local_new_ruler_decadence value = -2 }
+			}
+			else_if = {
+				limit = { ROOT = { num_of_vassals < 30 } }
+				change_variable = { which = local_new_ruler_decadence value = -1 }
+			}
+
+			# Cut inherited decadence by a fifth if continuing dynasty we've had normal dynastic succession, or elective
 			if = {
 				limit = {
 					event_target:imperial_decadence_old_holder = {
 						is_alive = no
+
 						OR = {
 							dynasty = ROOT
 							has_law = succ_feudal_elective
@@ -234,23 +262,25 @@ character_event = {
 						}
 					}
 				}
-				divide_variable = { which = "imperial_decadence" value = 1.25 }
+
+				multiply_variable = { which = imperial_decadence value = 0.8 }
 			}
-			# reduce a bit more if ruler was overthrown
+
+			# Reduce a bit more if ruler was overthrown
 			else_if = {
 				limit = { has_title_flag = skip_decadence_gain }
 				clr_title_flag = skip_decadence_gain
-				divide_variable = { which = "imperial_decadence" value = 1.5 }
+				multiply_variable = { which = imperial_decadence value = 0.67 }
 			}
 			else = { # whatever situation
-				divide_variable = { which = "imperial_decadence" value = 1.3 }
+				multiply_variable = { which = imperial_decadence value = 0.75 }
 			}
-			change_variable = { which = "imperial_decadence" which = "new_ruler_decadence" }
-			set_variable = { which = "new_ruler_decadence" value = 0 }
+
+			change_variable = { which = imperial_decadence which = local_new_ruler_decadence }
 
 		}
 
-		# change the decadence modifier
+		# Change the decadence modifier
 		character_event = { id = Plus.1852 }
 		clear_event_target = imperial_decadence_old_holder
 		clear_event_target = imperial_decadence_title
@@ -275,6 +305,7 @@ character_event = {
 					is_nomadic = yes
 				}
 			}
+
 			primary_title = {
 				check_variable = {
 					which = imperial_decadence
@@ -285,17 +316,16 @@ character_event = {
 	}
 
 	immediate = {
-		# reset the decadence value to 0, in case it's negative
-		if = {
-			limit = {
-				primary_title = {
+		# Reset the decadence value to 0, in case it's negative
+		primary_title = {
+			if = {
+				limit = {
 					check_variable = {
 						which = imperial_decadence
 						value < 0
 					}
 				}
-			}
-			primary_title = {
+
 				set_variable = {
 					which = imperial_decadence
 					value = 0
@@ -303,7 +333,7 @@ character_event = {
 			}
 		}
 
-		# remove old decadence modifier and add the new one
+		# Remove old decadence modifier and add the new one
 		remove_character_modifier = imperial_decadence_1
 		remove_character_modifier = imperial_decadence_2
 		remove_character_modifier = imperial_decadence_3
@@ -329,71 +359,22 @@ character_event = {
 			}
 		}
 
+
 		if = {
 			limit = {
 				primary_title = {
-					check_variable = { which = "imperial_decadence" value = 10 }
-					NOT = { check_variable = { which = "imperial_decadence" value = 21 } }
+					check_variable = { which = imperial_decadence value >= 80 }
 				}
 			}
 			add_character_modifier = {
-				name = imperial_decadence_1
+				name = imperial_decadence_8
 				duration = -1
 			}
 		}
 		else_if = {
 			limit = {
 				primary_title = {
-					check_variable = { which = "imperial_decadence" value = 21 }
-					NOT = { check_variable = { which = "imperial_decadence" value = 31 } }
-				}
-			}
-			add_character_modifier = {
-				name = imperial_decadence_2
-				duration = -1
-			}
-		}
-		else_if = {
-			limit = {
-				primary_title = {
-					check_variable = { which = "imperial_decadence" value = 31 }
-					NOT = { check_variable = { which = "imperial_decadence" value = 41 } }
-				}
-			}
-			add_character_modifier = {
-				name = imperial_decadence_3
-				duration = -1
-			}
-		}
-		else_if = {
-			limit = {
-				primary_title = {
-					check_variable = { which = "imperial_decadence" value = 41 }
-					NOT = { check_variable = { which = "imperial_decadence" value = 51 } }
-				}
-			}
-			add_character_modifier = {
-				name = imperial_decadence_4
-				duration = -1
-			}
-		}
-		else_if = {
-			limit = {
-				primary_title = {
-					check_variable = { which = "imperial_decadence" value = 51 }
-					NOT = { check_variable = { which = "imperial_decadence" value = 61 } }
-				}
-			}
-			add_character_modifier = {
-				name = imperial_decadence_5
-				duration = -1
-			}
-		}
-		else_if = {
-			limit = {
-				primary_title = {
-					check_variable = { which = "imperial_decadence" value = 61 }
-					NOT = { check_variable = { which = "imperial_decadence" value = 71 } }
+					check_variable = { which = imperial_decadence value >= 70 }
 				}
 			}
 			add_character_modifier = {
@@ -404,23 +385,66 @@ character_event = {
 		else_if = {
 			limit = {
 				primary_title = {
-					check_variable = { which = "imperial_decadence" value = 71 }
-					NOT = { check_variable = { which = "imperial_decadence" value = 81 } }
+					check_variable = { which = imperial_decadence value >= 60 }
 				}
 			}
 			add_character_modifier = {
-				name = imperial_decadence_7
+				name = imperial_decadence_6
 				duration = -1
 			}
 		}
 		else_if = {
 			limit = {
 				primary_title = {
-					check_variable = { which = "imperial_decadence" value = 81 }
+					check_variable = { which = imperial_decadence value >= 50 }
 				}
 			}
 			add_character_modifier = {
-				name = imperial_decadence_8
+				name = imperial_decadence_5
+				duration = -1
+			}
+		}
+		else_if = {
+			limit = {
+				primary_title = {
+					check_variable = { which = imperial_decadence value >= 40 }
+				}
+			}
+			add_character_modifier = {
+				name = imperial_decadence_4
+				duration = -1
+			}
+		}
+		else_if = {
+			limit = {
+				primary_title = {
+					check_variable = { which = imperial_decadence value >= 30 }
+				}
+			}
+			add_character_modifier = {
+				name = imperial_decadence_3
+				duration = -1
+			}
+		}
+		else_if = {
+			limit = {
+				primary_title = {
+					check_variable = { which = imperial_decadence value >= 20 }
+				}
+			}
+			add_character_modifier = {
+				name = imperial_decadence_2
+				duration = -1
+			}
+		}
+		if = {
+			limit = {
+				primary_title = {
+					check_variable = { which = imperial_decadence value >= 10 }
+				}
+			}
+			add_character_modifier = {
+				name = imperial_decadence_1
 				duration = -1
 			}
 		}
@@ -447,69 +471,78 @@ character_event = {
 		trigger = { ROOT = { has_regent = yes } }
 	}
 
-	is_triggered_only = yes
+	is_triggered_only = yes # on_yearly_pulse (random_events)
 	major = yes
 
-	major_trigger = {
-		OR = {
-			character = ROOT
-			same_realm = ROOT
-		}
-	}
-
-	only_rulers = yes
+	only_independent = yes
 
 	trigger = {
+		real_tier = EMPEROR
+		primary_title = { check_variable = { which = imperial_decadence value > 0 } }
+
+		trigger_if = {
+			limit = { has_regent = yes }
+
+			regent = { trait = just }
+			NOT = { trait = arbitrary }
+		}
+		trigger_else = {
+			trait = just
+		}
+
 		is_ironman = no
 		is_tribal = no
 		is_nomadic = no
-		higher_real_tier_than = KING
-		primary_title = { check_variable = { which = "imperial_decadence" value = 1 } }
-		OR = {
-			AND = {
-				has_regent = no
-				trait = just
-			}
-			AND = {
-				has_regent = yes
-				NOT = { trait = arbitrary }
-				regent = { trait = just }
-			}
-		}
-		NOR = {
-			uses_decadence = yes
-			has_character_modifier = decadence_event_timer
-		}
+		uses_decadence = no
+		NOT = { has_character_modifier = decadence_event_timer }
+	}
+
+	major_trigger = {
+		ai = no
+		same_realm = ROOT
 	}
 
 	weight_multiplier = {
 		days = 1
-		modifier = {
+
+		mult_modifier = {
 			factor = 0.5
-			NOT = { primary_title = { check_variable = { which = "imperial_decadence" value = 10 } } }
+			primary_title = { check_variable = { which = imperial_decadence value < 10 } }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 2.0
-			primary_title = { check_variable = { which = "imperial_decadence" value = 30 } }
+			primary_title = { check_variable = { which = imperial_decadence value >= 30 } }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 2.0
-			primary_title = { check_variable = { which = "imperial_decadence" value = 60 } }
+			primary_title = { check_variable = { which = imperial_decadence value >= 60 } }
 		}
 	}
 
 	option = {
 		name = OK
-		ROOT = { custom_tooltip = { text = IMPERIAL_DECADENCE_MINUS_1 } }
-		if = {
-			limit = { character = ROOT }
-			hidden_tooltip = {
-				primary_title = { change_variable = { which = "imperial_decadence" value = -1 } }
+
+		custom_tooltip = {
+			text = IMPERIAL_DECADENCE_MINUS_1
+
+			if = {
+				limit = { character = ROOT }
+
+				primary_title = {
+					change_variable = {
+						which = imperial_decadence
+						value = -1
+					}
+				}
+
 				character_event = { id = Plus.1852 } # change the decadence modifier
+
 				add_character_modifier = {
 					name = decadence_event_timer
+					years = 5
 					hidden = yes
-					duration = 1825
 				}
 			}
 		}
@@ -533,74 +566,85 @@ character_event = {
 	is_triggered_only = yes
 	major = yes
 
-	major_trigger = {
-		OR = {
-			character = ROOT
-			same_realm = ROOT
-		}
-	}
-
-	only_rulers = yes
+	only_independent = yes
 
 	trigger = {
+		real_tier = EMPEROR
+		primary_title = { check_variable = { which = imperial_decadence value < 100 } }
+
+		trigger_if = {
+			limit = { has_regent = yes }
+
+			regent = { trait = arbitrary }
+			NOT = { trait = just }
+		}
+		trigger_else = {
+			trait = arbitrary
+		}
+
 		is_ironman = no
 		is_tribal = no
 		is_nomadic = no
-		higher_real_tier_than = KING
-		primary_title = { NOT = { check_variable = { which = "imperial_decadence" value = 100 } } }
-		OR = {
-			AND = {
-				has_regent = no
-				trait = arbitrary
-			}
-			AND = {
-				has_regent = yes
-				NOT = { trait = just }
-				regent = { trait = arbitrary }
-			}
-		}
-		NOR = {
-			uses_decadence = yes
-			has_character_modifier = decadence_event_timer
-		}
+		uses_decadence = no
+		NOT = { has_character_modifier = decadence_event_timer }
+	}
+
+	major_trigger = {
+		ai = no
+		same_realm = ROOT
 	}
 
 	weight_multiplier = {
 		days = 1
-		modifier = {
+
+		mult_modifier = {
 			factor = 2.0
 			has_regent = yes
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 2.0
-			NOT = { primary_title = { check_variable = { which = "imperial_decadence" value = 10 } } }
+			primary_title = { check_variable = { which = imperial_decadence value < 10 } }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 0.75
-			primary_title = { check_variable = { which = "imperial_decadence" value = 30 } }
+			primary_title = { check_variable = { which = imperial_decadence value >= 30 } }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 0.75
-			primary_title = { check_variable = { which = "imperial_decadence" value = 60 } }
+			primary_title = { check_variable = { which = imperial_decadence value >= 60 } }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 0.5
-			primary_title = { check_variable = { which = "imperial_decadence" value = 90 } }
+			primary_title = { check_variable = { which = imperial_decadence value >= 90 } }
 		}
 	}
 
 	option = {
 		name = OK
-		ROOT = { custom_tooltip = { text = IMPERIAL_DECADENCE_PLUS_1 } }
-		if = {
-			limit = { character = ROOT }
-			hidden_tooltip = {
-				primary_title = { change_variable = { which = "imperial_decadence" value = 1 } }
+
+		custom_tooltip = {
+			text = IMPERIAL_DECADENCE_PLUS_1
+
+			if = {
+				limit = { character = ROOT }
+
+				primary_title = {
+					change_variable = {
+						which = imperial_decadence
+						value = 1
+					}
+				}
+
 				character_event = { id = Plus.1852 } # change the decadence modifier
+
 				add_character_modifier = {
 					name = decadence_event_timer
+					years = 5
 					hidden = yes
-					duration = 1825
 				}
 			}
 		}
@@ -624,66 +668,75 @@ character_event = {
 	is_triggered_only = yes
 	major = yes
 
-	major_trigger = {
-		OR = {
-			character = ROOT
-			same_realm = ROOT
-		}
-	}
-
-	only_rulers = yes
+	only_independent = yes
 
 	trigger = {
+		real_tier = EMPEROR
+		primary_title = { check_variable = { which = imperial_decadence value > 0 } }
+
+		trigger_if = {
+			limit = { has_regent = yes }
+
+			regent = { trait = diligent }
+			NOT = { trait = slothful }
+		}
+		trigger_else = {
+			trait = diligent
+		}
+
 		is_ironman = no
 		is_tribal = no
 		is_nomadic = no
-		higher_real_tier_than = KING
-		primary_title = { check_variable = { which = "imperial_decadence" value = 1 } }
-		OR = {
-			AND = {
-				has_regent = no
-				trait = diligent
-			}
-			AND = {
-				has_regent = yes
-				NOT = { trait = slothful }
-				regent = { trait = diligent }
-			}
-		}
-		NOR = {
-			uses_decadence = yes
-			has_character_modifier = decadence_event_timer
-		}
+		uses_decadence = no
+		NOT = { has_character_modifier = decadence_event_timer }
+	}
+
+	major_trigger = {
+		ai = no
+		same_realm = ROOT
 	}
 
 	weight_multiplier = {
 		days = 1
-		modifier = {
+
+		mult_modifier = {
 			factor = 0.5
-			NOT = { primary_title = { check_variable = { which = "imperial_decadence" value = 10 } } }
+			primary_title = { check_variable = { which = imperial_decadence value < 10 } }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 2.0
-			primary_title = { check_variable = { which = "imperial_decadence" value = 30 } }
+			primary_title = { check_variable = { which = imperial_decadence value >= 30 } }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 2.0
-			primary_title = { check_variable = { which = "imperial_decadence" value = 60 } }
+			primary_title = { check_variable = { which = imperial_decadence value >= 60 } }
 		}
 	}
 
 	option = {
 		name = OK
-		ROOT = { custom_tooltip = { text = IMPERIAL_DECADENCE_MINUS_1 } }
-		if = {
-			limit = { character = ROOT }
-			hidden_tooltip = {
-				primary_title = { change_variable = { which = "imperial_decadence" value = -1 } }
+
+		custom_tooltip = {
+			text = IMPERIAL_DECADENCE_MINUS_1
+
+			if = {
+				limit = { character = ROOT }
+
+				primary_title = {
+					change_variable = {
+						which = imperial_decadence
+						value = -1
+					}
+				}
+
 				character_event = { id = Plus.1852 } # change the decadence modifier
+
 				add_character_modifier = {
 					name = decadence_event_timer
+					years = 5
 					hidden = yes
-					duration = 1825
 				}
 			}
 		}
@@ -707,74 +760,85 @@ character_event = {
 	is_triggered_only = yes
 	major = yes
 
-	major_trigger = {
-		OR = {
-			character = ROOT
-			same_realm = ROOT
-		}
-	}
-
-	only_rulers = yes
+	only_independent = yes
 
 	trigger = {
+		real_tier = EMPEROR
+		primary_title = { check_variable = { which = imperial_decadence value < 100 } }
+
+		trigger_if = {
+			limit = { has_regent = yes }
+
+			regent = { trait = slothful }
+			NOT = { trait = diligent }
+		}
+		trigger_else = {
+			trait = slothful
+		}
+
 		is_ironman = no
 		is_tribal = no
 		is_nomadic = no
-		higher_real_tier_than = KING
-		primary_title = { NOT = { check_variable = { which = "imperial_decadence" value = 100 } } }
-		OR = {
-			AND = {
-				has_regent = no
-				trait = slothful
-			}
-			AND = {
-				has_regent = yes
-				NOT = { trait = diligent }
-				regent = { trait = slothful }
-			}
-		}
-		NOR = {
-			uses_decadence = yes
-			has_character_modifier = decadence_event_timer
-		}
+		uses_decadence = no
+		NOT = { has_character_modifier = decadence_event_timer }
+	}
+
+	major_trigger = {
+		ai = no
+		same_realm = ROOT
 	}
 
 	weight_multiplier = {
 		days = 1
-		modifier = {
+
+		mult_modifier = {
 			factor = 2.0
 			has_regent = yes
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 2.0
-			NOT = { primary_title = { check_variable = { which = "imperial_decadence" value = 10 } } }
+			primary_title = { check_variable = { which = imperial_decadence value < 10 } }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 0.75
-			primary_title = { check_variable = { which = "imperial_decadence" value = 30 } }
+			primary_title = { check_variable = { which = imperial_decadence value >= 30 } }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 0.75
-			primary_title = { check_variable = { which = "imperial_decadence" value = 60 } }
+			primary_title = { check_variable = { which = imperial_decadence value >= 60 } }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 0.5
-			primary_title = { check_variable = { which = "imperial_decadence" value = 90 } }
+			primary_title = { check_variable = { which = imperial_decadence value >= 90 } }
 		}
 	}
 
 	option = {
 		name = OK
-		ROOT = { custom_tooltip = { text = IMPERIAL_DECADENCE_PLUS_1 } }
-		if = {
-			limit = { character = ROOT }
-			hidden_tooltip = {
-				primary_title = { change_variable = { which = "imperial_decadence" value = 1 } }
+
+		custom_tooltip = {
+			text = IMPERIAL_DECADENCE_PLUS_1
+
+			if = {
+				limit = { character = ROOT }
+
+				primary_title = {
+					change_variable = {
+						which = imperial_decadence
+						value = 1
+					}
+				}
+
 				character_event = { id = Plus.1852 } # change the decadence modifier
+
 				add_character_modifier = {
 					name = decadence_event_timer
+					years = 5
 					hidden = yes
-					duration = 1825
 				}
 			}
 		}
@@ -798,73 +862,83 @@ character_event = {
 	is_triggered_only = yes
 	major = yes
 
-	major_trigger = {
-		OR = {
-			character = ROOT
-			same_realm = ROOT
-		}
-	}
-
-	only_rulers = yes
+	only_independent = yes
 
 	trigger = {
+		real_tier = EMPEROR
+		primary_title = { check_variable = { which = imperial_decadence value < 100 } }
+
+		trigger_if = {
+			limit = { has_regent = yes }
+			regent = { trait = hedonist }
+		}
+		trigger_else = {
+			trait = hedonist
+		}
+
 		is_ironman = no
 		is_tribal = no
 		is_nomadic = no
-		higher_real_tier_than = KING
-		primary_title = { NOT = { check_variable = { which = "imperial_decadence" value = 100 } } }
-		OR = {
-			AND = {
-				has_regent = no
-				trait = hedonist
-			}
-			AND = {
-				has_regent = yes
-				regent = { trait = hedonist }
-			}
-		}
-		NOR = {
-			uses_decadence = yes
-			has_character_modifier = decadence_event_timer
-		}
+		uses_decadence = no
+		NOT = { has_character_modifier = decadence_event_timer }
+	}
+
+	major_trigger = {
+		ai = no
+		same_realm = ROOT
 	}
 
 	weight_multiplier = {
 		days = 1
-		modifier = {
+
+		mult_modifier = {
 			factor = 2.0
 			has_regent = yes
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 2.0
-			NOT = { primary_title = { check_variable = { which = "imperial_decadence" value = 10 } } }
+			primary_title = { check_variable = { which = imperial_decadence value < 10 } }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 0.75
-			primary_title = { check_variable = { which = "imperial_decadence" value = 30 } }
+			primary_title = { check_variable = { which = imperial_decadence value >= 30 } }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 0.75
-			primary_title = { check_variable = { which = "imperial_decadence" value = 60 } }
+			primary_title = { check_variable = { which = imperial_decadence value >= 60 } }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 0.5
-			primary_title = { check_variable = { which = "imperial_decadence" value = 90 } }
+			primary_title = { check_variable = { which = imperial_decadence value >= 90 } }
 		}
 	}
 
 	option = {
 		name = OK
-		ROOT = { custom_tooltip = { text = IMPERIAL_DECADENCE_PLUS_1 } }
-		if = {
-			limit = { character = ROOT }
-			hidden_tooltip = {
-				primary_title = { change_variable = { which = "imperial_decadence" value = 1 } }
+
+		custom_tooltip = {
+			text = IMPERIAL_DECADENCE_PLUS_1
+
+			if = {
+				limit = { character = ROOT }
+
+				primary_title = {
+					change_variable = {
+						which = imperial_decadence
+						value = 1
+					}
+				}
+
 				character_event = { id = Plus.1852 } # change the decadence modifier
+
 				add_character_modifier = {
 					name = decadence_event_timer
+					years = 5
 					hidden = yes
-					duration = 1825
 				}
 			}
 		}
@@ -888,82 +962,94 @@ character_event = {
 	is_triggered_only = yes
 	major = yes
 
-	major_trigger = {
-		OR = {
-			character = ROOT
-			same_realm = ROOT
-		}
-	}
-
-	only_rulers = yes
+	only_independent = yes
 
 	trigger = {
-		is_ironman = no
-		is_tribal = no
-		is_nomadic = no
-		higher_real_tier_than = KING
-		primary_title = { NOT = { check_variable = { which = "imperial_decadence" value = 100 } } }
-		OR = {
-			AND = {
-				has_regent = no
+		real_tier = EMPEROR
+		primary_title = { check_variable = { which = imperial_decadence value < 100 } }
+
+		trigger_if = {
+			limit = { has_regent = yes }
+
+			regent = {
 				OR = {
 					trait = cruel
 					trait = impaler
 				}
 			}
-			AND = {
-				has_regent = yes
-				NOT = { trait = kind }
-				regent = {
-					OR = {
-						trait = cruel
-						trait = impaler
-					}
-				}
+
+			NOT = { trait = kind }
+		}
+		trigger_else = {
+			OR = {
+				trait = cruel
+				trait = impaler
 			}
 		}
-		NOR = {
-			uses_decadence = yes
-			has_character_modifier = decadence_event_timer
-		}
+
+		is_ironman = no
+		is_tribal = no
+		is_nomadic = no
+		uses_decadence = no
+		NOT = { has_character_modifier = decadence_event_timer }
+	}
+
+	major_trigger = {
+		ai = no
+		same_realm = ROOT
 	}
 
 	weight_multiplier = {
 		days = 1
-		modifier = {
+
+		mult_modifier = {
 			factor = 2.0
 			has_regent = yes
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 2.0
-			NOT = { primary_title = { check_variable = { which = "imperial_decadence" value = 10 } } }
+			primary_title = { check_variable = { which = imperial_decadence value < 10 } }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 0.75
-			primary_title = { check_variable = { which = "imperial_decadence" value = 30 } }
+			primary_title = { check_variable = { which = imperial_decadence value >= 30 } }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 0.75
-			primary_title = { check_variable = { which = "imperial_decadence" value = 60 } }
+			primary_title = { check_variable = { which = imperial_decadence value >= 60 } }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 0.5
-			primary_title = { check_variable = { which = "imperial_decadence" value = 90 } }
+			primary_title = { check_variable = { which = imperial_decadence value >= 90 } }
 		}
 	}
 
 	option = {
 		name = OK
-		ROOT = { custom_tooltip = { text = IMPERIAL_DECADENCE_PLUS_1 } }
-		if = {
-			limit = { character = ROOT }
-			hidden_tooltip = {
-				primary_title = { change_variable = { which = "imperial_decadence" value = 1 } }
+
+		custom_tooltip = {
+			text = IMPERIAL_DECADENCE_PLUS_1
+
+			if = {
+				limit = { character = ROOT }
+
+				primary_title = {
+					change_variable = {
+						which = imperial_decadence
+						value = 1
+					}
+				}
+
 				character_event = { id = Plus.1852 } # change the decadence modifier
+
 				add_character_modifier = {
 					name = decadence_event_timer
+					years = 5
 					hidden = yes
-					duration = 1825
 				}
 			}
 		}
@@ -988,76 +1074,86 @@ character_event = {
 	major = yes
 
 	major_trigger = {
-		OR = {
-			character = ROOT
-			same_realm = ROOT
-		}
+		ai = no
+		same_realm = ROOT
 	}
 
-	only_rulers = yes
+	only_independent = yes
 
 	trigger = {
+		real_tier = EMPEROR
+		primary_title = { check_variable = { which = imperial_decadence value > 0 } }
+
+		trigger_if = {
+			limit = { has_regent = yes }
+			regent = { is_smart_trigger = yes }
+		}
+		trigger_else = {
+			is_smart_trigger = yes
+		}
+
 		is_ironman = no
 		is_tribal = no
 		is_nomadic = no
-		higher_real_tier_than = KING
-		primary_title = { check_variable = { which = "imperial_decadence" value = 1 } }
-		OR = {
-			AND = {
-				has_regent = no
-				is_smart_trigger = yes
-			}
-			AND = {
-				has_regent = yes
-				regent = {
-					is_smart_trigger = yes
-				}
-			}
-		}
-		NOR = {
-			uses_decadence = yes
-			has_character_modifier = decadence_event_timer
-		}
+		uses_decadence = no
+		NOT = { has_character_modifier = decadence_event_timer }
 	}
 
 	weight_multiplier = {
 		days = 1
-		modifier = {
+
+		mult_modifier = {
 			factor = 2.0
-			has_regent = no
+
 			trait = genius
+			has_regent = no
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 2.0
+
 			has_regent = yes
 			regent = { trait = genius }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 0.5
-			NOT = { primary_title = { check_variable = { which = "imperial_decadence" value = 10 } } }
+			primary_title = { check_variable = { which = imperial_decadence value < 10 } }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 2.0
-			primary_title = { check_variable = { which = "imperial_decadence" value = 30 } }
+			primary_title = { check_variable = { which = imperial_decadence value >= 30 } }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 2.0
-			primary_title = { check_variable = { which = "imperial_decadence" value = 60 } }
+			primary_title = { check_variable = { which = imperial_decadence value >= 60 } }
 		}
 	}
 
 	option = {
 		name = OK
-		ROOT = { custom_tooltip = { text = IMPERIAL_DECADENCE_MINUS_1 } }
-		if = {
-			limit = { character = ROOT }
-			hidden_tooltip = {
-				primary_title = { change_variable = { which = "imperial_decadence" value = -1 } }
+
+		custom_tooltip = {
+			text = IMPERIAL_DECADENCE_MINUS_1
+
+			if = {
+				limit = { character = ROOT }
+
+				primary_title = {
+					change_variable = {
+						which = imperial_decadence
+						value = -1
+					}
+				}
+
 				character_event = { id = Plus.1852 } # change the decadence modifier
+
 				add_character_modifier = {
 					name = decadence_event_timer
+					years = 5
 					hidden = yes
-					duration = 1825
 				}
 			}
 		}
@@ -1081,101 +1177,120 @@ character_event = {
 	is_triggered_only = yes
 	major = yes
 
-	major_trigger = {
-		OR = {
-			character = ROOT
-			same_realm = ROOT
-		}
-	}
-
-	only_rulers = yes
+	only_independent = yes
 
 	trigger = {
-		is_ironman = no
-		is_tribal = no
-		is_nomadic = no
-		higher_real_tier_than = KING
-		primary_title = { NOT = { check_variable = { which = "imperial_decadence" value = 100 } } }
-		OR = {
-			AND = {
-				has_regent = no
+		real_tier = EMPEROR
+		primary_title = { check_variable = { which = imperial_decadence value < 100 } }
+
+		trigger_if = {
+			limit = { has_regent = yes }
+
+			regent = {
 				OR = {
 					is_dumb_trigger = yes
 					trait = inbred
 				}
 			}
-			AND = {
-				has_regent = yes
-				regent = {
-					OR = {
-						is_dumb_trigger = yes
-						trait = inbred
-					}
-				}
+		}
+		trigger_else = {
+			OR = {
+				is_dumb_trigger = yes
+				trait = inbred
 			}
 		}
-		NOR = {
-			uses_decadence = yes
-			has_character_modifier = decadence_event_timer
-		}
+
+		is_ironman = no
+		is_tribal = no
+		is_nomadic = no
+		uses_decadence = no
+		NOT = { has_character_modifier = decadence_event_timer }
+	}
+
+	major_trigger = {
+		ai = no
+		same_realm = ROOT
 	}
 
 	weight_multiplier = {
 		days = 1
-		modifier = {
+
+		mult_modifier = {
 			factor = 2.0
-			has_regent = no
+
 			trait = imbecile
+			has_regent = no
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 2.0
+
 			has_regent = yes
 			regent = { trait = imbecile }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 1.5
-			has_regent = no
+
 			trait = inbred
+			has_regent = no
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 1.5
+
 			has_regent = yes
 			regent = { trait = inbred }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 2.0
 			has_regent = yes
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 2.0
-			NOT = { primary_title = { check_variable = { which = "imperial_decadence" value = 10 } } }
+			primary_title = { check_variable = { which = imperial_decadence value < 10 } }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 0.75
-			primary_title = { check_variable = { which = "imperial_decadence" value = 30 } }
+			primary_title = { check_variable = { which = imperial_decadence value >= 30 } }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 0.75
-			primary_title = { check_variable = { which = "imperial_decadence" value = 60 } }
+			primary_title = { check_variable = { which = imperial_decadence value >= 60 } }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 0.5
-			primary_title = { check_variable = { which = "imperial_decadence" value = 90 } }
+			primary_title = { check_variable = { which = imperial_decadence value >= 90 } }
 		}
 	}
 
 	option = {
 		name = OK
-		ROOT = { custom_tooltip = { text = IMPERIAL_DECADENCE_PLUS_1 } }
-		if = {
-			limit = { character = ROOT }
-			hidden_tooltip = {
-				primary_title = { change_variable = { which = "imperial_decadence" value = 1 } }
+
+		custom_tooltip = {
+			text = IMPERIAL_DECADENCE_PLUS_1
+
+			if = {
+				limit = { character = ROOT }
+
+				primary_title = {
+					change_variable = {
+						which = imperial_decadence
+						value = 1
+					}
+				}
+
 				character_event = { id = Plus.1852 } # change the decadence modifier
+
 				add_character_modifier = {
 					name = decadence_event_timer
+					years = 5
 					hidden = yes
-					duration = 1825
 				}
 			}
 		}
@@ -1191,60 +1306,70 @@ character_event = {
 	is_triggered_only = yes
 	major = yes
 
-	major_trigger = {
-		OR = {
-			character = ROOT
-			same_realm = ROOT
-		}
-	}
-
-	only_rulers = yes
+	only_independent = yes
 
 	trigger = {
+		real_tier = EMPEROR
+		is_incapable = yes
+		primary_title = { check_variable = { which = imperial_decadence value < 100 } }
 		is_ironman = no
 		is_tribal = no
 		is_nomadic = no
-		higher_real_tier_than = KING
-		primary_title = { NOT = { check_variable = { which = "imperial_decadence" value = 100 } } }
-		trait = incapable
-		NOR = {
-			uses_decadence = yes
-			has_character_modifier = decadence_event_timer
-		}
+		uses_decadence = no
+		NOT = { has_character_modifier = decadence_event_timer }
+	}
+
+	major_trigger = {
+		ai = no
+		same_realm = ROOT
 	}
 
 	weight_multiplier = {
 		days = 1
-		modifier = {
+
+		mult_modifier = {
 			factor = 2.0
-			NOT = { primary_title = { check_variable = { which = "imperial_decadence" value = 10 } } }
+			primary_title = { check_variable = { which = imperial_decadence value < 10 } }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 0.75
-			primary_title = { check_variable = { which = "imperial_decadence" value = 30 } }
+			primary_title = { check_variable = { which = imperial_decadence value >= 30 } }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 0.75
-			primary_title = { check_variable = { which = "imperial_decadence" value = 60 } }
+			primary_title = { check_variable = { which = imperial_decadence value >= 60 } }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 0.5
-			primary_title = { check_variable = { which = "imperial_decadence" value = 90 } }
+			primary_title = { check_variable = { which = imperial_decadence value >= 90 } }
 		}
 	}
 
 	option = {
 		name = OK
-		ROOT = { custom_tooltip = { text = IMPERIAL_DECADENCE_PLUS_1 } }
-		if = {
-			limit = { character = ROOT }
-			hidden_tooltip = {
-				primary_title = { change_variable = { which = "imperial_decadence" value = 1 } }
+
+		custom_tooltip = {
+			text = IMPERIAL_DECADENCE_PLUS_1
+
+			if = {
+				limit = { character = ROOT }
+
+				primary_title = {
+					change_variable = {
+						which = imperial_decadence
+						value = 1
+					}
+				}
+
 				character_event = { id = Plus.1852 } # change the decadence modifier
+
 				add_character_modifier = {
 					name = decadence_event_timer
+					years = 5
 					hidden = yes
-					duration = 1825
 				}
 			}
 		}
@@ -1268,73 +1393,83 @@ character_event = {
 	is_triggered_only = yes
 	major = yes
 
-	major_trigger = {
-		OR = {
-			character = ROOT
-			same_realm = ROOT
-		}
-	}
-
-	only_rulers = yes
+	only_independent = yes
 
 	trigger = {
+		real_tier = EMPEROR
+		primary_title = { check_variable = { which = imperial_decadence value < 100 } }
+
+		trigger_if = {
+			limit = { has_regent = yes }
+			regent = { trait = drunkard }
+		}
+		trigger_else = {
+			trait = drunkard
+		}
+
 		is_ironman = no
 		is_tribal = no
 		is_nomadic = no
-		higher_real_tier_than = KING
-		primary_title = { NOT = { check_variable = { which = "imperial_decadence" value = 100 } } }
-		OR = {
-			AND = {
-				has_regent = no
-				trait = drunkard
-			}
-			AND = {
-				has_regent = yes
-				regent = { trait = drunkard }
-			}
-		}
-		NOR = {
-			uses_decadence = yes
-			has_character_modifier = decadence_event_timer
-		}
+		uses_decadence = no
+		NOT = { has_character_modifier = decadence_event_timer }
+	}
+
+	major_trigger = {
+		ai = no
+		same_realm = ROOT
 	}
 
 	weight_multiplier = {
 		days = 1
-		modifier = {
+
+		mult_modifier = {
 			factor = 2.0
 			has_regent = yes
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 2.0
-			NOT = { primary_title = { check_variable = { which = "imperial_decadence" value = 10 } } }
+			primary_title = { check_variable = { which = imperial_decadence value < 10 } }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 0.75
-			primary_title = { check_variable = { which = "imperial_decadence" value = 30 } }
+			primary_title = { check_variable = { which = imperial_decadence value >= 30 } }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 0.75
-			primary_title = { check_variable = { which = "imperial_decadence" value = 60 } }
+			primary_title = { check_variable = { which = imperial_decadence value >= 60 } }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 0.5
-			primary_title = { check_variable = { which = "imperial_decadence" value = 90 } }
+			primary_title = { check_variable = { which = imperial_decadence value >= 90 } }
 		}
 	}
 
 	option = {
 		name = OK
-		ROOT = { custom_tooltip = { text = IMPERIAL_DECADENCE_PLUS_1 } }
-		if = {
-			limit = { character = ROOT }
-			hidden_tooltip = {
-				primary_title = { change_variable = { which = "imperial_decadence" value = 1 } }
+
+		custom_tooltip = {
+			text = IMPERIAL_DECADENCE_PLUS_1
+
+			if = {
+				limit = { character = ROOT }
+
+				primary_title = {
+					change_variable = {
+						which = imperial_decadence
+						value = 1
+					}
+				}
+
 				character_event = { id = Plus.1852 } # change the decadence modifier
+
 				add_character_modifier = {
 					name = decadence_event_timer
+					years = 5
 					hidden = yes
-					duration = 1825
 				}
 			}
 		}
@@ -1358,73 +1493,83 @@ character_event = {
 	is_triggered_only = yes
 	major = yes
 
-	major_trigger = {
-		OR = {
-			character = ROOT
-			same_realm = ROOT
-		}
-	}
-
-	only_rulers = yes
+	only_independent = yes
 
 	trigger = {
+		real_tier = EMPEROR
+		primary_title = { check_variable = { which = imperial_decadence value < 100 } }
+
+		trigger_if = {
+			limit = { has_regent = yes }
+			regent = { trait = lunatic }
+		}
+		trigger_else = {
+			trait = lunatic
+		}
+
 		is_ironman = no
 		is_tribal = no
 		is_nomadic = no
-		higher_real_tier_than = KING
-		primary_title = { NOT = { check_variable = { which = "imperial_decadence" value = 100 } } }
-		OR = {
-			AND = {
-				has_regent = no
-				trait = lunatic
-			}
-			AND = {
-				has_regent = yes
-				regent = { trait = lunatic }
-			}
-		}
-		NOR = {
-			uses_decadence = yes
-			has_character_modifier = decadence_event_timer
-		}
+		uses_decadence = no
+		NOT = { has_character_modifier = decadence_event_timer }
+	}
+
+	major_trigger = {
+		ai = no
+		same_realm = ROOT
 	}
 
 	weight_multiplier = {
 		days = 1
-		modifier = {
+
+		mult_modifier = {
 			factor = 2.0
 			has_regent = yes
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 2.0
-			NOT = { primary_title = { check_variable = { which = "imperial_decadence" value = 10 } } }
+			primary_title = { check_variable = { which = imperial_decadence value < 10 } }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 0.75
-			primary_title = { check_variable = { which = "imperial_decadence" value = 30 } }
+			primary_title = { check_variable = { which = imperial_decadence value >= 30 } }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 0.75
-			primary_title = { check_variable = { which = "imperial_decadence" value = 60 } }
+			primary_title = { check_variable = { which = imperial_decadence value >= 60 } }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 0.5
-			primary_title = { check_variable = { which = "imperial_decadence" value = 90 } }
+			primary_title = { check_variable = { which = imperial_decadence value >= 90 } }
 		}
 	}
 
 	option = {
 		name = OK
-		ROOT = { custom_tooltip = { text = IMPERIAL_DECADENCE_PLUS_1 } }
-		if = {
-			limit = { character = ROOT }
-			hidden_tooltip = {
-				primary_title = { change_variable = { which = "imperial_decadence" value = 1 } }
+
+		custom_tooltip = {
+			text = IMPERIAL_DECADENCE_PLUS_1
+
+			if = {
+				limit = { character = ROOT }
+
+				primary_title = {
+					change_variable = {
+						which = imperial_decadence
+						value = 1
+					}
+				}
+
 				character_event = { id = Plus.1852 } # change the decadence modifier
+
 				add_character_modifier = {
 					name = decadence_event_timer
+					years = 5
 					hidden = yes
-					duration = 1825
 				}
 			}
 		}
@@ -1448,93 +1593,111 @@ character_event = {
 	is_triggered_only = yes
 	major = yes
 
-	major_trigger = {
-		OR = {
-			character = ROOT
-			same_realm = ROOT
-		}
-	}
-
-	only_rulers = yes
+	only_independent = yes
 
 	trigger = {
+		real_tier = EMPEROR
+		primary_title = { check_variable = { which = imperial_decadence value < 100 } }
+
+		trigger_if = {
+			limit = { has_regent = yes }
+			regent = { trait = possessed }
+		}
+		trigger_else = {
+			trait = possessed
+		}
+
 		is_ironman = no
 		is_tribal = no
 		is_nomadic = no
-		higher_real_tier_than = KING
-		primary_title = { NOT = { check_variable = { which = "imperial_decadence" value = 100 } } }
-		OR = {
-			AND = {
-				has_regent = no
-				trait = possessed
-			}
-			AND = {
-				has_regent = yes
-				regent = { trait = possessed }
-			}
-		}
-		NOR = {
-			uses_decadence = yes
-			has_character_modifier = decadence_event_timer
-		}
+		uses_decadence = no
+		NOT = { has_character_modifier = decadence_event_timer }
+	}
+
+	major_trigger = {
+		ai = no
+		same_realm = ROOT
 	}
 
 	weight_multiplier = {
 		days = 1
-		modifier = {
+
+		mult_modifier = {
 			factor = 1.5
-			has_regent = no
+
 			has_character_modifier = voice_of_jesus
+			has_regent = no
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 1.5
+
 			has_regent = yes
 			regent = { has_character_modifier = voice_of_jesus }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 2.0
-			has_regent = no
+
 			has_character_modifier = voice_of_satan
+			has_regent = no
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 2.0
+
 			has_regent = yes
 			regent = { has_character_modifier = voice_of_satan }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 2.0
 			has_regent = yes
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 2.0
-			NOT = { primary_title = { check_variable = { which = "imperial_decadence" value = 10 } } }
+			primary_title = { check_variable = { which = imperial_decadence value < 10 } }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 0.75
-			primary_title = { check_variable = { which = "imperial_decadence" value = 30 } }
+			primary_title = { check_variable = { which = imperial_decadence value >= 30 } }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 0.75
-			primary_title = { check_variable = { which = "imperial_decadence" value = 60 } }
+			primary_title = { check_variable = { which = imperial_decadence value >= 60 } }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 0.5
-			primary_title = { check_variable = { which = "imperial_decadence" value = 90 } }
+			primary_title = { check_variable = { which = imperial_decadence value >= 90 } }
 		}
 	}
 
 	option = {
 		name = OK
-		ROOT = { custom_tooltip = { text = IMPERIAL_DECADENCE_PLUS_1 } }
-		if = {
-			limit = { character = ROOT }
-			hidden_tooltip = {
-				primary_title = { change_variable = { which = "imperial_decadence" value = 1 } }
+
+		custom_tooltip = {
+			text = IMPERIAL_DECADENCE_PLUS_1
+
+			if = {
+				limit = { character = ROOT }
+
+				primary_title = {
+					change_variable = {
+						which = imperial_decadence
+						value = 1
+					}
+				}
+
 				character_event = { id = Plus.1852 } # change the decadence modifier
+
 				add_character_modifier = {
 					name = decadence_event_timer
+					years = 5
 					hidden = yes
-					duration = 1825
 				}
 			}
 		}
@@ -1559,72 +1722,82 @@ character_event = {
 	major = yes
 
 	major_trigger = {
-		OR = {
-			character = ROOT
-			same_realm = ROOT
-		}
+		ai = no
+		same_realm = ROOT
 	}
 
-	only_rulers = yes
+	only_independent = yes
 
 	trigger = {
+		real_tier = EMPEROR
+		primary_title = { check_variable = { which = imperial_decadence value < 100 } }
+
+		trigger_if = {
+			limit = { has_regent = yes }
+			regent = { trait = depressed }
+		}
+		trigger_else = {
+			trait = depressed
+		}
+
 		is_ironman = no
 		is_tribal = no
 		is_nomadic = no
-		higher_real_tier_than = KING
-		primary_title = { NOT = { check_variable = { which = "imperial_decadence" value = 100 } } }
-		OR = {
-			AND = {
-				has_regent = no
-				trait = depressed
-			}
-			AND = {
-				has_regent = yes
-				regent = { trait = depressed }
-			}
-		}
-		NOR = {
-			uses_decadence = yes
-			has_character_modifier = decadence_event_timer
-		}
+		uses_decadence = no
+		NOT = { has_character_modifier = decadence_event_timer }
 	}
 
 	weight_multiplier = {
 		days = 1
-		modifier = {
+
+		mult_modifier = {
 			factor = 2.0
 			has_regent = yes
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 2.0
-			NOT = { primary_title = { check_variable = { which = "imperial_decadence" value = 10 } } }
+			primary_title = { check_variable = { which = imperial_decadence value < 10 } }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 0.75
-			primary_title = { check_variable = { which = "imperial_decadence" value = 30 } }
+			primary_title = { check_variable = { which = imperial_decadence value >= 30 } }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 0.75
-			primary_title = { check_variable = { which = "imperial_decadence" value = 60 } }
+			primary_title = { check_variable = { which = imperial_decadence value >= 60 } }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 0.5
-			primary_title = { check_variable = { which = "imperial_decadence" value = 90 } }
+			primary_title = { check_variable = { which = imperial_decadence value >= 90 } }
 		}
 	}
 
 	option = {
 		name = OK
-		ROOT = { custom_tooltip = { text = IMPERIAL_DECADENCE_PLUS_1 } }
-		if = {
-			limit = { character = ROOT }
-			hidden_tooltip = {
-				primary_title = { change_variable = { which = "imperial_decadence" value = 1 } }
+
+		custom_tooltip = {
+			text = IMPERIAL_DECADENCE_PLUS_1
+
+			if = {
+				limit = { character = ROOT }
+
+				primary_title = {
+					change_variable = {
+						which = imperial_decadence
+						value = 1
+					}
+				}
+
 				character_event = { id = Plus.1852 } # change the decadence modifier
+
 				add_character_modifier = {
 					name = decadence_event_timer
+					years = 5
 					hidden = yes
-					duration = 1825
 				}
 			}
 		}
@@ -1640,60 +1813,70 @@ character_event = {
 	is_triggered_only = yes
 	major = yes
 
-	major_trigger = {
-		OR = {
-			character = ROOT
-			same_realm = ROOT
-		}
-	}
-
-	only_rulers = yes
+	only_independent = yes
 	prisoner = yes
 
 	trigger = {
+		real_tier = EMPEROR
+		primary_title = { check_variable = { which = imperial_decadence value < 100 } }
 		is_ironman = no
 		is_tribal = no
 		is_nomadic = no
-		higher_real_tier_than = KING
-		primary_title = { NOT = { check_variable = { which = "imperial_decadence" value = 100 } } }
-		NOR = {
-			uses_decadence = yes
-			has_character_modifier = decadence_event_timer
-		}
+		uses_decadence = no
+		NOT = { has_character_modifier = decadence_event_timer }
+	}
+
+	major_trigger = {
+		ai = no
+		same_realm = ROOT
 	}
 
 	weight_multiplier = {
 		days = 1
-		modifier = {
+
+		mult_modifier = {
 			factor = 2.0
-			NOT = { primary_title = { check_variable = { which = "imperial_decadence" value = 10 } } }
+			primary_title = { check_variable = { which = imperial_decadence value < 10 } }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 0.75
-			primary_title = { check_variable = { which = "imperial_decadence" value = 30 } }
+			primary_title = { check_variable = { which = imperial_decadence value >= 30 } }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 0.75
-			primary_title = { check_variable = { which = "imperial_decadence" value = 60 } }
+			primary_title = { check_variable = { which = imperial_decadence value >= 60 } }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 0.5
-			primary_title = { check_variable = { which = "imperial_decadence" value = 90 } }
+			primary_title = { check_variable = { which = imperial_decadence value >= 90 } }
 		}
 	}
 
 	option = {
 		name = OK
-		ROOT = { custom_tooltip = { text = IMPERIAL_DECADENCE_PLUS_1 } }
-		if = {
-			limit = { character = ROOT }
-			hidden_tooltip = {
-				primary_title = { change_variable = { which = "imperial_decadence" value = 1 } }
+
+		custom_tooltip = {
+			text = IMPERIAL_DECADENCE_PLUS_1
+
+			if = {
+				limit = { character = ROOT }
+
+				primary_title = {
+					change_variable = {
+						which = imperial_decadence
+						value = 1
+					}
+				}
+
 				character_event = { id = Plus.1852 } # change the decadence modifier
+
 				add_character_modifier = {
 					name = decadence_event_timer
+					years = 5
 					hidden = yes
-					duration = 1825
 				}
 			}
 		}
@@ -1709,65 +1892,76 @@ character_event = {
 	is_triggered_only = yes
 	major = yes
 
-	major_trigger = {
-		OR = {
-			character = ROOT
-			same_realm = ROOT
-		}
-	}
-
-	only_rulers = yes
+	only_independent = yes
 
 	trigger = {
+		higher_real_tier_than = KING
+		primary_title = { check_variable = { which = imperial_decadence value >= 1 } }
+		job_treasurer = { stewardship >= 15 }
+		realm_stewardship >= 30
 		is_ironman = no
 		is_tribal = no
 		is_nomadic = no
-		higher_real_tier_than = KING
-		primary_title = { check_variable = { which = "imperial_decadence" value = 1 } }
-		job_treasurer = { stewardship = 15 }
-		realm_stewardship = 30
-		NOR = {
-			uses_decadence = yes
-			has_character_modifier = decadence_event_timer
-		}
+		uses_decadence = no
+		NOT = { has_character_modifier = decadence_event_timer }
+	}
+
+	major_trigger = {
+		ai = no
+		same_realm = ROOT
 	}
 
 	weight_multiplier = {
 		days = 1
-		modifier = {
+
+		mult_modifier = {
 			factor = 1.5
-			job_treasurer = { stewardship = 20 }
+			job_treasurer = { stewardship >= 20 }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 1.5
-			job_treasurer = { stewardship = 25 }
+			job_treasurer = { stewardship >= 25 }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 0.5
-			NOT = { primary_title = { check_variable = { which = "imperial_decadence" value = 10 } } }
+			primary_title = { check_variable = { which = imperial_decadence value < 10 } }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 2.0
-			primary_title = { check_variable = { which = "imperial_decadence" value = 30 } }
+			primary_title = { check_variable = { which = imperial_decadence value >= 30 } }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 2.0
-			primary_title = { check_variable = { which = "imperial_decadence" value = 60 } }
+			primary_title = { check_variable = { which = imperial_decadence value >= 60 } }
 		}
 	}
 
 	option = {
 		name = OK
-		ROOT = { custom_tooltip = { text = IMPERIAL_DECADENCE_MINUS_1 } }
-		if = {
-			limit = { character = ROOT }
-			hidden_tooltip = {
-				primary_title = { change_variable = { which = "imperial_decadence" value = -1 } }
+
+		custom_tooltip = {
+			text = IMPERIAL_DECADENCE_MINUS_1
+
+			if = {
+				limit = { character = ROOT }
+
+				primary_title = {
+					change_variable = {
+						which = imperial_decadence
+						value = -1
+					}
+				}
+
 				character_event = { id = Plus.1852 } # change the decadence modifier
+
 				add_character_modifier = {
 					name = decadence_event_timer
+					years = 5
 					hidden = yes
-					duration = 1825
 				}
 			}
 		}
@@ -1783,69 +1977,80 @@ character_event = {
 	is_triggered_only = yes
 	major = yes
 
-	major_trigger = {
-		OR = {
-			character = ROOT
-			same_realm = ROOT
-		}
-	}
-
 	only_rulers = yes
 
 	trigger = {
+		real_tier = EMPEROR
+		primary_title = { check_variable = { which = imperial_decadence value < 100 } }
+		job_treasurer = { stewardship < 10 }
 		is_ironman = no
 		is_tribal = no
 		is_nomadic = no
-		higher_real_tier_than = KING
-		primary_title = { NOT = { check_variable = { which = "imperial_decadence" value = 100 } } }
-		any_courtier = { has_job_title = job_treasurer }
-		job_treasurer = { NOT = { stewardship = 10 } }
-		NOR = {
-			uses_decadence = yes
-			has_character_modifier = decadence_event_timer
-		}
+		uses_decadence = no
+		NOT = { has_character_modifier = decadence_event_timer }
+	}
+
+	major_trigger = {
+		ai = no
+		same_realm = ROOT
 	}
 
 	weight_multiplier = {
 		days = 1
-		modifier = {
+
+		mult_modifier = {
 			factor = 1.5
-			job_treasurer = { NOT = { stewardship = 8 } }
+			job_treasurer = { stewardship < 8 }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 1.5
-			job_treasurer = { NOT = { stewardship = 5 } }
+			job_treasurer = { stewardship < 5 }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 2.0
-			NOT = { primary_title = { check_variable = { which = "imperial_decadence" value = 10 } } }
+			primary_title = { check_variable = { which = imperial_decadence value < 10 } }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 0.75
-			primary_title = { check_variable = { which = "imperial_decadence" value = 30 } }
+			primary_title = { check_variable = { which = imperial_decadence value >= 30 } }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 0.75
-			primary_title = { check_variable = { which = "imperial_decadence" value = 60 } }
+			primary_title = { check_variable = { which = imperial_decadence value >= 60 } }
 		}
-		modifier = {
+
+		mult_modifier = {
 			factor = 0.5
-			primary_title = { check_variable = { which = "imperial_decadence" value = 90 } }
+			primary_title = { check_variable = { which = imperial_decadence value >= 90 } }
 		}
 	}
 
 	option = {
 		name = OK
-		ROOT = { custom_tooltip = { text = IMPERIAL_DECADENCE_PLUS_1 } }
-		if = {
-			limit = { character = ROOT }
-			hidden_tooltip = {
-				primary_title = { change_variable = { which = "imperial_decadence" value = 1 } }
+
+		custom_tooltip = {
+			text = IMPERIAL_DECADENCE_PLUS_1
+
+			if = {
+				limit = { character = ROOT }
+
+				primary_title = {
+					change_variable = {
+						which = imperial_decadence
+						value = 1
+					}
+				}
+
 				character_event = { id = Plus.1852 } # change the decadence modifier
+
 				add_character_modifier = {
 					name = decadence_event_timer
+					years = 5
 					hidden = yes
-					duration = 1825
 				}
 			}
 		}
@@ -1861,63 +2066,69 @@ character_event = {
 	is_triggered_only = yes
 
 	immediate = {
-		primary_title = {
-			save_event_target_as = primary_title_target
-		}
 		random_demesne_title = {
 			limit = {
-				tier = EMPEROR
+				real_tier = EMPEROR
+				is_primary_holder_title = no
 				temporary = no
-				NOT = { title = event_target:primary_title_target }
 			}
+
 			save_event_target_as = secondary_title_target
 		}
+
 		clr_character_flag = must_grant_empire_flag
 	}
 
 	option = { # Give my primary title
 		name = EVTOPTA_Plus_1871
+
 		primary_title = {
+			show_scope_change = no
+
 			grant_title = FROM
 		}
-		make_tributary = { who = FROM tributary_type = imperial }
-		hidden_tooltip = {
-			clear_event_target = primary_title_target
-			clear_event_target = secondary_title_target
+
+		make_tributary = {
+			who = FROM
+			tributary_type = imperial
 		}
 	}
 
 	option = { # Give second title
 		name = EVTOPTB_Plus_1871
+
 		event_target:secondary_title_target = {
+			show_scope_change = no
+
 			grant_title = FROM
 		}
-		make_tributary = { who = FROM tributary_type = imperial }
-		hidden_tooltip = {
-			clear_event_target = primary_title_target
-			clear_event_target = secondary_title_target
+
+		make_tributary = {
+			who = FROM
+			tributary_type = imperial
 		}
 	}
 
 	option = {
 		name = NEVERMIND
-		hidden_tooltip = {
-			set_character_flag = must_grant_empire_flag
-		}
+
+		set_character_flag = must_grant_empire_flag
 	}
 }
 
-#Make capital kingdom de jure to empire if kingdom entirely controled
-#called from on_create_title, ROOT is the creating character, FROM is the title
+# Make capital kingdom de jure to empire if kingdom entirely controled
+# ROOT is the creating character
+# FROM is the title
 character_event = {
 	id = Plus.1872
 
+	is_triggered_only = yes # on_create_title
 	hide_window = yes
-	is_triggered_only = yes
 
 	trigger = {
-		FROM = { tier = EMPEROR }
-		num_of_emperor_titles = 1
+		FROM = { real_tier = EMPEROR }
+		num_of_emperor_titles >= 1
+
 		capital_scope = {
 			kingdom = {
 				is_titular = no

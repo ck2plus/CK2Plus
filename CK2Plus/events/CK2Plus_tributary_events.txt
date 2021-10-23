@@ -9,12 +9,12 @@ namespace = Plus
 #######################################
 
 ## DEMAND TRIBUTARY EVENT CHAIN
-#Bounce event, to place Attacker in FROM scope
+# Bounce event, to place Attacker in FROM scope
 character_event = {
 	id = Plus.4000
-	hide_window = yes
 
 	is_triggered_only = yes
+	hide_window = yes
 
 	immediate = {
 		FROM = { letter_event = { id = Plus.4001 } }
@@ -25,39 +25,40 @@ character_event = {
 # Demand tribute event
 letter_event = {
 	id = Plus.4001
-	desc = "EVTDESC_Plus_4000"
+	desc = EVTDESC_Plus_4000
 	border = GFX_event_letter_frame_war
 
 	is_triggered_only = yes
 
 	option = { # Accept becoming tributary
 		name = EVTOPT_Plus_4000A
-		FROM = { letter_event = { id = Plus.4002 days = 3 } }
+
+		FROM = {
+			letter_event = {
+				id = Plus.4002
+				days = 3
+			}
+		}
+
 		if = {
 			limit = {
-				host = {
-					character = FROM
-				}
 				prisoner = yes
+				host = { character = FROM }
 			}
-			prisoner = no
+
+			imprison = no
 		}
+
 		ai_chance = {
 			factor = 20
-			modifier = { #lunatic goes to war
-				factor = 0
-				OR = {
-					trait = lunatic
-					trait = rabies
-				}
-			}
-			modifier = { #brave goes to war
-				factor = 0
-				trait = brave
-			}
-			modifier = { #pride goeth before fall
-				factor = 0
-				OR = {
+
+			trigger = {
+				NOR = {
+					trait = lunatic # Lunatic goes to war
+					trait = rabies # Lunatic goes to war
+					trait = brave # Brave goes to war
+
+					# Pride goeth before fall
 					has_nickname = nick_the_hammer
 					has_nickname = nick_the_conqueror
 					has_nickname = nick_the_victorious
@@ -76,120 +77,158 @@ letter_event = {
 					trait = ambitious
 				}
 			}
-			modifier = { #have less than half strength of attacker
+
+			mult_modifier = { # Have less than half strength of attacker
 				factor = 2
-				NOT = { relative_power_including_allies_defender = { who = FROM power = 0.5 } }
+				relative_power_including_allies_defender = { who = FROM power < 0.5 }
 			}
-			modifier = { #have less than third strength of attacker
+
+			mult_modifier = { # Have less than third strength of attacker
 				factor = 2
-				NOT = { relative_power_including_allies_defender = { who = FROM power = 0.33 } }
+				relative_power_including_allies_defender = { who = FROM power < 0.33 }
 			}
-			modifier = { #have less than tenth strength of attacker
+
+			mult_modifier = { # Have less than tenth strength of attacker
 				factor = 2
-				NOT = { relative_power_including_allies_defender = { who = FROM power = 0.1 } }
+				relative_power_including_allies_defender = { who = FROM power < 0.1 }
 			}
-			modifier = { #craven
+
+			mult_modifier = { # Craven
 				factor = 2
 				trait = craven
 			}
-			modifier = { #already defending
+
+			mult_modifier = { # Already defending
 				factor = 2
 				is_primary_war_defender = yes
 			}
-			modifier = { #I'm an emperor
+
+			mult_modifier = { # I'm an emperor
 				factor = 0.1
-				tier = EMPEROR
+				real_tier = EMPEROR
 			}
-			modifier = { #I'm a king
+
+			mult_modifier = { # I'm a king
 				factor = 0.1
-				tier = KING
+				real_tier = KING
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.5
 				is_nomadic = yes
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.5
 				is_tribal = yes
 				FROM = { is_nomadic = no }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 2
-				NOT = { wealth = 50 }
+
+				wealth < 50
 				is_republic = yes
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 5
+
+				wealth < 50
 				FROM = { is_nomadic = yes }
-				NOT = { wealth = 50 }
 			}
 		}
 	}
 
 	option = { # Refuse, go to war
 		name = EVTOPT_Plus_4000B
+
 		trigger = {
-			NOT = { prisoner = no }
+			prisoner = no
 			host = {
 				NOT = { character = FROM }
 			}
 		}
-		FROM = { letter_event = { id = Plus.4003 days = 3 } }
+
+		FROM = {
+			letter_event = {
+				id = Plus.4003
+				days = 3
+			}
+		}
+
 		ai_chance = {
 			factor = 70
-			modifier = { #craven
+
+			trigger = {
+				# Can't affort a war
+				NOT = { has_character_modifier = ai_austerity }
+			}
+
+			mult_modifier = { # Craven
 				factor = 0.5
 				trait = craven
 			}
-			modifier = { #attacker is craven
+
+			mult_modifier = { # Attacker is craven
 				factor = 2
 				FROM = { trait = craven }
 			}
-			modifier = { # similar power
+
+			mult_modifier = { # Similar power
 				factor = 2
-				relative_power_including_allies_defender = { who = FROM power = 0.75 }
+				relative_power_including_allies_defender = { who = FROM power >= 0.75 }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 4
 				NOT = { religion_group = FROM }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 2
 				NOT = { de_jure_liege = FROM }
-			}
-			modifier = { #Can't affort a war.
-				factor = 0
-				has_character_modifier = ai_austerity
 			}
 		}
 	}
 
 	option = { # Can't we make a deal?
 		name = EVTOPT_Plus_4000C
+
 		trigger = {
-			wealth = 50
-			NAND = {
-				prisoner = no
-				host = {
-					character = FROM
-				}
+			wealth >= 50
+
+			trigger_if = {
+				limit = { prisoner = yes }
+				host = { NOT = { character = FROM } }
 			}
 		}
-		FROM = { letter_event = { id = Plus.4004 days = 3 } }
+
+		FROM = {
+			letter_event = {
+				id = Plus.4004
+				days = 3
+			}
+		}
+
 		ai_chance = {
 			factor = 10
-			modifier = { #we can pay
+
+			trigger = {
+				# Can't fund this
+				NOT = { has_character_modifier = ai_austerity }
+			}
+
+			mult_modifier = { # We can pay
 				factor = 10
 				is_republic = yes
 			}
-			modifier = { #you look too big
+
+			mult_modifier = { # You look too big
 				factor = 4
-				wealth = 200
-				NOT = { relative_power_including_allies_defender = { who = FROM power = 0.5 }}
-			}
-			modifier = { #can't fund this.
-				factor = 0
-				has_character_modifier = ai_austerity
+
+				wealth >= 200
+				relative_power_including_allies_defender = { who = FROM power < 0.5 }
 			}
 		}
 	}
@@ -199,7 +238,7 @@ letter_event = {
 # Accepted tributary status
 letter_event = {
 	id = Plus.4002
-	desc = "EVTDESC_Plus_4002"
+	desc = EVTDESC_Plus_4002
 	border = GFX_event_letter_frame_war
 
 	is_triggered_only = yes
@@ -207,31 +246,25 @@ letter_event = {
 	immediate = {
 		FROM = {
 			save_event_target_as = target_loser
-			if = {
-				limit = { tier = count }
-				prestige = -50
+
+			trigger_switch = {
+				on_trigger = real_tier
+
+				COUNT = { prestige = -50 }
+				DUKE = { prestige = -100 }
+				KING = { prestige = -150 }
+				EMPEROR = { prestige = -200 }
 			}
-			if = {
-				limit = { tier = duke }
-				prestige = -100
-			}
-			if = {
-				limit = { tier = king }
-				prestige = -150
-			}
-			if = {
-				limit = { tier = emperor }
-				prestige = -200
-			}
+
 			imperial_decadence_plus_1_effect = yes
 			pf_glory_minus2_effect = yes
+
 			custom_tooltip = {
-				text = "REMOVE_PREVIOUS_SUZERAIN"
-				hidden_tooltip = {
-					any_suzerain = {
-						event_target:target_loser = {
-							remove_tributary = PREV
-						}
+				text = REMOVE_PREVIOUS_SUZERAIN
+
+				any_suzerain = {
+					event_target:target_loser = {
+						remove_tributary = PREV
 					}
 				}
 			}
@@ -253,10 +286,18 @@ letter_event = {
 			limit = { FROM = { tier = emperor } }
 			prestige = 200
 		}
-		add_character_modifier = { name = victory_timer duration = 1 hidden = yes }
+
+		add_character_modifier = {
+			name = victory_timer
+			days = 1
+			hidden = yes
+		}
+
 		pf_glory_plus2_effect = yes
+
 		if = {
 			limit = { is_nomadic = yes}
+
 			make_tributary = {
 				who = FROM
 				tributary_type = nomadic
@@ -270,32 +311,23 @@ letter_event = {
 		}
 
 		if  = {
-			limit = {
-				ROOT = {
-					uses_decadence = yes
-				}
-			}
-			ROOT = {
-				decadence = -10
-			}
+			limit = { uses_decadence = yes }
+			decadence = -10
 		}
+
 		if  = {
-			limit = {
+			limit = { is_nomadic = yes }
+
+			clan_title = {
 				ROOT = {
-					is_nomadic = yes
-				}
-			}
-			ROOT = {
-				clan_title = {
-					ROOT = {
-						any_vassal = {
-							limit = { is_nomadic = yes }
-							clan_title = {
-								clan_opinion = {
-									who = PREVPREVPREV
-									modifier = won_tributary_war
-									years = 5
-								}
+					any_vassal = {
+						limit = { is_nomadic = yes }
+
+						clan_title = {
+							clan_opinion = {
+								name = won_tributary_war
+								who = PREVPREVPREV
+								years = 5
 							}
 						}
 					}
@@ -304,33 +336,29 @@ letter_event = {
 		}
 
 		if  = {
-			limit = {
-				ROOT = {
-					is_tribal = yes
-				}
-			}
-			ROOT = {
-				any_vassal = {
-					limit = { is_tribal = yes }
-					opinion = {
-						who = PREV
-						modifier = won_tributary_war
-						years = 5
-					}
+			limit = { is_tribal = yes }
+
+			any_vassal = {
+				limit = { is_tribal = yes }
+
+				opinion = {
+					name = won_tributary_war
+					who = PREV
+					years = 5
 				}
 			}
 		}
 	}
 
-	option = { #Excellent
+	option = { # Excellent
 		name = EVTOPT_Plus_4002A
+
 		clr_character_flag = trying_to_gain_tributary
-		hidden_tooltip = {
-			add_character_modifier = {
-				name = tributary_timer
-				duration = 365
-				hidden = yes
-			}
+
+		add_character_modifier = {
+			name = tributary_timer
+			years = 1
+			hidden = yes
 		}
 	}
 }
@@ -339,64 +367,75 @@ letter_event = {
 # Go to war!
 letter_event = {
 	id = Plus.4003
-	desc = "EVTDESC_Plus_4003"
+	desc = EVTDESC_Plus_4003
 	border = GFX_event_letter_frame_war
 
 	is_triggered_only = yes
 
-	option = { #Declare war!
+	option = { # Declare war!
 		name = EVTOPT_Plus_4003A
-		ai_chance = {
-			factor = 80
-			modifier = {
-				factor = 0.2
-				trait = craven
-			}
-		}
+
 		war = {
 			target = FROM
 			casus_belli = tributary_cb
 		}
+
 		clr_character_flag = trying_to_gain_tributary
-		hidden_tooltip = {
-			add_character_modifier = {
-				name = tributary_timer
-				duration = 365
-				hidden = yes
+
+		add_character_modifier = {
+			name = tributary_timer
+			years = 1
+			hidden = yes
+		}
+
+		ai_chance = {
+			factor = 80
+
+			mult_modifier = {
+				factor = 0.2
+				trait = craven
 			}
 		}
 	}
 
-	option = { #I was bluffing.
+	option = { # I was bluffing.
 		name = EVTOPT_Plus_4003B
+
+		prestige = -100
+
+		random = {
+			chance = 25
+			add_trait_fully_craven_effect = yes
+		}
+
+		clr_character_flag = trying_to_gain_tributary
+
+		add_character_modifier = {
+			name = tributary_timer
+			years = 10
+			hidden = yes
+		}
+
+		FROM = {
+			letter_event = {
+				id = Plus.4005
+				days = 3
+			}
+		}
+
 		ai_chance = {
 			factor = 20
-			modifier = {
+
+			mult_modifier = {
 				factor = 2
 				trait = craven
 			}
-			modifier = { #already defending
+
+			mult_modifier = { # Already defending
 				factor = 2
 				is_primary_war_defender = yes
 			}
 		}
-		prestige = -100
-		if = {
-			limit = { NOT = { trait = craven } }
-			random = {
-				chance = 25
-				add_trait = craven
-			}
-		}
-		clr_character_flag = trying_to_gain_tributary
-		hidden_tooltip = {
-			add_character_modifier = {
-				name = tributary_timer
-				duration = 3650
-				hidden = yes
-			}
-		}
-		FROM = { letter_event = {id = Plus.4005 days = 3 } }
 	}
 }
 
@@ -404,29 +443,53 @@ letter_event = {
 # Offered money instead
 letter_event = {
 	id = Plus.4004
-	desc = "EVTDESC_Plus_4004"
+	desc = EVTDESC_Plus_4004
 	border = GFX_event_letter_frame_war
 
 	is_triggered_only = yes
 
-	option = { #Agreed
+	option = { # Agreed
 		name = EVTOPT_Plus_4004A
+
+		transfer_scaled_wealth = {
+			from = FROM
+			value = 0.75
+			min = 25
+		}
+
+		prestige = 100
+
+		FROM = {
+			opinion = {
+				name = opinion_paid_tribute
+				who = ROOT
+				years = 5
+			}
+
+			letter_event = {
+				id = Plus.4006
+				days = 3
+			}
+		}
+
+		add_character_modifier = {
+			name = tributary_timer
+			years = 1
+			hidden = yes
+		}
+
+		clr_character_flag = trying_to_gain_tributary
+
 		ai_chance = {
 			factor = 75
-			modifier = { #lunatic goes to war
-				factor = 0
-				OR = {
-					trait = lunatic
-					trait = rabies
-				}
-			}
-			modifier = { #brave goes to war
-				factor = 0
-				trait = brave
-			}
-			modifier = { #pride goeth before fall
-				factor = 0
-				OR = {
+
+			trigger = {
+				NOR = {
+					trait = lunatic # Lunatic goes to war
+					trait = rabies # Lunatic goes to war
+					trait = brave # Brave goes to war
+
+					# Pride goeth before fall
 					has_nickname = nick_the_hammer
 					has_nickname = nick_the_conqueror
 					has_nickname = nick_the_victorious
@@ -445,62 +508,51 @@ letter_event = {
 					trait = ambitious
 				}
 			}
-			modifier = { #craven
+
+			mult_modifier = { # Craven
 				factor = 2
 				trait = craven
 			}
-			modifier = { #already defending
+
+			mult_modifier = { # Already defending
 				factor = 2
 				is_primary_war_defender = yes
 			}
 		}
-		FROM = { transfer_scaled_wealth = { to = ROOT value = 0.75 min = 25 } }
-		FROM = { letter_event = {id = Plus.4006 days = 3 } }
-		prestige = 100
-		FROM = {
-			opinion = {
-			modifier = opinion_paid_tribute
-			who = ROOT
-			years = 5
-			}
-		}
-		hidden_tooltip = {
-			add_character_modifier = {
-				name = tributary_timer
-				duration = 365
-				hidden = yes
-			}
-		}
-		clr_character_flag = trying_to_gain_tributary
 	}
 
-	option = { #Nice try.
+	option = { # Nice try.
 		name = EVTOPT_Plus_4004B
-		ai_chance = { # have more than twice the strength
-			factor = 25
-			modifier = {
-				factor = 2
-				FROM = { relative_power_including_allies_defender = { who = ROOT power = 0.5 } }
-			}
-			modifier = { # have three times the strength
-				factor = 2
-				FROM = { relative_power_including_allies_defender = { who = ROOT power = 0.33 } }
-			}
-			modifier = { # get it while it's hots
-				factor = 2
-				FROM = { is_primary_war_defender = yes }
-			}
-		}
+
 		war = {
 			target = FROM
 			casus_belli = tributary_cb
 		}
+
 		clr_character_flag = trying_to_gain_tributary
-		hidden_tooltip = {
-			add_character_modifier = {
-				name = tributary_timer
-				duration = 365
-				hidden = yes
+
+		add_character_modifier = {
+			name = tributary_timer
+			years = 1
+			hidden = yes
+		}
+
+		ai_chance = {
+			factor = 25
+
+			mult_modifier = { # Have more than twice the strength
+				factor = 2
+				relative_power_including_allies_attacker = { who = FROM power >= 2 }
+			}
+
+			mult_modifier = { # Have three times the strength
+				factor = 2
+				relative_power_including_allies_attacker = { who = FROM power >= 3 }
+			}
+
+			mult_modifier = { # Get it while it's hots
+				factor = 2
+				FROM = { is_primary_war_defender = yes }
 			}
 		}
 	}
@@ -510,12 +562,14 @@ letter_event = {
 # Attacker decides not to declare war after all.
 letter_event = {
 	id = Plus.4005
-	desc = "EVTDESC_Plus_4005"
+	desc = EVTDESC_Plus_4005
 	border = GFX_event_letter_frame_war
 
 	is_triggered_only = yes
 
-	option = { #Excellent
+	ai = no
+
+	option = { # Excellent
 		name = EVTOPT_Plus_4005A
 	}
 }
@@ -524,12 +578,14 @@ letter_event = {
 # Attacker decides to accept the deal
 letter_event = {
 	id = Plus.4006
-	desc = "EVTDESC_Plus_4006"
+	desc = EVTDESC_Plus_4006
 	border = GFX_event_letter_frame_war
 
 	is_triggered_only = yes
 
-	option = { #Excellent
+	ai = no
+
+	option = { # Excellent
 		name = EVTOPT_Plus_4006A
 	}
 }
@@ -542,154 +598,142 @@ character_event = {
 	is_triggered_only = yes
 
 	only_independent = yes
-	only_playable = yes
 	has_dlc = "Horse Lords"
 	war = no
 	prisoner = no
 	ai = yes
 
 	trigger = {
-		#lets limit this for ai to kings and duke
+		# Let's limit this for ai to kings and duke
 		higher_real_tier_than = COUNT
-		#limit to large realms
+
+		# Limit to large realms
 		OR = {
-			realm_size = 100
+			realm_size >= 100
 			is_nomadic = yes
 		}
-		NOT = { has_character_modifier = holy_truce_timer }
-		NOT = { has_character_modifier = tributary_timer }
-		mercenary = no
+
 		is_tributary = no
-		NOT = { has_character_flag = trying_to_gain_tributary }
+		mercenary = no
 		has_regent = no
-		NOT = {
-			any_war = {
-				using_cb = tributary_cb
-			}
+
+		NOR = {
+			has_character_modifier = holy_truce_timer
+			has_character_modifier = tributary_timer
+			has_character_flag = trying_to_gain_tributary
+			any_war = { using_cb = tributary_cb }
 		}
 	}
 
 	immediate = {
 		random_list =  {
-			90 = {
-				#Nothing
-			}
+			90 = { } # Nothing
+
 			10 = {
-				modifier = {
+				trigger = {
+					trigger_if = {
+						limit = { is_tribal = yes }
+
+						trigger_if = {
+							limit = { trait = ambitious }
+							martial >= 8
+						}
+						trigger_else = {
+							martial >= 15
+						}
+
+						NOT = { trait = content }
+					}
+				}
+
+				mult_modifier = {
 					factor = 5
 					is_nomadic = yes
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 4
-					ROOT = { trait = greedy }
+					trait = greedy
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 0.1
 					trait = content
 				}
-				modifier = {
-					factor = 0
-					ROOT = {
-						is_tribal = yes
-						NOR = {
-							trait = ambitious
-							martial = 15
-						}
-					}
-				}
-				modifier = {
-					factor = 0
-					ROOT = {
-						is_tribal = yes
-						OR = {
-							trait = content
-							NOT = { martial = 8 }
-						}
-					}
-				}
-				random_independent_ruler = {
+
+				random_neighbor_independent_ruler = {
 					limit = {
-						NOT = { relative_power_including_allies_defender = { who = ROOT power = 0.6} }
-						NOT = { realm_size = 35 }
-						realm_size = 8
-						NAND = {
-							holy_order = yes
-							religion = ROOT
-						}
-						NOR = {
-							higher_tier_than = ROOT
-							pays_tribute_to = ROOT
-							any_liege = {
-								pays_tribute_to = ROOT
-							}
-							is_tributary = no
-						}
-						NOT = {
-							any_war = {
-								using_cb = tributary_cb
-							}
-						}
-						ROOT = {
-							NOT = {
-								rightful_religious_head_scope = {
-									character = PREVPREV
-								}
-							}
-						}
+						realm_size < 35
+						realm_size >= 8
+						relative_power_including_allies_defender = { who = ROOT power < 0.6 }
+
 						ROOT = {
 							OR = {
 								is_nomadic = yes
 								religion_group = PREV
 							}
+
+							NOT = { rightful_religious_head = PREV }
 						}
-						# The AI will not target nomads or tribals (they have no money anyhow), nomads excluded
-						OR = {
-							ROOT = { is_nomadic = yes }
-							AND = {
-								is_nomadic = no
-								is_tribal = no
-							}
+
+						# Non-nomad AI will not target nomads or tribals (they have no money anyhow)
+						trigger_if = {
+							limit = { ROOT = { is_nomadic = no } }
+
+							yearly_income >= 50
+							is_nomadic = no
+							is_tribal = no
 						}
-						NOT = { has_non_aggression_pact_with = ROOT }
-						NOT = { reverse_has_truce = ROOT }
-						any_realm_province = {
-							any_neighbor_province = {
-								owner = {
-									same_realm = ROOT
-								}
-							}
-						}
+
 						NAND = {
 							religion_group = pagan_group
 							religion = ROOT
 						}
-						OR = {
-							yearly_income = 50
-							ROOT = { is_nomadic = yes }
+
+						NAND = {
+							holy_order = yes
+							religion = ROOT
 						}
 
+						NOR = {
+							is_allied_with = ROOT
+							higher_real_tier_than = ROOT
+							pays_tribute_to = ROOT
+							is_tributary = no
+							has_non_aggression_pact_with = ROOT
+							reverse_has_truce = ROOT
+							any_liege = { pays_tribute_to = ROOT }
+							any_war = { using_cb = tributary_cb }
+						}
 					}
+
 					log = "Tributary event chain started, attacker is [Root.GetBestName], defender is [This.GetBestName]"
-					letter_event = { id = Plus.4001 days = 3}
+
+					letter_event = {
+						id = Plus.4001
+						days = 3
+					}
 				}
+
 				set_character_flag = trying_to_gain_tributary
 			}
 		}
-
 	}
 }
 
 ## VASSALISE TRIBUTARY EVENT CHAIN
 
-#Bounce event, to place Attacker in FROM scope
+# Bounce event, to place Attacker in FROM scope
 character_event = {
 	id = Plus.4020
-	hide_window = yes
 
 	is_triggered_only = yes
+	hide_window = yes
 
 	immediate = {
-		FROM = { letter_event = { id = Plus.4021 } }
+		FROM = {
+			letter_event = { id = Plus.4021 }
+		}
 	}
 }
 
@@ -697,39 +741,40 @@ character_event = {
 # Demand vassalization
 letter_event = {
 	id = Plus.4021
-	desc = "EVTDESC_Plus_4021"
+	desc = EVTDESC_Plus_4021
 	border = GFX_event_letter_frame_war
 
 	is_triggered_only = yes
 
 	option = { # Accept being vassalized
 		name = EVTOPT_Plus_4000A
-		FROM = { letter_event = { id = Plus.4022 days = 3 } }
+
+		FROM = {
+			letter_event = {
+				id = Plus.4022
+				days = 3
+			}
+		}
+
 		if = {
 			limit = {
-				host = {
-					character = FROM
-				}
 				prisoner = yes
+				host = { character = FROM }
 			}
-			prisoner = no
+
+			imprison = no
 		}
+
 		ai_chance = {
 			factor = 20
-			modifier = { #lunatic goes to war
-				factor = 0
-				OR = {
-					trait = lunatic
-					trait = rabies
-				}
-			}
-			modifier = { #brave goes to war
-				factor = 0
-				trait = brave
-			}
-			modifier = { #pride goeth before fall
-				factor = 0
-				OR = {
+
+			trigger = {
+				NOR = {
+					trait = lunatic # Lunatic goes to war
+					trait = rabies # Lunatic goes to war
+					trait = brave # Brave goes to war
+
+					# Pride goeth before fall
 					has_nickname = nick_the_hammer
 					has_nickname = nick_the_conqueror
 					has_nickname = nick_the_victorious
@@ -748,106 +793,136 @@ letter_event = {
 					trait = ambitious
 				}
 			}
-			modifier = { #have less than half strength of attacker
+
+			mult_modifier = { #have less than half strength of attacker
 				factor = 2
 				NOT = { relative_power_including_allies_defender = { who = FROM power = 0.5 } }
 			}
-			modifier = { #have less than third strength of attacker
+
+			mult_modifier = { #have less than third strength of attacker
 				factor = 2
 				NOT = { relative_power_including_allies_defender = { who = FROM power = 0.33 } }
 			}
-			modifier = { #have less than tenth strength of attacker
+
+			mult_modifier = { #have less than tenth strength of attacker
 				factor = 2
 				NOT = { relative_power_including_allies_defender = { who = FROM power = 0.1 } }
 			}
-			modifier = { #craven
+
+			mult_modifier = { #craven
 				factor = 2
 				trait = craven
 			}
-			modifier = { #already defending
+
+			mult_modifier = { #already defending
 				factor = 2
 				is_primary_war_defender = yes
 			}
-			modifier = { #I'm an emperor
+
+			mult_modifier = { #I'm an emperor
 				factor = 0.1
 				tier = EMPEROR
 			}
-			modifier = { #I'm a king
+
+			mult_modifier = { #I'm a king
 				factor = 0.1
 				tier = KING
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.5
 				is_nomadic = yes
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.5
 				is_tribal = yes
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 2
 				NOT = { wealth = 50 }
 				is_republic = yes
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.5
-				NOT = { primary_title = { check_variable = { which = "tributary_years" value = 50 } } }
+				primary_title = { check_variable = { which = tributary_years value < 50 } }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 1.1
-				primary_title = { check_variable = { which = "tributary_years" value = 50 } }
+				primary_title = { check_variable = { which = tributary_years value < 50 } }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 1.1
-				primary_title = { check_variable = { which = "tributary_years" value = 60 } }
+				primary_title = { check_variable = { which = tributary_years value >= 60 } }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 1.1
-				primary_title = { check_variable = { which = "tributary_years" value = 70 } }
+				primary_title = { check_variable = { which = tributary_years value >= 70 } }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 1.1
-				primary_title = { check_variable = { which = "tributary_years" value = 80 } }
+				primary_title = { check_variable = { which = tributary_years value >= 80 } }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 1.1
-				primary_title = { check_variable = { which = "tributary_years" value = 90 } }
+				primary_title = { check_variable = { which = tributary_years value >= 90 } }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 1.1
-				primary_title = { check_variable = { which = "tributary_years" value = 100 } }
+				primary_title = { check_variable = { which = tributary_years value >= 100 } }
 			}
 		}
 	}
 
 	option = { # Refuse, go to war
 		name = EVTOPT_Plus_4000B
+
 		trigger = {
-			NOT = { prisoner = no }
+			prisoner = no
 			host = {
 				NOT = { character = FROM }
 			}
 		}
-		FROM = { letter_event = { id = Plus.4023 days = 3 } }
+
+		FROM = {
+			letter_event = {
+				id = Plus.4023
+				days = 3
+			}
+		}
+
 		ai_chance = {
 			factor = 70
-			modifier = { #craven
+
+			mult_modifier = { # Craven
 				factor = 0.5
 				trait = craven
 			}
-			modifier = { #attacker is craven
+
+			mult_modifier = { # Attacker is craven
 				factor = 2
 				FROM = { trait = craven }
 			}
-			modifier = { # similar power
+
+			mult_modifier = { # Similar power
 				factor = 2
-				relative_power_including_allies_defender = { who = FROM power = 0.75 }
+				relative_power_including_allies_defender = { who = FROM power >= 0.75 }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 4
 				NOT = { religion_group = FROM }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 2
 				NOT = { de_jure_liege = FROM }
 			}
@@ -856,31 +931,42 @@ letter_event = {
 
 	option = { # Can't we make a deal?
 		name = EVTOPT_Plus_4000C
+
 		trigger = {
 			wealth = 50
-			NAND = {
-				prisoner = no
-				host = {
-					character = FROM
-				}
+
+			trigger_if = {
+				limit = { prisoner = yes }
+				host = { NOT = { character = FROM } }
 			}
 		}
-		FROM = { letter_event = { id = Plus.4024 days = 3 } }
+
+		FROM = {
+			letter_event = {
+				id = Plus.4024
+				days = 3
+			}
+		}
+
 		ai_chance = {
 			factor = 10
-			modifier = { #we can pay
+
+			mult_modifier = { # We can pay
 				factor = 10
 				is_republic = yes
 			}
-			modifier = { #you look too big
+
+			mult_modifier = { # You look too big
 				factor = 4
-				wealth = 200
-				NOT = { relative_power_including_allies_defender = { who = FROM power = 0.5 }}
+
+				wealth >= 200
+				relative_power_including_allies_defender = { who = FROM power < 0.5 }
 			}
-			#not ready yet for this
-			modifier = {
+
+			# Not ready yet for this
+			mult_modifier = {
 				factor = 2
-				NOT = { primary_title = { check_variable = { which = "tributary_years" value = 50 } } }
+				primary_title = { check_variable = { which = tributary_years value < 50 } }
 			}
 		}
 	}
@@ -890,13 +976,14 @@ letter_event = {
 # Accepted vassalization
 letter_event = {
 	id = Plus.4022
-	desc = "EVTDESC_Plus_4022"
+	desc = EVTDESC_Plus_4022
 	border = GFX_event_letter_frame_war
 
 	is_triggered_only = yes
 
 	immediate = {
 		remove_tributary = FROM
+
 		FROM = {
 			save_event_target_as = target_loser
 			prestige = -100
@@ -906,24 +993,24 @@ letter_event = {
 		}
 
 		prestige = 100
-		add_character_modifier = { name = victory_timer duration = 1 hidden = yes }
+
+		add_character_modifier = {
+			name = victory_timer
+			days = 1
+			hidden = yes
+		}
+
 		pf_glory_plus2_effect = yes
 
-
 		if  = {
-			limit = {
-				ROOT = {
-					uses_decadence = yes
-				}
-			}
-			ROOT = {
-				decadence = -10
-			}
+			limit = { uses_decadence = yes }
+			decadence = -10
 		}
 	}
 
-	option = { #Excellent
+	option = { # Excellent
 		name = EVTOPT_Plus_4002A
+
 		clr_character_flag = trying_to_vassalize_tributary
 	}
 }
@@ -932,65 +1019,77 @@ letter_event = {
 # Go to war!
 letter_event = {
 	id = Plus.4023
-	desc = "EVTDESC_Plus_4003"
+	desc = EVTDESC_Plus_4003
 	border = GFX_event_letter_frame_war
 
 	is_triggered_only = yes
 
-	option = { #Declare war!
+	option = { # Declare war!
 		name = EVTOPT_Plus_4003A
-		ai_chance = {
-			factor = 50
-			modifier = {
-				factor = 0.2
-				trait = craven
-			}
-		}
+
 		remove_tributary = FROM
+
 		war = {
 			target = FROM
 			casus_belli = force_vassalization
 		}
+
 		clr_character_flag = trying_to_vassalize_tributary
-		hidden_tooltip = {
-			add_character_modifier = {
-				name = tributary_timer
-				duration = 365
-				hidden = yes
+
+		add_character_modifier = {
+			name = tributary_timer
+			years = 1
+			hidden = yes
+		}
+
+		ai_chance = {
+			factor = 50
+
+			mult_modifier = {
+				factor = 0.2
+				trait = craven
 			}
 		}
 	}
 
-	option = { #I was bluffing.
+	option = { # I was bluffing.
 		name = EVTOPT_Plus_4003B
+
+		prestige = -100
+
+		random = {
+			chance = 5
+			add_trait_fully_craven_effect = yes
+		}
+
+		clr_character_flag = trying_to_vassalize_tributary
+
+		add_character_modifier = {
+			name = tributary_timer
+			years = 2
+			hidden = yes
+		}
+
+		FROM = {
+			letter_event = {
+				id = Plus.4025
+				days = 3
+			}
+		}
+
 		ai_chance = {
 			factor = 50
-			modifier = {
+
+			mult_modifier = {
 				factor = 2
 				trait = craven
 			}
-			modifier = { #already defending
+
+			mult_modifier = { # Already defending
 				factor = 2
 				is_primary_war_defender = yes
 			}
 		}
-		prestige = -100
-		if = {
-			limit = { NOT = { trait = craven } }
-			random = {
-				chance = 5
-				add_trait = craven
-			}
-		}
-		clr_character_flag = trying_to_vassalize_tributary
-		hidden_tooltip = {
-			add_character_modifier = {
-				name = tributary_timer
-				duration = 730
-				hidden = yes
-			}
-		}
-		FROM = { letter_event = {id = Plus.4025 days = 3 } }
 	}
 }
 
@@ -998,29 +1097,24 @@ letter_event = {
 # Offered money instead
 letter_event = {
 	id = Plus.4024
-	desc = "EVTDESC_Plus_4004"
+	desc = EVTDESC_Plus_4004
 	border = GFX_event_letter_frame_war
 
 	is_triggered_only = yes
 
-	option = { #Agreed
+	option = { # Agreed
 		name = EVTOPT_Plus_4004A
+
 		ai_chance = {
 			factor = 75
-			modifier = { #lunatic goes to war
-				factor = 0
-				OR = {
-					trait = lunatic
-					trait = rabies
-				}
-			}
-			modifier = { #brave goes to war
-				factor = 0
-				trait = brave
-			}
-			modifier = { #pride goeth before fall
-				factor = 0
-				OR = {
+
+			trigger = {
+				NOR = {
+					trait = lunatic # Lunatic goes to war
+					trait = rabies # Lunatic goes to war
+					trait = brave # Brave goes to war
+
+					# Pride goeth before fall
 					has_nickname = nick_the_hammer
 					has_nickname = nick_the_conqueror
 					has_nickname = nick_the_victorious
@@ -1039,63 +1133,82 @@ letter_event = {
 					trait = ambitious
 				}
 			}
-			modifier = { #craven
+
+			mult_modifier = { # Craven
 				factor = 2
 				trait = craven
 			}
-			modifier = { #already defending
+
+			mult_modifier = { # Already defending
 				factor = 2
 				is_primary_war_defender = yes
 			}
 		}
-		FROM = { transfer_scaled_wealth = { to = ROOT value = 0.75 min = 25 } }
-		FROM = { letter_event = {id = Plus.4026 days = 3 } }
+
+		transfer_scaled_wealth = {
+			from = FROM
+			value = 0.75
+			min = 25
+		}
+
 		prestige = 100
+
 		FROM = {
 			opinion = {
-				modifier = opinion_paid_tribute
+				name = opinion_paid_tribute
 				who = ROOT
 				years = 5
 			}
-		}
-		hidden_tooltip = {
-			add_character_modifier = {
-				name = tributary_timer
-				duration = 365
-				hidden = yes
+
+			letter_event = {
+				id = Plus.4026
+				days = 3
 			}
 		}
+
+		add_character_modifier = {
+			name = tributary_timer
+			years = 1
+			hidden = yes
+		}
+
 		clr_character_flag = trying_to_vassalize_tributary
 	}
 
-	option = { #Nice try.
+	option = { # Nice try.
 		name = EVTOPT_Plus_4004B
-		ai_chance = { # have more than twice the strength
-			factor = 25
-			modifier = {
-				factor = 2
-				FROM = { relative_power_including_allies_defender = { who = ROOT power = 0.5 } }
-			}
-			modifier = { # have three times the strength
-				factor = 2
-				FROM = { relative_power_including_allies_defender = { who = ROOT power = 0.33 } }
-			}
-			modifier = { # get it while it's hots
-				factor = 2
-				FROM = { is_primary_war_defender = yes }
-			}
-		}
+
 		remove_tributary = FROM
+
 		war = {
 			target = FROM
 			casus_belli = force_vassalization
 		}
+
 		clr_character_flag = trying_to_vassalize_tributary
-		hidden_tooltip = {
-			add_character_modifier = {
-				name = tributary_timer
-				duration = 365
-				hidden = yes
+
+		add_character_modifier = {
+			name = tributary_timer
+			years = 1
+			hidden = yes
+		}
+
+		ai_chance = {
+			factor = 25
+
+			mult_modifier = { # Have more than twice the strength
+				factor = 2
+				relative_power_including_allies_attacker = { who = FROM power >= 2 }
+			}
+
+			mult_modifier = { # Have three times the strength
+				factor = 2
+				relative_power_including_allies_attacker = { who = FROM power >= 3 }
+			}
+
+			mult_modifier = { # Get it while it's hot
+				factor = 2
+				FROM = { is_primary_war_defender = yes }
 			}
 		}
 	}
@@ -1105,12 +1218,14 @@ letter_event = {
 # Attacker decides not to declare war after all.
 letter_event = {
 	id = Plus.4025
-	desc = "EVTDESC_Plus_4005"
+	desc = EVTDESC_Plus_4005
 	border = GFX_event_letter_frame_war
 
 	is_triggered_only = yes
 
-	option = { #Excellent
+	ai = no
+
+	option = { # Excellent
 		name = EVTOPT_Plus_4005A
 	}
 }
@@ -1119,12 +1234,14 @@ letter_event = {
 # Attacker decides to accept the deal
 letter_event = {
 	id = Plus.4026
-	desc = "EVTDESC_Plus_4006"
+	desc = EVTDESC_Plus_4006
 	border = GFX_event_letter_frame_war
 
 	is_triggered_only = yes
 
-	option = { #Excellent
+	ai = no
+
+	option = { # Excellent
 		name = EVTOPT_Plus_4006A
 	}
 }
@@ -1133,82 +1250,76 @@ letter_event = {
 character_event = {
 	id = Plus.4030
 
-	hide_window = yes
 	is_triggered_only = yes
+	hide_window = yes
 
 	only_independent = yes
-	only_playable = yes
 	has_dlc = "Horse Lords"
 	war = no
 	prisoner = no
 	ai = yes
 
 	trigger = {
-		#lets limit this for ai to kings and emperors
+		# Let's limit this for ai to kings and emperors
 		higher_real_tier_than = DUKE
-		#limit to large realms
-		realm_size = 100
-		NOT = { has_character_modifier = holy_truce_timer }
-		NOT = { has_character_modifier = tributary_timer }
-		mercenary = no
+
+		# Limit to large realms
+		realm_size >= 100
+
 		is_tributary = no
-		NOT = { has_character_flag = trying_to_vassalize_tributary }
+		mercenary = no
 		has_regent = no
-		NOT = {
-			any_war = {
-				using_cb = force_vassalization
-			}
+
+		NOR = {
+			has_character_modifier = holy_truce_timer
+			has_character_modifier = tributary_timer
+			has_character_flag = trying_to_vassalize_tributary
+			any_war = { using_cb = force_vassalization }
 		}
+
 		any_tributary = {
 			OR = {
 				is_tributary = { type = forced }
 				is_tributary = { type = voluntary }
 			}
+
 			primary_title = {
-				lower_tier_than = ROOT
-				check_variable = { which = "tributary_years" value = 50 } #AI won't try this before 50 years have passed
+				lower_real_tier_than = ROOT
+				check_variable = { which = tributary_years value >= 50 } # AI won't try this before 50 years have passed
 			}
+
 			ROOT = {
-				conditional_tooltip = {
-					trigger = {
-						tier = DUKE
-					}
-					prestige = 500
+				trigger_if = {
+					limit = { real_tier = DUKE }
+					prestige >= 500
 				}
-				conditional_tooltip = {
-					trigger = {
-						tier = KING
-						PREV = { tier = COUNT }
+				trigger_else_if = {
+					limit = { real_tier = KING }
+
+					trigger_if = {
+						limit = { PREV = { real_tier = COUNT } }
+						prestige >= 600
 					}
-					prestige = 600
+					trigger_else_if = {
+						limit = { PREV = { real_tier = DUKE } }
+						prestige >= 1200
+					}
 				}
-				conditional_tooltip = {
-					trigger = {
-						tier = KING
-						PREV = { tier = DUKE }
+				trigger_else_if = {
+					limit = { real_tier = EMPEROR }
+
+					trigger_if = {
+						limit = { PREV = { real_tier = COUNT } }
+						prestige >= 500
 					}
-					prestige = 1200
-				}
-				conditional_tooltip = {
-					trigger = {
-						tier = EMPEROR
-						PREV = { tier = COUNT }
+					trigger_else_if = {
+						limit = { PREV = { real_tier = DUKE } }
+						prestige >= 1000
 					}
-					prestige = 500
-				}
-				conditional_tooltip = {
-					trigger = {
-						tier = EMPEROR
-						PREV = { tier = DUKE }
+					trigger_else_if = {
+						limit = { PREV = { real_tier = KING } }
+						prestige >= 2000
 					}
-					prestige = 1000
-				}
-				conditional_tooltip = {
-					trigger = {
-						tier = EMPEROR
-						PREV = { tier = KING }
-					}
-					prestige = 2000
 				}
 			}
 		}
@@ -1216,102 +1327,110 @@ character_event = {
 
 	immediate = {
 		random_list =  {
-			90 = {
-				#Nothing
-			}
+			90 = { } # Nothing
+
 			10 = {
-				modifier = {
+				trigger = {
+					trigger_if = {
+						limit = { is_tribal = yes }
+
+						trigger_if = {
+							limit = { trait = ambitious }
+							martial >= 8
+						}
+						trigger_else = {
+							martial >= 15
+						}
+
+						NOT = { trait = content }
+					}
+				}
+
+				mult_modifier = {
 					factor = 4
 					ROOT = { trait = greedy }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 0.1
 					trait = content
 				}
-				modifier = {
-					factor = 0
-					ROOT = {
-						is_tribal = yes
-						NOR = {
-							trait = ambitious
-							martial = 15
-						}
-					}
-				}
-				modifier = {
-					factor = 0
-					ROOT = {
-						is_tribal = yes
-						OR = {
-							trait = content
-							NOT = { martial = 8 }
-						}
-					}
-				}
+
 				random_tributary = {
 					limit = {
 						OR = {
 							is_tributary = { type = forced }
 							is_tributary = { type = voluntary }
 						}
+
 						primary_title = {
-							lower_tier_than = ROOT
-							check_variable = { which = "tributary_years" value = 50 } #AI won't try this before 50 years have passed
+							lower_real_tier_than = ROOT
+							check_variable = { which = tributary_years value >= 50 } # AI won't try this before 50 years have passed
 						}
 					}
+
 					log = "Vassalization event chain started, attacker is [Root.GetBestName], defender is [This.GetBestName]"
+
 					ROOT = {
 						if = {
-							limit = { tier = DUKE }
+							limit = { real_tier = DUKE }
 							prestige = -500
 						}
 						else_if = {
-							limit = { tier = EMPEROR }
+							limit = { real_tier = KING }
+
 							if = {
-								limit = { PREV = { tier = COUNT } }
+								limit = { PREV = { real_tier = COUNT } }
 								prestige = -600
 							}
 							else_if = {
-								limit = { PREV = { tier = DUKE } }
+								limit = { PREV = { real_tier = DUKE } }
 								prestige = -1200
 							}
 						}
 						else_if = {
-							limit = { tier = EMPEROR }
+							limit = { real_tier = EMPEROR }
+
 							if = {
-								limit = { PREV = { tier = COUNT } }
+								limit = { PREV = { real_tier = COUNT } }
 								prestige = -500
 							}
 							else_if = {
-								limit = { PREV = { tier = DUKE } }
+								limit = { PREV = { real_tier = DUKE } }
 								prestige = -1000
 							}
 							else_if = {
-								limit = { PREV = { tier = KING } }
+								limit = { PREV = { real_tier = KING } }
 								prestige = -2000
 							}
 						}
 					}
-					letter_event = { id = Plus.4021 days = 3}
+
+					letter_event = {
+						id = Plus.4021
+						days = 3
+					}
 				}
+
 				set_character_flag = trying_to_vassalize_tributary
 			}
 		}
-
 	}
 }
 
 ## SEEK PROTECTION EVENT CHAIN
 
-#Bounce event, to place Seeker in FROM scope
+# Bounce event, to place Seeker in FROM scope
 character_event = {
 	id = Plus.4040
-	hide_window = yes
 
 	is_triggered_only = yes
+	hide_window = yes
 
 	immediate = {
-		FROM = { letter_event = { id = Plus.4041 } }
+		FROM = {
+			letter_event = { id = Plus.4041 }
+		}
 	}
 }
 
@@ -1319,43 +1438,67 @@ character_event = {
 # Seek protection event
 letter_event = {
 	id = Plus.4041
-	desc = "EVTDESC_Plus_4041"
+	desc = EVTDESC_Plus_4041
 	border = GFX_event_letter_frame_diplomacy
 
 	is_triggered_only = yes
 
 	option = { # Accept tribute
 		name = EVTOPT_Plus_4041A
-		FROM = { letter_event = { id = Plus.4042 days = 3 } }
+
+		FROM = {
+			letter_event = {
+				id = Plus.4042
+				days = 3
+			}
+		}
+
 		ai_chance = {
 			factor = 45
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.2
-				FROM = { de_jure_liege = ROOT }
+				de_jure_vassal_or_below = FROM
 			}
 		}
 	}
 
 	option = { # You're not worth it!
 		name = EVTOPT_Plus_4003B
-		FROM = { letter_event = { id = Plus.4043 days = 3 } }
+
+		FROM = {
+			letter_event = {
+				id = Plus.4043
+				days = 3
+			}
+		}
+
 		ai_chance = {
 			factor = 15
-			modifier = {
+
+			mult_modifier = {
 				factor = 5
-				relative_power = { who = FROM power = 10 } # i.e. someone who can't defend themselves
+				relative_power = { who = FROM power >= 10 } # i.e. someone who can't defend themselves
 			}
 		}
 	}
 
 	option = { # No, but if you pay me now I can offer you a NAP.
 		name = EVTOPT_Plus_4041C
-		FROM = { letter_event = { id = Plus.4044 days = 3 } }
+
+		FROM = {
+			letter_event = {
+				id = Plus.4044
+				days = 3
+			}
+		}
+
 		ai_chance = {
 			factor = 25
-			modifier = {
+
+			mult_modifier = {
 				factor = 2
-				NOT = { wealth = 100 }
+				wealth < 100
 			}
 		}
 	}
@@ -1365,7 +1508,7 @@ letter_event = {
 # Accepted tributary
 letter_event = {
 	id = Plus.4042
-	desc = "EVTDESC_Plus_4042"
+	desc = EVTDESC_Plus_4042
 	border = GFX_event_letter_frame_diplomacy
 
 	is_triggered_only = yes
@@ -1379,8 +1522,9 @@ letter_event = {
 		}
 	}
 
-	option = { #Excellent
+	option = { # Excellent
 		name = EVTOPT_Plus_4002A
+
 		clr_character_flag = seeking_protection
 	}
 }
@@ -1389,68 +1533,86 @@ letter_event = {
 # Declined tributary
 letter_event = {
 	id = Plus.4043
-	desc = "EVTDESC_Plus_4043"
+	desc = EVTDESC_Plus_4043
 	border = GFX_event_letter_frame_diplomacy
 
 	is_triggered_only = yes
 
-	option = { #CURSEEEES!
+	option = { # CURSEEEES!
 		name = EVTOPT_Plus_4005A
+
 		clr_character_flag = seeking_protection
 	}
 }
 
-# FROM: Protecor, ROOT: Seeker
+# FROM: Protector, ROOT: Seeker
 # Offered NAP instead
 letter_event = {
 	id = Plus.4044
-	desc = "EVTDESC_Plus_4044"
+	desc = EVTDESC_Plus_4044
 	border = GFX_event_letter_frame_diplomacy
 
 	is_triggered_only = yes
 
-	option = { #That works too
+	option = { # That works too
 		name = EVTOPT_Plus_4004A
+
 		tooltip = {
-			transfer_scaled_wealth = { to = FROM value = 0.75 min = 25 }
+			transfer_scaled_wealth = {
+				to = FROM
+				value = 0.75
+				min = 25
+			}
+
 			opinion = {
-				modifier = opinion_paid_tribute
+				name = opinion_paid_tribute
 				who = FROM
 				years = 5
 			}
 		}
-		FROM = { letter_event = { id = Plus.4045 days = 3 } }
+
+		FROM = {
+			letter_event = {
+				id = Plus.4045
+				days = 3
+			}
+		}
+
 		ai_chance = {
 			factor = 10
-			modifier = {
-				factor = 0
-				has_character_modifier = ai_austerity
+
+			trigger = {
+				scaled_wealth = {
+					value = 0.80
+					min = 30
+				}
+
+				NOT = { has_character_modifier = ai_austerity }
 			}
-			modifier = {
-				factor = 0
-				NOT = { scaled_wealth = 0.80 }
-			}
-			modifier = {
-				factor = 0
-				NOT = { wealth = 30 }
-			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 5
-				FROM = { relative_power = { who = ROOT power = 5 } } #strong neighbour, we better protect ourselves
+				relative_power = { who = FROM power >= 0.2 } # Strong neighbour, we better protect ourselves
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 5
-				FROM = { relative_power = { who = ROOT power = 10 } } #strong neighbour, we better protect ourselves
+				relative_power = { who = FROM power >= 0.1 } # Strong neighbour, we better protect ourselves
 			}
 		}
 	}
 
-	option = { #Not good enough
+	option = { # Not good enough
 		name = EVTOPT_Plus_4004B
-		FROM = { letter_event = { id = Plus.4046 days = 3 } }
-		ai_chance = {
-			factor = 75
+
+		FROM = {
+			letter_event = {
+				id = Plus.4046
+				days = 3
+			}
 		}
+
+		ai_chance = { factor = 75 }
 	}
 }
 
@@ -1458,24 +1620,30 @@ letter_event = {
 # Protection seeker accepted NAP
 letter_event = {
 	id = Plus.4045
-	desc = "EVTDESC_Plus_4045"
+	desc = EVTDESC_Plus_4045
 	border = GFX_event_letter_frame_diplomacy
 
 	is_triggered_only = yes
 
 	immediate = {
-		FROM = { clr_character_flag = seeking_protection }
-		FROM = { transfer_scaled_wealth = { to = ROOT value = 0.75 min = 25 } }
 		FROM = {
+			clr_character_flag = seeking_protection
+
+			transfer_scaled_wealth = {
+				to = ROOT
+				value = 0.75
+				min = 25
+			}
+
 			opinion = {
-				modifier = opinion_paid_tribute
+				name = opinion_paid_tribute
 				who = ROOT
 				years = 5
 			}
 		}
 	}
 
-	option = { #Excellent
+	option = { # Excellent
 		name = EVTOPT_Plus_4002A
 	}
 }
@@ -1484,7 +1652,7 @@ letter_event = {
 # Protection seeker rejected NAP
 letter_event = {
 	id = Plus.4046
-	desc = "EVTDESC_Plus_4046"
+	desc = EVTDESC_Plus_4046
 	border = GFX_event_letter_frame_diplomacy
 
 	is_triggered_only = yes
@@ -1493,21 +1661,23 @@ letter_event = {
 		FROM = { clr_character_flag = seeking_protection }
 	}
 
-	option = { #Too bad.
+	option = { # Too bad.
 		name = EVTOPTA_Plus_1327
 	}
 }
 
 ## RELEASE VASSAL AS PROTECTORATE EVENT CHAIN
-#Bounce event, to place Liege in FROM scope
+# Bounce event, to place Liege in FROM scope
 character_event = {
 	id = Plus.4551
-	hide_window = yes
 
 	is_triggered_only = yes
+	hide_window = yes
 
 	immediate = {
-		FROM = { letter_event = { id = Plus.4552 } }
+		FROM = {
+			letter_event = { id = Plus.4552 }
+		}
 	}
 }
 
@@ -1515,40 +1685,59 @@ character_event = {
 # Offer release.
 letter_event = {
 	id = Plus.4552
-	desc = "EVTDESC_Plus_4552"
+	desc = EVTDESC_Plus_4552
 	border = GFX_event_letter_frame_diplomacy
 
 	is_triggered_only = yes
 
 	option = { # Accept to become protectorate
 		name = EVTOPT_Plus_4041A
-		FROM = { letter_event = { id = Plus.4553 days = 3 } }
+
+		FROM = {
+			letter_event = {
+				id = Plus.4553
+				days = 3
+			}
+		}
+
 		ai_chance = {
 			factor = 100
-			modifier = {
+
+			mult_modifier = {
 				factor = 2
-				tier = KING
+				real_tier = KING
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 2
-				tier = DUKE
-				num_of_duke_titles = 2
+
+				real_tier = DUKE
+				num_of_duke_titles >= 2
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 4
-				num_of_king_titles = 2
+				num_of_king_titles >= 2
 			}
 		}
 	}
 
 	option = { # Reject
 		name = EVTOPTB_Plus_4552
-		FROM = { letter_event = { id = Plus.4554 days = 3 } }
+
+		FROM = {
+			letter_event = {
+				id = Plus.4554
+				days = 3
+			}
+		}
+
 		ai_chance = {
 			factor = 20
-			modifier = {
+
+			mult_modifier = {
 				factor = 5
-				NOT = { num_of_duke_titles = 2 }
+				num_of_duke_titles < 2
 			}
 		}
 	}
@@ -1558,7 +1747,7 @@ letter_event = {
 # Accepted becoming protectorate
 letter_event = {
 	id = Plus.4553
-	desc = "EVTDESC_Plus_4553"
+	desc = EVTDESC_Plus_4553
 	border = GFX_event_letter_frame_diplomacy
 
 	is_triggered_only = yes
@@ -1566,22 +1755,27 @@ letter_event = {
 	immediate = {
 		FROM = {
 			set_defacto_liege = THIS
-			opinion = { modifier = opinion_granted_independence who = FROM years = 5 }
+
+			opinion = {
+				name = opinion_granted_independence
+				who = FROM
+				years = 5
+			}
 		}
+
 		make_tributary = {
 			who = FROM
 			tributary_type = protectorate
 		}
-		hidden_tooltip = {
-			add_character_modifier = {
-				name = tributary_timer
-				duration = 730
-				hidden = yes
-			}
+
+		add_character_modifier = {
+			name = tributary_timer
+			years = 2
+			hidden = yes
 		}
 	}
 
-	option = { #Excellent
+	option = { # Excellent
 		name = EVTOPT_Plus_4002A
 	}
 }
@@ -1590,22 +1784,20 @@ letter_event = {
 # Rejected becoming protectorate
 letter_event = {
 	id = Plus.4554
-	desc = "EVTDESC_Plus_4554"
+	desc = EVTDESC_Plus_4554
 	border = GFX_event_letter_frame_diplomacy
 
 	is_triggered_only = yes
 
 	immediate = {
-		hidden_tooltip = {
-			add_character_modifier = {
-				name = tributary_timer
-				duration = 365
-				hidden = yes
-			}
+		add_character_modifier = {
+			name = tributary_timer
+			years = 1
+			hidden = yes
 		}
 	}
 
-	option = { #CURSES
+	option = { # CURSES
 		name = EVTOPT_Plus_4005A
 	}
 }

@@ -2,8 +2,18 @@ namespace = loanPlus
 
 character_event = {
 	id = loanPlus.0001
-
 	picture = GFX_evt_council
+
+	desc = {
+		text = EVTDESC38002 # TODO: move to correct namespace
+		trigger = {
+			NOT = { has_character_modifier = borrowed_from_jews }
+		}
+	}
+	desc = {
+		text = EVTDESC_Plus_625 # TODO: move to correct namespace
+		trigger = { has_character_modifier = borrowed_from_jews }
+	}
 
 	only_rulers = yes
 
@@ -12,6 +22,7 @@ character_event = {
 			which = loan_amount
 			value > 0
 		}
+
 		NOT = { has_character_modifier = loan_timer }
 	}
 
@@ -25,55 +36,70 @@ character_event = {
 			years = 2
 		}
 
+		## Calculate interest
 		set_variable = {
-			which = loan_interest
-			which = loan_amount
-		}
-		set_variable = {
-			which = loan_plus_interest
+			which = local_loan_interest
 			which = loan_amount
 		}
 
 		multiply_variable = {
-			which = loan_interest
-			value = 0.8 # 4% APR
+			which = local_loan_interest
+			value = 0.08 # 4% APR
+		}
+
+		# Calculate new loan amount, for full payment
+		set_variable = {
+			which = local_loan_plus_interest
+			which = loan_amount
 		}
 
 		change_variable = {
-			which = loan_plus_interest
-			which = loan_interest
+			which = local_loan_plus_interest
+			which = local_loan_interest
 		}
-	}
 
-	desc = {
-		text = EVTDESC38002 # TODO: move to correct namespace
+		## Setup payment variables
 
-		trigger = {
-			NOT = { has_character_modifier = borrowed_from_jews }
+		# Full payment
+		set_variable = {
+			which = local_loan_plus_interest_payment
+			which = local_loan_plus_interest
 		}
-	}
 
-	desc = {
-		text = EVTDESC_Plus_625 # TODO: move to correct namespace
+		multiply_variable = {
+			which = local_loan_plus_interest_payment
+			value = -1
+		}
 
-		trigger = {
-			has_character_modifier = borrowed_from_jews
+		# Interest payment
+		set_variable = {
+			which = local_loan_interest_negative
+			which = local_loan_interest
+		}
+
+		multiply_variable = {
+			which = local_loan_interest_negative
+			value = -1
+		}
+
+		# Prestige 'payment'
+		set_variable = {
+			which = local_prestige_payment
+			which = loan_amount
+		}
+
+		divide_variable = {
+			which = local_prestige_payment
+			value = -2
 		}
 	}
 
 	option = {
 		name = EVTOPTA38002 # Return the money
 
-		trigger = {
-			wealth >= loan_plus_interest
-		}
+		trigger = { wealth >= local_loan_plus_interest }
 
-		multiply_variable = {
-			which = loan_plus_interest
-			value = -1
-		}
-
-		wealth = loan_plus_interest
+		wealth = local_loan_plus_interest_payment
 
 		set_variable = {
 			which = loan_amount
@@ -84,56 +110,28 @@ character_event = {
 	option = {
 		name = EVTOPTB38002 # Pay the interest
 
-		trigger = {
-			wealth >= loan_interest
-		}
+		trigger = { wealth >= local_loan_interest }
 
-		multiply_variable = {
-			which = loan_interest
-			value = -1
-		}
-
-		wealth = loan_interest
-		# Variable is "fixed" next time the event fires
+		wealth = local_loan_interest_negative
 	}
 
 	option = {
 		name = EVTOPTC38002 # Cannot afford it
 
-		trigger = {
-			wealth < loan_interest
-		}
+		trigger = { wealth < local_loan_interest }
 
-		divide_variable = {
-			which = loan_amount
-			value = 2
-		}
-		multiply_variable = {
-			which = loan_amount
-			value = -1
-		}
+		prestige = local_prestige_payment
 
-		prestige = loan_amount
-
-		set_variable = {
+		change_variable = {
 			which = loan_amount
-			which = loan_plus_interest
+			which = local_loan_interest
 		}
 	}
 
 	option = {
 		name = EVTOPTD38002 # Get rid of them!
 
-		multiply_variable = {
-			which = loan_amount
-			value = 2
-		}
-		multiply_variable = {
-			which = loan_amount
-			value = -1
-		}
-
-		prestige = loan_amount
+		prestige = local_prestige_payment
 		dishonorable_plus_1_effect = yes
 
 		if = {
@@ -158,6 +156,7 @@ character_event = {
 			}
 
 			any_friend = {
+				show_scope_change = no
 				limit = { religion_group = jewish_group }
 				remove_friend = ROOT
 			}
@@ -167,6 +166,8 @@ character_event = {
 		}
 
 		any_demesne_province = {
+			show_scope_change = no
+
 			add_province_modifier = {
 				name = offended_moneylenders
 				years = 10
@@ -179,25 +180,23 @@ character_event = {
 		}
 
 		if = {
-			limit = {
-				any_vassal = { leads_faction = faction_prosperity }
-			}
+			limit = { faction_exists = { faction = faction_prosperity } }
 
 			custom_tooltip = {
 				text = PROSPERITYFACTIONMOODMINUS
 
-				hidden_effect = {
-					random_vassal = {
-						limit = { leads_faction = faction_prosperity }
-						set_variable = {
-							which = faction_mood_decrease
-							value = 8
-						}
+				random_vassal = {
+					limit = { leads_faction = faction_prosperity }
+
+					set_variable = {
+						which = faction_mood_decrease
+						value = 8
 					}
-					character_event = {
-						id = PlusFaction.200
-						days = 1
-					}
+				}
+
+				character_event = {
+					id = PlusFaction.200 # Recalculate faction moods
+					days = 1
 				}
 			}
 		}
@@ -216,25 +215,17 @@ character_event = {
 	}
 
 	after = {
-		if = {
-			limit = {
-				check_variable = {
-					which = loan_amount
-					value <= 0
+		hidden_effect = {
+			if = {
+				limit = {
+					check_variable = {
+						which = loan_amount
+						value <= 0
+					}
 				}
+
+				remove_character_modifier = loan_timer
 			}
-
-			remove_character_modifier = loan_timer
-		}
-
-		# Clean up the variables
-		set_variable = {
-			which = loan_interest
-			value = 0
-		}
-		set_variable = {
-			which = loan_plus_interest
-			value = 0
 		}
 	}
 }
