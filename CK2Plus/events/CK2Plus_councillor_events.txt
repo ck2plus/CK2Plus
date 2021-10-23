@@ -14,7 +14,6 @@ character_event = {
 
 	hide_window = yes
 
-	only_rulers = yes
 	only_playable = yes
 	only_capable = yes
 	prisoner = no
@@ -23,17 +22,23 @@ character_event = {
 	trigger = {
 		is_landed = yes
 		has_regent = no
-		OR = {
-			independent = yes
+
+		trigger_if = {
+			limit = { independent = no }
 			higher_real_tier_than = COUNT
 		}
+
 		job_chancellor = {
-			is_alive = yes
+			diplomacy >= 8
 			in_command_trigger = no
-			diplomacy = 8
-			OR = {
-				NOT = { has_character_flag = assigned_councillor_job }
-				had_character_flag = { flag = assigned_councillor_job days = 180 }
+
+			trigger_if = {
+				limit = { has_character_flag = assigned_councillor_job }
+
+				had_character_flag = {
+					flag = assigned_councillor_job
+					months >= 6
+				}
 			}
 		}
 	}
@@ -43,56 +48,70 @@ character_event = {
 	}
 
 	immediate = {
-		job_chancellor = { set_character_flag = assigned_councillor_job }
+		job_chancellor = {
+			set_character_flag = assigned_councillor_job
+			save_event_target_as = my_chancellor
+		}
 
 		# First priority: improve relations with powerful faction leaders
 		if = {
 			limit = { pf_war_flag_trigger = no }
+
 			random_vassal = {
 				limit = {
-					is_within_diplo_range = ROOT
+					trigger_if = {
+						limit = { leads_faction = faction_court }
+						faction_power = { faction = faction_court power >= 0.5 }
+					}
+					trigger_else_if = {
+						limit = { leads_faction = faction_prosperity }
+						faction_power = { faction = faction_prosperity power >= 0.5 }
+					}
+					trigger_else_if = {
+						limit = { leads_faction = faction_glory }
+						faction_power = { faction = faction_glory power >= 0.5 }
+					}
+					trigger_else = {
+						leads_faction = faction_tradition
+						faction_power = { faction = faction_tradition power >= 0.5 }
+					}
+
 					in_command_trigger = no
 					is_theocracy = no
-					opinion = { who = ROOT value = -40 }
+					opinion = { who = ROOT value < 10 }
+					opinion = { who = ROOT value >= -40 }
+
 					NOR = {
-						has_job_title = job_chancellor
-						opinion = { who = ROOT value = 10 }
-						has_opinion_modifier = { who = ROOT modifier = opinion_coerced_into_leaving_faction }
-					}
-					OR = {
-						AND = {
-							leads_faction = faction_court
-							faction_power = { faction = faction_court power = 0.5 }
-						}
-						AND = {
-							leads_faction = faction_prosperity
-							faction_power = { faction = faction_prosperity power = 0.5 }
-						}
-						AND = {
-							leads_faction = faction_glory
-							faction_power = { faction = faction_glory power = 0.5 }
-						}
-						AND = {
-							leads_faction = faction_tradition
-							faction_power = { faction = faction_tradition power = 0.5 }
+						character = event_target:my_chancellor
+
+						has_opinion_modifier = {
+							name = opinion_coerced_into_leaving_faction
+							who = ROOT
 						}
 					}
-					OR = {
-						NOT = { has_character_flag = faction_negotiate }
-						had_character_flag = { flag = faction_negotiate days = 1825 }
+
+					trigger_if = {
+						limit = { has_character_flag = faction_negotiate }
+
+						had_character_flag = {
+							flag = faction_negotiate
+							years >= 5
+						}
 					}
 				}
+
 				capital_scope = { save_event_target_as = target_province }
+
 				random = {
 					chance = 75
-					ROOT = {
-						job_chancellor = {
-							set_job_action = {
-								action = action_improve_relations
-								where = event_target:target_province
-							}
+
+					event_target:my_chancellor = {
+						set_job_action = {
+							action = action_improve_relations
+							where = event_target:target_province
 						}
 					}
+
 					break = yes
 				}
 			}
@@ -104,35 +123,33 @@ character_event = {
 				is_nomadic = yes
 				clan_title = { clan = yes }
 			}
+
 			top_liege = {
 				random_vassal = {
 					limit = {
-						is_within_diplo_range = ROOT
 						is_nomadic = yes
 						clan_title = { clan = yes }
-						reverse_clan_opinion = { who = ROOT value = -25 }
-						OR = {
-							vassal_of = ROOT
-							same_liege = ROOT
-						}
+						reverse_clan_opinion = { who = ROOT value >= -25 }
+						clan_opinion = { who = ROOT value < 50 }
+
 						NOR = {
-							character = ROOT
 							has_feud_with = ROOT
-							clan_opinion = { who = ROOT value = 50 }
-							ROOT = { job_chancellor = { character = PREVPREV } }
+							character = event_target:my_chancellor
 						}
 					}
+
 					capital_scope = { save_event_target_as = target_province }
+
 					random = {
 						chance = 75
-						ROOT = {
-							job_chancellor = {
-								set_job_action = {
-									action = action_clan_sentiment
-									where = event_target:target_province
-								}
+
+						event_target:my_chancellor = {
+							set_job_action = {
+								action = action_clan_sentiment
+								where = event_target:target_province
 							}
 						}
+
 						break = yes
 					}
 				}
@@ -142,32 +159,28 @@ character_event = {
 		# Third priority: improve relations with powerful vassals
 		random_vassal = {
 			limit = {
-				is_within_diplo_range = ROOT
 				among_most_powerful_vassals = 5
-				relative_power_to_liege = 0.10
+				relative_power_to_liege >= 0.10
 				has_regent = no
 				is_theocracy = no
-				OR = {
-					higher_tier_than = baron
-					is_patrician = yes
-				}
-				opinion = { who = ROOT value = -40 }
-				NOR = {
-					opinion = { who = ROOT value = 0 }
-					has_job_title = job_chancellor
-				}
+				is_playable = yes
+				opinion = { who = ROOT value >= -40 }
+				opinion = { who = ROOT value < 0 }
+				NOT = { character = event_target:my_chancellor }
 			}
+
 			capital_scope = { save_event_target_as = target_province }
+
 			random = {
 				chance = 75
-				ROOT = {
-					job_chancellor = {
-						set_job_action = {
-							action = action_improve_relations
-							where = event_target:target_province
-						}
+
+				event_target:my_chancellor = {
+					set_job_action = {
+						action = action_improve_relations
+						where = event_target:target_province
 					}
 				}
+
 				break = yes
 			}
 		}
@@ -175,19 +188,22 @@ character_event = {
 		# Fourth priority: fabricate a claim on a neighboring county
 		if = {
 			limit = {
-				prestige = 0
-				wealth = 100
+				prestige >= 0
+				wealth >= 100
+				practical_age < 50
 				is_nomadic = no
+
 				OR = {
 					trait = ambitious
 					trait = envious
 					trait = greedy
 				}
+
 				NOR = {
 					trait = content
 					trait = craven
-					age = 50
 				}
+
 				job_chancellor = {
 					NOR = {
 						is_child_of = ROOT
@@ -195,113 +211,145 @@ character_event = {
 					}
 				}
 			}
+
 			if = {
 				limit = { independent = yes }
+
 				random_realm_province = {
 					limit = {
 						any_neighbor_province = {
-							holder_scope = { is_within_diplo_range = ROOT}
-							OR = {
-								county = {
+							owner = { is_within_diplo_range = ROOT }
+
+							county = {
+								any_dejure_liege = {
+									lower_real_tier_than = KING
 									NOT = { claimed_by = ROOT }
+
 									holder_scope = {
-										NOT = { character = ROOT }
-										ROOT = { job_chancellor = { NOT = { character = PREVPREV } } }
-									}
-								}
-								duchy = {
-									NOT = { claimed_by = ROOT }
-									holder_scope = {
-										NOT = { character = ROOT }
-										ROOT = { job_chancellor = { NOT = { character = PREVPREV } } }
+										NOR = {
+											character = ROOT
+											character = event_target:my_chancellor
+											is_vassal_or_below_of = event_target:my_chancellor
+										}
 									}
 								}
 							}
+
+							# TODO:
+							#	Check it's not a county ROOT could (potentially, crown law allowing) declare a de jure war for
+							#	Maybe don't fabricate claims on targets who could be holy warred instead?
+							#	Prefer counties close to personal demesne?
+							#	Prefer counties in duchies in which we already own at least another county, but not yet > 50% ?
+							#	Prefer counties not owned by close relatives/dynasty members if vassal or below?
 						}
 					}
+
 					random_neighbor_province = {
 						limit = {
-							holder_scope = { is_within_diplo_range = ROOT}
-							OR = {
-								county = {
+							owner = { is_within_diplo_range = ROOT }
+
+							county = {
+								any_dejure_liege = {
+									lower_real_tier_than = KING
 									NOT = { claimed_by = ROOT }
+
 									holder_scope = {
-										NOT = { character = ROOT }
-										ROOT = { job_chancellor = { NOT = { character = PREVPREV } } }
-									}
-								}
-								duchy = {
-									NOT = { claimed_by = ROOT }
-									holder_scope = {
-										NOT = { character = ROOT }
-										ROOT = { job_chancellor = { NOT = { character = PREVPREV } } }
+										NOR = {
+											character = ROOT
+											character = event_target:my_chancellor
+											is_vassal_or_below_of = event_target:my_chancellor
+										}
 									}
 								}
 							}
+
+							# TODO:
+							#	Check it's not a county ROOT could (potentially, crown law allowing) declare a de jure war for
+							#	Maybe don't fabricate claims on targets who could be holy warred instead?
+							#	Prefer counties close to personal demesne?
+							#	Prefer counties in duchies in which we already own at least another county, but not yet > 50% ?
+							#	Prefer counties not owned by close relatives/dynasty members if vassal or below?
 						}
+
 						save_event_target_as = target_province
+
 						random = {
 							chance = 75
-							ROOT = {
-								job_chancellor = {
-									set_job_action = {
-										action = action_fabricate_claims
-										where = event_target:target_province
-									}
+
+							event_target:my_chancellor = {
+								set_job_action = {
+									action = action_fabricate_claims
+									where = event_target:target_province
 								}
 							}
+
 							break = yes
 						}
 					}
 				}
 			}
-			if = {
-				limit = { independent = no }
+			else = {
 				random_demesne_province = {
 					limit = {
 						any_neighbor_province = {
-							holder_scope = { is_within_diplo_range = ROOT}
-							OR = {
-								county = {
+							owner = { is_within_diplo_range = ROOT }
+
+							county = {
+								any_dejure_liege = {
+									lower_real_tier_than = KING
 									NOT = { claimed_by = ROOT }
+
 									holder_scope = {
-										NOT = { character = ROOT }
-										ROOT = { job_chancellor = { NOT = { character = PREVPREV } } }
-									}
-								}
-								duchy = {
-									NOT = { claimed_by = ROOT }
-									holder_scope = {
-										NOT = { character = ROOT }
-										ROOT = { job_chancellor = { NOT = { character = PREVPREV } } }
+										NOR = {
+											character = ROOT
+											character = event_target:my_chancellor
+											is_vassal_or_below_of = event_target:my_chancellor
+										}
 									}
 								}
 							}
+
+							# TODO:
+							#	Check it's not a county ROOT could (potentially, crown law allowing) declare a de jure war for
+							#	Maybe don't fabricate claims on targets who could be holy warred instead?
+							#	Prefer counties close to personal demesne?
+							#	Prefer counties in duchies in which we already own at least another county, but not yet > 50% ?
+							#	Prefer counties not owned by close relatives/dynasty members if vassal or below?
 						}
 					}
+
 					random_neighbor_province = {
 						limit = {
-							holder_scope = { is_within_diplo_range = ROOT}
-							OR = {
-								county = {
+							owner = { is_within_diplo_range = ROOT}
+
+							county = {
+								any_dejure_liege = {
+									lower_real_tier_than = KING
 									NOT = { claimed_by = ROOT }
+
 									holder_scope = {
-										NOT = { character = ROOT }
-										ROOT = { job_chancellor = { NOT = { character = PREVPREV } } }
-									}
-								}
-								duchy = {
-									NOT = { claimed_by = ROOT }
-									holder_scope = {
-										NOT = { character = ROOT }
-										ROOT = { job_chancellor = { NOT = { character = PREVPREV } } }
+										NOR = {
+											character = ROOT
+											character = event_target:my_chancellor
+											is_vassal_or_below_of = event_target:my_chancellor
+										}
 									}
 								}
 							}
+
+							# TODO:
+							#	Check it's not a county ROOT could (potentially, crown law allowing) declare a de jure war for
+							#	Maybe don't fabricate claims on targets who could be holy warred instead?
+							#	Prefer counties close to personal demesne?
+							#	Prefer counties in duchies in which we already own at least another county, but not yet > 50% ?
+							#	Prefer counties not owned by close relatives/dynasty members if vassal or below?
 						}
+
 						save_event_target_as = target_province
+
 						random = {
 							chance = 75
+
 							ROOT = {
 								job_chancellor = {
 									set_job_action = {
@@ -310,6 +358,7 @@ character_event = {
 									}
 								}
 							}
+
 							break = yes
 						}
 					}
@@ -317,98 +366,74 @@ character_event = {
 			}
 		}
 
-		# Fifth priority: sow dissent in neighbors
+		# Fifth priority: sow dissent in neighboring realms
 		if = {
 			limit = {
 				independent = yes
+
 				OR = {
 					trait = deceitful
 					trait = master_schemer
 					trait = paranoid
-					intrigue = 12
+					intrigue >= 12
 				}
+
 				NOR = {
 					trait = trusting
 					trait = honest
 					trait = kind
 					trait = imbecile
 				}
+
 				job_spymaster = {
 					religion = ROOT
+
 					NOR = {
 						is_child_of = ROOT
 						is_primary_heir = ROOT
 					}
 				}
 			}
-			random_realm_province = {
+
+			random_independent_ruler = {
 				limit = {
-					any_neighbor_province = {
-						owner = {
-							top_liege = {
-								NOT = { character = ROOT }
-								is_within_diplo_range = ROOT
-								religion = ROOT
-								OR = {
-									war_with = ROOT
-									is_rival = ROOT
-									NOT = { reverse_opinion = { who = ROOT value = -50 } }
-									reverse_has_truce = ROOT
-								}
-								any_vassal = {
-									opinion = { who = PREV value = 0 }
-									NOT = { character = ROOT }
-									OR = {
-										higher_tier_than = BARON
-										is_patrician = yes
-									}
-								}
-							}
+					religion = ROOT
+
+					OR = {
+						war_with = ROOT
+						is_rival = ROOT
+						reverse_has_truce = ROOT
+
+						reverse_opinion = {
+							who = ROOT
+							value < -50
+						}
+					}
+
+					any_vassal = {
+						is_playable = yes
+
+						opinion = {
+							who = liege
+							value >= 0
 						}
 					}
 				}
-				random_neighbor_province = {
-					limit = {
-						owner = {
-							top_liege = {
-								NOT = { character = ROOT }
-								is_within_diplo_range = ROOT
-								religion = ROOT
-								OR = {
-									war_with = ROOT
-									is_rival = ROOT
-									NOT = { reverse_opinion = { who = ROOT value = -50 } }
-									reverse_has_truce = ROOT
-								}
-								any_vassal = {
-									opinion = { who = PREV value = 0 }
-									NOT = { character = ROOT }
-									OR = {
-										higher_tier_than = BARON
-										is_patrician = yes
-									}
-								}
+
+				capital_scope = {
+					save_event_target_as = target_province
+
+					random = {
+						chance = 75
+
+						event_target:my_chancellor = {
+							set_job_action = {
+								action = action_sow_dissent
+								where = event_target:target_province
 							}
 						}
-					}
-					owner = {
-						top_liege = {
-							capital_scope = {
-								save_event_target_as = target_province
-								random = {
-									chance = 75
-									ROOT = {
-										job_chancellor = {
-											set_job_action = {
-												action = action_sow_dissent
-												where = event_target:target_province
-											}
-										}
-									}
-									break = yes
-								}
-							}
-						}
+
+						break = yes
 					}
 				}
 			}
@@ -422,7 +447,6 @@ character_event = {
 
 	hide_window = yes
 
-	only_rulers = yes
 	only_playable = yes
 	only_capable = yes
 	prisoner = no
@@ -431,17 +455,23 @@ character_event = {
 	trigger = {
 		is_landed = yes
 		has_regent = no
-		OR = {
-			independent = yes
+
+		trigger_if = {
+			limit = { independent = no }
 			higher_real_tier_than = COUNT
 		}
+
 		job_treasurer = {
-			is_alive = yes
+			stewardship >= 8
 			in_command_trigger = no
-			stewardship = 8
-			OR = {
-				NOT = { has_character_flag = assigned_councillor_job }
-				had_character_flag = { flag = assigned_councillor_job days = 180 }
+
+			trigger_if = {
+				limit = { has_character_flag = assigned_councillor_job }
+
+				had_character_flag = {
+					flag = assigned_councillor_job
+					months >= 6
+				}
 			}
 		}
 	}
@@ -451,63 +481,49 @@ character_event = {
 	}
 
 	immediate = {
-		job_treasurer = { set_character_flag = assigned_councillor_job }
+		job_treasurer = {
+			set_character_flag = assigned_councillor_job
+			save_event_target_as = my_steward
+		}
 
 		# First priority: settle the tribe for tribals
 		if = {
 			limit = {
 				is_tribal = yes
+
 				OR = {
-					wealth = 25
-					prestige = 100
+					wealth >= 25
+					prestige >= 100
 					trait = ambitious
 				}
+
 				NOT = { any_demesne_province = { has_province_modifier = building_new_city } }
 			}
-			if = {
-				limit = {
-					capital_scope = {
-						county = { is_occupied = no }
-						num_of_empty_holdings = 1
-						culture = ROOT
-						NOT = { any_province_holding = { holding_type = city } }
-					}
-				}
-				capital_scope = {
-					save_event_target_as = target_province
-					random = {
-						chance = 75
-						ROOT = {
-							job_treasurer = {
-								set_job_action = {
-									action = action_settle_tribe
-									where = event_target:target_province
-								}
-							}
-						}
-						break = yes
-					}
-				}
-			}
+
 			random_demesne_province = {
 				limit = {
-					is_capital = no
-					county = { is_occupied = no }
-					num_of_empty_holdings = 1
 					culture = ROOT
-					NOT = { any_province_holding = { holding_type = city } }
+					has_city = no
+					num_of_empty_holdings >= 1
+					county = { is_occupied = no }
 				}
+
+				preferred_limit = {
+					is_capital = yes
+				}
+
 				save_event_target_as = target_province
+
 				random = {
 					chance = 75
-					ROOT = {
-						job_treasurer = {
-							set_job_action = {
-								action = action_settle_tribe
-								where = event_target:target_province
-							}
+
+					event_target:my_steward = {
+						set_job_action = {
+							action = action_settle_tribe
+							where = event_target:target_province
 						}
 					}
+
 					break = yes
 				}
 			}
@@ -521,46 +537,29 @@ character_event = {
 					is_nomadic = yes
 				}
 			}
-			if = {
-				limit = {
-					capital_scope = {
-						county = { is_occupied = no }
-						NOT = { culture = ROOT }
-					}
-				}
-				capital_scope = {
-					save_event_target_as = target_province
-					random = {
-						chance = 75
-						ROOT = {
-							job_treasurer = {
-								set_job_action = {
-									action = action_settle_tribe
-									where = event_target:target_province
-								}
-							}
-						}
-						break = yes
-					}
-				}
-			}
+
 			random_demesne_province = {
 				limit = {
-					is_capital = no
 					county = { is_occupied = no }
 					NOT = { culture = ROOT }
 				}
+
+				preferred_limit = {
+					is_capital = yes
+				}
+
 				save_event_target_as = target_province
+
 				random = {
 					chance = 75
-					ROOT = {
-						job_treasurer = {
-							set_job_action = {
-								action = action_settle_tribe
-								where = event_target:target_province
-							}
+
+					event_target:my_steward = {
+						set_job_action = {
+							action = action_settle_tribe
+							where = event_target:target_province
 						}
 					}
+
 					break = yes
 				}
 			}
@@ -571,16 +570,19 @@ character_event = {
 			limit = {
 				is_tribal = no
 				is_nomadic = no
+
 				OR = {
 					trait = greedy
 					trait = cruel
 					trait = decadent
-					NOT = { wealth = 0 }
+					wealth < 0
 				}
 			}
+
 			random_demesne_province = {
 				limit = {
 					county = { is_occupied = no }
+
 					NOR = {
 						has_province_modifier = high_taxes
 						has_province_modifier = peasant_unrest
@@ -589,17 +591,19 @@ character_event = {
 						has_province_modifier = decadence_unrest
 					}
 				}
+
 				save_event_target_as = target_province
+
 				random = {
 					chance = 50
-					ROOT = {
-						job_treasurer = {
-							set_job_action = {
-								action = action_squeeze_peasants
-								where = event_target:target_province
-							}
+
+					event_target:my_steward = {
+						set_job_action = {
+							action = action_squeeze_peasants
+							where = event_target:target_province
 						}
 					}
+
 					break = yes
 				}
 			}
@@ -609,35 +613,42 @@ character_event = {
 		if = {
 			limit = {
 				is_nomadic = yes
+
 				OR = {
 					trait = greedy
 					trait = cruel
 					trait = decadent
-					NOT = { wealth = 0 }
+					wealth < 0
 				}
 			}
-			random_realm_province = {
+
+			random_vassal = {
 				limit = {
-					num_of_settlements = 1
-					county = { is_occupied = no }
-					any_province_lord = {
-						vassal_of = ROOT
-						NOT = { has_job_title = job_treasurer }
-						capital_scope = { province = PREVPREV }
-						NOT = { has_character_modifier = hidden_extra_tribute }
+					capital_scope = {
+						num_of_settlements >= 1
+						county = { is_occupied = no }
+					}
+
+					NOR = {
+						character = event_target:my_steward
+						has_character_modifier = hidden_extra_tribute
 					}
 				}
-				save_event_target_as = target_province
+
+				capital_scope = {
+					save_event_target_as = target_province
+				}
+
 				random = {
 					chance = 50
-					ROOT = {
-						job_treasurer = {
-							set_job_action = {
-								action = action_collect_tribute
-								where = event_target:target_province
-							}
+
+					event_target:my_steward = {
+						set_job_action = {
+							action = action_collect_tribute
+							where = event_target:target_province
 						}
 					}
+
 					break = yes
 				}
 			}
@@ -649,45 +660,56 @@ character_event = {
 				is_tribal = yes
 				is_adult = yes
 				prisoner = no
-				prestige = 10
-				NOT = { trait = incapable }
-				OR = {
-					NOT = { has_character_flag = tribal_build_legend_troops }
-					had_character_flag = { flag = tribal_build_legend_troops days = 1825 }
+				prestige >= 10
+				is_incapable = no
+
+				trigger_if = {
+					limit = { has_character_flag = tribal_build_legend_troops }
+
+					had_character_flag = {
+						flag = tribal_build_legend_troops
+						years >= 5
+					}
 				}
-				capital_scope = { county = { is_occupied = no } }
+
+				capital_scope = {
+					county = { is_occupied = no }
+				}
 			}
+
 			capital_scope = { save_event_target_as = target_province }
+
 			random = {
 				chance = 50
+
 				job_treasurer = {
 					set_job_action = {
 						action = action_build_legend
 						where = event_target:target_province
 					}
 				}
+
 				break = yes
 			}
 		}
 
-		# Sixth priority: research eco tech
+		# Sixth priority: Research economy tech
 		if = {
 			limit = {
 				is_tribal = no
 				is_nomadic = no
 				capital_scope = { technology_can_spread = yes }
 			}
+
 			capital_scope = {
 				save_event_target_as = target_province
-				ROOT = {
-					job_treasurer = {
-						set_job_action = {
-							action = action_advance_eco_tech
-							where = event_target:target_province
-						}
-					}
+			}
+
+			job_treasurer = {
+				set_job_action = {
+					action = action_advance_eco_tech
+					where = event_target:target_province
 				}
-				break = yes
 			}
 		}
 	}
@@ -699,7 +721,6 @@ character_event = {
 
 	hide_window = yes
 
-	only_rulers = yes
 	only_playable = yes
 	only_capable = yes
 	prisoner = no
@@ -708,17 +729,23 @@ character_event = {
 	trigger = {
 		is_landed = yes
 		has_regent = no
-		OR = {
-			independent = yes
+
+		trigger_if = {
+			limit = { independent = no }
 			higher_real_tier_than = COUNT
 		}
+
 		job_spymaster = {
-			is_alive = yes
+			intrigue >= 8
 			in_command_trigger = no
-			intrigue = 8
-			OR = {
-				NOT = { has_character_flag = assigned_councillor_job }
-				had_character_flag = { flag = assigned_councillor_job days = 180 }
+
+			trigger_if = {
+				limit = { has_character_flag = assigned_councillor_job }
+
+				had_character_flag = {
+					flag = assigned_councillor_job
+					months >= 6
+				}
 			}
 		}
 	}
@@ -728,9 +755,12 @@ character_event = {
 	}
 
 	immediate = {
-		job_spymaster = { set_character_flag = assigned_councillor_job }
+		job_spymaster = {
+			set_character_flag = assigned_councillor_job
+			save_event_target_as = my_spymaster
+		}
 
-		# First priority: scheme against faction leaders that are problematic
+		# First priority: scheme against problematic factions' leaders
 		if = {
 			limit = {
 				OR = {
@@ -738,8 +768,9 @@ character_event = {
 					trait = master_schemer
 					trait = paranoid
 					trait = cruel
-					intrigue = 12
+					intrigue >= 12
 				}
+
 				NOR = {
 					trait = trusting
 					trait = honest
@@ -747,54 +778,73 @@ character_event = {
 					trait = imbecile
 				}
 			}
-			random_realm_province = {
+
+			random_vassal = {
 				limit = {
-					owner = {
-						vassal_of = ROOT
-						NOR = {
-							has_job_title = job_spymaster
-							opinion = { who = ROOT value = -20 }
-							has_opinion_modifier = { who = ROOT modifier = opinion_coerced_into_leaving_faction }
+					opinion = {
+						who = ROOT
+						value < -20
+					}
+
+					OR = {
+						AND = {
+							leads_faction = faction_court
+							faction_power = { faction = faction_court power >= 0.5 }
+							event_target:my_spymaster = { NOT = { in_faction = faction_court } }
 						}
-						OR = {
-							AND = {
-								leads_faction = faction_court
-								faction_power = { faction = faction_court power = 0.5 }
-								ROOT = { job_spymaster = { NOT = { in_faction = faction_court } } }
-							}
-							AND = {
-								leads_faction = faction_prosperity
-								faction_power = { faction = faction_prosperity power = 0.5 }
-								ROOT = { job_spymaster = { NOT = { in_faction = faction_prosperity } } }
-							}
-							AND = {
-								leads_faction = faction_glory
-								faction_power = { faction = faction_glory power = 0.5 }
-								ROOT = { job_spymaster = { NOT = { in_faction = faction_glory } } }
-							}
-							AND = {
-								leads_faction = faction_tradition
-								faction_power = { faction = faction_tradition power = 0.5 }
-								ROOT = { job_spymaster = { NOT = { in_faction = faction_tradition } } }
-							}
+
+						AND = {
+							leads_faction = faction_prosperity
+							faction_power = { faction = faction_prosperity power >= 0.5 }
+							event_target:my_spymaster = { NOT = { in_faction = faction_prosperity } }
 						}
-						OR = {
-							NOT = { has_character_flag = faction_undermine }
-							had_character_flag = { flag = faction_undermine days = 1825 }
+
+						AND = {
+							leads_faction = faction_glory
+							faction_power = { faction = faction_glory power >= 0.5 }
+							event_target:my_spymaster = { NOT = { in_faction = faction_glory } }
+						}
+
+						AND = {
+							leads_faction = faction_tradition
+							faction_power = { faction = faction_tradition power >= 0.5 }
+							event_target:my_spymaster = { NOT = { in_faction = faction_tradition } }
+						}
+					}
+
+					trigger_if = {
+						limit = { has_character_flag = faction_undermine }
+
+						had_character_flag = {
+							flag = faction_undermine
+							years >= 5
+						}
+					}
+
+					NOR = {
+						character = event_target:my_spymaster
+
+						has_opinion_modifier = {
+							name = opinion_coerced_into_leaving_faction
+							who = ROOT
 						}
 					}
 				}
-				save_event_target_as = target_province
+
+				capital_scope = {
+					save_event_target_as = target_province
+				}
+
 				random = {
 					chance = 75
-					ROOT = {
-						job_spymaster = {
-							set_job_action = {
-								action = action_uncover_plots
-								where = event_target:target_province
-							}
+
+					event_target:my_spymaster = {
+						set_job_action = {
+							action = action_uncover_plots
+							where = event_target:target_province
 						}
 					}
+
 					break = yes
 				}
 			}
@@ -810,26 +860,28 @@ character_event = {
 					trait = paranoid
 					trait = master_schemer
 					trait = game_master
-					trait = amateurish_plotter
-					trait = flamboyant_schemer
-					trait = intricate_webweaver
-					trait = elusive_shadow
-					intrigue = 12
+					has_education_intrigue_trigger = yes
+					intrigue >= 12
 				}
+
 				NOR = {
 					trait = honest
 					trait = just
 				}
 			}
+
 			capital_scope = { save_event_target_as = target_province }
+
 			random = {
 				chance = 75
+
 				job_spymaster = {
 					set_job_action = {
 						action = action_organize_spies
 						where = event_target:target_province
 					}
 				}
+
 				break = yes
 			}
 		}
@@ -842,83 +894,127 @@ character_event = {
 					trait = envious
 					trait = scholar
 					trait = architect
-					learning = 12
-					intrigue = 12
-					stewardship = 12
+					learning >= 12
+					intrigue >= 12
+					stewardship >= 12
 				}
+
 				job_spymaster = {
-					intrigue = 12
+					intrigue >= 12
+
 					NOR = {
 						is_child_of = ROOT
 						is_primary_heir = ROOT
 					}
 				}
 			}
-			random_realm_province = {
-				limit = {
-					any_neighbor_province = {
-						owner = {
-							NOT = { is_liege_or_above = ROOT }
-							NOT = { character = ROOT }
-							top_liege = {
-								NOT = { character = ROOT }
+
+			random_list = {
+				150 = { # Vassals prefer getting technology elsewhere inside the realm, closeby if possible
+					trigger = {
+						independent = no
+
+						liege = {
+							any_vassal = {
 								any_realm_province = {
 									has_higher_tech_than = ROOT
-									holder_scope = { is_within_diplo_range = ROOT}
-									owner = {
-										NOT = { is_liege_or_above = ROOT }
-										NOT = { character = ROOT }
-									}
 								}
+							}
+						}
+					}
+
+					liege = {
+						random_vassal = {
+							limit = {
+								any_realm_province = {
+									has_higher_tech_than = ROOT
+								}
+							}
+
+							preferred_limit = {
+								shares_realm_border_with = ROOT
+							}
+
+							random_realm_province = {
+								limit = { has_higher_tech_than = ROOT }
+
+								preferred_limit = {
+									owned_by = PREV
+									is_capital = yes
+								}
+
+								preferred_limit = { owned_by = PREV }
+								preferred_limit = { is_capital = yes }
+
+								save_event_target_as = target_province
 							}
 						}
 					}
 				}
-				random_neighbor_province = {
-					limit = {
-						owner = {
-							NOT = { is_liege_or_above = ROOT }
-							NOT = { character = ROOT }
-							top_liege = {
-								NOT = { character = ROOT }
-								any_realm_province = {
-									has_higher_tech_than = ROOT
-									holder_scope = { is_within_diplo_range = ROOT}
-									owner = {
-										NOT = { is_liege_or_above = ROOT }
-										NOT = { character = ROOT }
-									}
-								}
+
+				50 = { # Everyone can look to nearby realms for better tech, again closeby if possible
+					trigger = {
+						any_neighbor_independent_ruler = {
+							shares_realm_border_with = ROOT
+
+							any_realm_province = {
+								has_higher_tech_than = ROOT
 							}
 						}
 					}
-					owner = {
-						top_liege = {
-							random_realm_province = {
-								limit = {
-									has_higher_tech_than = ROOT
-									holder_scope = { is_within_diplo_range = ROOT}
-									owner = {
-										NOT = { is_liege_or_above = ROOT }
-										NOT = { character = ROOT }
-									}
-								}
-								save_event_target_as = target_province
-								random = {
-									chance = 75
-									ROOT = {
-										job_spymaster = {
-											set_job_action = {
-												action = action_study_technology
-												where = event_target:target_province
-											}
-										}
-									}
-									break = yes
-								}
+
+					random_neighbor_independent_ruler = {
+						limit = {
+							shares_realm_border_with = ROOT
+
+							any_realm_province = {
+								has_higher_tech_than = ROOT
 							}
 						}
+
+						preferred_limit = {
+							any_realm_province = {
+								has_higher_tech_than = ROOT
+								owner = { shares_realm_border_with = ROOT }
+							}
+						}
+
+						random_realm_province = {
+							limit = { has_higher_tech_than = ROOT }
+
+							preferred_limit = {
+								owner = { shares_realm_border_with = ROOT }
+								is_capital = yes
+							}
+
+							preferred_limit = {
+								owner = { shares_realm_border_with = ROOT }
+							}
+
+							preferred_limit = {
+								is_capital = yes
+							}
+
+							save_event_target_as = target_province
+						}
 					}
+				}
+			}
+
+			if = {
+				limit = { event_target:target_province = { always = yes } }
+
+				random = {
+					chance = 75
+
+					event_target:my_spymaster = {
+						set_job_action = {
+							action = action_study_technology
+							where = event_target:target_province
+						}
+					}
+
+					break = yes
 				}
 			}
 		}
@@ -926,30 +1022,26 @@ character_event = {
 		# Fourth priority: scheme against problematic vassals
 		random_vassal = {
 			limit = {
-				is_within_diplo_range = ROOT
 				among_most_powerful_vassals = 5
-				relative_power_to_liege = 0.10
+				relative_power_to_liege >= 0.10
 				has_regent = no
-				OR = {
-					higher_tier_than = baron
-					is_patrician = yes
-				}
-				NOR = {
-					opinion = { who = ROOT value = -20 }
-					has_job_title = job_spymaster
-				}
+				is_playable = yes
+				opinion = { who = ROOT value < -20 }
+				NOT = { character = event_target:my_spymaster }
 			}
+
 			capital_scope = { save_event_target_as = target_province }
+
 			random = {
 				chance = 75
-				ROOT = {
-					job_spymaster = {
-						set_job_action = {
-							action = action_uncover_plots
-							where = event_target:target_province
-						}
+
+				event_target:my_spymaster = {
+					set_job_action = {
+						action = action_uncover_plots
+						where = event_target:target_province
 					}
 				}
+
 				break = yes
 			}
 		}
@@ -962,7 +1054,6 @@ character_event = {
 
 	hide_window = yes
 
-	only_rulers = yes
 	only_playable = yes
 	only_capable = yes
 	prisoner = no
@@ -971,17 +1062,23 @@ character_event = {
 	trigger = {
 		is_landed = yes
 		has_regent = no
-		OR = {
-			independent = yes
+
+		trigger_if = {
+			limit = { independent = no }
 			higher_real_tier_than = COUNT
 		}
+
 		job_spiritual = {
-			is_alive = yes
+			learning >= 8
 			in_command_trigger = no
-			learning = 8
-			OR = {
-				NOT = { has_character_flag = assigned_councillor_job }
-				had_character_flag = { flag = assigned_councillor_job days = 180 }
+
+			trigger_if = {
+				limit = { has_character_flag = assigned_councillor_job }
+
+				had_character_flag = {
+					flag = assigned_councillor_job
+					months >= 6
+				}
 			}
 		}
 	}
@@ -991,76 +1088,90 @@ character_event = {
 	}
 
 	immediate = {
-		job_spiritual = { set_character_flag = assigned_councillor_job }
+		job_spiritual = {
+			set_character_flag = assigned_councillor_job
+			save_event_target_as = my_spiritual
+		}
 
 		# First priority: convert heretic provinces
 		if = {
 			limit = {
-				NOT = {
-					top_liege = {
-						religion = tengri_pagan
+				top_liege = {
+					NAND = {
 						OR = {
 							has_landed_title = e_il-khanate
 							has_landed_title = e_golden_horde
+							has_landed_title = e_chagatai
 						}
+
+						religion = tengri_pagan
 					}
 				}
 			}
+
 			if = {
 				limit = {
 					capital_scope = {
-						num_of_settlements = 1
+						num_of_settlements >= 1
+
 						OR = {
 							is_heresy_of = ROOT
 							is_parent_religion = ROOT
 						}
+
 						NAND = {
-							ROOT = { job_spiritual = { has_character_modifier = spiritual_refused_pagans } }
+							event_target:my_spiritual = { has_character_modifier = spiritual_refused_pagans }
 							owner = { religion_group = pagan_group }
 						}
 					}
 				}
+
 				capital_scope = { save_event_target_as = target_province }
-				ROOT = {
-					job_spiritual = {
-						set_job_action = {
-							action = action_inquisition
-							where = event_target:target_province
-						}
+
+				event_target:my_spiritual = {
+					set_job_action = {
+						action = action_inquisition
+						where = event_target:target_province
 					}
 				}
-				break = yes
 			}
-			random_realm_province = {
-				limit = {
-					num_of_settlements = 1
-					OR = {
-						is_heresy_of = ROOT
-						is_parent_religion = ROOT
-					}
-					any_province_lord = {
+			else = {
+				random_realm_province = {
+					limit = {
+						num_of_settlements >= 1
+
 						OR = {
-							character = ROOT
-							is_liege_or_above = ROOT
+							is_heresy_of = ROOT
+							is_parent_religion = ROOT
+						}
+
+						any_province_lord = {
+							OR = {
+								character = ROOT
+								is_vassal_or_below_of = ROOT
+							}
+						}
+
+						NAND = {
+							event_target:my_spiritual = { has_character_modifier = spiritual_refused_pagans }
+							owner = { religion_group = pagan_group }
 						}
 					}
-					NAND = {
-						ROOT = { job_spiritual = { has_character_modifier = spiritual_refused_pagans } }
-						owner = { religion_group = pagan_group }
-					}
-				}
-				save_event_target_as = target_province
-				random = {
-					chance = 75
-					ROOT = {
-						job_spiritual = {
+
+					save_event_target_as = target_province
+
+					random = {
+						chance = 75
+
+						event_target:my_spiritual = {
 							set_job_action = {
 								action = action_inquisition
 								where = event_target:target_province
 							}
 						}
+
+						break = yes
 					}
-					break = yes
 				}
 			}
 		}
@@ -1070,63 +1181,75 @@ character_event = {
 			limit = {
 				NOR = {
 					religion_group = muslim
+
 					top_liege = {
 						religion = tengri_pagan
+
 						OR = {
 							has_landed_title = e_il-khanate
 							has_landed_title = e_golden_horde
+							has_landed_title = e_chagatai
 						}
 					}
 				}
 			}
+
 			if = {
 				limit = {
 					capital_scope = {
-						num_of_settlements = 1
+						num_of_settlements >= 1
+
 						NOT = { religion = ROOT }
+
 						NAND = {
-							ROOT = { job_spiritual = { has_character_modifier = spiritual_refused_pagans } }
+							event_target:my_spiritual = { has_character_modifier = spiritual_refused_pagans }
 							owner = { religion_group = pagan_group }
 						}
 					}
 				}
+
 				capital_scope = { save_event_target_as = target_province }
-				ROOT = {
-					job_spiritual = {
+
+				event_target:my_spiritual = {
+					set_job_action = {
+						action = action_inquisition
+						where = event_target:target_province
+					}
+				}
+
+				break = yes
+			}
+
+			random_realm_province = {
+				limit = {
+					num_of_settlements >= 1
+					NOT = { religion = ROOT }
+
+					any_province_lord = {
+						OR = {
+							character = ROOT
+							is_vassal_or_below_of = ROOT
+						}
+					}
+
+					NAND = {
+						event_target:my_spiritual = { has_character_modifier = spiritual_refused_pagans }
+						owner = { religion_group = pagan_group }
+					}
+				}
+
+				save_event_target_as = target_province
+
+				random = {
+					chance = 75
+
+					event_target:my_spiritual = {
 						set_job_action = {
 							action = action_inquisition
 							where = event_target:target_province
 						}
 					}
-				}
-				break = yes
-			}
-			random_realm_province = {
-				limit = {
-					num_of_settlements = 1
-					NOT = { religion = ROOT }
-					any_province_lord = {
-						OR = {
-							character = ROOT
-							is_liege_or_above = ROOT
-						}
-					}
-					NAND = {
-						ROOT = { job_spiritual = { has_character_modifier = spiritual_refused_pagans } }
-						owner = { religion_group = pagan_group }
-					}
-				}
-				save_event_target_as = target_province
-				random = {
-					chance = 75
-					ROOT = {
-						job_spiritual = {
-							set_job_action = {
-								action = action_inquisition
-								where = event_target:target_province
-							}
-						}
-					}
+
 					break = yes
 				}
 			}
@@ -1135,28 +1258,27 @@ character_event = {
 		# Third priority: improve relations with powerful religious vassals
 		random_vassal = {
 			limit = {
-				is_within_diplo_range = ROOT
 				among_most_powerful_vassals = 5
-				relative_power_to_liege = 0.10
-				has_regent = no
 				is_theocracy = yes
-				opinion = { who = ROOT value = -40 }
-				NOR = {
-					opinion = { who = ROOT value = 0 }
-					has_job_title = job_spiritual
-				}
+				relative_power_to_liege >= 0.10
+				has_regent = no
+				opinion = { who = ROOT value >= -40 }
+				opinion = { who = ROOT value < 0 }
+				NOT = { character = event_target:my_spiritual }
 			}
+
 			capital_scope = { save_event_target_as = target_province }
+
 			random = {
 				chance = 75
-				ROOT = {
-					job_spiritual = {
-						set_job_action = {
-							action = action_improve_rel_relations
-							where = event_target:target_province
-						}
+
+				event_target:my_spiritual = {
+					set_job_action = {
+						action = action_improve_rel_relations
+						where = event_target:target_province
 					}
 				}
+
 				break = yes
 			}
 		}
@@ -1164,60 +1286,68 @@ character_event = {
 		# Fourth priority: try to convert pagans
 		if = {
 			limit = {
+				trigger_if = {
+					limit = { independent = no }
+					higher_real_tier_than = DUKE
+				}
+				trigger_else = {
+					higher_real_tier_than = COUNT
+				}
+
 				OR = {
 					trait = zealous
 					is_theocracy = yes
-					tier = EMPEROR
+					real_tier = EMPEROR
 				}
-				higher_tier_than = COUNT
-				OR = {
-					independent = yes
-					higher_tier_than = DUKE
-				}
+
 				is_not_unreformed_pagan_trigger = yes
+
 				NOR = {
 					religion_group = muslim
 					religion_group = indian_group
+
 					top_liege = {
 						religion = tengri_pagan
+
 						OR = {
 							has_landed_title = e_il-khanate
 							has_landed_title = e_golden_horde
+							has_landed_title = e_chagatai
 						}
 					}
 				}
 			}
-			random_independent_ruler = {
+
+			random_neighbor_independent_ruler = {
 				limit = {
-					is_within_diplo_range = ROOT
 					is_unreformed_pagan_trigger = yes
 					controls_religion = no
-					any_realm_province = {
-						ROOT = {
-							any_realm_province = {
-								NOT = { distance = { where = PREVPREV value = 100 } }
-							}
-						}
-					}
+
 					NOR = {
-						rightful_religious_head_scope = { character = PREV }
 						religion = ROOT
+						rightful_religious_head = THIS
 						is_heresy_of = ROOT
 						is_parent_religion = ROOT
-						has_opinion_modifier = { who = ROOT modifier = opinion_sent_preacher }
-					}
-				}
-				capital_scope = { save_event_target_as = target_province }
-				random = {
-					chance = 75
-					ROOT = {
-						job_spiritual = {
-							set_job_action = {
-								action = action_inquisition
-								where = event_target:target_province
-							}
+
+						has_opinion_modifier = {
+							name = opinion_sent_preacher
+							who = ROOT
 						}
 					}
+				}
+
+				capital_scope = { save_event_target_as = target_province }
+
+				random = {
+					chance = 75
+
+					event_target:my_spiritual = {
+						set_job_action = {
+							action = action_inquisition
+							where = event_target:target_province
+						}
+					}
+
 					break = yes
 				}
 			}
@@ -1228,28 +1358,32 @@ character_event = {
 			limit = {
 				religion_group = muslim
 				NOT = { trait = decadent }
+
 				OR = {
 					trait = charitable
 					trait = zealous
-					NOT = { piety = 0 }
+					piety < 0
 				}
 			}
+
 			random_demesne_province = {
 				limit = {
 					religion = ROOT
-					num_of_settlements = 1
+					num_of_settlements >= 1
 				}
+
 				save_event_target_as = target_province
+
 				random = {
 					chance = 75
-					ROOT = {
-						job_spiritual = {
-							set_job_action = {
-								action = action_charity
-								where = event_target:target_province
-							}
+
+					event_target:my_spiritual = {
+						set_job_action = {
+							action = action_charity
+							where = event_target:target_province
 						}
 					}
+
 					break = yes
 				}
 			}
@@ -1259,17 +1393,24 @@ character_event = {
 		if = {
 			limit = {
 				is_tribal = yes
+				is_adult = yes
 				NOT = { trait = cynical }
 				capital_scope = { county = { is_occupied = no } }
-				is_adult = yes
 				prisoner = no
-				NOT = { trait = incapable }
-				OR = {
-					NOT = { has_character_flag = tribal_build_zeal_troops }
-					had_character_flag = { flag = tribal_build_zeal_troops days = 1825 }
+				is_incapable = no
+
+				trigger_if = {
+					limit = { has_character_flag = tribal_build_zeal_troops }
+
+					had_character_flag = {
+						flag = tribal_build_zeal_troops
+						years >= 5
+					}
 				}
-				OR = {
-					war = no
+
+				trigger_if = {
+					limit = { war = yes }
+
 					any_war = {
 						OR = {
 							using_cb = crusade
@@ -1280,15 +1421,19 @@ character_event = {
 					}
 				}
 			}
+
 			capital_scope = { save_event_target_as = target_province }
+
 			random = {
 				chance = 75
+
 				job_spiritual = {
 					set_job_action = {
 						action = action_build_zeal
 						where = event_target:target_province
 					}
 				}
+
 				break = yes
 			}
 		}
@@ -1298,18 +1443,22 @@ character_event = {
 			limit = {
 				is_tribal = no
 				capital_scope = { technology_can_spread = yes }
+
 				NOR = {
 					trait = imbecile
 					trait = cynical
 				}
 			}
+
 			capital_scope = { save_event_target_as = target_province }
+
 			job_spiritual = {
 				set_job_action = {
 					action = action_advance_cul_tech
 					where = event_target:target_province
 				}
 			}
+
 			break = yes
 		}
 	}
@@ -1321,7 +1470,6 @@ character_event = {
 
 	hide_window = yes
 
-	only_rulers = yes
 	only_playable = yes
 	only_capable = yes
 	prisoner = no
@@ -1330,17 +1478,23 @@ character_event = {
 	trigger = {
 		is_landed = yes
 		has_regent = no
-		OR = {
-			independent = yes
+
+		trigger_if = {
+			limit = { independent = no }
 			higher_real_tier_than = COUNT
 		}
+
 		job_marshal = {
-			is_alive = yes
+			martial >= 8
 			in_command_trigger = no
-			martial = 8
-			OR = {
-				NOT = { has_character_flag = assigned_councillor_job }
-				had_character_flag = { flag = assigned_councillor_job days = 180 }
+
+			trigger_if = {
+				limit = { has_character_flag = assigned_councillor_job }
+
+				had_character_flag = {
+					flag = assigned_councillor_job
+					months >= 6
+				}
 			}
 		}
 	}
@@ -1350,7 +1504,10 @@ character_event = {
 	}
 
 	immediate = {
-		job_marshal = { set_character_flag = assigned_councillor_job }
+		job_marshal = {
+			set_character_flag = assigned_councillor_job
+			save_event_target_as = my_marshal
+		}
 
 		# First priority: reduce revolt risk
 		if = {
@@ -1361,27 +1518,35 @@ character_event = {
 					trait = trusting
 				}
 			}
+
 			random_realm_province = {
 				limit = {
 					owner = {
 						OR = {
 							character = ROOT
-							is_liege_or_above = ROOT
+							is_vassal_or_below_of = ROOT
 						}
 					}
-					OR = {
-						NOT = { culture_group = ROOT }
-						NOT = { religion_group = ROOT }
-						has_province_modifier = heretic_stronghold
-						has_province_modifier = peasant_unrest
-						has_province_modifier = religious_unrest
-						has_province_modifier = cultural_unrest
-						has_province_modifier = extra_tax
-						has_province_modifier = active_inquisition
-						has_province_modifier = decadence_unrest
-						has_province_modifier = iconoclast_blowback
-						has_province_modifier = paulician_suppression
+
+					trigger_if = {
+						limit = {
+							culture_group = ROOT
+							religion_group = ROOT
+						}
+
+						OR = {
+							has_province_modifier = heretic_stronghold
+							has_province_modifier = peasant_unrest
+							has_province_modifier = religious_unrest
+							has_province_modifier = cultural_unrest
+							has_province_modifier = extra_tax
+							has_province_modifier = active_inquisition
+							has_province_modifier = decadence_unrest
+							has_province_modifier = iconoclast_blowback
+							has_province_modifier = paulician_suppression
+						}
 					}
+
 					NOR = {
 						has_province_modifier = recent_revolt
 						has_province_modifier = theological_dialogue
@@ -1391,17 +1556,28 @@ character_event = {
 						has_province_modifier = marshal_province_cowed
 					}
 				}
+
+				preferred_limit = {
+					owned_by = ROOT
+					is_capital = yes
+				}
+
+				preferred_limit = {
+					owned_by = ROOT
+				}
+
 				save_event_target_as = target_province
+
 				random = {
 					chance = 75
-					ROOT = {
-						job_marshal = {
-							set_job_action = {
-								action = action_assist_arrest
-								where = event_target:target_province
-							}
+
+					event_target:my_marshal = {
+						set_job_action = {
+							action = action_assist_arrest
+							where = event_target:target_province
 						}
 					}
+
 					break = yes
 				}
 			}
@@ -1413,27 +1589,37 @@ character_event = {
 				is_tribal = yes
 				is_adult = yes
 				prisoner = no
+				is_incapable = no
+				is_weak_trigger = no
+
 				NOR = {
-					trait = incapable
 					trait = craven
 					trait = content
 					trait = humble
-					is_weak_trigger = yes
 				}
-				OR = {
-					NOT = { has_character_flag = tribal_organize_raid_troops }
-					had_character_flag = { flag = tribal_organize_raid_troops days = 3650 }
+
+				trigger_if = {
+					limit = { has_character_flag = tribal_organize_raid_troops }
+
+					had_character_flag = {
+						flag = tribal_organize_raid_troops
+						years >= 10
+					}
 				}
 			}
+
 			capital_scope = { save_event_target_as = target_province }
+
 			random = {
 				chance = 75
+
 				job_marshal = {
 					set_job_action = {
 						action = action_organize_raid
 						where = event_target:target_province
 					}
 				}
+
 				break = yes
 			}
 		}
@@ -1444,25 +1630,24 @@ character_event = {
 				is_nomadic = no
 				any_demesne_province = { NOT = { has_province_modifier = levy_reinforcements } }
 			}
-			if = {
-				limit = { capital_scope = { has_province_modifier = levy_reinforcements } }
-				random_demesne_province = {
-					limit = { NOT = { has_province_modifier = levy_reinforcements } }
-					save_event_target_as = target_province
-				}
+
+			random_demesne_province = {
+				limit = { NOT = { has_province_modifier = levy_reinforcements } }
+				preferred_limit = { is_capital = yes }
+
+				save_event_target_as = target_province
 			}
-			if = {
-				limit = { capital_scope = { NOT = { has_province_modifier = levy_reinforcements } } }
-				capital_scope = { save_event_target_as = target_province }
-			}
+
 			random = {
 				chance = 75
+
 				job_marshal = {
 					set_job_action = {
 						action = action_train_troops
 						where = event_target:target_province
 					}
 				}
+
 				break = yes
 			}
 		}
@@ -1470,15 +1655,19 @@ character_event = {
 		# Fourth priority: train troops for nomadic
 		if = {
 			limit = { is_nomadic = yes }
+
 			capital_scope = { save_event_target_as = target_province }
+
 			random = {
 				chance = 75
+
 				job_marshal = {
 					set_job_action = {
 						action = action_train_troops_nomadic
 						where = event_target:target_province
 					}
 				}
+
 				break = yes
 			}
 		}
@@ -1486,13 +1675,16 @@ character_event = {
 		# Fifth priority: research military tech
 		if = {
 			limit = { is_tribal = no }
+
 			capital_scope = { save_event_target_as = target_province }
+
 			job_marshal = {
 				set_job_action = {
 					action = action_advance_mil_tech
 					where = event_target:target_province
 				}
 			}
+
 			break = yes
 		}
 	}
@@ -1518,4 +1710,3 @@ character_event = {
 		clr_character_flag = assigned_councillor_job
 	}
 }
-
