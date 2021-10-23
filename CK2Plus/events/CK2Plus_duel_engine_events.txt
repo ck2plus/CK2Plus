@@ -9,14 +9,16 @@ namespace = DuelEngine
 # Updated/extended by 'jordarkelf'
 # Updated for CK2+ by Dallan
 #####################
+
 # Flow:
-# (0 or 1 -> 2-> 3 -> 4 -> 5 -> 6 -> 7 -> 110/306 OR 105/309 OR ( 201/311 -> END)
+# (0 or 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 110/306 OR 105/309 OR ( 201/311 -> END)
 # 110 (wounding blow: automatic wound, chance of maiming if already wounded, opponent can flee):
 # -> ( 111 -> 1 ) OR (107 -> ( 108 -> END) OR (109 -> END) )
 # 105 (subduing blow: higher chance for yielding, chance of wound, chance of incapable if already wounded):
 # -> 106 -> (107 -> ( 108 -> END) OR (109 -> 203 -> END) ) OR 112 -> 1 }
 # 306: -> 305 -> 313 -> END
 # 309: -> 310 -> END
+
 ##########################
 # MAIN LOOP:
 # DuelEngine.0  Judge: Duel Start
@@ -27,26 +29,30 @@ namespace = DuelEngine
 # DuelEngine.5	Winner: Exploits Hole in Defense
 # DuelEngine.6	Loser: Is Hit
 # DuelEngine.7	Judge: Determine Outcome
+
 ######################
-# YIELD OUTCOMES: (105 ->
+# YIELD OUTCOMES:
 ######################
 # DuelEngine.105	Winner: Opponent At Your Mercy!
 # DuelEngine.106	Loser: Subdued! Yield Y/N?
 # DuelEngine.107	Winner: Opponent Yields! Accept Y/N?
 # DuelEngine.108	Loser: Opponent Accepts Your Yield!
 # DuelEngine.109	Loser: Opponent Refuses Your Yield!
+
 ######################
 # WOUND OUTCOMES
 ######################
 # DuelEngine.110	Loser: You Roll Aside, But Are Wounded!
 # DuelEngine.111	Winner: Your Opponent Rolls Aside, But Is Wounded!
 # DuelEngine.112	Winner: You have wounded your opponent!
+
 ######################
 # DEATH OUTCOMES
 ######################
 # DuelEngine.201	Winner: The final blow!
 # DuelEngine.202	Loser: Slain!
 # DuelEngine.203	Winner: Opponent Slain!
+
 ######################
 # SPECIAL FLAVOR - TOURNEY
 ######################
@@ -61,6 +67,7 @@ namespace = DuelEngine
 # DuelEngine.313	Loser: Wounded therefore Lose - Tourney
 # DuelEngine.311	Winner: The final blow! - Tourney
 # DuelEngine.312	Loser: Slain - Tourney
+
 ######################
 # OUTPUT EVENTS
 ######################
@@ -82,15 +89,18 @@ namespace = DuelEngine
 #	 FROMFROM will be the loser.
 # 4b. For tournament jousts, use DuelEngine.902 instead. It works the same
 #	but has tournament flavour text.
+
 #########################
 # SPECIAL CONTEXT FLAGS
 # Put these on a characters before the duel begins in order to
 # alter the duel in specific ways.
 # They do not need to be removed in your output block.
+
 #########################
 # flag_duel_friendly		This character is not trying to kill their opponent.
 # flag_duel_to_the_death	This character intends to fight to their death. Overriden by flag_duel_friendly
 # flag_duel_tourney			This duel is a joust in a tourney. Should be used with flag_duel_friendly or bizarre behavior will ensue.
+
 #########################
 # Images:
 # GFX_evt_duel0: start/circle
@@ -101,142 +111,138 @@ namespace = DuelEngine
 # GFX_evt_duel5: death
 #########################
 
-character_event = { # DUEL START - This event sets up event targets and should only be called once.
+# DUEL START - This event sets up event targets and should only be called once.
+character_event = {
 	id = DuelEngine.0
+
 	is_triggered_only = yes
-	picture = GFX_evt_duel0
-	desc = "AI_EVENT"
+	hide_window = yes
 
 	# Nobody but the actual referee should ever get this
-	trigger = { has_landed_title = e_rebels }
+	trigger = {
+		has_landed_title = e_rebels
 
-	option = {
-		name = "AI_EVENT"
-
-		# Try to cancel if something broke in the setup/selection
-		if = { #FROMFROM is dead
-			limit = {
-				FROMFROM = { is_alive = no }
-			}
-			FROM = { character_event = { id = DuelEngine.903 tooltip = "EVTTOOLTIP_DuelEngine_903" } } #cancel! Something broke.
-		}
-		if = { #FROM is dead
-			limit = {
-				FROM = { is_alive = no }
-			}
-			FROMFROM = { character_event = { id = DuelEngine.903 tooltip = "EVTTOOLTIP_DuelEngine_903" } } #cancel! Something broke.
-		}
-		if = { #FROM selection failed (is judge/rebels)
-			limit = {
-				FROM = { has_landed_title = e_rebels }
-			}
-			FROMFROM = { character_event = { id = DuelEngine.903 tooltip = "EVTTOOLTIP_DuelEngine_903" } } #cancel! Something broke.
-		}
-		if = { #FROMFROM selection failed (is judge/rebels)
-			limit = {
-				FROMFROM = { has_landed_title = e_rebels }
-			}
-			FROM = { character_event = { id = DuelEngine.903 tooltip = "EVTTOOLTIP_DuelEngine_903" } } #cancel! Something broke.
-		}
-		if = { #FROM is jousting but FROMFROM is not
-			limit = {
-				NOT = { FROMFROM = { has_character_flag = flag_duel_tourney } }
-				FROM = { has_character_flag = flag_duel_tourney }
-			}
-			FROMFROM = { character_event = { id = DuelEngine.903 tooltip = "EVTTOOLTIP_DuelEngine_903" } } #cancel! Something broke.
-		}
-		if = { #FROMFROM is jousting but FROM is not
-			limit = {
-				FROMFROM = { has_character_flag = flag_duel_tourney }
-				NOT = { FROM = { has_character_flag = flag_duel_tourney } }
-			}
-			FROM = { character_event = { id = DuelEngine.903 tooltip = "EVTTOOLTIP_DuelEngine_903" } } #cancel! Something broke.
-		}
+		# Check combatants selection
 		FROM = {
-			hidden_tooltip = { set_variable = { which = duel_rounds value = 0 } }
+			is_alive = yes
+			NOT = { has_landed_title = e_rebels }
+		}
+
+		FROMFROM = {
+			is_alive = yes
+			NOT = { has_landed_title = e_rebels }
+		}
+
+		# Check if both or neither are jousting
+		trigger_if = {
+			limit = { FROM = { has_character_flag = flag_duel_tourney } }
+			FROMFROM = { has_character_flag = flag_duel_tourney }
+		}
+		trigger_else = {
+			FROMFROM = { NOT = { has_character_flag = flag_duel_tourney } }
+		}
+	}
+
+	fail_trigger_effect = {
+		# Try to cancel if something broke in the setup/selection
+		FROM = {
+			character_event = {
+				id = DuelEngine.903 # Cancel! Something broke.
+				tooltip = EVTTOOLTIP_DuelEngine_903
+			}
+		}
+
+		FROMFROM = {
+			character_event = {
+				id = DuelEngine.903 # Cancel! Something broke.
+				tooltip = EVTTOOLTIP_DuelEngine_903
+			}
+		}
+	}
+
+	immediate = {
+		FROM = {
+			set_variable = { which = duel_rounds value = 0 }
 			save_event_target_as = combatant_1
 		}
+
 		FROMFROM = {
-			hidden_tooltip = { set_variable = { which = duel_rounds value = 0 } }
+			set_variable = { which = duel_rounds value = 0 }
 			save_event_target_as = combatant_2
 		}
-		#Tournament jousting
-		if = {
-			limit = {
-				event_target:combatant_2 = { has_character_flag = flag_duel_tourney }
-				event_target:combatant_1 = { has_character_flag = flag_duel_tourney }
+
+		# Tournament jousting
+		event_target:combatant_2 = {
+			if = {
+				limit = { has_character_flag = flag_duel_tourney }
+				character_event = { id = DuelEngine.301 }
 			}
-			event_target:combatant_2 = { character_event = { id = DuelEngine.301 } }
-			break = yes
+			# Normal duels
+			else = {
+				character_event = { id = DuelEngine.2 }  # Round one, fight!
+			}
 		}
-		# Normal duels
-		event_target:combatant_2 = { character_event = { id = DuelEngine.2 } } #Round one, fight!
 	}
 }
 
-character_event = { # ROUND START This event starts a new round of combat after resolving the previous one
+# ROUND START This event starts a new round of combat after resolving the previous one
+character_event = {
 	id = DuelEngine.1
+
 	is_triggered_only = yes
-	picture = GFX_evt_duel0
-	desc = "AI_EVENT"
+	hide_window = yes
 
 	# Nobody but the actual referee should ever get this
-	trigger = { has_landed_title = e_rebels }
+	trigger = {
+		has_landed_title = e_rebels
 
-	option = {
-		name = "AI_EVENT"
+		# Check combatants selection
+		event_target:combatant_1 = {
+			is_alive = yes
+			NOT = { has_landed_title = e_rebels }
+		}
+
+		event_target:combatant_2 = {
+			is_alive = yes
+			NOT = { has_landed_title = e_rebels }
+		}
+
+		# Check if both or neither are jousting
+		trigger_if = {
+			limit = { event_target:combatant_1 = { has_character_flag = flag_duel_tourney } }
+			event_target:combatant_2 = { has_character_flag = flag_duel_tourney }
+		}
+		trigger_else = {
+			event_target:combatant_2 = { NOT = { has_character_flag = flag_duel_tourney } }
+		}
+	}
+
+	fail_trigger_effect = {
 		# Try to cancel if something broke in the setup/selection
-		if = { #combatant_2 is dead
-			limit = {
-				event_target:combatant_2 = { is_alive = no }
-			}
-			event_target:combatant_1 = { character_event = { id = DuelEngine.903 tooltip = "EVTTOOLTIP_DuelEngine_903" } } #cancel! Something broke.
+		event_target:combatant_1 = {
+			character_event = { id = DuelEngine.903 } # Cancel! Something broke.
 		}
-		if = { #combatant_1 is dead
-			limit = {
-				event_target:combatant_1 = { is_alive = no }
-			}
-			event_target:combatant_2 = { character_event = { id = DuelEngine.903 tooltip = "EVTTOOLTIP_DuelEngine_903" } } #cancel! Something broke.
+
+		event_target:combatant_2 = {
+			character_event = { id = DuelEngine.903 } # Cancel! Something broke.
 		}
-		if = { #combatant_1 selection failed (is judge/rebels)
-			limit = {
-				event_target:combatant_1 = { has_landed_title = e_rebels }
-			}
-			event_target:combatant_2 = { character_event = { id = DuelEngine.903 tooltip = "EVTTOOLTIP_DuelEngine_903" } } #cancel! Something broke.
-		}
-		if = { #combatant_2 selection failed (is judge/rebels)
-			limit = {
-				event_target:combatant_2 = { has_landed_title = e_rebels }
-			}
-			event_target:combatant_1 = { character_event = { id = DuelEngine.903 tooltip = "EVTTOOLTIP_DuelEngine_903" } } #cancel! Something broke.
-		}
-		if = { #combatant_1 is jousting but combatant_2 is not
-			limit = {
-				NOT = { event_target:combatant_2 = { has_character_flag = flag_duel_tourney } }
-				event_target:combatant_1 = { has_character_flag = flag_duel_tourney }
-			}
-			event_target:combatant_2 = { character_event = { id = DuelEngine.903 tooltip = "EVTTOOLTIP_DuelEngine_903" } } #cancel! Something broke.
-		}
-		if = { #combatant_2 is jousting but combatant_1 is not
-			limit = {
-				event_target:combatant_2 = { has_character_flag = flag_duel_tourney }
-				NOT = { event_target:combatant_1 = { has_character_flag = flag_duel_tourney } }
-			}
-			event_target:combatant_1 = { character_event = { id = DuelEngine.903 tooltip = "EVTTOOLTIP_DuelEngine_903" } } #cancel! Something broke.
-		}
+	}
+
+	immediate = {
 		clear_event_target = round_winner
 		clear_event_target = round_loser
-		#Tournament jousting
-		if = {
-			limit = {
-				event_target:combatant_2 = { has_character_flag = flag_duel_tourney }
-				event_target:combatant_1 = { has_character_flag = flag_duel_tourney }
+
+		event_target:combatant_2 = {
+		# Tournament jousting
+			if = {
+				limit = { has_character_flag = flag_duel_tourney  }
+				character_event = { id = DuelEngine.301 }
 			}
-			event_target:combatant_2 = { character_event = { id = DuelEngine.301 } }
-			break = yes
+			else = {
+			# Normal duels
+				character_event = { id = DuelEngine.2 } # Round one, fight!
+			}
 		}
-		# Normal duels
-		event_target:combatant_2 = { character_event = { id = DuelEngine.2 } } #Round one, fight!
 	}
 }
 
@@ -246,69 +252,53 @@ character_event = { # ROUND START This event starts a new round of combat after 
 character_event = {
 	id = DuelEngine.2
 	picture = GFX_evt_duel0
-	border = "GFX_event_normal_frame_war"
-	is_triggered_only = yes
-	hide_from = yes
-	show_from_from = yes
+	border = GFX_event_normal_frame_war
 
 	desc = {
-		text = "EVTDESC_DuelEngine_2"
+		text = EVTDESC_DuelEngine_2
 		trigger = {
-			OR = {
-				NOT = { event_target:combatant_1 = { check_variable = { which = duel_rounds value = 1 } } } #1st round
-				AND = {
-					event_target:combatant_1 = { check_variable = { which = duel_rounds value = 3 } } #4th round
-					NOT = { event_target:combatant_1 = { check_variable = { which = duel_rounds value = 4 } } }
-				}
-				event_target:combatant_1 = { check_variable = { which = duel_rounds value = 6 } } #7th round and later
-			}
-		}
-	}
-
-	desc = {
-		text = "EVTDESC_DuelEngine_10"
-		trigger = {
-			OR = {
-				AND = {
-					event_target:combatant_1 = { check_variable = { which = duel_rounds value = 1 } } #2nd round
-					NOT = { event_target:combatant_1 = { check_variable = { which = duel_rounds value = 2 } } }
-				}
-				AND = {
-					event_target:combatant_1 = { check_variable = { which = duel_rounds value = 4 } } #5th round
-					NOT = { event_target:combatant_1 = { check_variable = { which = duel_rounds value = 5 } } }
+			event_target:combatant_1 = {
+				OR = {
+					check_variable = { which = duel_rounds value == 0 } # 1st round
+					check_variable = { which = duel_rounds value == 3 } # 4th round
+					check_variable = { which = duel_rounds value >= 6 } # 7th round and later
 				}
 			}
 		}
 	}
-
 	desc = {
-		text = "EVTDESC_DuelEngine_11"
+		text = EVTDESC_DuelEngine_10
 		trigger = {
-			OR = {
-				AND = {
-					event_target:combatant_1 = { check_variable = { which = duel_rounds value = 2 } } #3rd round
-					NOT = { event_target:combatant_1 = { check_variable = { which = duel_rounds value = 3 } } }
+			event_target:combatant_1 = {
+				OR = {
+					check_variable = { which = duel_rounds value == 1 } # 2nd round
+					check_variable = { which = duel_rounds value == 4 } # 5th round
 				}
-				AND = {
-					event_target:combatant_1 = { check_variable = { which = duel_rounds value = 5 } } #6th round
-					NOT = { event_target:combatant_1 = { check_variable = { which = duel_rounds value = 6 } } }
+			}
+		}
+	}
+	desc = {
+		text = EVTDESC_DuelEngine_11
+		trigger = {
+			event_target:combatant_1 = {
+				OR = {
+					check_variable = { which = duel_rounds value == 2 } # 3rd round
+					check_variable = { which = duel_rounds value == 5 } # 6th round
 				}
 			}
 		}
 	}
 
-	#Contexts
+	# Contexts
 	desc = {
 		text = EVTDESC_DuelEngine_2.BATTLE
-		trigger = {
-			has_character_flag = flag_battlefield_duel
-		}
+		trigger = { has_character_flag = flag_battlefield_duel }
 	}
 	desc = {
 		text = EVTDESC_DuelEngine_2.COURT
 		trigger = {
 			OR = {
-				#court duels: feast/regency?
+				# Court duels: feast/regency?
 				has_character_flag = coronation_duelist
 				has_character_flag = feast_duelist
 				has_character_flag = duelist_courtier
@@ -316,7 +306,7 @@ character_event = {
 		}
 	}
 
-	#My Traits
+	# My Traits
 	desc = {
 		text = EVTDESC_DuelEngine_2.WOUNDED
 		trigger = { trait = wounded }
@@ -337,13 +327,13 @@ character_event = {
 	desc = {
 		text = EVTDESC_DuelEngine_2.YOUNG
 		trigger = {
-			NOT = { age = 20 }
+			age < 20
 			NOT = { trait = tall }
 			is_strong_trigger = no
 		}
 	}
 
-	#Opponent Traits
+	# Opponent Traits
 	desc = {
 		text = EVTDESC_DuelEngine_2.WOUNDEDOPP
 		trigger = { event_target:combatant_1 = { trait = wounded } }
@@ -367,101 +357,94 @@ character_event = {
 		text = EVTDESC_DuelEngine_2.YOUNGOPP
 		trigger = {
 			event_target:combatant_1 = {
-				NOT = { age = 20 }
+				age < 20
 				NOT = { trait = tall }
 				is_strong_trigger = no
 			}
 		}
 	}
 
+	is_triggered_only = yes
+	hide_from = yes
+	show_from_from = yes
+
 	option = {
 		name = {
-			text = "EVTOPTA_DuelEngine_2" #default
+			text = EVTOPTA_DuelEngine_2 # Default
 			trigger = { }
 		}
 		name = {
-			text = "EVTOPTA_DuelEngine_2.WOUNDED"
-			trigger = {
-				trait = wounded
-			}
+			text = EVTOPTA_DuelEngine_2.WOUNDED
+			trigger = { trait = wounded }
 		}
 		name = {
-			text = "EVTOPTA_DuelEngine_2.MAIMED"
-			trigger = {
-				is_maimed_trigger = yes
-			}
+			text = EVTOPTA_DuelEngine_2.MAIMED
+			trigger = { is_maimed_trigger = yes }
 		}
 		name = {
-			text = "EVTOPTA_DuelEngine_2.WOUNDEDOPP"
+			text = EVTOPTA_DuelEngine_2.WOUNDEDOPP
 			trigger = { event_target:combatant_1 = { trait = wounded } }
 		}
 		name = {
-			text = "EVTOPTA_DuelEngine_2.YOUNGOPP"
+			text = EVTOPTA_DuelEngine_2.YOUNGOPP
 			trigger = {
 				event_target:combatant_1 = {
-					NOT = { age = 20 }
+					age < 20
 					NOT = { trait = tall }
 					is_strong_trigger = no
 				}
 			}
 		}
-		hidden_tooltip = { event_target:combatant_1 = { character_event = { id = DuelEngine.3 } } }
+
+		hidden_effect = {
+			event_target:combatant_1 = {
+				character_event = { id = DuelEngine.3 }
+			}
+		}
 	}
 }
 # Duelist Two Round (flavour text 1)
 character_event = {
 	id = DuelEngine.3
 	picture = GFX_evt_duel0
-	border = "GFX_event_normal_frame_war"
-	is_triggered_only = yes
+	border = GFX_event_normal_frame_war
 
 	desc = {
-		text = "EVTDESC_DuelEngine_3"
+		text = EVTDESC_DuelEngine_3
 		trigger = {
-			OR = {
-				NOT = { event_target:combatant_1 = { check_variable = { which = duel_rounds value = 1 } } } #1st round
-				AND = {
-					event_target:combatant_1 = { check_variable = { which = duel_rounds value = 3 } } #4th round
-					NOT = { event_target:combatant_1 = { check_variable = { which = duel_rounds value = 4 } } }
-				}
-				event_target:combatant_1 = { check_variable = { which = duel_rounds value = 6 } } #7th round and later
-			}
-		}
-	}
-
-	desc = {
-		text = "EVTDESC_DuelEngine_12"
-		trigger = {
-			OR = {
-				AND = {
-					event_target:combatant_1 = { check_variable = { which = duel_rounds value = 1 } } #2nd round
-					NOT = { event_target:combatant_1 = { check_variable = { which = duel_rounds value = 2 } } }
-				}
-				AND = {
-					event_target:combatant_1 = { check_variable = { which = duel_rounds value = 4 } } #5th round
-					NOT = { event_target:combatant_1 = { check_variable = { which = duel_rounds value = 5 } } }
+			event_target:combatant_1 = {
+				OR = {
+					check_variable = { which = duel_rounds value == 0 } # 1st round
+					check_variable = { which = duel_rounds value == 3 } # 4th round
+					check_variable = { which = duel_rounds value >= 6 } # 7th round and later
 				}
 			}
 		}
 	}
-
 	desc = {
-		text = "EVTDESC_DuelEngine_13"
+		text = EVTDESC_DuelEngine_12
 		trigger = {
-			OR = {
-				AND = {
-					event_target:combatant_1 = { check_variable = { which = duel_rounds value = 2 } } #3rd round
-					NOT = { event_target:combatant_1 = { check_variable = { which = duel_rounds value = 3 } } }
+			event_target:combatant_1 = {
+				OR = {
+					check_variable = { which = duel_rounds value == 1 } # 2nd round
+					check_variable = { which = duel_rounds value == 4 } # 5th round
 				}
-				AND = {
-					event_target:combatant_1 = { check_variable = { which = duel_rounds value = 5 } } #6th round
-					NOT = { event_target:combatant_1 = { check_variable = { which = duel_rounds value = 6 } } }
+			}
+		}
+	}
+	desc = {
+		text = EVTDESC_DuelEngine_13
+		trigger = {
+			event_target:combatant_1 = {
+				OR = {
+					check_variable = { which = duel_rounds value == 2 } # 3rd round
+					check_variable = { which = duel_rounds value == 5 } # 6th round
 				}
 			}
 		}
 	}
 
-	#Contexts
+	# Contexts
 	desc = {
 		text = EVTDESC_DuelEngine_3.BATTLE
 		trigger = {
@@ -472,7 +455,7 @@ character_event = {
 		text = EVTDESC_DuelEngine_3.COURT
 		trigger = {
 			OR = {
-				#court duels: feast/regency?
+				# Court duels: feast/regency?
 				has_character_flag = coronation_duelist
 				has_character_flag = feast_duelist
 				has_character_flag = duelist_courtier
@@ -480,7 +463,7 @@ character_event = {
 		}
 	}
 
-	#My Traits
+	# My Traits
 	desc = {
 		text = EVTDESC_DuelEngine_3.WOUNDED
 		trigger = { trait = wounded }
@@ -501,13 +484,13 @@ character_event = {
 	desc = {
 		text = EVTDESC_DuelEngine_3.YOUNG
 		trigger = {
-			NOT = { age = 20 }
+			age < 20
 			NOT = { trait = tall }
 			is_strong_trigger = no
 		}
 	}
 
-	#Opponent Traits
+	# Opponent Traits
 	desc = {
 		text = EVTDESC_DuelEngine_3.WOUNDEDOPP
 		trigger = { event_target:combatant_2 = { trait = wounded } }
@@ -531,46 +514,50 @@ character_event = {
 		text = EVTDESC_DuelEngine_3.YOUNGOPP
 		trigger = {
 			event_target:combatant_2 = {
-				NOT = { age = 20 }
+				age < 20
 				NOT = { trait = tall }
 				is_strong_trigger = no
 			}
 		}
 	}
 
+	is_triggered_only = yes
+
 	option = {
 		name = {
-			text = "EVTOPTA_DuelEngine_3" #default
-			trigger = {
-			}
+			text = EVTOPTA_DuelEngine_3 # Default
+			trigger = { }
 		}
 		name = {
-			text = "EVTOPTA_DuelEngine_2.WOUNDED"
-			trigger = {
-				trait = wounded
-			}
+			text = EVTOPTA_DuelEngine_2.WOUNDED
+			trigger = { trait = wounded }
 		}
 		name = {
-			text = "EVTOPTA_DuelEngine_2.MAIMED"
-			trigger = {
-				is_maimed_trigger = yes
-			}
+			text = EVTOPTA_DuelEngine_2.MAIMED
+			trigger = { is_maimed_trigger = yes }
 		}
 		name = {
-			text = "EVTOPTA_DuelEngine_3.WOUNDEDOPP"
+			text = EVTOPTA_DuelEngine_3.WOUNDEDOPP
 			trigger = { event_target:combatant_2 = { trait = wounded } }
 		}
 		name = {
-			text = "EVTOPTA_DuelEngine_3.YOUNGOPP"
+			text = EVTOPTA_DuelEngine_3.YOUNGOPP
 			trigger = {
 				event_target:combatant_2 = {
-					NOT = { age = 20 }
+					age < 20
 					NOT = { trait = tall }
 					is_strong_trigger = no
 				}
 			}
 		}
-		hidden_tooltip = { e_rebels = { holder_scope = { character_event = { id = DuelEngine.4 } } } }
+
+		hidden_effect = {
+			e_rebels = {
+				holder_scope = {
+					character_event = { id = DuelEngine.4 }
+				}
+			}
+		}
 	}
 }
 
@@ -578,6 +565,7 @@ character_event = {
 # Determine who "won" the round by weighting stats
 character_event = {
 	id = DuelEngine.4
+
 	is_triggered_only = yes
 	hide_window = yes
 
@@ -589,141 +577,165 @@ character_event = {
 		event_target:combatant_2 = { change_variable = { which = duel_rounds value = 1 } }
 
 		random_list = {
-			1 = { #Combatant 1 wins
+			1 = { # Combatant 1 wins
 				# Skill-at-Arms Effects
-				modifier = {
+				mult_modifier = {
 					factor = 3
 					event_target:combatant_1 = { trait = poor_warrior }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 6
 					event_target:combatant_1 = { trait = trained_warrior }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 9
 					event_target:combatant_1 = { trait = skilled_warrior }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 12
 					event_target:combatant_1 = { trait = master_warrior }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 3
 					event_target:combatant_1 = { trait = duelist }
 				}
 
 				# Martial Education Effects
-				modifier = {
+				mult_modifier = {
 					factor = 1.5
 					event_target:combatant_1 = { trait = misguided_warrior }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 3
 					event_target:combatant_1 = { trait = tough_soldier }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 4.5
 					event_target:combatant_1 = { trait = skilled_tactician }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 6
 					event_target:combatant_1 = { trait = brilliant_strategist }
 				}
 
 				# Generic Combat Rating Difference
-				modifier = {
+				mult_modifier = {
 					factor = 1.25
-					event_target:combatant_1 = { combat_rating_diff = { who = event_target:combatant_2 value = 10 } }
+					event_target:combatant_1 = { combat_rating_diff = { who = event_target:combatant_2 value >= 10 } }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 1.5
-					event_target:combatant_1 = { combat_rating_diff = { who = event_target:combatant_2 value = 30 } }
+					event_target:combatant_1 = { combat_rating_diff = { who = event_target:combatant_2 value >= 30 } }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 1.75
-					event_target:combatant_1 = { combat_rating_diff = { who = event_target:combatant_2 value = 50 } }
+					event_target:combatant_1 = { combat_rating_diff = { who = event_target:combatant_2 value >= 50 } }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 2
-					event_target:combatant_1 = { combat_rating_diff = { who = event_target:combatant_2 value = 70 } }
+					event_target:combatant_1 = { combat_rating_diff = { who = event_target:combatant_2 value >= 70 } }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 2.5
-					event_target:combatant_1 = { combat_rating_diff = { who = event_target:combatant_2 value = 100 } }
+					event_target:combatant_1 = { combat_rating_diff = { who = event_target:combatant_2 value >= 100 } }
 				}
 
 				# Physical Strength Effects
-				modifier = {
+				mult_modifier = {
 					factor = 2
 					event_target:combatant_1 = { trait = strong }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 1.5
 					event_target:combatant_1 = { trait = brawny }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 2
 					event_target:combatant_2 = { trait = weak }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 1.5
 					event_target:combatant_2 = { trait = frail }
 				}
 
 				# Cunning/Intelligence Effects
-				modifier = {
+				mult_modifier = {
 					factor = 2
 					event_target:combatant_1 = { trait = genius }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 1.5
 					event_target:combatant_1 = { trait = quick }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 1.5
 					event_target:combatant_1 = { trait = shrewd }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 2
 					event_target:combatant_2 = { trait = imbecile }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 1.5
 					event_target:combatant_2 = { trait = slow }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 1.5
 					event_target:combatant_2 = { trait = dull }
 				}
 
 				# Personality Effects
-				modifier = {
+				mult_modifier = {
 					factor = 2
 					event_target:combatant_1 = { trait = brave }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 2
 					event_target:combatant_1 = { trait = wroth }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 2
 					event_target:combatant_2 = { trait = craven }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 1.5
 					event_target:combatant_1 = { trait = deceitful }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 1.5
 					event_target:combatant_2 = { trait = honest }
 				}
 
 				# Opponent Wound Effects
-				modifier = {
+				mult_modifier = {
 					factor = 2
 					event_target:combatant_2 = { trait = wounded }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 4
 					event_target:combatant_2 = {
 						OR = {
@@ -732,77 +744,94 @@ character_event = {
 						}
 					}
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 10
 					event_target:combatant_2 = { trait = blinded }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 999999
-					event_target:combatant_2 = { trait = incapable }
+					event_target:combatant_2 = { is_incapable = yes }
 				}
 
 				# Opponent Health Effects
-				modifier = {
+				mult_modifier = {
 					factor = 1.5
 					event_target:combatant_2 = { is_ill = yes }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 2
 					event_target:combatant_2 = { trait = pneumonic }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 8
 					event_target:combatant_2 = { trait = leper }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 4
 					event_target:combatant_2 = { trait = infirm }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 6
-					event_target:combatant_2 = {
-						has_epidemic_disease_trigger = yes
-					}
+					event_target:combatant_2 = { has_epidemic_disease_trigger = yes }
 				}
 
 				# Body Shape Effects
-				modifier = {
+				mult_modifier = {
 					factor = 1.5
 					event_target:combatant_1 = { trait = tall }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 1.5
 					event_target:combatant_1 = { trait = agile }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 1.5
 					event_target:combatant_1 = { trait = perceptive }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 1.5
 					event_target:combatant_2 = { trait = absentminded }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 4
 					event_target:combatant_2 = { trait = hunchback }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 4
 					event_target:combatant_2 = { trait = dwarf }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 4
 					event_target:combatant_2 = { trait = clubfooted }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 2
-					OR = {
-						event_target:combatant_1 = { trait = lefthanded }
-						event_target:combatant_1 = { trait = ambidextrous }
+
+					event_target:combatant_1 = {
+						OR = {
+							trait = lefthanded
+							trait = ambidextrous
+						}
 					}
-					NOR = {
-						event_target:combatant_2 = { trait = lefthanded }
-						event_target:combatant_2 = { trait = ambidextrous }
+
+					event_target:combatant_2 = {
+						NOR = {
+							trait = lefthanded
+							trait = ambidextrous
+						}
 					}
 				}
 
@@ -810,6 +839,7 @@ character_event = {
 					limit = {
 						event_target:combatant_1 = { has_character_flag = flag_duel_tourney }
 					}
+
 					event_target:combatant_2 = {
 						save_event_target_as = round_loser
 					}
@@ -817,152 +847,179 @@ character_event = {
 						save_event_target_as = round_winner
 						character_event = { id = DuelEngine.303 }
 					}
-					break = yes
 				}
-				event_target:combatant_2 = {
-					save_event_target_as = round_loser
-				}
-				event_target:combatant_1 = {
-					save_event_target_as = round_winner
-					character_event = { id = DuelEngine.5 }
+				else = {
+					event_target:combatant_2 = {
+						save_event_target_as = round_loser
+					}
+					event_target:combatant_1 = {
+						save_event_target_as = round_winner
+						character_event = { id = DuelEngine.5 }
+					}
 				}
 			}
-			1 = { #Combatant 2 wins
+
+			1 = { # Combatant 2 wins
 				# Skill-at-Arms Effects
-				modifier = {
+				mult_modifier = {
 					factor = 3
 					event_target:combatant_2 = { trait = poor_warrior }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 6
 					event_target:combatant_2 = { trait = trained_warrior }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 9
 					event_target:combatant_2 = { trait = skilled_warrior }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 12
 					event_target:combatant_2 = { trait = master_warrior }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 3
 					event_target:combatant_2 = { trait = duelist }
 				}
 
 				# Martial Education Effects
-				modifier = {
+				mult_modifier = {
 					factor = 1.5
 					event_target:combatant_2 = { trait = misguided_warrior }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 3
 					event_target:combatant_2 = { trait = tough_soldier }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 4.5
 					event_target:combatant_2 = { trait = skilled_tactician }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 6
 					event_target:combatant_2 = { trait = brilliant_strategist }
 				}
 
 				# Generic Combat Rating Difference
-				modifier = {
+				mult_modifier = {
 					factor = 1.25
-					event_target:combatant_2 = { combat_rating_diff = { who = event_target:combatant_1 value = 10 } }
+					event_target:combatant_2 = { combat_rating_diff = { who = event_target:combatant_1 value >= 10 } }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 1.5
-					event_target:combatant_2 = { combat_rating_diff = { who = event_target:combatant_1 value = 30 } }
+					event_target:combatant_2 = { combat_rating_diff = { who = event_target:combatant_1 value >= 30 } }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 1.75
-					event_target:combatant_2 = { combat_rating_diff = { who = event_target:combatant_1 value = 50 } }
+					event_target:combatant_2 = { combat_rating_diff = { who = event_target:combatant_1 value >= 50 } }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 2
-					event_target:combatant_2 = { combat_rating_diff = { who = event_target:combatant_1 value = 70 } }
+					event_target:combatant_2 = { combat_rating_diff = { who = event_target:combatant_1 value >= 70 } }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 2.5
-					event_target:combatant_2 = { combat_rating_diff = { who = event_target:combatant_1 value = 100 } }
+					event_target:combatant_2 = { combat_rating_diff = { who = event_target:combatant_1 value >= 100 } }
 				}
 
 				# Physical Strength Effects
-				modifier = {
+				mult_modifier = {
 					factor = 2
 					event_target:combatant_2 = { trait = strong }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 1.5
 					event_target:combatant_2 = { trait = brawny }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 2
 					event_target:combatant_1 = { trait = weak }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 1.5
 					event_target:combatant_1 = { trait = frail }
 				}
 
 				# Cunning/Intelligence Effects
-				modifier = {
+				mult_modifier = {
 					factor = 2
 					event_target:combatant_2 = { trait = genius }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 1.5
 					event_target:combatant_2 = { trait = quick }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 1.5
 					event_target:combatant_2 = { trait = shrewd }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 2
 					event_target:combatant_1 = { trait = imbecile }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 1.5
 					event_target:combatant_1 = { trait = slow }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 1.5
 					event_target:combatant_1 = { trait = dull }
 				}
 
 				# Personality Effects
-				modifier = {
+				mult_modifier = {
 					factor = 2
 					event_target:combatant_2 = { trait = brave }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 2
 					event_target:combatant_2 = { trait = wroth }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 2
 					event_target:combatant_1 = { trait = craven }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 1.5
 					event_target:combatant_2 = { trait = deceitful }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 1.5
 					event_target:combatant_1 = { trait = honest }
 				}
 
 				# Opponent Wound Effects
-				modifier = {
+				mult_modifier = {
 					factor = 2
 					event_target:combatant_1 = { trait = wounded }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 4
+
 					event_target:combatant_1 = {
 						OR = {
 							trait = severely_injured
@@ -970,77 +1027,94 @@ character_event = {
 						}
 					}
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 999999
-					event_target:combatant_1 = { trait = incapable }
+					event_target:combatant_1 = { is_incapable = yes }
 				}
 
 				# Opponent Health Effects
-				modifier = {
+				mult_modifier = {
 					factor = 1.5
 					event_target:combatant_1 = { is_ill = yes }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 2
 					event_target:combatant_1 = { trait = pneumonic }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 8
 					event_target:combatant_1 = { trait = leper }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 4
 					event_target:combatant_1 = { trait = infirm }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 6
-					event_target:combatant_1 = {
-						has_epidemic_disease_trigger = yes
-					}
+					event_target:combatant_1 = { has_epidemic_disease_trigger = yes }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 10
 					event_target:combatant_1 = { trait = blinded }
 				}
 
 				# Body Shape Effects
-				modifier = {
+				mult_modifier = {
 					factor = 1.5
 					event_target:combatant_2 = { trait = tall }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 1.5
 					event_target:combatant_2 = { trait = agile }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 1.5
 					event_target:combatant_2 = { trait = perceptive }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 1.5
 					event_target:combatant_1 = { trait = absentminded }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 4
 					event_target:combatant_1 = { trait = hunchback }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 4
 					event_target:combatant_1 = { trait = dwarf }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 4
 					event_target:combatant_1 = { trait = clubfooted }
 				}
-				modifier = {
+
+				mult_modifier = {
 					factor = 2
-					OR = {
-						event_target:combatant_2 = { trait = lefthanded }
-						event_target:combatant_2 = { trait = ambidextrous }
+
+					event_target:combatant_2 = {
+						OR = {
+							trait = lefthanded
+							trait = ambidextrous
+						}
 					}
-					NOR = {
-						event_target:combatant_1 = { trait = lefthanded }
-						event_target:combatant_1 = { trait = ambidextrous }
+
+					event_target:combatant_1 = {
+						NOR = {
+							trait = lefthanded
+							trait = ambidextrous
+						}
 					}
 				}
 
@@ -1048,6 +1122,7 @@ character_event = {
 					limit = {
 						event_target:combatant_2 = { has_character_flag = flag_duel_tourney }
 					}
+
 					event_target:combatant_1 = {
 						save_event_target_as = round_loser
 					}
@@ -1055,14 +1130,15 @@ character_event = {
 						save_event_target_as = round_winner
 						character_event = { id = DuelEngine.303 }
 					}
-					break = yes
 				}
-				event_target:combatant_1 = {
-					save_event_target_as = round_loser
-				}
-				event_target:combatant_2 = {
-					save_event_target_as = round_winner
-					character_event = { id = DuelEngine.5 }
+				else = {
+					event_target:combatant_1 = {
+						save_event_target_as = round_loser
+					}
+					event_target:combatant_2 = {
+						save_event_target_as = round_winner
+						character_event = { id = DuelEngine.5 }
+					}
 				}
 			}
 		}
@@ -1073,17 +1149,13 @@ character_event = {
 character_event = {
 	id = DuelEngine.5
 	picture = GFX_evt_duel1
-	border = "GFX_event_normal_frame_war"
-	hide_from = yes
+	border = GFX_event_normal_frame_war
 
-	is_triggered_only = yes
-
-	#Default
+	# Default
 	desc = {
 		text = EVTDESC_DuelEngine_5
 		trigger = { }
 	}
-
 	desc = {
 		text = EVTDESC_DuelEngine_5SKILL
 		trigger = {
@@ -1093,54 +1165,44 @@ character_event = {
 			}
 		}
 	}
-
 	desc = {
 		text = EVTDESC_DuelEngine_5STRONG
-		trigger = {
-			is_strong_trigger = yes
-		}
+		trigger = { is_strong_trigger = yes }
 	}
-
 	desc = {
 		text = EVTDESC_DuelEngine_5QUICK
-		trigger = {
-			is_smart_trigger = yes
-		}
+		trigger = { is_smart_trigger = yes }
 	}
-
 	desc = {
 		text = EVTDESC_DuelEngine_5WROTH
-		trigger = {
-			trait = wroth
-		}
+		trigger = { trait = wroth }
 	}
-
 	desc = {
 		text = EVTDESC_DuelEngine_5PATIENT
-		trigger = {
-			trait = patient
-		}
+		trigger = { trait = patient }
 	}
-
 	desc = {
 		text = EVTDESC_DuelEngine_5DECEITFUL
-		trigger = {
-			trait = deceitful
-		}
+		trigger = { trait = deceitful }
 	}
-
 	desc = {
 		text = EVTDESC_DuelEngine_5TALL
-		trigger = {
-			trait = tall
-		}
+		trigger = { trait = tall }
 	}
 
+	is_triggered_only = yes
+	hide_from = yes
 
 	option = {
-		name = "EVTOPTA_DuelEngine_5"
+		name = EVTOPTA_DuelEngine_5
+
 		event_target:round_loser = {
-			character_event = { id = DuelEngine.6 tooltip = "EVTTOOLTIP_DuelEngine_6" }
+			show_scope_change = no
+
+			character_event = {
+				id = DuelEngine.6
+				tooltip = EVTTOOLTIP_DuelEngine_6
+			}
 		}
 	}
 }
@@ -1149,16 +1211,13 @@ character_event = {
 character_event = {
 	id = DuelEngine.6
 	picture = GFX_evt_duel2
-	border = "GFX_event_normal_frame_war"
-	is_triggered_only = yes
+	border = GFX_event_normal_frame_war
 
-	#Default
+	# Default
 	desc = {
 		text = EVTDESC_DuelEngine_6
 		trigger = {  }
 	}
-
-
 	desc = {
 		text = EVTDESC_DuelEngine_6SKILL
 		trigger = {
@@ -1170,321 +1229,331 @@ character_event = {
 			}
 		}
 	}
-
 	desc = {
 		text = EVTDESC_DuelEngine_6STRONG
-		trigger = {
-			FROM = { is_strong_trigger = yes }
-		}
+		trigger = { FROM = { is_strong_trigger = yes } }
 	}
-
 	desc = {
 		text = EVTDESC_DuelEngine_6QUICK
-		trigger = {
-			FROM = {
-				is_smart_trigger = yes
-			}
-		}
+		trigger = { FROM = { is_smart_trigger = yes } }
 	}
 	desc = {
 		text = EVTDESC_DuelEngine_6WROTH
-		trigger = {
-			FROM = { trait = wroth }
-		}
+		trigger = { FROM = { trait = wroth } }
 	}
-
 	desc = {
 		text = EVTDESC_DuelEngine_6PATIENT
-		trigger = {
-			FROM = { trait = patient }
-		}
+		trigger = { FROM = { trait = patient } }
 	}
-
 	desc = {
 		text = EVTDESC_DuelEngine_6DECEITFUL
-		trigger = {
-			FROM = { trait = deceitful }
-		}
+		trigger = { FROM = { trait = deceitful } }
 	}
-
 	desc = {
 		text = EVTDESC_DuelEngine_6TALL
-		trigger = {
-			FROM = { trait = tall }
-		}
+		trigger = { FROM = { trait = tall } }
 	}
 
+	is_triggered_only = yes
+
 	option = {
-		name = "EVTOPTA_DuelEngine_6"
-		hidden_tooltip = { e_rebels = { holder_scope = { character_event = { id = DuelEngine.7 } } } }
+		name = EVTOPTA_DuelEngine_6
+
+		hidden_effect = {
+			e_rebels = {
+				holder_scope = {
+					character_event = { id = DuelEngine.7 }
+				}
+			}
+		}
 	}
 }
 
 # Determine attack outcome
 character_event = {
 	id = DuelEngine.7
+
 	is_triggered_only = yes
-	picture = GFX_evt_duel1
-	desc = "AI_EVENT"
+	hide_window = yes
 
 	# Nobody but the actual referee should ever get this
 	trigger = { has_landed_title = e_rebels }
 
-	option = { # Wounding Blow
-		name = "AI_EVENT"
-
-		if = {
-			limit = {
-				event_target:round_winner = { has_character_flag = flag_duel_tourney }
-			}
-			event_target:round_winner = { character_event = { id = DuelEngine.306 } }
-			break = yes
-		}
-		event_target:round_loser = { character_event = { id = DuelEngine.110 } }
-
-		ai_chance = {
-			factor = 33
-			modifier = {
-				factor = 0.01
-				event_target:round_winner = { has_character_flag = flag_duel_friendly }
-			}
-			modifier = {
-				factor = 1.5
-				event_target:round_winner = { trait = cruel }
-			}
-			modifier = {
-				factor = 1.25
-				event_target:round_winner = { trait = wroth }
-			}
-			modifier = {
-				factor = 1.25
-				event_target:round_loser = { trait = brave }
-			}
-			modifier = {
-				factor = 0.8
-				event_target:round_winner = { trait = patient }
-			}
-			modifier = {
-				factor = 0.5
-				event_target:round_winner = { trait = kind }
-			}
-		}
-	}
-
-	option = { # Subdued Opponent
-		name = "AI_EVENT"
-
-		if = {
-			limit = {
-				event_target:round_winner = { has_character_flag = flag_duel_tourney }
-			}
-			event_target:round_winner = { character_event = { id = DuelEngine.309 } }
-			break = yes
-		}
-		event_target:round_winner = { character_event = { id = DuelEngine.105 } }
-
-		ai_chance = {
-			factor = 34
-			# Needs Opponent Taken Alive
-			modifier = {
-				factor = 10
-				event_target:round_winner = {
-					OR = {
-						any_current_enemy = { character = event_target:round_loser }
-						any_liege = { any_current_enemy = { character = event_target:round_loser } }
+	immediate = {
+		random_list = {
+			33 = { # Wounding Blow
+				if = {
+					limit = {
+						event_target:round_winner = { has_character_flag = flag_duel_tourney }
 					}
-					NOT = {
+					event_target:round_winner = { character_event = { id = DuelEngine.306 } }
+				}
+				else = {
+					event_target:round_loser = { character_event = { id = DuelEngine.110 } }
+				}
+
+				mult_modifier = {
+					factor = 0.01
+					event_target:round_winner = { has_character_flag = flag_duel_friendly }
+				}
+
+				mult_modifier = {
+					factor = 1.5
+					event_target:round_winner = { trait = cruel }
+				}
+
+				mult_modifier = {
+					factor = 1.25
+					event_target:round_winner = { trait = wroth }
+				}
+
+				mult_modifier = {
+					factor = 1.25
+					event_target:round_loser = { trait = brave }
+				}
+
+				mult_modifier = {
+					factor = 0.8
+					event_target:round_winner = { trait = patient }
+				}
+
+				mult_modifier = {
+					factor = 0.5
+					event_target:round_winner = { trait = kind }
+				}
+			}
+
+			34 = { # Subdued Opponent, Needs Opponent Taken Alive
+				if = {
+					limit = {
+						event_target:round_winner = { has_character_flag = flag_duel_tourney }
+					}
+					event_target:round_winner = { character_event = { id = DuelEngine.309 } }
+				}
+				else = {
+					event_target:round_winner = { character_event = { id = DuelEngine.105 } }
+				}
+
+				mult_modifier = {
+					factor = 10
+
+					event_target:round_winner = {
 						OR = {
+							any_current_enemy = { character = event_target:round_loser }
+							any_liege = { any_current_enemy = { character = event_target:round_loser } }
+						}
+
+						NOR = {
 							trait = lunatic
 							trait = possessed
-						}
-					}
-					NOT = {
-						OR = {
 							trait = wroth
 							trait = cruel
 							trait = paranoid
 						}
-					}
-					NOT = { #republic feuders
-						has_dynasty_flag = the_feuders
-						event_target:round_loser = { has_dynasty_flag = the_victims }
-					}
-					NOT = {
-						has_dynasty_flag = the_victims
-						event_target:round_loser = { has_dynasty_flag = the_feuders }
-					}
-				}
-			}
 
-			modifier = {
-				factor = 0.5
-				event_target:round_loser = { trait = wounded }
-			}
-			modifier = {
-				factor = 0.25
-				event_target:round_loser = { is_maimed_trigger = yes }
-			}
-
-			# Personal Opinion Modifiers
-			modifier = {
-				factor = 1.25
-				event_target:round_winner = { opinion = { who = event_target:round_loser value = 10 } }
-			}
-			modifier = {
-				factor = 1.25
-				event_target:round_winner = { opinion = { who = event_target:round_loser value = 20 } }
-			}
-			modifier = {
-				factor = 1.25
-				event_target:round_winner = { opinion = { who = event_target:round_loser value = 30 } }
-			}
-			modifier = {
-				factor = 1.25
-				event_target:round_winner = { opinion = { who = event_target:round_loser value = 40 } }
-			}
-			modifier = {
-				factor = 1.25
-				event_target:round_winner = { opinion = { who = event_target:round_loser value = 50 } }
-			}
-			modifier = {
-				factor = 1.25
-				event_target:round_winner = { opinion = { who = event_target:round_loser value = 60 } }
-			}
-			modifier = {
-				factor = 1.25
-				event_target:round_winner = { opinion = { who = event_target:round_loser value = 70 } }
-			}
-			modifier = {
-				factor = 1.25
-				event_target:round_winner = { opinion = { who = event_target:round_loser value = 80 } }
-			}
-			modifier = {
-				factor = 1.25
-				event_target:round_winner = { opinion = { who = event_target:round_loser value = 90 } }
-			}
-			modifier = {
-				factor = 1.25
-				event_target:round_winner = { opinion = { who = event_target:round_loser value = 100 } }
-			}
-			modifier = {
-				factor = 0.8
-				NOT = { event_target:round_winner = { opinion = { who = event_target:round_loser value = -9 } } }
-			}
-			modifier = {
-				factor = 0.8
-				NOT = { event_target:round_winner = { opinion = { who = event_target:round_loser value = -19 } } }
-			}
-			modifier = {
-				factor = 0.8
-				NOT = { event_target:round_winner = { opinion = { who = event_target:round_loser value = -29 } } }
-			}
-			modifier = {
-				factor = 0.8
-				NOT = { event_target:round_winner = { opinion = { who = event_target:round_loser value = -39 } } }
-			}
-			modifier = {
-				factor = 0.8
-				NOT = { event_target:round_winner = { opinion = { who = event_target:round_loser value = -49 } } }
-			}
-			modifier = {
-				factor = 0.8
-				NOT = { event_target:round_winner = { opinion = { who = event_target:round_loser value = -59 } } }
-			}
-			modifier = {
-				factor = 0.8
-				NOT = { event_target:round_winner = { opinion = { who = event_target:round_loser value = -69 } } }
-			}
-			modifier = {
-				factor = 0.8
-				NOT = { event_target:round_winner = { opinion = { who = event_target:round_loser value = -79 } } }
-			}
-			modifier = {
-				factor = 0.8
-				NOT = { event_target:round_winner = { opinion = { who = event_target:round_loser value = -89 } } }
-			}
-			modifier = {
-				factor = 0.8
-				NOT = { event_target:round_winner = { opinion = { who = event_target:round_loser value = -99 } } }
-			}
-
-			modifier = {
-				factor = 2
-				event_target:round_winner = { trait = just }
-			}
-		}
-	}
-
-	option = { # Killing Blow
-		name = "AI_EVENT"
-
-		if = {
-			limit = {
-				event_target:round_winner = { has_character_flag = flag_duel_tourney }
-			}
-			event_target:round_winner = { character_event = { id = DuelEngine.311 } }
-			break = yes
-		}
-		hidden_tooltip = {
-			if = {
-				limit = { event_target:round:winner = { has_character_flag = battle_celtic_headhunter } }
-				event_target:round:winner = {
-					add_artifact = rival_skull
-					new_artifact = {
-						set_original_owner = event_target:round:loser
-					}
-					if = {
-						limit = {
-							OR = {
-								religion = celtic_pagan
-								religion = celtic_pagan_reformed
-							}
+						# Republic feuders
+						NAND = {
+							has_dynasty_flag = the_feuders
+							event_target:round_loser = { has_dynasty_flag = the_victims }
 						}
-						character_event = { id = Plus.800 }
+
+						NAND = {
+							has_dynasty_flag = the_victims
+							event_target:round_loser = { has_dynasty_flag = the_feuders }
+						}
 					}
-					clr_character_flag = battle_celtic_headhunter
+				}
+
+				mult_modifier = {
+					factor = 0.5
+					event_target:round_loser = { trait = wounded }
+				}
+
+				mult_modifier = {
+					factor = 0.25
+					event_target:round_loser = { is_maimed_trigger = yes }
+				}
+
+				# Personal Opinion Modifiers
+				mult_modifier = {
+					factor = 1.25
+					event_target:round_winner = { opinion = { who = event_target:round_loser value >= 10 } }
+				}
+
+				mult_modifier = {
+					factor = 1.25
+					event_target:round_winner = { opinion = { who = event_target:round_loser value >= 20 } }
+				}
+
+				mult_modifier = {
+					factor = 1.25
+					event_target:round_winner = { opinion = { who = event_target:round_loser value >= 30 } }
+				}
+
+				mult_modifier = {
+					factor = 1.25
+					event_target:round_winner = { opinion = { who = event_target:round_loser value >= 40 } }
+				}
+
+				mult_modifier = {
+					factor = 1.25
+					event_target:round_winner = { opinion = { who = event_target:round_loser value >= 50 } }
+				}
+
+				mult_modifier = {
+					factor = 1.25
+					event_target:round_winner = { opinion = { who = event_target:round_loser value >= 60 } }
+				}
+
+				mult_modifier = {
+					factor = 1.25
+					event_target:round_winner = { opinion = { who = event_target:round_loser value >= 70 } }
+				}
+
+				mult_modifier = {
+					factor = 1.25
+					event_target:round_winner = { opinion = { who = event_target:round_loser value >= 80 } }
+				}
+
+				mult_modifier = {
+					factor = 1.25
+					event_target:round_winner = { opinion = { who = event_target:round_loser value >= 90 } }
+				}
+
+				mult_modifier = {
+					factor = 1.25
+					event_target:round_winner = { opinion = { who = event_target:round_loser value >= 100 } }
+				}
+
+				mult_modifier = {
+					factor = 0.8
+					event_target:round_winner = { opinion = { who = event_target:round_loser value < -9 } }
+				}
+
+				mult_modifier = {
+					factor = 0.8
+					event_target:round_winner = { opinion = { who = event_target:round_loser value < -19 } }
+				}
+
+				mult_modifier = {
+					factor = 0.8
+					event_target:round_winner = { opinion = { who = event_target:round_loser value < -29 } }
+				}
+
+				mult_modifier = {
+					factor = 0.8
+					event_target:round_winner = { opinion = { who = event_target:round_loser value < -39 } }
+				}
+
+				mult_modifier = {
+					factor = 0.8
+					event_target:round_winner = { opinion = { who = event_target:round_loser value < -49 } }
+				}
+
+				mult_modifier = {
+					factor = 0.8
+					event_target:round_winner = { opinion = { who = event_target:round_loser value < -59 } }
+				}
+
+				mult_modifier = {
+					factor = 0.8
+					event_target:round_winner = { opinion = { who = event_target:round_loser value < -69 } }
+				}
+
+				mult_modifier = {
+					factor = 0.8
+					event_target:round_winner = { opinion = { who = event_target:round_loser value < -79 } }
+				}
+
+				mult_modifier = {
+					factor = 0.8
+					event_target:round_winner = { opinion = { who = event_target:round_loser value < -89 } }
+				}
+
+				mult_modifier = {
+					factor = 0.8
+					event_target:round_winner = { opinion = { who = event_target:round_loser value < -99 } }
+				}
+
+				modifier = {
+					factor = 2
+					event_target:round_winner = { trait = just }
 				}
 			}
-		}
-		event_target:round_winner = { character_event = { id = DuelEngine.201 } }
 
-		ai_chance = {
-			factor = 33
-			modifier = {
-				factor = 0.01
-				event_target:round_winner = { has_character_flag = flag_duel_friendly }
-			}
-			modifier = {
-				factor = 0.5
-				event_target:round_winner = { NOT = { has_character_flag = flag_battlefield_duel } }
-			}
-			modifier = {
-				factor = 0.9
-				event_target:round_winner = { has_character_flag = flag_duel_tourney }
-			}
-			modifier = {
-				factor = 1.5
-				event_target:round_winner = { trait = cruel }
-			}
-			modifier = {
-				factor = 1.5
-				event_target:round_winner = { has_character_flag = battle_celtic_headhunter }
-			}
-			modifier = {
-				factor = 1.25
-				event_target:round_winner = { trait = wroth }
-			}
-			modifier = {
-				factor = 1.25
-				event_target:round_loser = { trait = brave }
-			}
-			modifier = {
-				factor = 0.8
-				event_target:round_winner = { trait = patient }
-			}
-			modifier = {
-				factor = 0.5
-				event_target:round_winner = { trait = kind }
+			33 = { # Killing Blow
+				if = {
+					limit = {
+						event_target:round_winner = { has_character_flag = flag_duel_tourney }
+					}
+					event_target:round_winner = { character_event = { id = DuelEngine.311 } }
+				}
+				else = {
+					if = {
+						limit = { event_target:round:winner = { has_character_flag = battle_celtic_headhunter } }
+
+						event_target:round:winner = {
+							add_artifact = rival_skull
+							new_artifact = { set_original_owner = event_target:round:loser }
+
+							if = {
+								limit = { religion_openly_celtic_or_reformed_trigger = yes }
+								character_event = { id = Plus.800 }
+							}
+
+							clr_character_flag = battle_celtic_headhunter
+						}
+					}
+
+					event_target:round_winner = {
+						character_event = { id = DuelEngine.201 }
+					}
+				}
+
+				mult_modifier = {
+					factor = 0.01
+					event_target:round_winner = { has_character_flag = flag_duel_friendly }
+				}
+
+				mult_modifier = {
+					factor = 0.5
+					event_target:round_winner = { NOT = { has_character_flag = flag_battlefield_duel } }
+				}
+
+				mult_modifier = {
+					factor = 0.9
+					event_target:round_winner = { has_character_flag = flag_duel_tourney }
+				}
+
+				mult_modifier = {
+					factor = 1.5
+					event_target:round_winner = { trait = cruel }
+				}
+
+				mult_modifier = {
+					factor = 1.5
+					event_target:round_winner = { has_character_flag = battle_celtic_headhunter }
+				}
+
+				mult_modifier = {
+					factor = 1.25
+					event_target:round_winner = { trait = wroth }
+				}
+
+				mult_modifier = {
+					factor = 1.25
+					event_target:round_loser = { trait = brave }
+				}
+
+				mult_modifier = {
+					factor = 0.8
+					event_target:round_winner = { trait = patient }
+				}
+
+				mult_modifier = {
+					factor = 0.5
+					event_target:round_winner = { trait = kind }
+				}
 			}
 		}
 	}
@@ -1493,507 +1562,594 @@ character_event = {
 ### YIELD OUTCOMES
 character_event = {
 	id = DuelEngine.105
-	desc = "EVTDESC_DuelEngine_105"
+	desc = EVTDESC_DuelEngine_105
 	picture = GFX_evt_duel4
-	border = "GFX_event_normal_frame_war"
+	border = GFX_event_normal_frame_war
+
 	is_triggered_only = yes
 	hide_from = yes
 	show_from_from = yes
+
 	option = {
-		name = "EVTOPTA_DuelEngine_105"
-		event_target:round_loser = { character_event = { id = DuelEngine.106 tooltip = "EVTTOOLTIP_DuelEngine_106" } }
+		name = EVTOPTA_DuelEngine_105
+
+		event_target:round_loser = {
+			show_scope_change = no
+
+			character_event = {
+				id = DuelEngine.106
+				tooltip = EVTTOOLTIP_DuelEngine_106
+			}
+		}
 	}
 }
 
 character_event = {
 	id = DuelEngine.106
-	desc = "EVTDESC_DuelEngine_106"
 	picture = GFX_evt_duel4
-	border = "GFX_event_normal_frame_war"
+	border = GFX_event_normal_frame_war
+
+	desc = {
+		text = EVTDESC_DuelEngine_106
+		trigger = { is_incapable = no }
+	}
+	desc = {
+		text = EVTDESCB_DuelEngine_106
+		trigger = { is_incapable = yes }
+	}
+
 	is_triggered_only = yes
 
 	immediate = {
 		random = {
 			chance = 50
-			if = { #Second wound: temporarily lose health, chance of disfigure/lose eye/blinded/incap
+
+			if = { # Second wound: temporarily lose health, chance of disfigure/lose eye/blinded/incap
 				limit = { trait = wounded }
+
 				random_list = {
 					95 = {
-						#temporarily lose health
+						# Temporarily lose health
 						health = -0.5
-						hidden_tooltip = {
+
+						hidden_effect = {
 							if = {
-								limit = { check_variable = { which = "health_lost" value = 0.1 } }
-								change_variable = { which = "health_lost" value = 0.5 }
+								limit = { check_variable = { which = health_lost value > 0 } }
+								change_variable = { which = health_lost value = 0.5 }
 							}
-							if = {
-								limit = { NOT = { check_variable = { which = "health_lost" value = 0.1 } } }
-								set_variable = { which = "health_lost" value = 0.5 }
+							else = {
+								set_variable = { which = health_lost value >= 0.5 }
 							}
 						}
 					}
-					2 = { #disfigure
-						modifier = {
-							factor = 0
-							OR = {
-								NOT = { has_dlc = "Reapers" }
-								trait = disfigured
-							}
+
+					2 = { # Disfigure
+						trigger = {
+							has_dlc = "Reapers"
+							NOT = { trait = disfigured }
 						}
+
 						add_trait = disfigured
 						character_event = { id = RIP.11504 }
 						add_trait = severely_injured
 						resolve_severely_injured_effect = yes
 						event_target:round_winner = { set_character_flag = flag_maimed_opponent }
 					}
-					2 = { #lose an eye
-						modifier = {
-							factor = 0
-							OR = {
-								NOT = { has_dlc = "Reapers" }
+
+					2 = { # Lose an eye
+						trigger = {
+							has_dlc = "Reapers"
+
+							NOR = {
 								trait = blinded
 								trait = one_eyed
 							}
 						}
+
 						add_trait = one_eyed
 						character_event = { id = RIP.11501 }
 						add_trait = severely_injured
 						resolve_severely_injured_effect = yes
 						event_target:round_winner = { set_character_flag = flag_maimed_opponent }
 					}
-					1 = { #incap
+
+					1 = { # Incap
+						trigger = {
+							NOT = { trait = incapable }
+						}
+
 						add_trait = incapable
 						event_target:round_winner = { set_character_flag = flag_maimed_opponent }
 					}
 				}
 			}
-			if = { #First wound: wounded
+
+			if = { # First wound: wounded
 				limit = { NOT = { trait = wounded } }
+
 				add_trait = wounded
 				event_target:round_winner = { set_character_flag = flag_wounded_opponent }
 			}
 		}
 	}
 
-	desc = {
-		trigger = { trait = incapable }
-		text = "EVTDESCB_DuelEngine_106"
-	}
+	option = { # Yield
+		name = {
+			text = EVTOPTA_DuelEngine_106
+			trigger = { is_incapable = no }
+		}
+		name = {
+			text = EVTOPTA2_DuelEngine_106
+			trigger = { is_incapable = yes }
+		}
 
-	option = { #yield
 		trigger = {
-			OR = {
+			trigger_if = {
+				limit = { has_character_flag = flag_duel_to_the_death }
 				has_character_flag = flag_duel_friendly
-				NOT = { has_character_flag = flag_duel_to_the_death }
 			}
 		}
-		name = {
-			text = "EVTOPTA_DuelEngine_106"
-			trigger = { NOT = { trait = incapable } }
+
+		event_target:round_winner = {
+			show_scope_change = no
+
+			character_event = {
+				id = DuelEngine.107
+				tooltip = EVTTOOLTIP_DuelEngine_107
+			}
 		}
-		name = {
-			text = "EVTOPTA2_DuelEngine_106"
-			trigger = { trait = incapable }
-		}
-		event_target:round_winner = { character_event = { id = DuelEngine.107 tooltip = "EVTTOOLTIP_DuelEngine_107" } }
 
 		ai_chance = {
 			factor = 50
+
 			# Nearly Beaten!
-			modifier = {
+			mult_modifier = {
 				factor = 4
+
 				is_maimed_trigger = yes
 				NOT = { trait = lunatic }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 2
+
 				trait = wounded
 				NOT = { trait = lunatic }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 1.5
-				check_variable = { which = health_lost value = 1 }
+				check_variable = { which = health_lost value >= 1 }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 2
-				check_variable = { which = health_lost value = 2 }
+				check_variable = { which = health_lost value >= 2 }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 4
-				check_variable = { which = health_lost value = 3 }
+				check_variable = { which = health_lost value >= 3 }
 			}
 
 			# Fatigue (Long Fights)
-			modifier = {
+			mult_modifier = {
 				factor = 1.5
-				check_variable = { which = duel_rounds value = 2 }
+				check_variable = { which = duel_rounds value >= 2 }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 3
-				check_variable = { which = duel_rounds value = 4 }
+				check_variable = { which = duel_rounds value >= 4 }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 5
-				check_variable = { which = duel_rounds value = 6 }
+				check_variable = { which = duel_rounds value >= 6 }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 10
-				check_variable = { which = duel_rounds value = 8 }
+				check_variable = { which = duel_rounds value >= 8 }
 			}
+
 			# Opponent Nearly Beaten!
-			modifier = {
+			mult_modifier = {
 				factor = 0.25
+
 				event_target:round_winner = { is_maimed_trigger = yes }
 				NOT = { trait = lunatic }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.5
+
 				event_target:round_winner = { trait = wounded }
 				NOT = { trait = lunatic }
 			}
+
 			# Personality Effects
-			modifier = {
+			mult_modifier = {
 				factor = 5
 				trait = craven
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 2
 				trait = kind
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 1.25
 				trait = humble
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.5
 				trait = brave
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.8
 				trait = proud
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.2
 				trait = wroth
 			}
 		}
 	}
 
-	option = { #fight on
+	option = { # Fight on
+		name = EVTOPTB_DuelEngine_106
+
 		trigger = {
-			NOR = {
-				has_character_flag = flag_duel_friendly
-				trait = incapable
+			NOT = { has_character_flag = flag_duel_friendly }
+			is_incapable = no
+		}
+
+		event_target:round_winner = {
+			show_scope_change = no
+
+			character_event = {
+				id = DuelEngine.112
+				tooltip = EVTTOOLTIP_DuelEngine_112
 			}
 		}
-		name = "EVTOPTB_DuelEngine_106"
-		event_target:round_winner = { character_event = { id = DuelEngine.112 tooltip = "EVTTOOLTIP_DuelEngine_112" } }
+
 		ai_chance = { factor = 50 }
 	}
 }
 
 character_event = {
 	id = DuelEngine.107
-	desc = "EVTDESC_DuelEngine_107"
+	desc = EVTDESC_DuelEngine_107
 	picture = GFX_evt_duel4
-	border = "GFX_event_normal_frame_war"
+	border = GFX_event_normal_frame_war
+
+	desc = {
+		text = EVTDESCB_DuelEngine_107
+		trigger = { event_target:round_loser = { has_character_flag = fled_from_duel } }
+	}
+
+	desc = {
+		text = EVTDESCC_DuelEngine_107
+		trigger = { event_target:round_loser = { is_incapable = yes } }
+	}
+
 	is_triggered_only = yes
 
-	desc = {
-		text = "EVTDESCB_DuelEngine_107"
-		trigger = {
-			event_target:round_loser = {
-				has_character_flag = fled_from_duel
-			}
-		}
-	}
-
-	desc = {
-		text = "EVTDESCC_DuelEngine_107"
-		trigger = {
-			event_target:round_loser = {
-				trait = incapable
-			}
-		}
-	}
-
-	option = { #Capture
+	option = { # Capture
 		name = {
-			text = "EVTOPTA_DuelEngine_107"
-			trigger = {
-				event_target:round_loser = {
-					NOT = { trait = incapable }
-				}
-			}
+			text = EVTOPTA_DuelEngine_107
+			trigger = { event_target:round_loser = { is_incapable = no } }
 		}
 		name = {
-			text = "EVTOPTA2_DuelEngine_107"
-			trigger = {
-				event_target:round_loser = {
-					trait = incapable
-				}
-			}
+			text = EVTOPTA2_DuelEngine_107
+			trigger = { event_target:round_loser = { is_incapable = yes } }
 		}
-		prestige = 15 #win
+
+		prestige = 15 # Win
 		set_character_flag = flag_spared_opponent
-		hidden_tooltip = { set_variable = { which = duel_rounds value = 0 } }
-		event_target:round_loser = {
-			clr_character_flag = fled_from_duel
-			character_event = { id = DuelEngine.108 tooltip = "EVTTOOLTIP_DuelEngine_108" }
+
+		hidden_effect = {
+			set_variable = {
+				which = duel_rounds
+				value = 0
+			}
 		}
+
+		event_target:round_loser = {
+			show_scope_change = no
+
+			clr_character_flag = fled_from_duel
+
+			character_event = {
+				id = DuelEngine.108
+				tooltip = EVTTOOLTIP_DuelEngine_108
+			}
+		}
+
 		ai_chance = {
 			factor = 50
+
 			# Need Opponent Taken Alive
-			modifier = {
+			mult_modifier = {
 				factor = 10
+
 				any_current_enemy = { character = event_target:round_loser }
-				NOT = {
-					OR = {
-						trait = lunatic
-						trait = possessed
-					}
+
+				NOR = {
+					trait = lunatic
+					trait = possessed
+					trait = wroth
+					trait = cruel
+					trait = paranoid
 				}
-				NOT = {
-					OR = {
-						trait = wroth
-						trait = cruel
-						trait = paranoid
-					}
-				}
-				NOT = { #republic feuders
+
+				# Republic feuders
+				NAND = {
 					has_dynasty_flag = the_feuders
 					event_target:round_loser = { has_dynasty_flag = the_victims }
 				}
-				NOT = {
+
+				NAND = {
 					has_dynasty_flag = the_victims
 					event_target:round_loser = { has_dynasty_flag = the_feuders }
 				}
 			}
+
 			# Personal Opinion Modifiers
-			modifier = {
+			mult_modifier = {
 				factor = 1.25
-				opinion = { who = event_target:round_loser value = 10 }
+				opinion = { who = event_target:round_loser value >= 10 }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 1.25
-				opinion = { who = event_target:round_loser value = 20 }
+				opinion = { who = event_target:round_loser value >= 20 }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 1.25
-				opinion = { who = event_target:round_loser value = 30 }
+				opinion = { who = event_target:round_loser value >= 30 }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 1.25
-				opinion = { who = event_target:round_loser value = 40 }
+				opinion = { who = event_target:round_loser value >= 40 }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 1.25
-				opinion = { who = event_target:round_loser value = 50 }
+				opinion = { who = event_target:round_loser value >= 50 }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 1.25
-				opinion = { who = event_target:round_loser value = 60 }
+				opinion = { who = event_target:round_loser value >= 60 }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 1.25
-				opinion = { who = event_target:round_loser value = 70 }
+				opinion = { who = event_target:round_loser value >= 70 }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 1.25
-				opinion = { who = event_target:round_loser value = 80 }
+				opinion = { who = event_target:round_loser value >= 80 }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 1.25
-				opinion = { who = event_target:round_loser value = 90 }
+				opinion = { who = event_target:round_loser value >= 90 }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 1.25
-				opinion = { who = event_target:round_loser value = 100 }
+				opinion = { who = event_target:round_loser value >= 100 }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.8
-				NOT = { opinion = { who = event_target:round_loser value = -9 } }
+				opinion = { who = event_target:round_loser value < -9 }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.8
-				NOT = { opinion = { who = event_target:round_loser value = -19 } }
+				opinion = { who = event_target:round_loser value < -19 }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.8
-				NOT = { opinion = { who = event_target:round_loser value = -29 } }
+				opinion = { who = event_target:round_loser value < -29 }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.8
-				NOT = { opinion = { who = event_target:round_loser value = -39 } }
+				opinion = { who = event_target:round_loser value < -39 }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.8
-				NOT = { opinion = { who = event_target:round_loser value = -49 } }
+				opinion = { who = event_target:round_loser value < -49 }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.8
-				NOT = { opinion = { who = event_target:round_loser value = -59 } }
+				opinion = { who = event_target:round_loser value < -59 }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.8
-				NOT = { opinion = { who = event_target:round_loser value = -69 } }
+				opinion = { who = event_target:round_loser value < -69 }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.8
-				NOT = { opinion = { who = event_target:round_loser value = -79 } }
+				opinion = { who = event_target:round_loser value < -79 }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.8
-				NOT = { opinion = { who = event_target:round_loser value = -89 } }
+				opinion = { who = event_target:round_loser value < -89 }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.8
-				NOT = { opinion = { who = event_target:round_loser value = -99 } }
+				opinion = { who = event_target:round_loser value < -99 }
 			}
 
 			# Would Be Kinslaying
-			modifier = {
+			mult_modifier = {
 				factor = 10
 				event_target:round_loser = { is_close_relative = ROOT }
 				NOT = { trait = arbitrary }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 20
 				event_target:round_loser = { is_close_relative = ROOT }
 				trait = just
 			}
 
 			# Personality Modifiers
-			modifier = {
+			mult_modifier = {
 				factor = 5
 				trait = kind
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 2
 				trait = gregarious
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 1.25
 				trait = humble
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 1.25
 				trait = trusting
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.8
 				trait = paranoid
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.8
 				trait = proud
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.5
 				trait = wroth
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.2
 				trait = cruel
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 50
+
 				has_character_flag = flag_duel_friendly
-				NOT = {
-					OR = {
-						trait = lunatic
-						trait = possessed
-					}
-					OR = {
-						trait = cruel
-						trait = wroth
-					}
+
+				NOR = {
+					trait = lunatic
+					trait = possessed
+					trait = cruel
+					trait = wroth
 				}
 			}
 		}
 	}
 
-	option = { #Kill
-		name = "EVTOPTB_DuelEngine_107"
+	option = { # Kill
+		name = EVTOPTB_DuelEngine_107
+
 		set_character_flag = flag_killed_opponent
-		hidden_tooltip = { set_variable = { which = duel_rounds value = 0 } }
-		event_target:round_loser = {
-			clr_character_flag = fled_from_duel
-			character_event = { id = DuelEngine.109 tooltip = "EVTTOOLTIP_DuelEngine_109" }
+
+		hidden_effect = {
+			set_variable = {
+				which = duel_rounds
+				value = 0
+			}
 		}
-		hidden_tooltip = {
+
+		event_target:round_loser = {
+			show_scope_change = no
+
+			clr_character_flag = fled_from_duel
+
+			character_event = {
+				id = DuelEngine.109
+				tooltip = EVTTOOLTIP_DuelEngine_109
+			}
+		}
+
+		hidden_effect = {
 			if = {
 				limit = { event_target:round:winner = { has_character_flag = battle_celtic_headhunter } }
+
 				event_target:round_winner = {
 					add_artifact = rival_skull
-					new_artifact = {
-						set_original_owner = event_target:round_loser
-					}
-					if = {
-						limit = {
-							NOT = { trait = head4 }
-							NOT = { trait = head5 }
-						}
-						character_event = { id = Plus.800 }
-						break = yes
-					}
-					if = {
-						limit = {
-							trait = head4
-						}
-						character_event = { id = Plus.801 }
-						break = yes
-					}
-					if = {
-						limit = {
-							trait = head5
-						}
-						character_event = { id = Plus.802 }
-						break = yes
-					}
+					new_artifact = { set_original_owner = event_target:round_loser }
+					character_event = { id = Plus.800 }
 				}
 			}
 		}
+
 		ai_chance = {
 			factor = 50
-			modifier = {
-				factor = 3
-				event_target:round_winner = { has_character_flag = battle_celtic_headhunter }
-			}
-			# Not in friendly duels (unless with ulterior motive)
-			modifier = {
-				factor = 0
-				has_character_flag = flag_duel_friendly
-				NOT = {
+
+			trigger = {
+				# Not in friendly duels (unless with ulterior motive)
+				trigger_if = {
+					limit = { has_character_flag = flag_duel_friendly }
+
 					OR = {
 						AND = {
 							OR = {
 								has_plot = plot_kill_character
 								has_plot = plot_kill_spouse
+								has_plot = plot_take_revenge
 							}
 							plot_target_char = { character = event_target:round_loser }
 						}
+
 						any_backed_character = {
 							OR = {
 								has_plot = plot_kill_character
 								has_plot = plot_kill_spouse
+								has_plot = plot_take_revenge
 							}
 							plot_target_char = { character = event_target:round_loser }
 						}
-						AND = { #republic feuders
+
+						AND = { # Republic feuders
 							has_dynasty_flag = the_feuders
 							event_target:round_loser = { has_dynasty_flag = the_victims }
 						}
+
 						AND = {
 							has_dynasty_flag = the_victims
 							event_target:round_loser = { has_dynasty_flag = the_feuders }
 						}
+
 						AND = {
 							OR = {
 								trait = envious
 								trait = ambitious
 							}
+
 							NOT = { trait = content }
+
 							OR = {
 								any_heir_title = { holder = ROOT }
 								any_pretender_title = { holder = ROOT }
@@ -2003,74 +2159,104 @@ character_event = {
 					}
 				}
 			}
+
+			mult_modifier = {
+				factor = 3
+				event_target:round_winner = { has_character_flag = battle_celtic_headhunter }
+			}
 		}
 	}
 
-	option = { #Leave them in the dirt
-		name = "EVTOPTC_DuelEngine_107"
+	option = { # Leave them in the dirt
+		name = EVTOPTC_DuelEngine_107
+
 		trigger = {
 			event_target:round_loser = {
-				trait = incapable
+				is_incapable = yes
 			}
+
 			has_character_flag = flag_battlefield_duel
 		}
-		hidden_tooltip = {
+
+		hidden_effect = {
 			set_variable = { which = duel_rounds value = 0 }
+
 			event_target:round_loser = {
 				clr_character_flag = fled_from_duel
 				set_variable = { which = duel_rounds value = 0 }
 			}
 		}
+
 		set_character_flag = left_opponent
-		character_event = { id = DuelEngine.901 tooltip = "EVTTOOLTIP_DuelEngine_901" }
-		ai_chance = {
-			factor = 50
+
+		character_event = {
+			id = DuelEngine.901
+			tooltip = EVTTOOLTIP_DuelEngine_901
 		}
+
+		ai_chance = { factor = 50 }
 	}
 }
 
 character_event = {
 	id = DuelEngine.108
-	desc = "EVTDESC_DuelEngine_108"
+	desc = EVTDESC_DuelEngine_108
 	picture = GFX_evt_duel4
-	border = "GFX_event_normal_frame_war"
+	border = GFX_event_normal_frame_war
+
 	is_triggered_only = yes
 
 	option = {
-		name = "EVTOPTA_DuelEngine_108"
+		name = EVTOPTA_DuelEngine_108
+
 		prestige = -10
-		event_target:round_winner = { character_event = { id = DuelEngine.901 tooltip = "EVTTOOLTIP_DuelEngine_901" } }
+
+		event_target:round_winner = {
+			show_scope_change = no
+
+			character_event = {
+				id = DuelEngine.901
+				tooltip = EVTTOOLTIP_DuelEngine_901
+			}
+		}
 	}
 }
 
 character_event = {
 	id = DuelEngine.109
-	desc = "EVTDESC_DuelEngine_109"
+	desc = EVTDESC_DuelEngine_109
 	picture = GFX_evt_duel5
+
 	is_triggered_only = yes
 
 	option = {
-		name = "EVTOPTA_DuelEngine_109"
+		name = EVTOPTA_DuelEngine_109
+
 		save_event_target_as = kinslayer_target
 		event_target:round_winner = { add_kinslayer_trait_effect = yes }
+
 		if = {
 			limit = { has_character_flag = flag_battlefield_duel }
-			# check for chance of martyr trait during crusade/jihad
+
+			# Check for chance of martyr trait during crusade/jihad
 			if = {
 				limit = {
 					religion_group = christian
 					NOT = { religion_group = event_target:round_winner }
 					is_heretic = no
-					piety = 25
+					piety >= 25
+
 					OR = {
 						AND = {
 							has_called_crusade = yes
+
 							OR = {
 								any_war = {
 									attacker = { religion = ROOT }
 									defender = { religion = event_target:round_winner }
 									using_cb = crusade
 								}
+
 								any_liege = {
 									any_war = {
 										attacker = { religion = ROOT }
@@ -2080,14 +2266,17 @@ character_event = {
 								}
 							}
 						}
+
 						AND = {
 							event_target:round_winner = { has_called_crusade = yes }
+
 							OR = {
 								any_war = {
 									attacker = { religion = event_target:round_winner }
 									defender = { religion = ROOT }
 									using_cb = crusade
 								}
+
 								any_liege = {
 									any_war = {
 										attacker = { religion = event_target:round_winner }
@@ -2097,11 +2286,13 @@ character_event = {
 								}
 							}
 						}
+
 						any_war = {
 							attacker = { religion = event_target:round_winner }
 							defender = { religion = ROOT }
 							using_cb = holy_war
 						}
+
 						any_liege = {
 							any_war = {
 								attacker = { religion = event_target:round_winner }
@@ -2109,18 +2300,22 @@ character_event = {
 								using_cb = holy_war
 							}
 						}
+
 						any_war = {
 							attacker = { religion = ROOT }
 							defender = { religion = event_target:round_winner }
+
 							OR = {
 								using_cb = holy_war
 								using_cb = religious_revolt
 							}
 						}
+
 						any_liege = {
 							any_war = {
 								attacker = { religion = ROOT }
 								defender = { religion = event_target:round_winner }
+
 								OR = {
 									using_cb = holy_war
 									using_cb = religious_revolt
@@ -2128,10 +2323,12 @@ character_event = {
 							}
 						}
 					}
-					OR = {
-						NOT = { trait = possessed }
+
+					trigger_if = {
+						limit = { trait = possessed }
 						has_character_modifier = voice_of_jesus
 					}
+
 					NOR = {
 						trait = lunatic
 						trait = hedonist
@@ -2144,159 +2341,209 @@ character_event = {
 						has_character_modifier = voice_of_satan
 					}
 				}
+
 				random = {
 					chance = 25
-					modifier = {
+
+					mult_modifier = {
 						factor = 5
 						has_character_modifier = voice_of_jesus
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 2.5
+
 						is_ruler = yes
 						is_theocracy = yes
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 2.5
+
 						OR = {
 							trait = celibate
 							trait = monk
 							trait = nun
 						}
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 2
 						trait = zealous
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 1.5
 						trait = chaste
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 1.5
 						trait = kind
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 1.5
 						trait = humble
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 1.5
 						trait = brave
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 1.25
 						trait = temperate
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 1.25
 						trait = charitable
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 1.25
 						trait = patient
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 1.25
 						trait = honest
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 1.25
 						trait = just
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 0.75
 						trait = lustful
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 0.75
 						trait = gluttonous
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 0.75
 						trait = greedy
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 0.75
 						trait = envious
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 0.75
 						trait = cruel
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 0.75
 						trait = proud
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 0.75
 						trait = deceitful
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 0.75
 						trait = arbitrary
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 0.5
-						NOT = { piety = 50 }
+						piety < 50
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 1.1
-						piety = 100
+						piety >= 100
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 1.1
-						piety = 200
+						piety >= 200
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 1.2
-						piety = 300
+						piety >= 300
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 1.2
-						piety = 400
+						piety >= 400
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 1.3
-						piety = 500
+						piety >= 500
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 1.5
-						piety = 1000
+						piety >= 1000
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 0.5
+
 						NOR = {
 							has_called_crusade = yes
 							event_target:round_winner = { has_called_crusade = yes }
 						}
 					}
+
 					log = "[Root.GetBestName] has been declared a [Root.Religion.GetName] martyr"
 					add_trait = martyr
+
 					if = {
 						limit = { has_nickname = no }
 						give_nickname = nick_the_martyr
 					}
-					hidden_tooltip = {
+
+					hidden_effect = {
 						event_target:round_winner = { save_event_target_as = martyr_killer }
 						save_event_target_as = new_martyr
+
 						any_dynasty_member = {
-							limit = { NOT = { character = ROOT } }
-							character_event = { id = Plus.2600 days = 1 random = 13 }
-						}
-						any_liege = {
-							limit = {
-								NOT = { character = ROOT }
-								NOT = { dynasty = ROOT }
+							character_event = {
+								id = Plus.2600
+								days = 1
+								random = 13
 							}
-							character_event = { id = Plus.2600 days = 1 random = 13 }
 						}
+
+						any_liege = {
+							limit = { NOT = { dynasty = ROOT } }
+
+							character_event = {
+								id = Plus.2600
+								days = 1
+								random = 13
+							}
+						}
+
 						any_spouse = {
 							limit = {
-								NOT = { character = ROOT }
-								NOT = { dynasty = ROOT }
-								NOT = { is_vassal_or_below = ROOT }
+								NOR = {
+									dynasty = ROOT
+									is_liege_or_above_of = ROOT
+								}
 							}
-							character_event = { id = Plus.2600 days = 1 random = 13 }
+
+							character_event = {
+								id = Plus.2600
+								days = 1
+								random = 13
+							}
 						}
 					}
 				}
@@ -2306,19 +2553,24 @@ character_event = {
 				death_reason = death_battle
 				killer = event_target:round_winner
 			}
-			event_target:round_winner = { character_event = { id = DuelEngine.901 tooltip = "EVTTOOLTIP_DuelEngine_901" } }
-			hidden_tooltip = {
-				set_variable = { which = duel_rounds value = 0 }
-				event_target:round_winner = { character_event = { id = DuelEngine.203 } }
+		}
+		else = {
+			death = {
+				death_reason = death_duel
+				killer = event_target:round_winner
 			}
-			break = yes
 		}
-		death = {
-			death_reason = death_duel
-			killer = event_target:round_winner
+
+		event_target:round_winner = {
+			show_scope_change = no
+
+			character_event = {
+				id = DuelEngine.901
+				tooltip = EVTTOOLTIP_DuelEngine_901
+			}
 		}
-		event_target:round_winner = { character_event = { id = DuelEngine.901 tooltip = "EVTTOOLTIP_DuelEngine_901" } }
-		hidden_tooltip = {
+
+		hidden_effect = {
 			set_variable = { which = duel_rounds value = 0 }
 			event_target:round_winner = { character_event = { id = DuelEngine.203 } }
 		}
@@ -2328,234 +2580,304 @@ character_event = {
 ### WOUND OUTCOMES
 character_event = {
 	id = DuelEngine.110
-	desc = "EVTDESC_DuelEngine_110"
+	desc = EVTDESC_DuelEngine_110
 	picture = GFX_evt_duel3
-	border = "GFX_event_normal_frame_war"
+	border = GFX_event_normal_frame_war
+
 	is_triggered_only = yes
 
 	immediate = {
-		if = { #Further wounds: temporarily lose health, chance of maimed
+		if = { # Further wounds: temporarily lose health, chance of maimed
 			limit = { trait = wounded }
+
 			random_list = {
 				90 = {
-					#temporarily lose health
+					# Temporarily lose health
 					health = -0.5
-					hidden_tooltip = {
-						if = {
-							limit = { check_variable = { which = "health_lost" value = 0.1 } }
-							change_variable = { which = "health_lost" value = 0.5 }
-						}
-						if = {
-							limit = { NOT = { check_variable = { which = "health_lost" value = 0.1 } } }
-							set_variable = { which = "health_lost" value = 0.5 }
-						}
+
+					if = {
+						limit = { check_variable = { which = health_lost value > 0 } }
+						change_variable = { which = health_lost value = 0.5 }
+					}
+					else = {
+						set_variable = { which = health_lost value = 0.5 }
 					}
 				}
-				5 = { #maim hand
-					modifier = {
+
+				5 = { # Maim hand
+					mult_modifier = {
 						factor = 1.5
-						check_variable = { which = health_lost value = 1 }
-						NOT = { check_variable = { which = health_lost value = 2 } }
+						check_variable = { which = health_lost value >= 1 }
+						check_variable = { which = health_lost value < 2 }
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 2
-						check_variable = { which = health_lost value = 2 }
-						NOT = { check_variable = { which = health_lost value = 3 } }
+						check_variable = { which = health_lost value >= 2 }
+						check_variable = { which = health_lost value < 3 }
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 3
-						check_variable = { which = health_lost value = 3 }
+						check_variable = { which = health_lost value >= 3 }
 					}
+
 					maim_hand_effect = yes
 					event_target:round_winner = { set_character_flag = flag_maimed_opponent }
 				}
-				5 = { #maim body
-					modifier = {
+
+				5 = { # Maim body
+					mult_modifier = {
 						factor = 1.5
-						check_variable = { which = health_lost value = 1 }
-						NOT = { check_variable = { which = health_lost value = 2 } }
+						check_variable = { which = health_lost value >= 1 }
+						check_variable = { which = health_lost value < 2 }
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 2
-						check_variable = { which = health_lost value = 2 }
-						NOT = { check_variable = { which = health_lost value = 3 } }
+						check_variable = { which = health_lost value >= 2 }
+						check_variable = { which = health_lost value < 3 }
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 3
-						check_variable = { which = health_lost value = 3 }
+						check_variable = { which = health_lost value >= 3 }
 					}
+
 					add_maimed_trait_effect = yes
 					event_target:round_winner = { set_character_flag = flag_maimed_opponent }
 				}
 			}
 		}
-		if = { #First wound: wounded
-			limit = { NOT = { trait = wounded } }
+		else = { # First wound: wounded
 			add_trait = wounded
 			event_target:round_winner = { set_character_flag = flag_wounded_opponent }
 		}
 	}
 
-	option = { #fight on
-		name = "EVTOPTA_DuelEngine_110"
+	option = { # Fight on
+		name = EVTOPTA_DuelEngine_110
+
 		trigger = { NOT = { has_character_flag = flag_duel_friendly } }
-		event_target:round_winner = { character_event = { id = DuelEngine.111 tooltip = "EVTTOOLTIP_DuelEngine_111" } }
-		ai_chance = { factor = 70 }
-	}
-	option = { #yield!
-		name = "EVTOPTA_DuelEngine_106"
-		trigger = {
-			OR = {
-				has_character_flag = flag_duel_friendly
-				NOT = { has_character_flag = flag_duel_to_the_death }
+
+		event_target:round_winner = {
+			show_scope_change = no
+
+			character_event = {
+				id = DuelEngine.111
+				tooltip = EVTTOOLTIP_DuelEngine_111
 			}
 		}
-		prestige = -10 #loss
-		event_target:round_winner = { character_event = { id = DuelEngine.107 tooltip = "EVTTOOLTIP_DuelEngine_107" } }
+
+		ai_chance = { factor = 70 }
+	}
+
+	option = { # Yield!
+		name = EVTOPTA_DuelEngine_106
+
+		trigger = {
+			trigger_if = {
+				limit = { has_character_flag = flag_duel_to_the_death }
+				has_character_flag = flag_duel_friendly
+			}
+		}
+
+		prestige = -10 # Loss
+
+		event_target:round_winner = {
+			show_scope_change = no
+
+			character_event = {
+				id = DuelEngine.107
+				tooltip = EVTTOOLTIP_DuelEngine_107
+			}
+		}
+
 		ai_chance = {
 			factor = 30
+
 			# Nearly Beaten!
-			modifier = {
+			mult_modifier = {
 				factor = 4
+
 				is_maimed_trigger = yes
 				NOT = { trait = lunatic }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 2
+
 				trait = wounded
 				NOT = { trait = lunatic }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 1.5
-				check_variable = { which = health_lost value = 1 }
+				check_variable = { which = health_lost value >= 1 }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 2
-				check_variable = { which = health_lost value = 2 }
+				check_variable = { which = health_lost value >= 2 }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 4
-				check_variable = { which = health_lost value = 3 }
+				check_variable = { which = health_lost value >= 3 }
 			}
 
 			# Fatigue (Long Fights)
-			modifier = {
+			mult_modifier = {
 				factor = 1.5
-				check_variable = { which = duel_rounds value = 2 }
+				check_variable = { which = duel_rounds value >= 2 }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 3
-				check_variable = { which = duel_rounds value = 4 }
+				check_variable = { which = duel_rounds value >= 4 }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 5
-				check_variable = { which = duel_rounds value = 6 }
+				check_variable = { which = duel_rounds value >= 6 }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 10
-				check_variable = { which = duel_rounds value = 8 }
+				check_variable = { which = duel_rounds value >= 8 }
 			}
+
 			# Opponent Nearly Beaten!
-			modifier = {
+			mult_modifier = {
 				factor = 0.25
+
 				event_target:round_winner = { is_maimed_trigger = yes }
 				NOT = { trait = lunatic }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.5
+
 				event_target:round_winner = { trait = wounded }
 				NOT = { trait = lunatic }
 			}
+
 			# Personality Effects
-			modifier = {
+			mult_modifier = {
 				factor = 5
 				trait = craven
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 2
 				trait = kind
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 1.25
 				trait = humble
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.5
 				trait = brave
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.8
 				trait = proud
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.2
 				trait = wroth
 			}
 		}
 	}
-	option = { #flee
-		name = "EVTOPTB_DuelEngine_110"
+
+	option = { # Flee
+		name = EVTOPTB_DuelEngine_110
+
 		trigger = {
-			NOT = { has_character_flag = flag_duel_friendly }
-			NOT = { has_character_flag = flag_duel_to_the_death }
+			NOR = {
+				has_character_flag = flag_duel_friendly
+				has_character_flag = flag_duel_to_the_death
+			}
 		}
+
 		set_character_flag = fled_from_duel
-		prestige = -10 #loss
-		hidden_tooltip = {
+		prestige = -10 # Loss
+
+		hidden_effect = {
 			random_list = {
-				50 = { #gets away
+				50 = { # Gets away
 					# Intrigue Skill
-					modifier = {
+					mult_modifier = {
 						factor = 1.1
-						event_target:round_loser = { intrigue = 10 }
-						NOT = { event_target:round_loser = { intrigue = 15 } }
+
+						event_target:round_loser = {
+							intrigue >= 10
+							intrigue < 15
+						}
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 1.3
-						event_target:round_loser = { intrigue = 15 }
-						NOT = { event_target:round_loser = { intrigue = 20 } }
+
+						event_target:round_loser = {
+							intrigue >= 15
+							intrigue < 20
+						}
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 1.5
-						event_target:round_loser = { intrigue = 20 }
+						event_target:round_loser = { intrigue >= 20 }
 					}
 
 					# Personality Traits
-					modifier = {
+					mult_modifier = {
 						factor = 1.5
 						event_target:round_loser = { trait = deceitful }
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 1.3
 						event_target:round_loser = { trait = craven }
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 1.1
 						event_target:round_loser = { trait = paranoid }
 					}
 
 					# Physical Traits
-					modifier = {
+					mult_modifier = {
 						factor = 1.5
 						event_target:round_loser = { trait = agile }
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 1.3
 						event_target:round_loser = { trait = perceptive }
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 1.1
 						event_target:round_loser = { trait = dwarf }
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 0.5
 						event_target:round_loser = { trait = clubfooted }
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 0.75
 						event_target:round_loser = { trait = wounded }
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 0.4
 						event_target:round_loser = { is_maimed_trigger = yes }
 					}
@@ -2564,106 +2886,144 @@ character_event = {
 						clr_character_flag = fled_from_duel
 						set_character_flag = ran_away_from_duel
 					}
+
 					event_target:round_winner = {
-						character_event = { id = DuelEngine.901 tooltip = "EVTTOOLTIP_DuelEngine_901" }
-						character_event = { id = DuelEngine.113 tooltip = "EVTTOOLTIP_DuelEngine_113" }
+						show_scope_change = no
+
+						character_event = { id = DuelEngine.901 tooltip = EVTTOOLTIP_DuelEngine_901 }
+						character_event = { id = DuelEngine.113 tooltip = EVTTOOLTIP_DuelEngine_113 }
 					}
 				}
-				50 = { #caught!
+
+				50 = { # Caught!
 					# Intrigue Skill
-					modifier = {
+					mult_modifier = {
 						factor = 1.1
-						event_target:round_winner = { intrigue = 10 }
-						NOT = { event_target:round_winner = { intrigue = 15 } }
+
+						event_target:round_winner = {
+							intrigue >= 10
+							intrigue < 15
+						}
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 1.3
-						event_target:round_winner = { intrigue = 15 }
-						NOT = { event_target:round_winner = { intrigue = 20 } }
+
+						event_target:round_winner = {
+							intrigue >= 15
+							intrigue < 20
+						}
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 1.5
-						event_target:round_winner = { intrigue = 20 }
+						event_target:round_winner = { intrigue >= 20 }
 					}
 
 					# Personality Traits
-					modifier = {
+					mult_modifier = {
 						factor = 1.5
 						event_target:round_winner = { trait = deceitful }
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 1.3
 						event_target:round_winner = { trait = craven }
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 1.1
 						event_target:round_winner = { trait = paranoid }
 					}
 
 					# Physical Traits
-					modifier = {
+					mult_modifier = {
 						factor = 1.5
 						event_target:round_winner = { trait = agile }
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 1.3
 						event_target:round_winner = { trait = perceptive }
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 1.1
 						event_target:round_winner = { trait = tall }
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 0.5
 						event_target:round_winner = { trait = clubfooted }
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 0.75
 						event_target:round_winner = { trait = wounded }
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 0.4
 						event_target:round_winner = { is_maimed_trigger = yes }
 					}
-					event_target:round_winner = { character_event = { id = DuelEngine.107 tooltip = "EVTTOOLTIPB_DuelEngine_107" } }
+
+					event_target:round_winner = {
+						show_scope_change = no
+
+						character_event = {
+							id = DuelEngine.107
+							tooltip = EVTTOOLTIPB_DuelEngine_107
+						}
+					}
 				}
 			}
 		}
+
 		ai_chance = {
 			factor = 30
+
 			# Opponent Nearly Beaten!
-			modifier = {
+			mult_modifier = {
 				factor = 0.25
+
 				event_target:round_winner = { is_maimed_trigger = yes }
 				NOT = { trait = lunatic }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.5
+
 				event_target:round_winner = { trait = wounded }
 				NOT = { trait = lunatic }
 			}
+
 			# Personality Effects
-			modifier = {
+			mult_modifier = {
 				factor = 5
 				trait = craven
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 5
 				trait = deceitful
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.5
 				trait = brave
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.5
 				trait = honest
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.8
 				trait = proud
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.2
 				trait = wroth
 			}
@@ -2673,39 +3033,57 @@ character_event = {
 
 character_event = {
 	id = DuelEngine.111
-	desc = "EVTDESC_DuelEngine_111"
+	desc = EVTDESC_DuelEngine_111
 	picture = GFX_evt_duel3
-	border = "GFX_event_normal_frame_war"
+	border = GFX_event_normal_frame_war
+
 	is_triggered_only = yes
 
 	option = {
-		name = "EVTOPTA_DuelEngine_111"
-		hidden_tooltip = { e_rebels = { holder_scope = { character_event = { id = DuelEngine.1 } } } }
+		name = EVTOPTA_DuelEngine_111
+
+		hidden_effect = {
+			e_rebels = {
+				holder_scope = {
+					character_event = { id = DuelEngine.1 }
+				}
+			}
+		}
 	}
 }
 
 character_event = {
 	id = DuelEngine.112
-	desc = "EVTDESC_DuelEngine_112"
+	desc = EVTDESC_DuelEngine_112
 	picture = GFX_evt_duel3
-	border = "GFX_event_normal_frame_war"
+	border = GFX_event_normal_frame_war
+
 	is_triggered_only = yes
 
 	option = {
-		name = "EVTOPTA_DuelEngine_112"
-		hidden_tooltip = { e_rebels = { holder_scope = { character_event = { id = DuelEngine.1 } } } }
+		name = EVTOPTA_DuelEngine_112
+
+		hidden_effect = {
+			e_rebels = {
+				holder_scope = {
+					character_event = { id = DuelEngine.1 }
+				}
+			}
+		}
 	}
 }
 
 character_event = {
 	id = DuelEngine.113
-	desc = "EVTDESC_DuelEngine_113"
+	desc = EVTDESC_DuelEngine_113
 	picture = GFX_evt_duel4
-	border = "GFX_event_normal_frame_war"
+	border = GFX_event_normal_frame_war
+
 	is_triggered_only = yes
 
 	option = {
-		name = "EVTOPTA_DuelEngine_113"
+		name = EVTOPTA_DuelEngine_113
+
 		prestige = 15
 	}
 }
@@ -2713,47 +3091,68 @@ character_event = {
 ### DEATH OUTCOMES
 character_event = {
 	id = DuelEngine.201
-	desc = "EVTDESC_DuelEngine_201"
+	desc = EVTDESC_DuelEngine_201
 	picture = GFX_evt_duel3
-	border = "GFX_event_normal_frame_war"
+	border = GFX_event_normal_frame_war
+
 	is_triggered_only = yes
 	hide_from = yes
 	show_from_from = yes
 
 	option = {
-		name = "EVTOPTA_DuelEngine_201"
-		event_target:round_loser = { character_event = { id = DuelEngine.202 tooltip = "EVTTOOLTIP_DuelEngine_202" } }
+		name = EVTOPTA_DuelEngine_201
+
+		event_target:round_loser = {
+			show_scope_change = no
+
+			character_event = {
+				id = DuelEngine.202
+				tooltip = EVTTOOLTIP_DuelEngine_202
+			}
+		}
 	}
 }
 
 character_event = {
 	id = DuelEngine.202
-	desc = "EVTDESC_DuelEngine_202"
+	desc = EVTDESC_DuelEngine_202
 	picture = GFX_evt_duel3
+
 	is_triggered_only = yes
 
 	option = {
-		name = "EVTOPTA_DuelEngine_202"
+		name = EVTOPTA_DuelEngine_202
+
 		save_event_target_as = kinslayer_target
-		event_target:round_winner = { add_kinslayer_trait_effect = yes }
+
+		event_target:round_winner = {
+			show_scope_change = no
+
+			add_kinslayer_trait_effect = yes
+		}
+
 		if = {
 			limit = { has_character_flag = flag_battlefield_duel }
-			# check for chance of martyr trait during crusade/jihad
+
+			#  Check for chance of martyr trait during crusade/jihad
 			if = {
 				limit = {
 					religion_group = christian
 					NOT = { religion_group = event_target:round_winner }
 					is_heretic = no
-					piety = 25
+					piety >= 25
+
 					OR = {
 						AND = {
 							has_called_crusade = yes
+
 							OR = {
 								any_war = {
 									attacker = { religion = ROOT }
 									defender = { religion = event_target:round_winner }
 									using_cb = crusade
 								}
+
 								any_liege = {
 									any_war = {
 										attacker = { religion = ROOT }
@@ -2763,14 +3162,17 @@ character_event = {
 								}
 							}
 						}
+
 						AND = {
 							event_target:round_winner = { has_called_crusade = yes }
+
 							OR = {
 								any_war = {
 									attacker = { religion = event_target:round_winner }
 									defender = { religion = ROOT }
 									using_cb = crusade
 								}
+
 								any_liege = {
 									any_war = {
 										attacker = { religion = event_target:round_winner }
@@ -2780,11 +3182,13 @@ character_event = {
 								}
 							}
 						}
+
 						any_war = {
 							attacker = { religion = event_target:round_winner }
 							defender = { religion = ROOT }
 							using_cb = holy_war
 						}
+
 						any_liege = {
 							any_war = {
 								attacker = { religion = event_target:round_winner }
@@ -2792,18 +3196,22 @@ character_event = {
 								using_cb = holy_war
 							}
 						}
+
 						any_war = {
 							attacker = { religion = ROOT }
 							defender = { religion = event_target:round_winner }
+
 							OR = {
 								using_cb = holy_war
 								using_cb = religious_revolt
 							}
 						}
+
 						any_liege = {
 							any_war = {
 								attacker = { religion = ROOT }
 								defender = { religion = event_target:round_winner }
+
 								OR = {
 									using_cb = holy_war
 									using_cb = religious_revolt
@@ -2811,10 +3219,12 @@ character_event = {
 							}
 						}
 					}
-					OR = {
-						NOT = { trait = possessed }
+
+					trigger_if = {
+						limit = { trait = possessed }
 						has_character_modifier = voice_of_jesus
 					}
+
 					NOR = {
 						trait = lunatic
 						trait = hedonist
@@ -2827,159 +3237,209 @@ character_event = {
 						has_character_modifier = voice_of_satan
 					}
 				}
+
 				random = {
 					chance = 25
-					modifier = {
+
+					mult_modifier = {
 						factor = 5
 						has_character_modifier = voice_of_jesus
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 2.5
+
 						is_ruler = yes
 						is_theocracy = yes
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 2.5
+
 						OR = {
 							trait = celibate
 							trait = monk
 							trait = nun
 						}
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 2
 						trait = zealous
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 1.5
 						trait = chaste
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 1.5
 						trait = kind
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 1.5
 						trait = humble
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 1.5
 						trait = brave
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 1.25
 						trait = temperate
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 1.25
 						trait = charitable
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 1.25
 						trait = patient
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 1.25
 						trait = honest
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 1.25
 						trait = just
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 0.75
 						trait = lustful
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 0.75
 						trait = gluttonous
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 0.75
 						trait = greedy
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 0.75
 						trait = envious
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 0.75
 						trait = cruel
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 0.75
 						trait = proud
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 0.75
 						trait = deceitful
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 0.75
 						trait = arbitrary
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 0.5
-						NOT = { piety = 50 }
+						piety < 50
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 1.1
-						piety = 100
+						piety >= 100
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 1.1
-						piety = 200
+						piety >= 200
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 1.2
-						piety = 300
+						piety >= 300
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 1.2
-						piety = 400
+						piety >= 400
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 1.3
-						piety = 500
+						piety >= 500
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 1.5
-						piety = 1000
+						piety >= 1000
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 0.5
+
 						NOR = {
 							has_called_crusade = yes
 							event_target:round_winner = { has_called_crusade = yes }
 						}
 					}
+
 					log = "[Root.GetBestName] has been declared a [Root.Religion.GetName] martyr"
 					add_trait = martyr
+
 					if = {
 						limit = { has_nickname = no }
 						give_nickname = nick_the_martyr
 					}
-					hidden_tooltip = {
+
+					hidden_effect = {
 						event_target:round_winner = { save_event_target_as = martyr_killer }
 						save_event_target_as = new_martyr
+
 						any_dynasty_member = {
-							limit = { NOT = { character = ROOT } }
-							character_event = { id = Plus.2600 days = 1 random = 13 }
-						}
-						any_liege = {
-							limit = {
-								NOT = { character = ROOT }
-								NOT = { dynasty = ROOT }
+							character_event = {
+								id = Plus.2600
+								days = 1
+								random = 13
 							}
-							character_event = { id = Plus.2600 days = 1 random = 13 }
 						}
+
+						any_liege = {
+							limit = { NOT = { dynasty = ROOT } }
+
+							character_event = {
+								id = Plus.2600
+								days = 1
+								random = 13
+							}
+						}
+
 						any_spouse = {
 							limit = {
-								NOT = { character = ROOT }
-								NOT = { dynasty = ROOT }
-								NOT = { is_vassal_or_below = ROOT }
+								NOR = {
+									dynasty = ROOT
+									is_liege_or_above_of = ROOT
+								}
 							}
-							character_event = { id = Plus.2600 days = 1 random = 13 }
+
+							character_event = {
+								id = Plus.2600
+								days = 1
+								random = 13
+							}
 						}
 					}
 				}
@@ -2989,41 +3449,44 @@ character_event = {
 				death_reason = death_battle
 				killer = event_target:round_winner
 			}
-			event_target:round_winner = {
-				set_character_flag = flag_killed_opponent
-				character_event = { id = DuelEngine.901 tooltip = "EVTTOOLTIP_DuelEngine_901" }
+		}
+		else = {
+			death = {
+				death_reason = death_duel
+				killer = event_target:round_winner
 			}
-			hidden_tooltip = {
+
+			event_target:round_winner = {
+				show_scope_change = no
+
+				set_character_flag = flag_killed_opponent
+
+				character_event = {
+					id = DuelEngine.901
+					tooltip = EVTTOOLTIP_DuelEngine_901
+				}
+			}
+
+			hidden_effect = {
 				set_variable = { which = duel_rounds value = 0 }
 				event_target:round_winner = { character_event = { id = DuelEngine.203 } }
 			}
-			break = yes
-		}
-		death = {
-			death_reason = death_duel
-			killer = event_target:round_winner
-		}
-		event_target:round_winner = {
-			set_character_flag = flag_killed_opponent
-			character_event = { id = DuelEngine.901 tooltip = "EVTTOOLTIP_DuelEngine_901" }
-		}
-		hidden_tooltip = {
-			set_variable = { which = duel_rounds value = 0 }
-			event_target:round_winner = { character_event = { id = DuelEngine.203 } }
 		}
 	}
 }
 
 character_event = {
 	id = DuelEngine.203
-	desc = "EVTDESC_DuelEngine_203"
+	desc = EVTDESC_DuelEngine_203
 	picture = GFX_evt_duel5
-	border = "GFX_event_normal_frame_war"
+	border = GFX_event_normal_frame_war
+
 	is_triggered_only = yes
 
 	option = {
-		name = "EVTOPTA_DuelEngine_203"
-		prestige = 25 #killed opponent
+		name = EVTOPTA_DuelEngine_203
+
+		prestige = 25 # Killed opponent
 	}
 }
 
@@ -3033,50 +3496,67 @@ character_event = {
 # MAIN LOOP
 character_event = {
 	id = DuelEngine.301
-	desc = "EVTDESC_DuelEngine_301"
+	desc = EVTDESC_DuelEngine_301
 	picture = GFX_evt_joust
-	border = "GFX_event_normal_frame_war"
+	border = GFX_event_normal_frame_war
+
 	is_triggered_only = yes
 	hide_from = yes
 	show_from_from = yes
 
 	option = {
-		name = "EVTOPTA_DuelEngine_301"
-		hidden_tooltip = { event_target:combatant_1 = { character_event = { id = DuelEngine.302 } } }
+		name = EVTOPTA_DuelEngine_301
+
+		hidden_effect = {
+			event_target:combatant_1 = {
+				character_event = { id = DuelEngine.302 }
+			}
+		}
+
 		ai_chance = { factor = 50 }
 	}
 
 	option = { # Accidents can happen in jousts. Sometimes they're not really accidents.
+		name = EVTOPTB_DuelEngine_301
+
 		trigger = {
 			OR = {
 				AND = {
 					OR = {
 						has_plot = plot_kill_character
 						has_plot = plot_kill_spouse
+						has_plot = plot_take_revenge
 					}
 					plot_target_char = { character = event_target:combatant_1 }
 				}
+
 				any_backed_character = {
 					OR = {
 						has_plot = plot_kill_character
 						has_plot = plot_kill_spouse
+						has_plot = plot_take_revenge
 					}
 					plot_target_char = { character = event_target:combatant_1 }
 				}
-				AND = { #republic feuders
+
+				AND = { # Republic feuders
 					has_dynasty_flag = the_feuders
 					event_target:combatant_1 = { has_dynasty_flag = the_victims }
 				}
+
 				AND = {
 					has_dynasty_flag = the_victims
 					event_target:combatant_1 = { has_dynasty_flag = the_feuders }
 				}
+
 				AND = {
 					OR = {
 						trait = envious
 						trait = ambitious
 					}
+
 					NOT = { trait = content }
+
 					OR = {
 						any_heir_title = { holder = ROOT }
 						any_pretender_title = { holder = ROOT }
@@ -3084,37 +3564,52 @@ character_event = {
 					}
 				}
 			}
+
 			NOT = { trait = just }
 		}
-		name = "EVTOPTB_DuelEngine_301"
+
 		clr_character_flag = flag_duel_friendly # Fight to kill
-		hidden_tooltip = { event_target:combatant_1 = { character_event = { id = DuelEngine.302 } } }
+
+		hidden_effect = {
+			event_target:combatant_1 = {
+				character_event = { id = DuelEngine.302 }
+			}
+		}
+
 		ai_chance = {
 			factor = 50
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.5
 				trait = honest
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.5
 				trait = kind
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 2
 				trait = deceitful
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 2
 				trait = wroth
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.1
-				event_target:combatant_1 = { is_close_relative = ROOT }
+
+				is_close_relative = event_target:combatant_1
 				NOT = { trait = arbitrary }
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.05
-				event_target:combatant_1 = { is_close_relative = ROOT }
+
+				is_close_relative = event_target:combatant_1
 				trait = just
 			}
 		}
@@ -3123,65 +3618,92 @@ character_event = {
 
 character_event = {
 	id = DuelEngine.302
-	desc = "EVTDESC_DuelEngine_302"
+	desc = EVTDESC_DuelEngine_302
 	picture = GFX_evt_joust
-	border = "GFX_event_normal_frame_war"
+	border = GFX_event_normal_frame_war
+
 	is_triggered_only = yes
 
 	option = {
-		name = "EVTOPTA_DuelEngine_302"
-		hidden_tooltip = { e_rebels = { holder_scope = { character_event = { id = DuelEngine.4 } } } }
-		ai_chance = {
-			factor = 50
+		name = EVTOPTA_DuelEngine_302
+
+		hidden_effect = {
+			e_rebels = {
+				holder_scope = {
+					character_event = { id = DuelEngine.4 }
+				}
+			}
 		}
+
+		ai_chance = { factor = 50 }
 	}
 
 	option = { # Accidents can happen in jousts. Sometimes they're not really accidents.
+		name = EVTOPTB_DuelEngine_302
+
 		trigger = {
 			OR = {
 				AND = {
 					OR = {
 						has_plot = plot_kill_character
 						has_plot = plot_kill_spouse
+						has_plot = plot_take_revenge
 					}
 					plot_target_char = { character = event_target:combatant_2 }
 				}
+
 				any_backed_character = {
 					OR = {
 						has_plot = plot_kill_character
 						has_plot = plot_kill_spouse
+						has_plot = plot_take_revenge
 					}
 					plot_target_char = { character = event_target:combatant_2 }
 				}
-				AND = { #republic feuders
+
+				AND = { # Republic feuders
 					has_dynasty_flag = the_feuders
 					event_target:combatant_2 = { has_dynasty_flag = the_victims }
 				}
+
 				AND = {
 					has_dynasty_flag = the_victims
 					event_target:combatant_2 = { has_dynasty_flag = the_feuders }
 				}
 			}
+
 			NOT = { trait = just }
 		}
-		name = "EVTOPTB_DuelEngine_302"
+
 		clr_character_flag = flag_duel_friendly # Fight to kill
-		hidden_tooltip = { e_rebels = { holder_scope = { character_event = { id = DuelEngine.4 } } } }
+
+		hidden_effect = {
+			e_rebels = {
+				holder_scope = {
+					character_event = { id = DuelEngine.4 }
+				}
+			}
+		}
+
 		ai_chance = {
 			factor = 50
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.5
 				trait = honest
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 0.5
 				trait = kind
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 2
 				trait = deceitful
 			}
-			modifier = {
+
+			mult_modifier = {
 				factor = 2
 				trait = wroth
 			}
@@ -3192,17 +3714,23 @@ character_event = {
 # Winner attacks!
 character_event = {
 	id = DuelEngine.303
-	desc = "EVTDESC_DuelEngine_303"
+	desc = EVTDESC_DuelEngine_303
 	picture = GFX_evt_joust
-	border = "GFX_event_normal_frame_war"
-	hide_from = yes
+	border = GFX_event_normal_frame_war
 
 	is_triggered_only = yes
+	hide_from = yes
 
 	option = {
-		name = "EVTOPTA_DuelEngine_303"
+		name = EVTOPTA_DuelEngine_303
+
 		event_target:round_loser = {
-			character_event = { id = DuelEngine.304 tooltip = "EVTTOOLTIP_DuelEngine_304" }
+			show_scope_change = no
+
+			character_event = {
+				id = DuelEngine.304
+				tooltip = EVTTOOLTIP_DuelEngine_304
+			}
 		}
 	}
 }
@@ -3210,159 +3738,262 @@ character_event = {
 # Loser is attacked!
 character_event = {
 	id = DuelEngine.304
-	desc = "EVTDESC_DuelEngine_304"
+	desc = EVTDESC_DuelEngine_304
 	picture = GFX_evt_joust
-	border = "GFX_event_normal_frame_war"
+	border = GFX_event_normal_frame_war
+
 	is_triggered_only = yes
 
 	option = {
-		name = "EVTOPTA_DuelEngine_304"
-		hidden_tooltip = { e_rebels = { holder_scope = { character_event = { id = DuelEngine.7 } } } }
+		name = EVTOPTA_DuelEngine_304
+
+		hidden_effect = {
+			e_rebels = {
+				holder_scope = {
+					character_event = { id = DuelEngine.7 }
+				}
+			}
+		}
 	}
 }
 
 ### WOUND OUTCOMES
 character_event = {
 	id = DuelEngine.305
-	desc = "EVTDESC_DuelEngine_305"
+	desc = EVTDESC_DuelEngine_305
 	picture = GFX_evt_melee
-	border = "GFX_event_normal_frame_war"
+	border = GFX_event_normal_frame_war
+
 	is_triggered_only = yes
 
 	immediate = {
-		if = { #Second wound: temporarily lose health, chance of maimed
+		if = { # Second wound: temporarily lose health, chance of maimed
 			limit = { trait = wounded }
+
 			random_list = {
 				90 = {
-					#temporarily lose health
+					# Temporarily lose health
 					health = -0.5
-					hidden_tooltip = {
+
+					hidden_effect = {
 						if = {
-							limit = { check_variable = { which = "health_lost" value = 0.1 } }
-							change_variable = { which = "health_lost" value = 0.5 }
+							limit = { check_variable = { which = health_lost value > 0 } }
+							change_variable = { which = health_lost value = 0.5 }
 						}
-						if = {
-							limit = { NOT = { check_variable = { which = "health_lost" value = 0.1 } } }
-							set_variable = { which = "health_lost" value = 0.5 }
+						else = {
+							set_variable = { which = health_lost value = 0.5 }
 						}
 					}
 				}
-				10 = { #maim
+
+				10 = { # Maim
 					add_maimed_trait_effect = yes
 					event_target:round_winner = { set_character_flag = flag_maimed_opponent }
 				}
 			}
 		}
-		if = { #First wound: wounded
-			limit = { NOT = { trait = wounded } can_be_maimed_trigger = yes }
+		else = { # First wound: wounded
 			add_trait = wounded
 			event_target:round_winner = { set_character_flag = flag_wounded_opponent }
 		}
 	}
 
-	option = { #yield!
-		name = "EVTOPTA_DuelEngine_305"
-		event_target:round_winner = { character_event = { id = DuelEngine.313 tooltip = "EVTTOOLTIP_DuelEngine_310" } }
+	option = { # Yield!
+		name = EVTOPTA_DuelEngine_305
+
+		event_target:round_winner = {
+			show_scope_change = no
+
+			character_event = {
+				id = DuelEngine.313
+				tooltip = EVTTOOLTIP_DuelEngine_310
+			}
+		}
 	}
 }
 
 character_event = {
 	id = DuelEngine.306
-	desc = "EVTDESC_DuelEngine_306"
+	desc = EVTDESC_DuelEngine_306
 	picture = GFX_evt_melee
-	border = "GFX_event_normal_frame_war"
+	border = GFX_event_normal_frame_war
+
 	is_triggered_only = yes
 
 	option = {
-		name = "EVTOPTA_DuelEngine_306"
+		name = EVTOPTA_DuelEngine_306
+
 		set_character_flag = flag_spared_opponent
-		hidden_tooltip = { set_variable = { which = duel_rounds value = 0 } }
-		event_target:round_loser = { character_event = { id = DuelEngine.305 tooltip = "EVTTOOLTIP_DuelEngine_306" } }
-		#hidden_tooltip = { e_rebels = { holder_scope = { character_event = { id = DuelEngine.1 } } } }
+
+		hidden_effect = {
+			set_variable = {
+				which = duel_rounds
+				value = 0
+			}
+		}
+
+		event_target:round_loser = {
+			show_scope_change = no
+
+			character_event = {
+				id = DuelEngine.305
+				tooltip = EVTTOOLTIP_DuelEngine_306
+			}
+		}
+
+		# hidden_tooltip = { e_rebels = { holder_scope = { character_event = { id = DuelEngine.1 } } } }
 	}
 }
 
 ### WIN OUTCOMES (opponent unhorsed or wounded)
 character_event = {
 	id = DuelEngine.309
-	desc = "EVTDESC_DuelEngine_309"
+	desc = EVTDESC_DuelEngine_309
 	picture = GFX_evt_joust
-	border = "GFX_event_normal_frame_war"
+	border = GFX_event_normal_frame_war
+
 	is_triggered_only = yes
 	hide_from = yes
 	show_from_from = yes
+
 	option = {
-		name = "EVTOPTA_DuelEngine_309"
-		prestige = 15 #win
+		name = EVTOPTA_DuelEngine_309
+
+		prestige = 15 # Win
 		set_character_flag = flag_spared_opponent
-		hidden_tooltip = { set_variable = { which = duel_rounds value = 0 } }
-		event_target:round_loser = { character_event = { id = DuelEngine.310 tooltip = "EVTTOOLTIP_DuelEngine_310" } }
+
+		hidden_effect = {
+			set_variable = {
+				which = duel_rounds
+				value = 0
+			}
+		}
+
+		event_target:round_loser = {
+			show_scope_change = no
+
+			character_event = {
+				id = DuelEngine.310
+				tooltip = EVTTOOLTIP_DuelEngine_310
+			}
+		}
 	}
 }
 
 character_event = {
 	id = DuelEngine.310
-	desc = "EVTDESC_DuelEngine_310"
+	desc = EVTDESC_DuelEngine_310
 	picture = GFX_evt_joust
-	border = "GFX_event_normal_frame_war"
+	border = GFX_event_normal_frame_war
+
 	is_triggered_only = yes
 
 	option = {
-		name = "EVTOPTA_DuelEngine_310"
-		prestige = -10 #loss
-		event_target:round_winner = { character_event = { id = DuelEngine.902 tooltip = "EVTTOOLTIP_DuelEngine_901" } }
+		name = EVTOPTA_DuelEngine_310
+
+		prestige = -10 # Loss
+
+		event_target:round_winner = {
+			show_scope_change = no
+
+			character_event = {
+				id = DuelEngine.902
+				tooltip = EVTTOOLTIP_DuelEngine_901
+			}
+		}
 	}
 }
 
 character_event = {
 	id = DuelEngine.313
-	desc = "EVTDESC_DuelEngine_313"
+	desc = EVTDESC_DuelEngine_313
 	picture = GFX_evt_joust
-	border = "GFX_event_normal_frame_war"
+	border = GFX_event_normal_frame_war
+
 	is_triggered_only = yes
 
 	option = {
-		name = "EVTOPTA_DuelEngine_313"
-		prestige = -10 #loss
-		event_target:round_winner = { character_event = { id = DuelEngine.902 tooltip = "EVTTOOLTIP_DuelEngine_901" } }
+		name = EVTOPTA_DuelEngine_313
+
+		prestige = -10 # Loss
+
+		event_target:round_winner = {
+			show_scope_change = no
+
+			character_event = {
+				id = DuelEngine.902
+				tooltip = EVTTOOLTIP_DuelEngine_901
+			}
+		}
 	}
 }
 
 ### DEATH OUTCOMES
 character_event = {
 	id = DuelEngine.311
-	desc = "EVTDESC_DuelEngine_311"
+	desc = EVTDESC_DuelEngine_311
 	picture = GFX_evt_joust
-	border = "GFX_event_normal_frame_war"
+	border = GFX_event_normal_frame_war
+
 	is_triggered_only = yes
 	hide_from = yes
 	show_from_from = yes
 
 	option = {
-		name = "EVTOPTA_DuelEngine_311"
-		#no prestige for killing during joust
-		hidden_tooltip = { set_variable = { which = duel_rounds value = 0 } }
-		event_target:round_loser = { character_event = { id = DuelEngine.312 tooltip = "EVTTOOLTIP_DuelEngine_312" } }
+		name = EVTOPTA_DuelEngine_311
+
+		# No prestige for killing during joust
+
+		hidden_effect = {
+			set_variable = {
+				which = duel_rounds
+				value = 0
+			}
+		}
+
+		event_target:round_loser = {
+			show_scope_change = no
+
+			character_event = {
+				id = DuelEngine.312
+				tooltip = EVTTOOLTIP_DuelEngine_312
+			}
+		}
 	}
 }
 
 character_event = {
 	id = DuelEngine.312
-	desc = "EVTDESC_DuelEngine_312"
+	desc = EVTDESC_DuelEngine_312
 	picture = GFX_evt_death
+
 	is_triggered_only = yes
 
 	option = {
-		name = "EVTOPTA_DuelEngine_312"
+		name = EVTOPTA_DuelEngine_312
+
 		death = {
-			death_reason = death_accident #actually jousting
+			death_reason = death_accident # Actually jousting
 			killer = event_target:round_winner
 		}
-		event_target:round_winner = { set_character_flag = flag_killed_opponent }
-		event_target:round_winner = { character_event = { id = DuelEngine.902 tooltip = "EVTTOOLTIP_DuelEngine_901" } }
-		hidden_tooltip = {
-			set_variable = { which = duel_rounds value = 0 }
-			event_target:round_winner = { character_event = { id = DuelEngine.203 } }
+
+		event_target:round_winner = {
+			show_scope_change = no
+
+			set_character_flag = flag_killed_opponent
+			character_event = { id = DuelEngine.203 }
+
+			character_event = {
+				id = DuelEngine.902
+				tooltip = EVTTOOLTIP_DuelEngine_901
+			}
+		}
+
+		hidden_effect = {
+			set_variable = {
+				which = duel_rounds
+				value = 0
+			}
 		}
 	}
 }
@@ -3374,9 +4005,10 @@ character_event = {
 # orphaned event calls commented out to appease the validator
 ###
 
-character_event = { # Collect your output from the duel engine.
+# Collect your output from the duel engine.
+character_event = {
 	id = DuelEngine.901
-	desc = "EVTDESC_DuelEngine_901"
+	desc = EVTDESC_DuelEngine_901
 	picture = GFX_evt_duel0
 
 	is_triggered_only = yes
@@ -3384,10 +4016,10 @@ character_event = { # Collect your output from the duel engine.
 	option = {
 		name = "EVTOPTA_DuelEngine_901"
 
-
 		####################
 		# Battlefield Duel #
 		####################
+
 		if = {
 			##########################
 			# Find your context flags
@@ -3395,6 +4027,7 @@ character_event = { # Collect your output from the duel engine.
 				has_character_flag = flag_battlefield_duel
 				has_character_flag = flag_killed_opponent
 			}
+
 			##########################
 			# Call the next event in your event chain
 			# FROM will be Winner scope
@@ -3402,341 +4035,255 @@ character_event = { # Collect your output from the duel engine.
 			log = "Duel Engine: [Root.GetTitledName] defeats [From.GetTitledName] in duel. (Reason: Battlefield)"
 			character_event = { id = DuelEngine.510 tooltip = "EVTTOOLTIP_DuelEngine_510" }
 		}
+
 		if = {
 			###########################
 			# special case: opponent flees
 			limit = {
 				has_character_flag = flag_battlefield_duel
+
 				OR = {
 					FROM = { has_character_flag = ran_away_from_duel }
 					has_character_flag = left_opponent
 				}
 			}
+
 			log = "Duel Engine: [From.GetTitledName] fless from [Root.GetTitledName]."
 			FROM = { character_event = { id = DuelEngine.505 } }
 			############################
 		}
+
 		if = {
 			###########################
 			# If a kill versus a yield would be important,
 			# handle them in seperate blocks.
 			limit = {
 				has_character_flag = flag_battlefield_duel
+
 				NOR = {
 					has_character_flag = flag_killed_opponent
 					FROM = { has_character_flag = ran_away_from_duel }
 				}
+
 				OR = {
 					has_character_flag = flag_spared_opponent
-					has_character_flag = flag_wounded_opponent #Todo
-					has_character_flag = flag_maimed_opponent #Todo
+					has_character_flag = flag_wounded_opponent # Todo
+					has_character_flag = flag_maimed_opponent # Todo
 				}
 			}
+
 			log = "Duel Engine: [Root.GetTitledName] defeats [From.GetTitledName] in duel. (Reason: Battlefield)"
 			character_event = { id = DuelEngine.511 tooltip = "EVTTOOLTIP_DuelEngine_511" }
 			############################
 		}
+
 		##########################
 		# CLEAR YOUR CONTEXT FLAGS
 		clr_character_flag = flag_battlefield_duel
 		FROM = { clr_character_flag = flag_battlefield_duel }
 		FROMFROM = { clr_character_flag = flag_battlefield_duel }
+
 		###########################
 		# End of battlefield duel Block
 		#############################
 
-		###WoL War Focus duels
+		### WoL War Focus duels
 		if = {
-			limit = {
-				has_character_flag = wol_focus_duel
-			}
+			limit = { has_character_flag = wol_focus_duel }
+
 			log = "Duel Engine: [Root.GetTitledName] defeats [From.GetTitledName] in duel (Combat Focus)"
+
 			add_character_modifier = {
-				modifier = recent_duel_victory
-				months = 12
+				name = recent_duel_victory
+				years = 1
 			}
+
 			if = {
 				limit = { has_character_flag = flag_killed_opponent }
+
 				random_list = {
-					1 = {
-						long_character_event = { id = WoL.11011 }
-					}
+					1 = { long_character_event = { id = WoL.11011 } }
+
 					200 = {
 						custom_tooltip = {
 							text = EVTTOOLTIPWOL11006
-							hidden_tooltip = {
+
+							hidden_effect = {
+								generate_tooltip = no
+
 								any_realm_character = {
 									opinion = {
-										modifier = opinion_ruthless
+										name = opinion_ruthless
 										who = ROOT
-										months = 60
+										years = 5
 									}
 								}
 							}
 						}
+
 						if = {
-							limit = {
-								has_character_modifier = merciless
-							}
+							limit = { has_character_modifier = merciless }
+
 							if = {
-								limit = {
-									has_nickname = no
-								}
+								limit = { has_nickname = no }
 								give_nickname = nick_the_ruthless
 							}
 						}
-						if = {
-							limit = {
-								NOT = { has_character_modifier = merciless }
-							}
+						else = {
 							add_character_modifier = {
-								modifier = merciless
+								name = merciless
 								duration = -1
 							}
 						}
 					}
 				}
 			}
+
 			if = {
 				limit = { has_character_flag = flag_spared_opponent }
+
 				FROM = {
 					random = {
 						chance = 35
-						character_event = { id = WoL.11013 days = 3 }
+
+						character_event = {
+							id = WoL.11013
+							days = 3
+						}
 					}
 				}
 			}
+
 			clr_character_flag = wol_focus_duel
 			clr_character_flag = flag_beheaded_opponent
 			FROM = { clr_character_flag = wol_focus_duel }
 			FROMFROM = { clr_character_flag = wol_focus_duel }
 		}
 
-		###WoL Lover duels
+		### WoL Lover duels
 		if = {
-			limit = {
-				has_character_flag = wol_lover_challenger
-				has_character_flag = flag_killed_opponent
-			}
-			log = "Duel Engine: [Root.GetTitledName] defeats [From.GetTitledName] in duel (Reason: Lover)"
-			set_character_flag = enemy_killed
-			FROM = {
-				clr_character_flag = wol_lover_challenger
-				clr_character_flag = wol_lover_challenged
-			}
-			FROMFROM = {
-				clr_character_flag = wol_lover_challenger
-				clr_character_flag = wol_lover_challenged
-			}
-			character_event = { id = WoL.1036 } # Notify
-		}
-		if = {
-			limit = {
-				has_character_flag = wol_lover_challenger
-				has_character_flag = flag_maimed_opponent
-			}
-			log = "Duel Engine: [Root.GetTitledName] defeats [From.GetTitledName] in duel (Reason: Lover)"
-			set_character_flag = enemy_maimed
-			FROM = {
-				clr_character_flag = wol_lover_challenger
-				clr_character_flag = wol_lover_challenged
-			}
-			FROMFROM = {
-				clr_character_flag = wol_lover_challenger
-				clr_character_flag = wol_lover_challenged
-			}
-			character_event = { id = WoL.1036 } # Notify
-		}
-		if = {
-			limit = {
-				has_character_flag = wol_lover_challenger
-				has_character_flag = flag_wounded_opponent
-			}
-			log = "Duel Engine: [Root.GetTitledName] defeats [From.GetTitledName] in duel (Reason: Lover)"
-			set_character_flag = enemy_wounded
-			FROM = {
-				clr_character_flag = wol_lover_challenger
-				clr_character_flag = wol_lover_challenged
-			}
-			FROMFROM = {
-				clr_character_flag = wol_lover_challenger
-				clr_character_flag = wol_lover_challenged
-			}
-			character_event = { id = WoL.1036 } # Notify
-		}
-		if = {
-			limit = {
-				has_character_flag = wol_lover_challenger
-				has_character_flag = flag_spared_opponent
-			}
-			log = "Duel Engine: [Root.GetTitledName] defeats [From.GetTitledName] in duel (Reason: Lover)"
-			set_character_flag = enemy_yields
-			FROM = {
-				clr_character_flag = wol_lover_challenger
-				clr_character_flag = wol_lover_challenged
-			}
-			FROMFROM = {
-				clr_character_flag = wol_lover_challenger
-				clr_character_flag = wol_lover_challenged
-			}
-			character_event = { id = WoL.1036 } # Notify
-		}
+			limit = { has_character_flag = wol_lover_challenger }
 
-		if = {
-			limit = {
-				has_character_flag = wol_lover_challenged
-				has_character_flag = flag_killed_opponent
-			}
-			set_character_flag = enemy_killed
 			log = "Duel Engine: [Root.GetTitledName] defeats [From.GetTitledName] in duel (Reason: Lover)"
+
 			FROM = {
 				clr_character_flag = wol_lover_challenger
 				clr_character_flag = wol_lover_challenged
 			}
+
 			FROMFROM = {
 				clr_character_flag = wol_lover_challenger
 				clr_character_flag = wol_lover_challenged
 			}
-			character_event = { id = WoL.1039 } # Notify
+
+			trigger_switch = {
+				on_trigger = has_character_flag
+
+				flag_killed_opponent = { set_character_flag = enemy_killed }
+				flag_maimed_opponent = { set_character_flag = enemy_maimed }
+				flag_maimed_wounded = { set_character_flag = enemy_wounded }
+				flag_spared_opponent = { set_character_flag = enemy_yields }
+			}
+
+			character_event = { id = WoL.1036 } # Notify
 		}
-		if = {
-			limit = {
-				has_character_flag = wol_lover_challenged
-				has_character_flag = flag_maimed_opponent
-			}
+		else_if = {
+			limit = { has_character_flag = wol_lover_challenged }
+
 			log = "Duel Engine: [Root.GetTitledName] defeats [From.GetTitledName] in duel (Reason: Lover)"
-			set_character_flag = enemy_maimed
+
 			FROM = {
 				clr_character_flag = wol_lover_challenger
 				clr_character_flag = wol_lover_challenged
 			}
+
 			FROMFROM = {
 				clr_character_flag = wol_lover_challenger
 				clr_character_flag = wol_lover_challenged
 			}
-			character_event = { id = WoL.1039 } # Notify
-		}
-		if = {
-			limit = {
-				has_character_flag = wol_lover_challenged
-				has_character_flag = flag_wounded_opponent
+
+			trigger_switch = {
+				on_trigger = has_character_flag
+
+				flag_killed_opponent = { set_character_flag = enemy_killed }
+				flag_maimed_opponent = { set_character_flag = enemy_maimed }
+				flag_maimed_wounded = { set_character_flag = enemy_wounded }
+				flag_spared_opponent = { set_character_flag = enemy_yields }
 			}
-			log = "Duel Engine: [Root.GetTitledName] defeats [From.GetTitledName] in duel (Reason: Lover)"
-			set_character_flag = enemy_wounded
-			FROM = {
-				clr_character_flag = wol_lover_challenger
-				clr_character_flag = wol_lover_challenged
-			}
-			FROMFROM = {
-				clr_character_flag = wol_lover_challenger
-				clr_character_flag = wol_lover_challenged
-			}
-			character_event = { id = WoL.1039 } # Notify
-		}
-		if = {
-			limit = {
-				has_character_flag = wol_lover_challenged
-				has_character_flag = flag_spared_opponent
-			}
-			log = "Duel Engine: [Root.GetTitledName] defeats [From.GetTitledName] in duel (Reason: Lover)"
-			set_character_flag = enemy_yields
-			FROM = {
-				clr_character_flag = wol_lover_challenger
-				clr_character_flag = wol_lover_challenged
-			}
-			FROMFROM = {
-				clr_character_flag = wol_lover_challenger
-				clr_character_flag = wol_lover_challenged
-			}
+
 			character_event = { id = WoL.1039 } # Notify
 		}
 
-		#CK2+ Coronation duels
+		# CK2+ Coronation duels
 		if = {
-			limit = {
-				has_character_flag = coronation_duelist
-				has_character_flag = flag_killed_opponent
-			}
-			any_playable_ruler = {
-				limit = { reverse_has_opinion_modifier = { who = ROOT modifier = attending_coronation } }
+			limit = { has_character_flag = coronation_duelist }
+
+			random_opinion_modifier_target = {
+				limit = {
+					reverse_has_opinion_modifier = {
+						name = attending_coronation
+						who = ROOT
+					}
+				}
+
 				save_event_target_as = coronation_duel_host
 			}
+
 			log = "Duel Engine: [Root.GetTitledName] defeats [From.GetTitledName] in duel (Reason: Coronation of [coronation_duel_host.GetTitledName])"
-			character_event = { id = Plus.1231 }
 			FROM = { clr_character_flag = coronation_duelist }
 			FROMFROM = { clr_character_flag = coronation_duelist }
-		}
-		if = {
-			limit = {
-				has_character_flag = coronation_duelist
-				NOT = { has_character_flag = flag_killed_opponent }
+
+			if = {
+				limit = { has_character_flag = flag_killed_opponent }
+				character_event = { id = Plus.1231 }
 			}
-			any_playable_ruler = {
-				limit = { reverse_has_opinion_modifier = { who = ROOT modifier = attending_coronation } }
-				save_event_target_as = coronation_duel_host
+			else = {
+				character_event = { id = Plus.1230 }
 			}
-			log = "Duel Engine: [Root.GetTitledName] defeats [From.GetTitledName] in duel (Reason: Coronation of [coronation_duel_host.GetTitledName])"
-			character_event = { id = Plus.1230 }
-			FROM = { clr_character_flag = coronation_duelist }
-			FROMFROM = { clr_character_flag = coronation_duelist }
 		}
 
 		#################################################
 		# Feast duel feast_events.txt starts with 72030 #
 		#################################################
-		#Hacky: copy results back to forms expected in series, in the future maybe separate events
 		if = {
-			limit = {
-				has_character_flag = feast_duelist
-				has_character_flag = flag_killed_opponent
-			}
+			limit = { has_character_flag = feast_duelist }
+
 			log = "Duel Engine: [Root.GetTitledName] defeats [From.GetTitledName] in duel (Reason: Feast of [feast_duel_host.GetTitledName])"
-			set_character_flag = killed_opponent
-		}
-		if = {
-			limit = {
-				has_character_flag = feast_duelist
-				has_character_flag = flag_wounded_opponent
-			}
-			log = "Duel Engine: [Root.GetTitledName] defeats [From.GetTitledName] in duel (Reason: Feast of [feast_duel_host.GetTitledName])"
-			set_character_flag = wounded_opponent
-		}
-		if = {
-			limit = {
-				has_character_flag = feast_duelist
-				has_character_flag = flag_maimed_opponent
-			}
-			log = "Duel Engine: [Root.GetTitledName] defeats [From.GetTitledName] in duel (Reason: Feast of [feast_duel_host.GetTitledName])"
-			set_character_flag = maimed_opponent
-		}
-		#Hacky stuff done
-		if = {
-			limit = {
-				has_character_flag = feast_duelist
-				OR = {
-					has_character_flag = flag_spared_opponent
-					FROM = { has_character_flag = ran_away_from_duel }
-				}
-			}
-			character_event = { id = DuelEngine.911 } #Nothing happened
 			clr_character_flag = feast_duelist
 			FROM = { clr_character_flag = feast_duelist }
 			FROMFROM = { clr_character_flag = feast_duelist }
-		}
-		if = {
-			limit = {
-				has_character_flag = feast_duelist
-				OR = {
-					has_character_flag = flag_killed_opponent
-					has_character_flag = flag_wounded_opponent
-					has_character_flag = flag_maimed_opponent
-				}
+
+			# Hacky: copy results back to forms expected in series, in the future maybe separate events
+			trigger_switch = {
+				on_trigger = has_character_flag
+
+				flag_killed_opponent = { set_character_flag = killed_opponent }
+				flag_wounded_opponent = { set_character_flag = wounded_opponent }
+				flag_maimed_opponent = { set_character_flag = maimed_opponent }
 			}
-			character_event = { id = DuelEngine.912 } #Liege reacts
-			clr_character_flag = feast_duelist
-			FROM = { clr_character_flag = feast_duelist }
-			FROMFROM = { clr_character_flag = feast_duelist }
+			# Hacky stuff done
+
+			if = {
+				limit = {
+					OR = {
+						has_character_flag = flag_spared_opponent
+						FROM = { has_character_flag = ran_away_from_duel }
+					}
+				}
+				character_event = { id = DuelEngine.911 } # Nothing happened
+			}
+			else_if = {
+				limit = {
+					OR = {
+						has_character_flag = flag_killed_opponent
+						has_character_flag = flag_wounded_opponent
+						has_character_flag = flag_maimed_opponent
+					}
+				}
+				character_event = { id = DuelEngine.912 } # Liege reacts
+			}
 		}
+
 		# End of feast_events block
 		#############################
 
@@ -3744,33 +4291,34 @@ character_event = { # Collect your output from the duel engine.
 		# Rivals duel friends_rivals_events.txt starts with 100410 #
 		############################################################
 		if = {
-			limit = {
-				has_character_flag = duel_rival
-				OR = {
-					has_character_flag = flag_spared_opponent
-					FROM = { has_character_flag = ran_away_from_duel }
-				}
-			}
+			limit = { has_character_flag = duel_rival }
+
 			log = "Duel Engine: [Root.GetTitledName] defeats [From.GetTitledName] in duel (Reason: Rivals)"
-			character_event = { id = DuelEngine.913 } #Nothing happened
 			clr_character_flag = duel_rival
 			FROM = { clr_character_flag = duel_rival }
 			FROMFROM = { clr_character_flag = duel_rival }
-		}
-		if = {
-			limit = {
-				has_character_flag = duel_rival
-				OR = {
-					has_character_flag = flag_wounded_opponent
-					has_character_flag = flag_maimed_opponent
-					has_character_flag = flag_killed_opponent
+
+			if = {
+				limit = {
+					OR = {
+						has_character_flag = flag_spared_opponent
+						FROM = { has_character_flag = ran_away_from_duel }
+					}
 				}
+
+				character_event = { id = DuelEngine.913 } # Nothing happened
 			}
-			log = "Duel Engine: [Root.GetTitledName] defeats [From.GetTitledName] in duel (Reason: Rivals)"
-			character_event = { id = DuelEngine.914 } #Killed, wounded, or maimed rival
-			clr_character_flag = duel_rival
-			FROM = { clr_character_flag = duel_rival }
-			FROMFROM = { clr_character_flag = duel_rival }
+			else_if = {
+				limit = {
+					OR = {
+						has_character_flag = flag_wounded_opponent
+						has_character_flag = flag_maimed_opponent
+						has_character_flag = flag_killed_opponent
+					}
+				}
+
+				character_event = { id = DuelEngine.914 } # Killed, wounded, or maimed rival
+			}
 		}
 		# End of friends_rivals_events block
 		#############################
@@ -3784,35 +4332,38 @@ character_event = { # Collect your output from the duel engine.
 					has_character_flag = tournament_cheater_duel_accuser
 					has_character_flag = tournament_cheater_duel_accused
 				}
-				OR = {
-					has_character_flag = flag_spared_opponent
-					FROM = { has_character_flag = ran_away_from_duel }
-				}
 			}
+
 			log = "Duel Engine: [Root.GetTitledName] defeats [From.GetTitledName] in duel (Reason: Rivals at Tourney)"
-			character_event = { id = DuelEngine.918 } #No wound etc. = clean win for accused
 			clr_character_flag = duel_rival
-			FROM = { clr_character_flag = duel_rival }
-			FROMFROM = { clr_character_flag = duel_rival }
-		}
-		if = {
-			limit = {
-				OR = {
-					has_character_flag = tournament_cheater_duel_accuser
-					has_character_flag = tournament_cheater_duel_accused
+
+			if = {
+				limit = {
+					OR = {
+						has_character_flag = flag_spared_opponent
+						FROM = { has_character_flag = ran_away_from_duel }
+					}
 				}
-				OR = {
-					has_character_flag = flag_wounded_opponent
-					has_character_flag = flag_maimed_opponent
-					has_character_flag = flag_killed_opponent
-				}
+
+				character_event = { id = DuelEngine.918 } # No wound etc. = clean win for accused
+				FROM = { clr_character_flag = duel_rival }
+				FROMFROM = { clr_character_flag = duel_rival }
 			}
-			log = "Duel Engine: [Root.GetTitledName] defeats [From.GetTitledName] in duel (Reason: Rivals at Tourney)"
-			character_event = { id = DuelEngine.923 } #Killed, wounded, or maimed rival
-			clr_character_flag = duel_rival
-			#winner's flags used to give proper flavour text so not cleared here
-			FROM = { clr_character_flag = tournament_cheater_duel_accuser }
-			FROM = { clr_character_flag = tournament_cheater_duel_accused }
+			else_if = {
+				limit = {
+					OR = {
+						has_character_flag = flag_wounded_opponent
+						has_character_flag = flag_maimed_opponent
+						has_character_flag = flag_killed_opponent
+					}
+				}
+
+				character_event = { id = DuelEngine.923 } # Killed, wounded, or maimed rival
+
+				# Winner's flags used to give proper flavour text so not cleared here
+				FROM = { clr_character_flag = tournament_cheater_duel_accuser }
+				FROM = { clr_character_flag = tournament_cheater_duel_accused }
+			}
 		}
 		# End of friends_rivals_events block
 		#############################
@@ -3821,41 +4372,32 @@ character_event = { # Collect your output from the duel engine.
 		# Regency duel regency_events.txt starts with 61215 #
 		#####################################################
 		if = {
-			limit = {
-				has_character_flag = duelist_courtier
-				OR = {
-					has_character_flag = flag_spared_opponent
-					has_character_flag = flag_wounded_opponent
-					FROM = { has_character_flag = ran_away_from_duel }
+			limit = { has_character_flag = duelist_courtier }
+
+			log = "Duel Engine: [Root.GetTitledName] defeats [From.GetTitledName] in duel (Reason: Regency)"
+			clr_character_flag = duelist_courtier
+			FROM = { clr_character_flag = duelist_courtier }
+			FROMFROM = { clr_character_flag = duelist_courtier }
+
+			if = {
+				limit = {
+					OR = {
+						has_character_flag = flag_spared_opponent
+						has_character_flag = flag_wounded_opponent
+						FROM = { has_character_flag = ran_away_from_duel }
+					}
 				}
+
+				character_event = { id = DuelEngine.913 } # Nothing happened or just wounded
 			}
-			log = "Duel Engine: [Root.GetTitledName] defeats [From.GetTitledName] in duel (Reason: Regency)"
-			character_event = { id = DuelEngine.913 } #Nothing happened or just wounded
-			clr_character_flag = duelist_courtier
-			FROM = { clr_character_flag = duelist_courtier }
-			FROMFROM = { clr_character_flag = duelist_courtier }
-		}
-		if = {
-			limit = {
-				has_character_flag = duelist_courtier
-				has_character_flag = flag_maimed_opponent
+			else_if = {
+				limit = { has_character_flag = flag_maimed_opponent }
+				character_event = { id = DuelEngine.916 } # Maimed
 			}
-			log = "Duel Engine: [Root.GetTitledName] defeats [From.GetTitledName] in duel (Reason: Regency)"
-			character_event = { id = DuelEngine.916 } #Maimed
-			clr_character_flag = duelist_courtier
-			FROM = { clr_character_flag = duelist_courtier }
-			FROMFROM = { clr_character_flag = duelist_courtier }
-		}
-		if = {
-			limit = {
-				has_character_flag = duelist_courtier
-				has_character_flag = flag_killed_opponent
+			else_if = {
+				limit = { has_character_flag = flag_killed_opponent }
+				character_event = { id = DuelEngine.917 } # Killed
 			}
-			log = "Duel Engine: [Root.GetTitledName] defeats [From.GetTitledName] in duel (Reason: Regency)"
-			character_event = { id = DuelEngine.917 } #Killed
-			clr_character_flag = duelist_courtier
-			FROM = { clr_character_flag = duelist_courtier }
-			FROMFROM = { clr_character_flag = duelist_courtier }
 		}
 		# End of regency_events block
 		#############################
@@ -3869,25 +4411,29 @@ character_event = { # Collect your output from the duel engine.
 					has_character_flag = tourny_duel_defender
 					has_character_flag = tourny_duel_agressor
 				}
+
 				OR = {
 					has_character_flag = flag_spared_opponent
 					FROM = { has_character_flag = ran_away_from_duel }
 				}
 			}
 			log = "Duel Engine: [Root.GetTitledName] defeats [From.GetTitledName] in duel (Reason:  Tournament)"
-			#character_event = { id = joust.20 } #Draw
+			# character_event = { id = joust.20 } # Draw
 		}
+
 		if = {
 			limit = {
 				has_character_flag = duel_rival
+
 				OR = {
 					has_character_flag = flag_wounded_opponent
 					has_character_flag = flag_maimed_opponent
 					has_character_flag = flag_killed_opponent
 				}
 			}
+
 			log = "Duel Engine: [Root.GetTitledName] defeats [From.GetTitledName] in duel (Reason: Tournament)"
-			#character_event = { id = joust.21 } #Killed, wounded, or maimed rival
+			# character_event = { id = joust.21 } # Killed, wounded, or maimed rival
 		}
 		# Flags for this are cleared in the followup events since I use them to track of agressor/defender
 		# End of Tournament rival duel block
@@ -3896,101 +4442,116 @@ character_event = { # Collect your output from the duel engine.
 		##################################################################
 		# Holmgang duel oldgods_holmgang_events.txt starts with TOG.5004 #
 		##################################################################
-		if = {
-			limit = {
-				has_character_flag = holmgang_challenger
-				has_character_flag = flag_spared_opponent
-				FROM = { has_character_flag = flag_wounded_opponent }
-			}
-			log = "Duel Engine: [Root.GetTitledName] defeats [From.GetTitledName] in duel (Reason: Holmgang)"
-			character_event = { id = TOG.5005 } #Wins (Scarred)
 
-		}
+		# TODO: Requires rework, doesn't call all possible outcomes
+		# 5002 calls outcomes (challenger):
+		# - Wins:
+		#		5005 Wins (Scarred)
+		#		5006 Wins (Scarred, Opponent Dies)
+		#		5007 Wins
+		#		5008 Wins (Opponent Dies)
+		#		5009 Wins (Opponent Flees)
+		#		5012 Loses (Wounded)
+		# - Draws:
+		#		5005 Wins (Scarred)
+		#		5010 Draw (Both Wounded)
+		#		5012 Loses (Wounded)
+		# - Losses:
+		#		5005 Wins (Scarred)
+		#		5011 Loses (Flees in Disgrace)
+		#		5012 Loses (Wounded)
+		#		5013 Loses (Maimed)
+		#		5014 Loses (Dies)
+		#
+		# 5005, 5007 calls 5027, 5028
+		# 5006, 5008 calls 5029
+		# 5009 calls 5026
+		# 5010 calls 5025
+		# 5011 calls 5024
+		# 5012, 5013 calls 5020, 5022
+		# 5014 calls 5021, 5023
+
 		if = {
-			limit = {
-				has_character_flag = holmgang_challenger
-				has_character_flag = flag_spared_opponent
-				NOT = {
-					FROM = { has_character_flag = flag_wounded_opponent }
+			limit = { has_character_flag = holmgang_challenger }
+
+			log = "Duel Engine: [Root.GetTitledName] defeats [From.GetTitledName] in duel (Reason: Holmgang)"
+
+			if = {
+				limit = { has_character_flag = flag_spared_opponent }
+
+				if = {
+					limit = { FROM = { has_character_flag = flag_wounded_opponent } }
+					character_event = { id = TOG.5005 } # Wins (Scarred)
+				}
+				else = {
+					character_event = { id =  TOG.5007 } # Wins
 				}
 			}
-			log = "Duel Engine: [Root.GetTitledName] defeats [From.GetTitledName] in duel (Reason: Holmgang)"
-			character_event = { id =  TOG.5007 } #Wins
-		}
-		if = {
-			limit = {
-				has_character_flag = holmgang_challenger
-				has_character_flag = flag_killed_opponent
-				OR = {
-					FROM = { has_character_flag = flag_wounded_opponent }
-					FROM = { has_character_flag = flag_maimed_opponent }
+			else_if = {
+				limit = { has_character_flag = flag_killed_opponent }
+
+				if = {
+					limit = {
+						FROM = {
+							OR = {
+								has_character_flag = flag_wounded_opponent
+								has_character_flag = flag_maimed_opponent
+							}
+						}
+					}
+					character_event = { id =  TOG.5006 } # Wins (Scarred, Opponent Dies)
+				}
+				else = {
+					character_event = { id =  TOG.5008 } # Wins (Opponent Dies)
 				}
 			}
-			log = "Duel Engine: [Root.GetTitledName] defeats [From.GetTitledName] in duel (Reason: Holmgang)"
-			character_event = { id =  TOG.5006 } #Wins (Scarred, Opponent Dies)
+			else_if = {
+				limit = { FROM = { has_character_flag = ran_away_from_duel } }
+
+				log = "Duel Engine: [From.GetTitledName] fled the duel"
+				character_event = { id =  TOG.5009 } # Wins (Opponent Flees)
+			}
 		}
-		if = {
-			limit = {
-				has_character_flag = holmgang_challenger
-				has_character_flag = flag_killed_opponent
-				NOR = {
-					FROM = { has_character_flag = flag_wounded_opponent }
-					FROM = { has_character_flag = flag_maimed_opponent }
+		else_if = {
+			limit = { has_character_flag = holmgang_target }
+
+			log = "Duel Engine: [Root.GetTitledName] defeats [From.GetTitledName] in duel (Reason: Holmgang)"
+
+			if = {
+				limit = { has_character_flag = flag_spared_opponent }
+
+				if = {
+					limit = {
+						FROM = {
+							OR = {
+								has_character_flag = flag_wounded_opponent
+								has_character_flag = flag_maimed_opponent
+							}
+						}
+					}
+
+					character_event = { id =  TOG.5021 } # Wins (Scarred, Opponent Dies) Opponent
+				}
+				else = {
+					character_event = { id =  TOG.5022 } # Wins (Opponent)
+					FROM = { character_event = { id =  TOG.5012 } } # Loses (Wounded)
 				}
 			}
-			log = "Duel Engine: [Root.GetTitledName] defeats [From.GetTitledName] in duel (Reason: Holmgang)"
-			character_event = { id =  TOG.5008 } #Wins (Opponent Dies)
-		}
-		if = {
-			limit = {
-				has_character_flag = holmgang_challenger
-				FROM = { has_character_flag = ran_away_from_duel }
-			}
-			log = "Duel Engine: [Root.GetTitledName] defeats [From.GetTitledName] in duel (Reason: Holmgang, Flight)"
-			character_event = { id =  TOG.5009 } #Wins (Opponent Flees)
-		}
-		if = {
-			limit = {
-				has_character_flag = holmgang_target
-				has_character_flag = flag_spared_opponent
-				NOR = {
-					FROM = { has_character_flag = flag_wounded_opponent }
-					FROM = { has_character_flag = flag_maimed_opponent }
+			else_if = {
+				limit = {
+					has_character_flag = flag_killed_opponent
+					NOT = { FROM = { has_character_flag = flag_wounded_opponent } }
 				}
+				character_event = { id =  TOG.5023 } # Wins (Opponent Dies) Opponent
 			}
-			log = "Duel Engine: [Root.GetTitledName] defeats [From.GetTitledName] in duel (Reason: Holmgang)"
-			character_event = { id =  TOG.5022 } #Wins Opponent
-			FROM = { character_event = { id =  TOG.5012 } } #Loses (Wounded)
-		}
-		if = {
-			limit = {
-				has_character_flag = holmgang_target
-				has_character_flag = flag_killed_opponent
-				OR = {
-					FROM = { has_character_flag = flag_wounded_opponent }
-					FROM = { has_character_flag = flag_maimed_opponent }
+			if = {
+				limit = {
+					FROM = { has_character_flag = ran_away_from_duel }
 				}
+
+				character_event = { id =  TOG.5024 } # Wins (Opponent Flees) Opponent
+				FROM = { character_event = { id =  TOG.5011 } } # Loses (Flees in Disgrace)
 			}
-			log = "Duel Engine: [Root.GetTitledName] defeats [From.GetTitledName] in duel (Reason: Holmgang)"
-			character_event = { id =  TOG.5021 } # Wins (Scarred, Opponent Dies) Opponent
-		}
-		if = {
-			limit = {
-				has_character_flag = holmgang_target
-				has_character_flag = flag_killed_opponent
-				NOT = { FROM = { has_character_flag = flag_wounded_opponent } }
-			}
-			log = "Duel Engine: [Root.GetTitledName] defeats [From.GetTitledName] in duel (Reason: Holmgang)"
-			character_event = { id =  TOG.5023 } # Wins (Opponent Dies) Opponent
-		}
-		if = {
-			limit = {
-				has_character_flag = holmgang_target
-				FROM = { has_character_flag = ran_away_from_duel }
-			}
-			log = "Duel Engine: [Root.GetTitledName] defeats [From.GetTitledName] in duel (Reason: Holmgang)"
-			character_event = { id =  TOG.5024 } # Wins (Opponent Flees) Opponent
-			FROM = { character_event = { id =  TOG.5011 } } #Loses (Flees in Disgrace)
 		}
 		# Flags are cleared by vanilla output events
 		# End of oldgods_holmgang_events block
@@ -4009,80 +4570,86 @@ character_event = { # Collect your output from the duel engine.
 		# Special Context Flag Cleanup
 		#############################
 		clr_character_flag = flag_duel_friendly
-		FROM = { clr_character_flag = flag_duel_friendly }
 		clr_character_flag = flag_duel_to_the_death
-		FROM = { clr_character_flag = flag_duel_to_the_death }
 		clr_character_flag = flag_duel_tourney
-		FROM = { clr_character_flag = flag_duel_tourney }
+
+		FROM = {
+			clr_character_flag = flag_duel_friendly
+			clr_character_flag = flag_duel_to_the_death
+			clr_character_flag = flag_duel_tourney
+		}
+
 		#############################
 		# Clear kill/mercy flags
+		#############################
+
 		clr_character_flag = flag_killed_opponent
-		FROM = { clr_character_flag = flag_killed_opponent }
 		clr_character_flag = ran_away_from_duel
-		FROM = { clr_character_flag = ran_away_from_duel }
 		clr_character_flag = left_opponent
-		FROM = { clr_character_flag = left_opponent }
 		clr_character_flag = flag_wounded_opponent
-		FROM = { clr_character_flag = flag_wounded_opponent }
 		clr_character_flag = flag_maimed_opponent
-		FROM = { clr_character_flag = flag_maimed_opponent }
 		clr_character_flag = flag_spared_opponent
-		FROM = { clr_character_flag = flag_spared_opponent }
+
+		FROM = {
+			clr_character_flag = flag_killed_opponent
+			clr_character_flag = ran_away_from_duel
+			clr_character_flag = left_opponent
+			clr_character_flag = flag_wounded_opponent
+			clr_character_flag = flag_maimed_opponent
+			clr_character_flag = flag_spared_opponent
+		}
 	}
 }
 
-character_event = { #Collects output from the duel engine - Tourney joust flavour
+# Collects output from the duel engine - Tourney joust flavour
+character_event = {
 	id = DuelEngine.902
-	desc = "EVTDESC_DuelEngine_902"
+	desc = EVTDESC_DuelEngine_902
 	picture = GFX_evt_joust
 
 	is_triggered_only = yes
 
 	option = {
-		name = "EVTOPTA_DuelEngine_901"
+		name = EVTOPTA_DuelEngine_901
 
 		#####################
 		# Tournament Jousts #
 		#####################
 
 		if = {
-			limit = {
-				has_character_flag = tournament_fighter
-				has_character_flag = flag_spared_opponent
+			limit = { has_character_flag = tournament_fighter }
+
+			if = {
+				limit = { has_character_flag = flag_spared_opponent }
+
+				# character_event = { id = 70110 } #Clean win
+				clr_character_flag = tournament_fighter
+				FROM = { clr_character_flag = tournament_fighter }
 			}
-			#character_event = { id = 70110 } #Clean win
-			clr_character_flag = tournament_fighter
-			FROM = { clr_character_flag = tournament_fighter }
-		}
-		if = {
-			limit = {
-				has_character_flag = tournament_fighter
-				has_character_flag = flag_wounded_opponent
+			else_if = {
+				limit = { has_character_flag = flag_wounded_opponent }
+
+				# FROM = { character_event = { id = 70011 } }
+				# character_event = { id = 70110 } #Wounded loser
+				clr_character_flag = tournament_fighter
+				FROM = { clr_character_flag = tournament_fighter }
 			}
-			#FROM = { character_event = { id = 70011 } }
-			#character_event = { id = 70110 } #Wounded loser
-			clr_character_flag = tournament_fighter
-			FROM = { clr_character_flag = tournament_fighter }
-		}
-		if = {
-			limit = {
-				has_character_flag = tournament_fighter
-				has_character_flag = flag_maimed_opponent
+			else_if = {
+				limit = { has_character_flag = flag_maimed_opponent }
+
+				# FROM = { character_event = { id = 70010 } }
+				# character_event = { id = 70110 } #Maimed loser
+				clr_character_flag = tournament_fighter
+				FROM = { clr_character_flag = tournament_fighter }
 			}
-			#FROM = { character_event = { id = 70010 } }
-			#character_event = { id = 70110 } #Maimed loser
-			clr_character_flag = tournament_fighter
-			FROM = { clr_character_flag = tournament_fighter }
-		}
-		if = {
-			limit = {
-				has_character_flag = tournament_fighter
-				has_character_flag = flag_killed_opponent
+			else_if = {
+				limit = { has_character_flag = flag_killed_opponent }
+
+				# FROM = { character_event = { id = 70009 } }
+				# character_event = { id = 70110 } #Killed loser
+				clr_character_flag = tournament_fighter
+				FROM = { clr_character_flag = tournament_fighter }
 			}
-			#FROM = { character_event = { id = 70009 } }
-			#character_event = { id = 70110 } #Killed loser
-			clr_character_flag = tournament_fighter
-			FROM = { clr_character_flag = tournament_fighter }
 		}
 
 		# End of tournament jousts block
@@ -4098,71 +4665,88 @@ character_event = { #Collects output from the duel engine - Tourney joust flavou
 		#			 like DuelEngine.901, by the loser in the FROM scope (from inspection of
 		#			 tournament_events.txt / joust.*, that appears to be the case).
 
-		FROM = { character_event = { id = CombatTraits.11 } }
+		FROM = {
+			character_event = { id = CombatTraits.11 }
+		}
+
 		if = {
 			limit = { has_focus = focus_war }
+
 			random = {
 				chance = 25
 				character_event = { id = WoL.11200 }
 			}
 		}
 
-
 		#############################
 		# Special Context Flag Cleanup
 		#############################
 		clr_character_flag = flag_duel_friendly
-		FROM = { clr_character_flag = flag_duel_friendly }
 		clr_character_flag = flag_duel_to_the_death
-		FROM = { clr_character_flag = flag_duel_to_the_death }
 		clr_character_flag = flag_duel_tourney
-		FROM = { clr_character_flag = flag_duel_tourney }
+
+		FROM = {
+			clr_character_flag = flag_duel_friendly
+			clr_character_flag = flag_duel_to_the_death
+			clr_character_flag = flag_duel_tourney
+		}
+
 		#############################
 		#############################
 		# Clear kill/mercy flags
 		clr_character_flag = flag_killed_opponent
-		FROM = { clr_character_flag = flag_killed_opponent }
 		clr_character_flag = flag_wounded_opponent
-		FROM = { clr_character_flag = flag_wounded_opponent }
 		clr_character_flag = flag_maimed_opponent
-		FROM = { clr_character_flag = flag_maimed_opponent }
 		clr_character_flag = flag_spared_opponent
-		FROM = { clr_character_flag = flag_spared_opponent }
+
+		FROM = {
+			clr_character_flag = flag_killed_opponent
+			clr_character_flag = flag_wounded_opponent
+			clr_character_flag = flag_maimed_opponent
+			clr_character_flag = flag_spared_opponent
+		}
 	}
 }
 
-
 # DuelEngine.903	Something broke, cancel everything
-
 character_event = {
 	id = DuelEngine.903
-	desc = "EVTDESC_DuelEngine_903"
+	desc = EVTDESC_DuelEngine_903
 	picture = GFX_evt_battle
 
 	is_triggered_only = yes
 
-	option = {
-		name = OK
-
+	immediate = {
 		#############################
 		# Special Context Flag Cleanup
 		#############################
 		clr_character_flag = flag_duel_friendly
-		FROM = { clr_character_flag = flag_duel_friendly }
 		clr_character_flag = flag_duel_to_the_death
-		FROM = { clr_character_flag = flag_duel_to_the_death }
 		clr_character_flag = flag_duel_tourney
-		FROM = { clr_character_flag = flag_duel_tourney }
+
+		FROM = {
+			clr_character_flag = flag_duel_friendly
+			clr_character_flag = flag_duel_to_the_death
+			clr_character_flag = flag_duel_tourney
+		}
+
 		#############################
 		# Clear kill/mercy flags
 		clr_character_flag = flag_killed_opponent
-		FROM = { clr_character_flag = flag_killed_opponent }
 		clr_character_flag = flag_wounded_opponent
-		FROM = { clr_character_flag = flag_wounded_opponent }
 		clr_character_flag = flag_maimed_opponent
-		FROM = { clr_character_flag = flag_maimed_opponent }
 		clr_character_flag = flag_spared_opponent
-		FROM = { clr_character_flag = flag_spared_opponent }
+
+		FROM = {
+			clr_character_flag = flag_killed_opponent
+			clr_character_flag = flag_wounded_opponent
+			clr_character_flag = flag_maimed_opponent
+			clr_character_flag = flag_spared_opponent
+		}
+	}
+
+	option = {
+		name = OK
 	}
 }
 
@@ -4170,248 +4754,321 @@ character_event = {
 # OUTPUT HELPER EVENTS
 ###
 
-#feast battle results
+# Ffeast battle results
 character_event = {
 	id = DuelEngine.911
 	desc = EVTDESC_DuelEngine_911
 	picture = GFX_evt_battle
+
 	is_triggered_only = yes
 
 	option = {
 		name = EVTOPTA_DuelEngine_911
-		hidden_tooltip = { FROM = { character_event = { id = 72034 } } } #Nothing happened
+
+		hidden_effect = {
+			FROM = { character_event = { id = 72034 } } # Nothing happened
+		}
 	}
 }
+
 character_event = {
 	id = DuelEngine.912
 	picture = GFX_evt_battle
-	desc = "EVTDESC_DuelEngine_901"
+	desc = EVTDESC_DuelEngine_901
+
 	is_triggered_only = yes
 
 	option = {
 		name = EVTOPTA_DuelEngine_912
-		hidden_tooltip = { FROM = { character_event = { id = 72033 } } } #Liege reacts
+
+		hidden_effect = {
+			FROM = { character_event = { id = 72033 } } # Liege reacts
+		}
 	}
 }
 
-#rival duel results
+# Rival duel results
 character_event = {
 	id = DuelEngine.913
 	desc = EVTDESC_DuelEngine_911
 	picture = GFX_evt_battle
+
 	is_triggered_only = yes
 
 	option = {
 		name = EVTOPTA_DuelEngine_913
-		#draw
+		# Draw
 	}
 }
 character_event = {
 	id = DuelEngine.914
-	desc = "EVTDESC_DuelEngine_901"
+	desc = EVTDESC_DuelEngine_901
 	picture = GFX_evt_battle
-	is_triggered_only = yes
 
+	is_triggered_only = yes
 
 	option = {
 		name = EVTOPTC100415
-		hidden_tooltip = { FROMFROM = { character_event = { id = DuelEngine.915 } } } #Loser was wounded
+
+		hidden_effect = {
+			FROMFROM = { character_event = { id = DuelEngine.915 } } # Loser was wounded
+		}
 	}
 }
+
 character_event = {
 	id = DuelEngine.915
 	desc = EVTDESC100415
 	picture = GFX_evt_battle
+
 	is_triggered_only = yes
 
 	option = {
 		name = EVTOPTA100415
+
 		opinion = {
-			modifier = opinion_revenge_seeker
+			name = opinion_revenge_seeker
 			who = FROM
 			years = 50
 		}
 	}
 }
-#regency battle
+
+# Regency battle
 character_event = {
 	id = DuelEngine.916
-	desc = "EVTDESC_DuelEngine_901"
+	desc = EVTDESC_DuelEngine_901
 	picture = GFX_evt_battle
+
 	is_triggered_only = yes
 
 	option = {
 		name = EVTOPTA_DuelEngine_901
-		hidden_tooltip = {
-			IF = {
+
+		hidden_effect = {
+			if = {
 				limit = { FROM = { has_minor_title = title_regent } }
-				#FROM = { character_event = { id = 61226 } }
-				#FROMFROM = { character_event = { id = 61230 } }
+
+				# FROM = { character_event = { id = 61226 } }
+				# FROMFROM = { character_event = { id = 61230 } }
 			}
-			IF = {
-				limit = { FROMFROM = { has_minor_title = title_regent } }
-				#FROM = { character_event = { id = 61229 } }
-				#FROMFROM = { character_event = { id = 61227 } }
+			else = {
+				# FROM = { character_event = { id = 61229 } }
+				# FROMFROM = { character_event = { id = 61227 } }
 			}
 		}
 	}
 }
+
 character_event = {
 	id = DuelEngine.917
-	desc = "EVTDESC_DuelEngine_901"
+	desc = EVTDESC_DuelEngine_901
 	picture = GFX_evt_battle
+
 	is_triggered_only = yes
 
 	option = {
 		name = EVTOPTA_DuelEngine_901
-		hidden_tooltip = {
-			IF = {
+
+		hidden_effect = {
+			if = {
 				limit = { FROM = { has_minor_title = title_regent } }
-				#FROM = { character_event = { id = 61225 } }
+				# FROM = { character_event = { id = 61225 } }
 			}
-			IF = {
-				limit = { FROMFROM = { has_minor_title = title_regent } }
-				#FROM = { character_event = { id = 61228 } }
+			else = {
+				# FROM = { character_event = { id = 61228 } }
 			}
 		}
 	}
 }
-#tournament cheat duel results
-character_event = { #hidden selector to pick proper flavour text
+
+# Tournament cheat duel results
+# Hidden selector to pick proper flavour text
+character_event = {
 	id = DuelEngine.918
 	desc = EVTDESC_DuelEngine_911
 	picture = GFX_evt_battle
+
 	is_triggered_only = yes
 	hide_from = yes
 
 	option = {
 		name = EVTOPTA_DuelEngine_913
+
 		trigger = { FROM = { has_character_flag = tournament_cheater_duel_accused } }
+
 		FROM = { character_event = { id = DuelEngine.919 } }
 		FROMFROM = { character_event = { id = DuelEngine.920 } }
 	}
+
 	option = {
 		name = EVTOPTA_DuelEngine_913
+
 		trigger = { FROM = { has_character_flag = tournament_cheater_duel_accuser } }
+
 		FROM = { character_event = { id = DuelEngine.921 } }
 		FROMFROM = { character_event = { id = DuelEngine.922 } }
 	}
 }
-character_event = { #accused beat accuser
+
+# Accused beat accuser
+character_event = {
 	id = DuelEngine.919
 	desc = EVTDESC100428
 	picture = GFX_evt_battle
+
 	is_triggered_only = yes
 
 	option = {
 		name = EVTOPTB100428
+
 		prestige = 10
 		clr_character_flag = tournament_cheater_duel_accused
 	}
 }
-character_event = { #accuser lost to accused
+
+# Accuser lost to accused
+character_event = {
 	id = DuelEngine.920
 	desc = EVTDESC_DuelEngine_920
 	picture = GFX_evt_battle
+
 	is_triggered_only = yes
 
 	option = {
 		name = EVTOPTA100428
 	}
 }
-character_event = { #accuser beat cheater
+
+# Accuser beat cheater
+character_event = {
 	id = DuelEngine.921
 	desc = EVTDESC_DuelEngine_920
 	picture = GFX_evt_battle
+
 	is_triggered_only = yes
 
 	option = {
 		name = EVTOPTA_DuelEngine_921
+
 		prestige = 10
 		clr_character_flag = tournament_cheater_duel_accuser
 	}
 }
-character_event = { #cheater lost to accused
+
+# Cheater lost to accused
+character_event = {
 	id = DuelEngine.922
 	desc = EVTDESC100428
 	picture = GFX_evt_battle
+
 	is_triggered_only = yes
 
 	option = {
 		name = EVTOPTA100428
 	}
 }
-character_event = { #hidden selector to pick proper flavour text
+
+# Hidden selector to pick proper flavour text
+character_event = {
 	id = DuelEngine.923
-	desc = "EVTDESC_DuelEngine_901"
+	desc = EVTDESC_DuelEngine_901
 	picture = GFX_evt_battle
+
 	is_triggered_only = yes
 
 	option = {
 		name = EVTOPTA_DuelEngine_913
+
 		trigger = { FROM = { has_character_flag = tournament_cheater_duel_accused } }
+
 		FROM = { character_event = { id = DuelEngine.924 } }
+
 		FROMFROM = {
+			show_scope_change = no
+
 			character_event = { id = DuelEngine.925 }
+
 			opinion = {
-				modifier = opinion_revenge_seeker
+				name = opinion_revenge_seeker
 				who = FROM
 				years = 50
 			}
 		}
 	}
+
 	option = {
 		name = EVTOPTA_DuelEngine_913
+
 		trigger = { FROM = { has_character_flag = tournament_cheater_duel_accuser } }
+
 		FROM = { character_event = { id = DuelEngine.926 } }
+
 		FROMFROM = {
+			show_scope_change = no
+
 			character_event = { id = DuelEngine.927 }
+
 			opinion = {
-				modifier = opinion_revenge_seeker
+				name = opinion_revenge_seeker
 				who = FROM
 				years = 50
 			}
 		}
 	}
 }
-character_event = { #accused beat accuser
+
+# Accused beat accuser
+character_event = {
 	id = DuelEngine.924
 	desc = EVTDESC100428
 	picture = GFX_evt_battle
+
 	is_triggered_only = yes
 
 	option = {
 		name = EVTOPTC100428
+
 		prestige = 10
 		clr_character_flag = tournament_cheater_duel_accused
 	}
 }
-character_event = { #accuser lost to accused
+
+# Accuser lost to accused
+character_event = {
 	id = DuelEngine.925
 	desc = EVTDESC_DuelEngine_920
 	picture = GFX_evt_battle
+
 	is_triggered_only = yes
 
 	option = {
 		name = EVTOPTA100428
 	}
 }
-character_event = { #accuser beat cheater
+
+# Accuser beat cheater
+character_event = {
 	id = DuelEngine.926
 	desc = EVTDESC_DuelEngine_920
 	picture = GFX_evt_battle
+
 	is_triggered_only = yes
 
 	option = {
 		name = EVTOPTA_DuelEngine_926
+
 		prestige = 10
 		clr_character_flag = tournament_cheater_duel_accuser
 	}
 }
-character_event = { #cheater lost to accused
+
+# Cheater lost to accused
+character_event = {
 	id = DuelEngine.927
 	desc = EVTDESC100428
 	picture = GFX_evt_battle
+
 	is_triggered_only = yes
 
 	option = {
