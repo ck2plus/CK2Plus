@@ -788,28 +788,16 @@ character_event = {
 }
 
 # 601: Family members inherit half of previous ruler's Dishonorable or Tyrant
+# Fires only on succession, to avoid silly situations
+# TODO: Add event to inform ruler of what just happened?
 character_event = {
 	id = realmPlus.601
 
-	is_triggered_only = yes # on_new_holder(_inheritance/usurpation)
+	is_triggered_only = yes # on_new_holder_inheritance
 	hide_window = yes
 
 	trigger = {
-		FROMFROM = {
-			is_close_relative = ROOT
-
-			OR = {
-				check_variable = {
-					which = tyrant
-					value >= 2
-				}
-				check_variable = {
-					which = dishonorable
-					value >= 2
-				}
-			}
-		}
-
+		is_close_relative = FROMFROM
 		NOT = { has_character_flag = inherited_tyranny_dishonorable_from@FROMFROM }
 	}
 
@@ -824,27 +812,67 @@ character_event = {
 						which = dishonorable
 						value >= 2
 					}
+
+					dishonorable_trait_trigger = yes # Dynastic stain is not inherited
 				}
 
-				# Inherit half
-				divide_variable = {
-					which = dishonorable
-					value = 2
-				}
-
-				# Add to new ruler tyranny
-				ROOT = {
-					change_variable = {
-						which = dishonorable
-						which = PREV
+				if = {
+					limit = {
+						ROOT = { # New title holder isn't dishonorable scum yet
+							check_variable = {
+								which = dishonorable
+								value == 0
+							}
+						}
 					}
-					dishonorable_trait_effect = yes
-				}
 
-				# Set it back how it was for previous ruler
-				multiply_variable = {
-					which = dishonorable
-					value = 2
+					# Give dynastic stain only, equal to dishonorable of FROMFROM
+					ROOT = {
+						change_variable = {
+							which = dishonorable
+							which = PREV
+						}
+
+						dynastic_stain_trait_effect = yes
+					}
+				}
+				else_if = { # Inherit half the difference
+					limit = {
+						check_variable = {
+							which = dishonorable
+							value >= ROOT
+						}
+					}
+
+					# Calculate difference
+					set_variable = {
+						which = local_dishonor_difference
+						which = dishonorable
+					}
+
+					ROOT = {
+						subtract_variable = {
+							which = local_dishonor_difference
+							which = dishonorable
+						}
+					}
+
+					# Take half of it
+					divide_variable = {
+						which = local_dishonor_difference
+						value = 2
+					}
+
+					# And give it to the new guy
+					ROOT = {
+						change_variable = {
+							which = dishonorable
+							which = local_dishonor_difference
+						}
+
+						# Update trait
+						dishonorable_trait_effect = yes
+					}
 				}
 			}
 
@@ -857,25 +885,63 @@ character_event = {
 					}
 				}
 
-				# Inherit half
-				divide_variable = {
-					which = tyrant
-					value = 2
-				}
-
-				# Add to new ruler tyranny
-				ROOT = {
-					change_variable = {
-						which = tyrant
-						which = PREV
+				if = {
+					limit = {
+						ROOT = { # New title holder isn't tyrannical scum yet
+							check_variable = {
+								which = tyrant
+								value == 0
+							}
+						}
 					}
-					tyrant_trait_effect = yes
-				}
 
-				# Set it back how it was for previous ruler (in case they're still a ruler)
-				multiply_variable = {
-					which = tyrant
-					value = 2
+					# Transfer tyranny
+					ROOT = {
+						change_variable = {
+							which = tyrant
+							which = PREV
+						}
+
+						tyrant_trait_effect = yes
+					}
+				}
+				else_if = {
+					limit = {
+						check_variable = {
+							which = tyrant
+							value >= ROOT
+						}
+					}
+
+					# Calculate difference
+					set_variable = {
+						which = local_tyrant_difference
+						which = tyrant
+					}
+
+					ROOT = {
+						subtract_variable = {
+							which = local_tyrant_difference
+							which = tyrant
+						}
+					}
+
+					# Take half of it
+					divide_variable = {
+						which = local_tyrant_difference
+						value = 2
+					}
+
+					# And give it to the new guy
+					ROOT = {
+						change_variable = {
+							which = tyrant
+							which = local_tyrant_difference
+						}
+
+						# Update trait
+						tyrant_trait_effect = yes
+					}
 				}
 			}
 		}
