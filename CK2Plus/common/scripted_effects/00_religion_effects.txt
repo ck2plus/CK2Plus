@@ -2775,7 +2775,172 @@ convert_religion_failsafe_effect = {
 		if = {
 			limit = { government = temporary_fake_theocracy_government }
 
-			set_correct_theocratic_government_type_effect = yes
+			# Check if my new religion even has theocracies
+			if = {
+				limit = {
+					NOR = {
+						is_government_potential = muslim_government
+						is_government_potential = theocratic_feudal_government
+					}
+				}
+
+				# Check if my new religion allows me to remain a priest
+				if = {
+					limit = {
+						trigger_if = {
+							limit = { is_female = no }
+							religion_allows_male_temple_holders = yes
+						}
+						trigger_else = {
+							religion_allows_female_temple_holders = yes
+						}
+					}
+
+					# Check if my new religion allows me to remain married
+					if = {
+						limit = {
+							# TODO: Replace with flag on religions
+							OR = {
+								religion_group = christian
+								religion_group = zoroastrian_group
+								religion_openly_bon_or_reformed_trigger = yes
+								religion = jain
+								religion = buddhist
+								religion = taoist
+							}
+						}
+
+						any_spouse = { remove_spouse = PREV }
+						any_consort = { remove_consort = PREV }
+					}
+
+					set_correct_theocratic_government_type_effect = yes
+				}
+				else = {
+					# Abdicate
+					if = {
+						limit = {
+							any_courtier = {
+								religion = PREV
+								is_opposite_sex = PREV
+								is_ruler = no
+
+								trigger_if = {
+									limit = { has_dharmic_religion_trigger = yes }
+									trait = brahmin
+								}
+
+								trigger_if = {
+									limit = {
+										OR = {
+											religion_group = christian
+											religion_group = zoroastrian_group
+											religion_openly_bon_or_reformed_trigger = yes
+											religion = jain
+											religion = buddhist
+											religion = taoist
+										}
+									}
+
+									is_married = no
+									is_consort = no
+									is_senior_consort_party = no
+								}
+
+								NOR = {
+									any_heir_title = { always = yes }
+									any_pretender_title = { always = yes }
+								}
+							}
+						}
+
+						random_courtier = {
+							limit = {
+								religion = PREV
+								is_opposite_sex = PREV
+								is_ruler = no
+
+								trigger_if = {
+									limit = { has_dharmic_religion_trigger = yes }
+									trait = brahmin
+								}
+
+								trigger_if = {
+									limit = {
+										OR = {
+											religion_group = christian
+											religion_group = zoroastrian_group
+											religion_openly_bon_or_reformed_trigger = yes
+											religion = jain
+											religion = buddhist
+											religion = taoist
+										}
+									}
+
+									is_married = no
+									is_consort = no
+									is_senior_consort_party = no
+								}
+
+								NOR = {
+									any_heir_title = { always = yes }
+									any_pretender_title = { always = yes }
+								}
+							}
+
+							save_event_target_as = new_priest
+						}
+					}
+					else = {
+						if = {
+							limit = { religion_allows_female_temple_holders = yes }
+
+							create_random_priest = {
+								random_traits = yes
+								religion = THIS
+								culture = THIS
+								female = yes
+							}
+						}
+						else = {
+							create_random_priest = {
+								random_traits = yes
+								religion = THIS
+								culture = THIS
+								female = no
+							}
+						}
+
+						new_character = {
+							save_event_target_as = new_priest
+
+							if = {
+								limit = { has_dharmic_religion_trigger = yes }
+								add_trait = brahmin
+								character_event = { id = RoI.30120 } # Pick random sect
+							}
+						}
+					}
+
+					# Abdication effects leave undesirable claims
+					any_demesne_title = {
+						gain_title = event_target:new_priest
+					}
+
+					transfer_scaled_wealth = {
+						to = event_target:new_priest
+						value = all
+					}
+
+					# TODO: Transfer artifacts?
+				}
+			}
+			else = {
+				set_correct_feudal_government_type_effect = yes
+			}
+
+			# Clear this flag, so that characters are forced into a normal government
+			# Characters who have abdicated may take a day to find their way back into a court and get a suitable government
 			clr_character_flag = needs_temporary_fake_theocracy_government
 		}
 	}
