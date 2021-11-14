@@ -231,7 +231,7 @@ NDefines.NGraphics.CITY_SPRAWL_AMOUNT = 0.75							-- vanilla:	1		-- Size of cit
 NDefines.NTechnology.IDEAL_YEAR_AHEAD_PENALTY_INVEST = 0.4				-- vanilla:	0.6		-- Percent increase in cost pre level ahead of ideal date
 
 NDefines.NAI.DOW_AGGRESSION_FACTOR = 1.0								-- vanilla:	0.66	-- General aggressiveness declarations of war
-NDefines.NAI.MARRIAGE_AI_PRESTIGE_VALUE = 1								-- vanilla:	0.33		-- Multiplier for how highly AI values prestige when arranging marriages and evaluating marriage offers
+NDefines.NAI.MARRIAGE_AI_PRESTIGE_VALUE = 0.67							-- vanilla:	0.33	-- Multiplier for how highly AI values prestige when arranging marriages and evaluating marriage offers
 NDefines.NAI.MAX_EMPIRE_TITLES_TO_CREATE = 1							-- vanilla:	0		-- AI will not seek to create/usurp more Empire-level titles than this (0 for unlimited)
 NDefines.NAI.AI_EMPEROR_CREATES_KINGDOMS = 1							-- vanilla:	0		-- If set to 1 AI Emperors will create King-level titles
 NDefines.NAI.AI_ALWAYS_CREATES_DUCHIES = 1								-- vanilla:	0		-- If set to 1 AI will always create Duchy titles even if it has Gavelkind etc
