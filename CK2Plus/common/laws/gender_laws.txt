@@ -2,7 +2,6 @@
 
 gender_laws = {
 	agnatic_succession = {
-		male_dynasty_opinion = 5
 		female_dynasty_opinion = -5
 
 		potential = {
@@ -44,11 +43,7 @@ gender_laws = {
 
 			plus_law_change_prestige_effect_1 = yes
 			gender_succ = agnatic
-
-			if = {
-				limit = { NOT = { has_dlc = "Conclave" } }
-				law_set_allow_matrilineal_marriage = no
-			}
+			law_set_allow_matrilineal_marriage = no
 		}
 
 		default_selection = {
@@ -67,49 +62,135 @@ gender_laws = {
 					}
 				}
 			}
+		}
 
-			mult_modifier = {
-				factor = 100
+		ai_will_do = {
+			factor = 0.5
 
-				holder_scope = {
-					NOR = {
-						# Christian
-						religion = cathar
-						religion = bogomilist
-						religion = messalian
+			trigger = {
+				OR = {
+					# Is zealous and title was formerly agnatic and current heir is not female
+					AND = {
+						is_primary_holder_title = yes
+						has_title_flag = former_agnatic_succession
 
-						# Indian
-						religion = buddhist
+						holder_scope = {
+							player_heir = { is_female = no }
+							trait = zealous
+						}
+					}
 
-						# Pagan
-						religion = west_african_pagan
-						religion = west_african_pagan_reformed
+					# Holder is muslim
+					AND = {
+						is_primary_holder_title = yes
+						holder_scope = { religion_group = muslim }
+					}
 
-						# Zoroastrian
-						religion = mazdaki
+					# Primary title is agnatic
+					AND = {
+						is_primary_holder_title = no
+						holder_scope = { has_law = agnatic_succession }
+					}
 
-						AND = {
-							culture_group = tibetan_group
+					# A very religious older male ruler under cognatic with a son
+					AND = {
+						is_primary_holder_title = yes
 
-							NOR = {
-								religion = taoist
-								culture = tangut
+						holder_scope = {
+							is_female = no
+							practical_age >= 50
+							trait = zealous
+							is_heretic = no
+							is_feminist_trigger = no
+							NOT = { culture = basque }
+
+							any_child = {
+								dynasty = PREV
+								is_female = no
+								age >= 6
+								can_inherit_trigger = yes
+								is_dumb_trigger = no
+
+								NOR = {
+									trait = inbred
+									trait = incapable
+									trait = lunatic
+								}
 							}
 						}
 					}
 
-					NOR = {
-						has_law = status_of_women_3
-						has_law = status_of_women_4
+					# Female heir who will cause title to fall out of dynasty and there
+					# is a close family member in the realm who can inherit
+					holder_scope = {
+						ROOT = {
+							current_heir = {
+								is_female = yes
+
+								OR = {
+									trigger_if = {
+										limit = { is_married = yes }
+										is_married_matrilineally = no
+									}
+
+									any_child = {
+										can_inherit_trigger = yes
+										NOT = { dynasty = PREVPREVPREV }
+
+										OR = {
+											AND = {
+												ROOT = {
+													NOR = {
+														has_law = cognatic_succession
+														has_law = agnatic_succession
+													}
+												}
+
+												is_female = yes
+											}
+
+											AND = {
+												ROOT = {
+													NOR = {
+														has_law = enatic_cognatic_succession
+														has_law = enatic_succession
+													}
+												}
+
+												is_female = no
+											}
+										}
+									}
+								}
+							}
+						}
+
+						any_close_relative = {
+							dynasty = PREV
+							is_female = no
+							same_realm = PREV
+							can_inherit_trigger = yes
+						}
+
+						is_feminist_trigger = no
+
+						NOR = {
+							trait = content
+							trait = humble
+							trait = slothful
+						}
 					}
 				}
+			}
+
+			mult_modifier = {
+				factor = 20
+				has_title_flag = former_agnatic_succession
 			}
 		}
 	}
 
 	cognatic_succession = { # agnatic-cognatic
-		female_dynasty_opinion = -2.5
-
 		potential = {
 		#	is_landless_type_title = no
 		#	is_primary_type_title = no
@@ -241,20 +322,250 @@ gender_laws = {
 			}
 
 			gender_succ = cognatic
+			law_set_allow_matrilineal_marriage = yes
+		}
 
-			if = {
-				limit = { NOT = { has_dlc = "Conclave" } }
-				law_set_allow_matrilineal_marriage = yes
+		ai_will_do = {
+			factor = 0.5
+
+			trigger = {
+				OR = {
+					# Primary title is cognatic
+					AND = {
+						is_primary_holder_title = no
+
+						holder_scope = {
+							primary_title = { has_law = cognatic_succession }
+							player_heir = { is_female = yes }
+						}
+					}
+
+					# A female ruler under agnatic
+					AND = {
+						is_primary_holder_title = yes
+						has_law = agnatic_succession
+
+						holder_scope = {
+							is_female = yes
+
+							NOR = {
+								trait = humble
+								trait = content
+								trait = zealous
+							}
+						}
+					}
+
+					# A very religious older male ruler under true cognatic with a son
+					AND = {
+						is_primary_holder_title = yes
+						has_law = true_cognatic_succession
+
+						holder_scope = {
+							is_female = no
+							practical_age >= 50
+							trait = zealous
+							is_heretic = no
+							is_feminist_trigger = no
+							NOT = { culture = basque }
+
+							any_child = {
+								is_female = no
+								dynasty = PREV
+								age >= 6
+								can_inherit_trigger = yes
+								is_dumb_trigger = no
+
+								NOR = {
+									trait = inbred
+									trait = incapable
+									trait = lunatic
+								}
+							}
+						}
+					}
+
+					# A male ruler under true cognatic with an adult son and a female heir
+					AND = {
+						is_primary_holder_title = yes
+						has_law = true_cognatic_succession
+
+						OR = {
+							has_law = succ_gavelkind
+							has_law = succ_primogeniture
+						}
+
+						holder_scope = {
+							player_heir = { is_female = yes }
+							is_female = no
+							is_feminist_trigger = no
+
+							NOR = {
+								trait = just
+								trait = content
+							}
+
+							any_child = {
+								is_female = no
+								dynasty = PREV
+								is_adult = yes
+								can_inherit_trigger = yes
+								is_dumb_trigger = no
+
+								NOR = {
+									trait = inbred
+									trait = incapable
+									trait = lunatic
+								}
+							}
+						}
+					}
+
+					# A ruler under agnatic with an adult daughter who could inherit and no child/grandchild who is heir
+					AND = {
+						is_primary_holder_title = yes
+						has_law = agnatic_succession
+
+						OR = {
+							has_law = succ_gavelkind
+							has_law = succ_primogeniture
+						}
+
+						holder_scope = {
+							NOT = {
+								player_heir = {
+									OR = {
+										is_child_of = PREV
+										is_grandchild_of = PREV
+									}
+								}
+							}
+
+							any_child = {
+								is_female = yes
+								is_adult = yes
+								dynasty = PREV
+								can_inherit_trigger = yes
+								is_dumb_trigger = no
+
+								NOR = {
+									trait = inbred
+									trait = incapable
+									trait = lunatic
+								}
+							}
+						}
+					}
+
+					# A ruler under agnatic with an adult diplomatic daughter whom he loves
+					AND = {
+						is_primary_holder_title = yes
+						has_law = agnatic_succession
+
+						holder_scope = {
+							any_child = {
+								is_female = yes
+								is_adult = yes
+								dynasty = PREV
+								diplomacy >= 12
+
+								reverse_opinion = {
+									who = PREV
+									value >= 50
+								}
+							}
+
+							OR = {
+								trait = charitable
+								trait = kind
+								trait = just
+							}
+
+							NOR = {
+								trait = humble
+								trait = craven
+								trait = slothful
+							}
+						}
+					}
+
+					# Ruler under agnatic who is feminist or basque
+					AND = {
+						is_primary_holder_title = yes
+						has_law = agnatic_succession
+
+						holder_scope = {
+							OR = {
+								is_feminist_trigger = yes
+								culture = basque
+							}
+						}
+					}
+				}
+			}
+
+			mult_modifier = {
+				factor = 20
+				has_title_flag = former_cognatic_succession
 			}
 		}
 
 		default_selection = {
-			factor = 10
+			factor = 0
+
+			additive_modifier = {
+				value = 10
+
+				holder_scope = {
+					OR = {
+						is_female = yes
+
+						culture = welsh
+						culture = breton
+						culture = zhangzhung
+						culture = sumpa
+						culture = norman
+						culture = english
+						culture = basque
+						culture = castilian
+						culture = portuguese
+						culture = outremer
+
+						# Christian
+						religion = cathar
+						religion = bogomilist
+						religion = messalian
+
+						# Indian
+						religion = buddhist
+
+						# Pagan
+						religion = west_african_pagan
+						religion = west_african_pagan_reformed
+
+						# Zoroastrian
+						religion = mazdaki
+
+						AND = {
+							culture_group = tibetan_group
+
+							NOR = {
+								religion = taoist
+								culture = tangut
+							}
+						}
+
+						has_law = status_of_women_3
+						has_law = status_of_women_4
+					}
+				}
+			}
 		}
 	}
 
 	true_cognatic_succession = { # absolute cognatic
-		male_dynasty_opinion = 0
+		male_dynasty_opinion = -5
+		female_dynasty_opinion = 5
 
 		potential = {
 		#	is_landless_type_title = no
@@ -408,42 +719,236 @@ gender_laws = {
 			}
 
 			gender_succ = true_cognatic
-
-			if = {
-				limit = { NOT = { has_dlc = "Conclave" } }
-				law_set_allow_matrilineal_marriage = yes
-			}
+			law_set_allow_matrilineal_marriage = yes
 		}
 
 		default_selection = {
-			factor = 1
+			factor = 0
 
-			mult_modifier = {
-				factor = 0.1
-				holder_scope = {
-					NOT = { has_religion_feature = religion_equal }
-				}
-			}
-
-			mult_modifier = {
-				factor = 100
-				holder_scope = {
-					has_religion_feature = religion_equal
-				}
+			additive_modifier = {
+				value = 20
+				holder_scope = { is_feminist_trigger = yes }
 			}
 
 			mult_modifier = {
 				factor = 1000
+
 				has_game_rule = {
 					name = gender
 					value = plus
 				}
 			}
 		}
+
+		ai_will_do = {
+			factor = 0.5
+
+			trigger = {
+				OR = {
+					# Is zealous and enatic-cognatic title was formerly true cognatic
+					AND = {
+						is_primary_holder_title = yes
+						has_law = enatic_cognatic_succession
+						holder_scope = { trait = zealous }
+						has_title_flag = former_true_cognatic_succession
+					}
+
+					# Primary title is true cognatic
+					AND = {
+						is_primary_holder_title = no
+						holder_scope = { has_law = true_cognatic_succession }
+					}
+
+					# A female ruler under cognatic who is just
+					AND = {
+						is_primary_holder_title = yes
+						has_law = cognatic_succession
+
+						holder_scope = {
+							is_female = yes
+							OR = {
+								trait = just
+								trait = proud
+								trait = charitable
+								diplomacy = 15
+							}
+							NOR = {
+								trait = humble
+								trait = content
+								trait = arbitrary
+							}
+						}
+					}
+
+					#  Has an awesome older daughter who could be heir instead
+					AND = {
+						is_primary_holder_title = yes
+						has_law = cognatic_succession
+
+						OR = {
+							has_law = succ_gavelkind
+							has_law = succ_primogeniture
+						}
+
+						holder_scope = {
+							any_child = {
+								is_female = yes
+								dynasty = PREV
+
+								calc_true_if = {
+									amount >= 3
+
+									diplomacy >= 21
+									martial >= 21
+									diplomacy >= 15
+									martial >= 15
+									diplomacy >= 8
+									martial >= 8
+									stewardship >= 8
+									trait = genius
+								}
+
+								can_inherit_trigger = yes
+								is_dumb_trigger = no
+
+								NOR = {
+									trait = inbred
+									trait = incapable
+									trait = lunatic
+								}
+
+								any_sibling = {
+									is_female = no
+									NOT = { is_older_than = PREV }
+									any_heir_title = { title = ROOT }
+
+									OR = {
+										is_dumb_trigger = yes
+										trait = inbred
+										trait = incapable
+										trait = lunatic
+
+										AND = {
+											diplomacy <= 12
+											martial < 12
+											is_smart_trigger = no
+										}
+									}
+								}
+							}
+						}
+					}
+
+					# A male ruler under enatic-cognatic with a son
+					AND = {
+						is_primary_holder_title = yes
+						has_law = enatic_cognatic_succession
+
+						holder_scope = {
+							is_female = no
+							is_feminist_trigger = no
+
+							any_child = {
+								is_female = no
+								dynasty = PREV
+								age >= 6
+								can_inherit_trigger = yes
+								is_dumb_trigger = no
+
+								NOR = {
+									trait = inbred
+									trait = incapable
+									trait = lunatic
+								}
+							}
+						}
+					}
+
+					# A Basque ruler under cognatic with an adult daughter
+					AND = {
+						is_primary_holder_title = yes
+						has_law = cognatic_succession
+
+						holder_scope = {
+							culture = basque
+
+							OR = {
+								is_female = yes
+
+								any_child = {
+									dynasty = PREV
+									is_female = yes
+									is_adult = yes
+									can_inherit_trigger = yes
+									is_dumb_trigger = no
+
+									NOR = {
+										trait = inbred
+										trait = incapable
+										trait = lunatic
+									}
+								}
+							}
+						}
+					}
+
+					# Ruler under cognatic who is feminist
+					AND = {
+						is_primary_holder_title = yes
+						has_law = cognatic_succession
+						holder_scope = { is_feminist_trigger = yes }
+					}
+
+					# Ruler is learned and believes in equality
+					AND = {
+						is_primary_holder_title = yes
+
+						holder_scope = {
+							trait = just
+
+							OR = {
+								trait = scholar
+								learning >= 12
+							}
+
+							NOR = {
+								trait = zealous
+								trait = content
+								trait = humble
+								trait = slothful
+							}
+						}
+					}
+				}
+			}
+
+			mult_modifier = {
+				factor = 20
+				has_title_flag = former_true_cognatic_succession
+			}
+
+			# Slow down vassals from going full
+			mult_modifier = {
+				factor = 0.1
+
+				holder_scope = {
+					independent = no
+
+					liege = {
+						NOR = {
+							has_law = true_cognatic_succession
+							has_law = enatic_cognatic_succession
+							has_law = enatic_succession
+						}
+					}
+				}
+			}
+		}
 	}
 
 	enatic_cognatic_succession = {
-		male_dynasty_opinion = -2.5
+		male_dynasty_opinion = -10
+		female_dynasty_opinion = 10
 
 		potential = {
 		#	is_landless_type_title = no
@@ -536,21 +1041,104 @@ gender_laws = {
 			}
 
 			gender_succ = enatic_cognatic
-
-			if = {
-				limit = { NOT = { has_dlc = "Conclave" } }
-				law_set_allow_matrilineal_marriage = yes
-			}
+			law_set_allow_matrilineal_marriage = yes
 		}
 
 		default_selection = {
 			factor = 100
 		}
+
+		ai_will_do = {
+			factor = 0.5
+
+			trigger = {
+				# Slow down vassals from going full
+				NAND = {
+					independent = no
+					owner = {
+						liege = {
+							NOR = {
+								has_law = enatic_cognatic_succession
+								has_law = enatic_succession
+							}
+						}
+					}
+				}
+
+				OR = {
+					# Primary title is enatic cognatic
+					AND = {
+						is_primary_holder_title = no
+						holder_scope = { has_law = enatic_cognatic_succession }
+					}
+
+					# A female ruler with an awesome daughter who could be heir instead
+					AND = {
+						is_primary_holder_title = yes
+						has_law = true_cognatic_succession
+
+						OR = {
+							has_law = succ_gavelkind
+							has_law = succ_primogeniture
+						}
+
+						holder_scope = {
+							is_female = yes
+
+							any_child = {
+								is_female = yes
+								dynasty = PREV
+								can_inherit_trigger = yes
+								is_dumb_trigger = no
+
+								NOR = {
+									trait = inbred
+									trait = incapable
+									trait = lunatic
+								}
+
+								calc_true_if = {
+									amount >= 3
+
+									diplomacy >= 21
+									martial >= 21
+									diplomacy >= 15
+									martial >= 15
+									diplomacy >= 8
+									martial >= 8
+									stewardship >= 8
+									trait = genius
+								}
+
+								any_sibling = {
+									is_female = no
+									is_older_than = PREV
+									any_heir_title = { title = ROOT }
+
+									OR = {
+										is_dumb_trigger = yes
+										trait = inbred
+										trait = incapable
+										trait = lunatic
+
+										AND = {
+											diplomacy < 12
+											martial < 12
+											is_smart_trigger = no
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 
 	enatic_succession = {
-		male_dynasty_opinion = -5
-		female_dynasty_opinion = 5
+		male_dynasty_opinion = -15
+		female_dynasty_opinion = 10
 
 		potential = {
 		#	is_landless_type_title = no
@@ -619,15 +1207,24 @@ gender_laws = {
 			}
 
 			gender_succ = enatic
-
-			if = {
-				limit = { NOT = { has_dlc = "Conclave" } }
-				law_set_allow_matrilineal_marriage = yes
-			}
+			law_set_allow_matrilineal_marriage = yes
 		}
 
 		default_selection = {
-			factor = 1
+			factor = 100
+
+			trigger = {
+				holder_scope = {
+					OR = {
+						has_religion_feature = religion_matriarchal
+
+						any_owned_bloodline = {
+							has_bloodline_flag = bloodline_enatic_cognatic
+							bloodline_is_active_for = PREV
+						}
+					}
+				}
+			}
 		}
 	}
 }
