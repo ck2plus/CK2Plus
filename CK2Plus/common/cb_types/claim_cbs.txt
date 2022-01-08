@@ -783,7 +783,6 @@ claim_all = {
 	}
 }
 
-# 2 - Disabled in CK2Plus
 claim_on_liege = {
 	name = CB_NAME_CLAIM
 	war_name = WAR_NAME_CLAIM_LIEGE
@@ -794,19 +793,25 @@ claim_on_liege = {
 
 	hostile_against_others = yes
 	press_claim = yes
-	can_call_vassals = no
+	can_call_vassals = yes
 	major_revolt = yes
 	allowed_to_target_tributaries = no
 
 	can_use_gui = {
 		check_if_crusader_trigger = yes
-	}
 
-	can_use = {
-		always = no # Disabled in CK2Plus
+		# CK2Plus
+		# Attacker
+		ROOT = {
+			can_use_cb_preamble = yes
+		}
 	}
 
 	can_use_title = {
+		# Defender
+		holder = FROM
+		is_vice_royalty = no
+
 		# Attacker
 		ROOT = {
 			OR = {
@@ -820,7 +825,13 @@ claim_on_liege = {
 						OR = {
 							is_pretender = yes # Checks vs ROOT character
 							is_contested = yes # Already being contested in some war
-							holder_scope = { has_regent = yes }
+
+							holder_scope = {
+								OR = {
+									has_regent = yes
+									is_uncrowned_trigger = yes
+								}
+							}
 
 							AND = {
 								ROOT = { # attacking claimant
@@ -848,16 +859,6 @@ claim_on_liege = {
 				}
 			}
 		}
-
-		# Defender
-		holder_scope = {
-			OR = {
-				character = FROM
-				is_vassal_or_below_of = FROM
-			}
-		}
-
-		is_vice_royalty = no
 	}
 
 	is_valid = {
@@ -893,6 +894,22 @@ claim_on_liege = {
 			has_law = succ_feudal_elective
 			has_law = succ_hre_elective
 		}
+
+		ROOT = {
+			is_patrician = no
+		}
+
+		# Can't take out merchant republic with this CB
+		FROM = {
+			trigger_if = {
+				limit = { is_patrician = yes }
+
+				NOR = {
+					capital_holding = { title = PREVPREV }
+					PREV = { is_primary_holder_title_tier = yes }
+				}
+			}
+		}
 	}
 
 	on_add = {
@@ -917,6 +934,25 @@ claim_on_liege = {
 			}
 
 			hidden_effect = { disband_event_forces = faction_revolters }
+
+			add_character_modifier = {
+				name = victory_timer
+				days = 1
+				hidden = yes
+			}
+
+			if = {
+				limit = { faction_exists = { faction = faction_glory } }
+
+				custom_tooltip = {
+					text = GLORYFACTIONMOODPLUS_NONAME
+
+					character_event = {
+						id = PlusFaction.460
+						days = 1
+					}
+				}
+			}
 		}
 
 		any_attacker = {
@@ -931,33 +967,115 @@ claim_on_liege = {
 		defender = {
 			hidden_effect = { disband_event_forces = faction_loyalists }
 
-			if = { # lower crown authority
-				limit = { NOT = { has_dlc = "Conclave" } }
+			if = {
+				limit = { faction_exists = { faction = faction_glory } }
 
-				any_demesne_title = {
-					limit = { is_crown_law_title = yes }
+				custom_tooltip = {
+					text = GLORYFACTIONMOODMINUS
 
-					set_title_flag = non_manual_law_change # No prestige loss
+					character_event = {
+						id = PlusFaction.461
+						days = 1
+					}
+				}
+			}
 
-					trigger_switch = {
-						on_trigger = has_law
+			any_demesne_title = {
+				show_scope_change = no
 
-						crown_authority_1 = { add_law = crown_authority_0 }
-						crown_authority_2 = { add_law = crown_authority_1 }
-						crown_authority_3 = { add_law = crown_authority_2 }
-						crown_authority_4 = { add_law = crown_authority_3 }
+				# Lower crown authority
+				if = {
+					limit = {
+						is_crown_law_title = yes
+
+						OR = {
+							has_law = crown_authority_1
+							has_law = crown_authority_2
+							has_law = crown_authority_3
+							has_law = crown_authority_4
+						}
 					}
 
-					clr_title_flag = non_manual_law_change # No prestige loss
+					custom_tooltip = {
+						text = CA_LOWERED
+
+						set_title_flag = non_manual_law_change # No prestige loss
+
+						trigger_switch = {
+							on_trigger = has_law
+
+							crown_authority_1 = { add_law_w_cooldown = crown_authority_0 }
+							crown_authority_2 = { add_law_w_cooldown = crown_authority_1 }
+							crown_authority_3 = { add_law_w_cooldown = crown_authority_2 }
+							crown_authority_4 = { add_law_w_cooldown = crown_authority_3 }
+						}
+
+						clr_title_flag = non_manual_law_change # No prestige loss
+					}
+				}
+
+				# Lower tribal organisation
+				if = {
+					limit = {
+						OR = {
+							has_law = tribal_organization_1
+							has_law = tribal_organization_2
+							has_law = tribal_organization_3
+							has_law = tribal_organization_4
+						}
+					}
+
+					custom_tooltip = {
+						text = TO_LOWERED
+
+						set_title_flag = non_manual_law_change # No prestige loss
+
+						trigger_switch = {
+							on_trigger = has_law
+
+							tribal_organization_1 = { add_law_w_cooldown = tribal_organization_0 }
+							tribal_organization_2 = { add_law_w_cooldown = tribal_organization_1 }
+							tribal_organization_3 = { add_law_w_cooldown = tribal_organization_2 }
+							tribal_organization_4 = { add_law_w_cooldown = tribal_organization_3 }
+						}
+
+						clr_title_flag = non_manual_law_change # No prestige loss
+					}
 				}
 			}
 		}
 	}
 
 	on_success_title = {
+		# The liege has more than one county the winner usurps his capital
+		if = {
+			limit = {
+				is_primary_holder_title = yes
+				defender = { demesne_size >= 2 }
+			}
+
+			defender = {
+				show_scope_change = no
+
+				capital_scope = {
+					show_scope_change = no
+
+					county = {
+						show_scope_change = no
+
+						usurp_title_plus_barony_if_unlanded = {
+							target = attacker
+							type = claim
+						}
+					}
+				}
+			}
+		}
+
 		defender = {
 			show_scope_change = no
 
+			# The liege is imprisoned
 			if = {
 				limit = { primary_title = { title = PREVPREV } }
 				imprison = attacker
@@ -1042,7 +1160,21 @@ claim_on_liege = {
 			show_scope_change = no
 
 			prestige = -150
+			imprison = defender
 			hidden_effect = { disband_event_forces = faction_revolters }
+
+			if = {
+				limit = { faction_exists = { faction = faction_glory } }
+
+				custom_tooltip = {
+					text = GLORYFACTIONMOODMINUS
+
+					character_event = {
+						id = PlusFaction.461
+						days = 1
+					}
+				}
+			}
 		}
 
 		any_attacker = {
@@ -1058,6 +1190,25 @@ claim_on_liege = {
 			show_scope_change = no
 
 			participation_scaled_prestige = 100
+
+			add_character_modifier = {
+				name = victory_timer
+				days = 1
+				hidden = yes
+			}
+
+			if = {
+				limit = { faction_exists = { faction = faction_glory } }
+
+				custom_tooltip = {
+					text = GLORYFACTIONMOODPLUS_NONAME
+
+					character_event = {
+						id = PlusFaction.460
+						days = 1
+					}
+				}
+			}
 
 			hidden_effect = {
 				if = {
@@ -1078,6 +1229,7 @@ claim_on_liege = {
 
 				disband_event_forces = faction_loyalists
 			}
+
 		}
 
 		any_defender = {
@@ -1088,6 +1240,11 @@ claim_on_liege = {
 				disband_event_forces = faction_loyalists
 			}
 		}
+	}
+
+	on_reverse_demand_title = {
+		# The attacker loses his claim to the liege's title
+		remove_claim = attacker
 	}
 
 	on_attacker_leader_death = {
@@ -2535,7 +2692,6 @@ other_claim = {
 	}
 }
 
-# 5 - Disabled in CK2Plus
 other_claim_on_liege = {
 	name = CB_NAME_CLAIM
 	war_name = WAR_NAME_OTHER_CLAIM
@@ -2545,19 +2701,19 @@ other_claim_on_liege = {
 	sort_priority = 850
 
 	hostile_against_others = yes
-	can_ask_to_join_war = no
 	press_claim = yes
-	can_call_vassals = no
+	can_call_vassals = yes
 	major_revolt = yes
 	allowed_to_target_tributaries = no
-	is_permanent = no # Disabled in CK2Plus
 
 	can_use_gui = {
 		check_if_crusader_trigger = yes
-	}
 
-	can_use = {
-		always = no # Disabled in CK2Plus
+		# CK2Plus
+		# Attacker
+		ROOT = {
+			can_use_cb_preamble = yes
+		}
 	}
 
 	# Starting scope is claimed title
@@ -2589,14 +2745,20 @@ other_claim_on_liege = {
 			# Attacker
 			FROMFROM = { has_character_flag = faction_claimant_ultimatum_taken2 } # Faction war. Ignore claim strength.
 
-			AND = {
+			trigger_if = {
 				# Third-party claimant
-				ROOT = { has_weak_claim = PREV }
+				limit = { ROOT = { has_weak_claim = PREV } }
 
 				OR = {
 					is_pretender = yes # Checks vs ROOT character
 					is_contested = yes # Is already being contested in some form of Claim or Succession War
-					holder_scope = { has_regent = yes }
+
+					holder_scope = {
+						OR = {
+							has_regent = yes
+							is_uncrowned_trigger = yes
+						}
+					}
 
 					AND = {
 						# Claimant
@@ -2672,6 +2834,22 @@ other_claim_on_liege = {
 				}
 			}
 		}
+
+		ROOT = {
+			is_patrician = no
+		}
+
+		# Can't take out merchant republic with this CB
+		FROM = {
+			trigger_if = {
+				limit = { is_patrician = yes }
+
+				NOR = {
+					capital_holding = { title = PREVPREV }
+					PREV = { is_primary_holder_title_tier = yes }
+				}
+			}
+		}
 	}
 
 	# Starting scope is attacker
@@ -2691,6 +2869,12 @@ other_claim_on_liege = {
 		# Attacker
 		participation_scaled_prestige = 100
 		hidden_effect = { disband_event_forces = faction_revolters }
+
+		add_character_modifier = {
+			name = victory_timer
+			days = 1
+			hidden = yes
+		}
 
 		# Claimant
 		ROOT = {
@@ -2732,24 +2916,67 @@ other_claim_on_liege = {
 		defender = {
 			hidden_effect = { disband_event_forces = faction_loyalists }
 
-			if = { # lower crown authority
-				limit = { NOT = { has_dlc = "Conclave" } }
+			any_demesne_title = {
+				show_scope_change = no
 
-				any_demesne_title = {
-					limit = { is_crown_law_title = yes }
+				# Lower crown authority
+				if = {
+					limit = {
+						is_crown_law_title = yes
 
-					set_title_flag = non_manual_law_change # No prestige loss
-
-					trigger_switch = {
-						on_trigger = has_law
-
-						crown_authority_1 = { add_law = crown_authority_0 }
-						crown_authority_2 = { add_law = crown_authority_1 }
-						crown_authority_3 = { add_law = crown_authority_2 }
-						crown_authority_4 = { add_law = crown_authority_3 }
+						OR = {
+							has_law = crown_authority_1
+							has_law = crown_authority_2
+							has_law = crown_authority_3
+							has_law = crown_authority_4
+						}
 					}
 
-					clr_title_flag = non_manual_law_change # No prestige loss
+					custom_tooltip = {
+						text = CA_LOWERED
+
+						set_title_flag = non_manual_law_change # No prestige loss
+
+						trigger_switch = {
+							on_trigger = has_law
+
+							crown_authority_1 = { add_law_w_cooldown = crown_authority_0 }
+							crown_authority_2 = { add_law_w_cooldown = crown_authority_1 }
+							crown_authority_3 = { add_law_w_cooldown = crown_authority_2 }
+							crown_authority_4 = { add_law_w_cooldown = crown_authority_3 }
+						}
+
+						clr_title_flag = non_manual_law_change # No prestige loss
+					}
+				}
+
+				# Lower tribal organisation
+				if = {
+					limit = {
+						OR = {
+							has_law = tribal_organization_1
+							has_law = tribal_organization_2
+							has_law = tribal_organization_3
+							has_law = tribal_organization_4
+						}
+					}
+
+					custom_tooltip = {
+						text = TO_LOWERED
+
+						set_title_flag = non_manual_law_change # No prestige loss
+
+						trigger_switch = {
+							on_trigger = has_law
+
+							tribal_organization_1 = { add_law_w_cooldown = tribal_organization_0 }
+							tribal_organization_2 = { add_law_w_cooldown = tribal_organization_1 }
+							tribal_organization_3 = { add_law_w_cooldown = tribal_organization_2 }
+							tribal_organization_4 = { add_law_w_cooldown = tribal_organization_3 }
+						}
+
+						clr_title_flag = non_manual_law_change # No prestige loss
+					}
 				}
 			}
 		}
@@ -2790,6 +3017,7 @@ other_claim_on_liege = {
 
 					holder_scope = {
 						is_feudal = yes
+						is_tribal = yes
 					}
 
 					ROOT = {
@@ -2804,6 +3032,31 @@ other_claim_on_liege = {
 
 				ROOT = {
 					abdicate = { move = no }
+				}
+			}
+		}
+
+		# If the target has more than one county, usurp his capital
+		if = {
+			limit = {
+				is_primary_holder_title = yes
+				defender = { demesne_size >= 2 }
+			}
+
+			defender = {
+				show_scope_change = no
+
+				capital_scope = {
+					show_scope_change = no
+
+					county = {
+						show_scope_change = no
+
+						usurp_title_plus_barony_if_unlanded = {
+							target = ROOT
+							type = claim
+						}
+					}
 				}
 			}
 		}
@@ -2920,14 +3173,27 @@ other_claim_on_liege = {
 	# FROM is defender
 	# FROMFROM is attacker
 	on_reverse_demand = {
-		# Claimant
-		prestige = -200
+		# Attacker
+		prestige = -150
 		imprison = defender
+
+		# Claimant
+		ROOT = {
+			show_scope_change = no
+			prestige = -150
+			imprison = defender
+		}
 
 		defender = {
 			show_scope_change = no
 
 			participation_scaled_prestige = 100
+
+			add_character_modifier = {
+				name = victory_timer
+				days = 1
+				hidden = yes
+			}
 
 			hidden_effect = {
 				disband_event_forces = faction_loyalists
@@ -2952,10 +3218,22 @@ other_claim_on_liege = {
 
 		hidden_effect = {
 			any_attacker = {
-				limit = { vassal_of = defender }
+				if = {
+					limit = { vassal_of = defender }
 
-				disband_event_forces = faction_revolters
-				imprison = defender
+					disband_event_forces = faction_revolters
+					imprison = defender
+				}
+				else_if = {
+					limit = {
+						NOR = {
+							character = PREV
+							character = ROOT
+						}
+					}
+
+					imprison = defender
+				}
 			}
 
 			any_defender = {
@@ -2963,6 +3241,11 @@ other_claim_on_liege = {
 				participation_scaled_prestige = 100
 			}
 		}
+	}
+
+	on_reverse_demand_title = {
+		# Claimant loses the claim
+		remove_claim = ROOT
 	}
 
 	attacker_ai_victory_worth = {
@@ -2981,4 +3264,3 @@ other_claim_on_liege = {
 		factor = 100
 	}
 }
-
