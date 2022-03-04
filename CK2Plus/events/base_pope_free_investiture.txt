@@ -15,9 +15,10 @@ character_event = {
 	picture = GFX_evt_icon
 	border = GFX_event_normal_frame_religion
 
+	is_triggered_only = yes # on_yearly_pulse, random_events, pope_events
+
 	only_playable = yes
 	religion_group = christian
-	only_men = yes
 	min_age = 16
 	prisoner = no
 	only_capable = yes
@@ -26,12 +27,7 @@ character_event = {
 	trigger = {
 		controls_religion = yes
 		year >= 1000
-
-		OR = {
-			religion = catholic
-			religion = fraticelli
-		}
-
+		is_catholic_branch = yes
 		religion_authority >= 0.35
 		NOT = { has_character_flag = pope_currently_demanding }
 
@@ -51,11 +47,11 @@ character_event = {
 		}
 	}
 
-	mean_time_to_happen = {
-		months = 100
+	weight_multiplier = {
+		factor = 1
 
 		mult_modifier = {
-			factor = 0.25
+			factor = 4
 			trait = zealous
 		}
 	}
@@ -85,6 +81,7 @@ character_event = {
 				real_tier = EMPEROR
 			}
 
+			save_event_target_as = target_ruler
 			set_character_flag = pope_wants_our_law_changed
 
 			character_event = {
@@ -214,7 +211,12 @@ character_event = {
 
 		trigger = { diplomacy >= 10 }
 
-		wealth = -200
+		transfer_scaled_wealth = {
+			to = FROM
+			value = 1
+			min = 200
+			max = 200
+		}
 
 		set_character_flag = pope_respects_our_law
 		clr_character_flag = pope_wants_our_law_changed
@@ -344,7 +346,7 @@ character_event = {
 			}
 
 			character_event = {
-				id = 38022
+				id = 38022 # Excommunication
 				days = 10
 			}
 		}
@@ -387,6 +389,14 @@ character_event = {
 			}
 		}
 	}
+
+	after = {
+		character_event = {
+			id = 67009
+			years = 1
+			random = 1155 # 3 years, 2 months
+		}
+	}
 }
 
 # King bribes us
@@ -398,10 +408,19 @@ character_event = {
 
 	is_triggered_only = yes
 
+	ai = no
+
 	option = {
 		name = EVTOPTA67004
 
-		wealth = 200
+		tooltip = {
+			transfer_scaled_wealth = {
+				from = FROM
+				value = 1
+				min = 200
+				max = 200
+			}
+		}
 	}
 }
 
@@ -421,6 +440,126 @@ character_event = {
 	}
 }
 
+# Pope demand tombola
+character_event = {
+	id = 67009
+
+	is_triggered_only = yes
+	hide_window = yes
+
+	has_character_flag = pope_currently_demanding
+	prisoner = no
+	only_capable = yes
+	war = no
+
+	trigger = {
+		controls_religion = yes
+		is_catholic_branch = yes
+
+		event_target:target_ruler = {
+			any_demesne_title = {
+				has_law = investiture_law_1
+			}
+
+			has_character_flag = pope_we_refuse_law_changed
+			higher_real_tier_than = DUKE
+			religion = ROOT
+			rightful_religious_head = ROOT
+		}
+	}
+
+	fail_trigger_effect = {
+		if = {
+			limit = {
+				has_character_flag = pope_currently_demanding
+				controls_religion = yes
+
+				event_target:target_ruler = {
+					any_demesne_title = {
+						has_law = investiture_law_1
+					}
+
+					has_character_flag = pope_we_refuse_law_changed
+					higher_real_tier_than = DUKE
+					religion = ROOT
+					rightful_religious_head = ROOT
+				}
+			}
+
+			repeat_event = {
+				id = 67009
+				months = 2
+			}
+		}
+		else = {
+			clr_character_flag = pope_currently_demanding
+
+			event_target:target_ruler = {
+				clr_character_flag = pope_we_refuse_law_changed
+			}
+		}
+	}
+
+	immediate = {
+		random_list = {
+			1 = {
+				repeat_event = {
+					id = 67009
+					years = 1
+					random = 1155 # 3 years, 2 months
+				}
+			}
+
+			50 = { # The Pope sends a delegate to a Bishop whose top liege has refused to change investiture Law
+				trigger = {
+					wealth >= 20
+
+					event_target:target_ruler = {
+						any_realm_lord = {
+							is_theocracy = yes
+							religion = ROOT
+							NOT = { has_character_flag = pope_bribing }
+						}
+					}
+				}
+
+				mult_modifier = {
+					factor = 4
+					trait = zealous
+				}
+
+				character_event = { id = 67010 }
+
+				repeat_event = {
+					id = 67009
+					years = 1
+					random = 1155 # 3 years, 2 months
+				}
+			}
+
+			50 = {
+				trigger = {
+					event_target:target_ruler = {
+						any_realm_lord = {
+							higher_real_tier_than = COUNT
+							religion = ROOT
+							relative_power_to_liege >= 0.05
+							NOT = { has_character_flag = pope_vassal_approached }
+						}
+					}
+				}
+
+				mult_modifier = {
+					factor = 4
+					trait = ambitious
+				}
+
+				character_event = { id = 67020 }
+			}
+		}
+	}
+}
+
 # The Pope sends a delegate to a Bishop whose top liege has refused to change investiture Law
 character_event = {
 	id = 67010
@@ -428,79 +567,7 @@ character_event = {
 	picture = GFX_evt_bishop
 	border = GFX_event_normal_frame_religion
 
-	only_playable = yes
-	religion_group = christian
-	has_character_flag = pope_currently_demanding
-	min_age = 16
-	only_men = yes
-	prisoner = no
-	only_capable = yes
-	war = no
-
-	trigger = {
-		controls_religion = yes
-		year >= 1000
-
-		OR = {
-			religion = catholic
-			religion = fraticelli
-		}
-
-		wealth >= 20
-
-		any_independent_ruler = {
-			has_character_flag = pope_we_refuse_law_changed
-			higher_real_tier_than = DUKE
-			religion = ROOT
-			rightful_religious_head = ROOT
-
-			any_demesne_title = {
-				has_law = investiture_law_1
-			}
-
-			any_realm_lord = {
-				is_theocracy = yes
-				religion = ROOT
-				NOT = { has_character_flag = pope_bribing }
-			}
-		}
-	}
-
-	mean_time_to_happen = {
-		months = 50
-
-		mult_modifier = {
-			factor = 0.25
-			trait = zealous
-		}
-	}
-
-	immediate = {
-		random_independent_ruler = {
-			limit = {
-				higher_real_tier_than = DUKE
-				religion = ROOT
-				rightful_religious_head = ROOT
-				has_character_flag = pope_we_refuse_law_changed
-
-				any_demesne_title = {
-					has_law = investiture_law_1
-				}
-
-				any_realm_lord = {
-					is_theocracy = yes
-					religion = ROOT
-					NOT = { has_character_flag = pope_bribing }
-				}
-			}
-
-			preferred_limit = {
-				real_tier = EMPEROR
-			}
-
-			save_event_target_as = target_ruler
-		}
-	}
+	is_triggered_only = yes
 
 	option = {
 		name = EVTOPTA67010
@@ -553,7 +620,12 @@ character_event = {
 	option = {
 		name = EVTOPTA67011
 
-		wealth = 20
+		transfer_scaled_wealth = {
+			from = FROM
+			value = 1
+			min = 20
+			max = 20
+		}
 
 		opinion = {
 			name = bishop_bribed_by_pope
@@ -663,79 +735,7 @@ character_event = {
 	picture = GFX_evt_pope
 	border = GFX_event_normal_frame_religion
 
-	only_playable = yes
-	religion_group = christian
-	has_character_flag = pope_currently_demanding
-	min_age = 16
-	only_men = yes
-	prisoner = no
-	only_capable = yes
-	war = no
-
-	trigger = {
-		controls_religion = yes
-		year >= 1000
-
-		OR = {
-			religion = catholic
-			religion = fraticelli
-		}
-
-		any_independent_ruler = {
-			has_character_flag = pope_we_refuse_law_changed
-			higher_real_tier_than = DUKE
-			religion = ROOT
-			rightful_religious_head = ROOT
-
-			any_demesne_title = {
-				has_law = investiture_law_1
-			}
-
-			any_realm_lord = {
-				higher_real_tier_than = COUNT
-				religion = ROOT
-				relative_power_to_liege >= 0.05
-				NOT = { has_character_flag = pope_vassal_approached }
-			}
-		}
-	}
-
-	mean_time_to_happen = {
-		months = 50
-
-		mult_modifier = {
-			factor = 0.5
-			trait = ambitious
-		}
-	}
-
-	immediate = {
-		random_independent_ruler = {
-			limit = {
-				has_character_flag = pope_we_refuse_law_changed
-				higher_real_tier_than = DUKE
-				religion = ROOT
-				rightful_religious_head = ROOT
-
-				any_demesne_title = {
-					has_law = investiture_law_1
-				}
-
-				any_realm_lord = {
-					higher_real_tier_than = COUNT
-					religion = ROOT
-					relative_power_to_liege >= 0.05
-					NOT = { has_character_flag = pope_vassal_approached }
-				}
-			}
-
-			preferred_limit = {
-				real_tier = EMPEROR
-			}
-
-			save_event_target_as = target_ruler
-		}
-	}
+	is_triggered_only = yes
 
 	option = {
 		name = EVTOPTA67020
@@ -798,7 +798,6 @@ character_event = {
 		}
 
 		piety = 10
-
 		add_pressed_claim = top_liege
 
 		random = {
@@ -839,33 +838,6 @@ character_event = {
 			who = top_liege
 			years = 5
 		}
-	}
-}
-
-character_event = {
-	id = 67022
-	desc = EVTDESC67022
-	picture = GFX_evt_emissary
-	border = GFX_event_normal_frame_religion
-
-	is_triggered_only = yes
-
-	option = {
-		name = EVTOPTA67022
-
-		prestige = -5
-
-		opinion = {
-			name = my_vassal_bribed_by_pope
-			who = FROM
-			years = 5
-		}
-
-		reverse_opinion = {
-			name = my_vassal_bribed_by_pope
-			who = FROM
-			years = 5
-		}
 
 		ai_chance = {
 			factor = 1
@@ -903,6 +875,33 @@ character_event = {
 					value >= 80
 				}
 			}
+		}
+	}
+}
+
+character_event = {
+	id = 67022
+	desc = EVTDESC67022
+	picture = GFX_evt_emissary
+	border = GFX_event_normal_frame_religion
+
+	is_triggered_only = yes
+
+	option = {
+		name = EVTOPTA67022
+
+		prestige = -5
+
+		opinion = {
+			name = my_vassal_bribed_by_pope
+			who = FROM
+			years = 5
+		}
+
+		reverse_opinion = {
+			name = my_vassal_bribed_by_pope
+			who = FROM
+			years = 5
 		}
 	}
 }

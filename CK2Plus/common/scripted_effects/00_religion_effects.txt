@@ -8,6 +8,8 @@
 # apply_cosmopolian_on_start_effect
 # apply_dogmatic_on_start_effect
 # reformation_god_names_changes_effect
+# convert_religion_failsafe_effect
+# abdicate_all_primary_type_titles_effect
 
 add_sympathy_for_prevs_true_religion_effect = {
 	if = {
@@ -2760,6 +2762,20 @@ convert_religion_failsafe_effect = {
 		if = {
 			limit = { government = temporary_fake_theocracy_government }
 
+			# Stop apostates from becoming a false religious head
+			trigger_switch = {
+				on_trigger = has_minor_title
+
+				title_cardinal = { remove_title = title_cardinal }
+				title_fraticelli_cardinal = { remove_title = title_fraticelli_cardinal }
+				title_bogomilist_advisor = { remove_title = title_bogomilist_advisor }
+				title_cathar_deacon = { remove_title = title_cathar_deacon }
+				title_chalcedonian_cardinal = { remove_title = title_chalcedonian_cardinal }
+				title_druid_circle_member = { remove_title = title_druid_circle_member }
+				title_manichaean_apostle = { remove_title = title_manichaean_apostle }
+				title_hellenic_pontiff = { remove_title = title_hellenic_pontiff }
+			}
+
 			# Check if my new religion even has theocracies
 			if = {
 				limit = {
@@ -2803,80 +2819,48 @@ convert_religion_failsafe_effect = {
 				}
 				else = {
 					# Abdicate
+					random_courtier = {
+						limit = {
+							religion = PREV
+							is_opposite_sex = PREV
+							is_ruler = no
+
+							trigger_if = {
+								limit = { has_dharmic_religion_trigger = yes }
+								trait = brahmin
+							}
+
+							trigger_if = {
+								limit = {
+									OR = {
+										religion_group = christian
+										religion_group = zoroastrian_group
+										religion_openly_bon_or_reformed_trigger = yes
+										religion = jain
+										religion = buddhist
+										religion = taoist
+									}
+								}
+
+								is_married = no
+								is_consort = no
+								is_senior_consort_party = no
+							}
+
+							NOR = {
+								any_heir_title = { always = yes }
+								any_pretender_title = { always = yes }
+							}
+						}
+
+						save_event_target_as = new_priest
+					}
+
 					if = {
 						limit = {
-							any_courtier = {
-								religion = PREV
-								is_opposite_sex = PREV
-								is_ruler = no
-
-								trigger_if = {
-									limit = { has_dharmic_religion_trigger = yes }
-									trait = brahmin
-								}
-
-								trigger_if = {
-									limit = {
-										OR = {
-											religion_group = christian
-											religion_group = zoroastrian_group
-											religion_openly_bon_or_reformed_trigger = yes
-											religion = jain
-											religion = buddhist
-											religion = taoist
-										}
-									}
-
-									is_married = no
-									is_consort = no
-									is_senior_consort_party = no
-								}
-
-								NOR = {
-									any_heir_title = { always = yes }
-									any_pretender_title = { always = yes }
-								}
-							}
+							NOT = { event_target:new_priest = { always = yes } }
 						}
 
-						random_courtier = {
-							limit = {
-								religion = PREV
-								is_opposite_sex = PREV
-								is_ruler = no
-
-								trigger_if = {
-									limit = { has_dharmic_religion_trigger = yes }
-									trait = brahmin
-								}
-
-								trigger_if = {
-									limit = {
-										OR = {
-											religion_group = christian
-											religion_group = zoroastrian_group
-											religion_openly_bon_or_reformed_trigger = yes
-											religion = jain
-											religion = buddhist
-											religion = taoist
-										}
-									}
-
-									is_married = no
-									is_consort = no
-									is_senior_consort_party = no
-								}
-
-								NOR = {
-									any_heir_title = { always = yes }
-									any_pretender_title = { always = yes }
-								}
-							}
-
-							save_event_target_as = new_priest
-						}
-					}
-					else = {
 						if = {
 							limit = { religion_allows_female_temple_holders = yes }
 
@@ -2918,6 +2902,8 @@ convert_religion_failsafe_effect = {
 					}
 
 					# TODO: Transfer artifacts?
+
+					clear_event_target = new_priest
 				}
 			}
 			else = {
@@ -2927,6 +2913,115 @@ convert_religion_failsafe_effect = {
 			# Clear this flag, so that characters are forced into a normal government
 			# Characters who have abdicated may take a day to find their way back into a court and get a suitable government
 			clr_character_flag = needs_temporary_fake_theocracy_government
+		}
+	}
+}
+
+abdicate_all_primary_type_titles_effect = {
+	if = {
+		limit = { controls_religion = yes }
+
+		# Secular religious head titles are forfeit
+		if = {
+			limit = { is_theocracy = no }
+
+			any_demesne_title = {
+				limit = { controls_religion = yes }
+				destroy_landed_title = THIS
+			}
+		}
+
+		# Theocratic religious head titles are given to a random new character
+		else = {
+			hidden_effect = {
+				liege = {
+					save_event_target_as = liege_target
+				}
+			}
+
+			any_demesne_title = {
+				show_scope_change = no
+
+				limit = { controls_religion = yes }
+
+				hidden_effect = {
+					create_character = {
+						age = 38
+						dynasty = random
+						religion = ROOT
+						culture = ROOT
+						random_traits = yes
+					}
+				}
+
+				grant_title = new_character
+
+				holder_scope = {
+					show_scope_change = no
+
+					any_vassal = {
+						show_scope_change = no
+
+						set_defacto_liege = event_target:liege_target
+					}
+				}
+			}
+
+			hidden_effect = {
+				set_defacto_liege = event_target:liege_target
+			}
+		}
+	}
+
+	if = { # Holy Orders/Static Mercs are given to a random new character
+		limit = {
+			OR = {
+				holy_order = yes
+				mercenary = yes
+			}
+		}
+
+		hidden_effect = {
+			liege = {
+				save_event_target_as = liege_target
+			}
+		}
+
+		any_demesne_title = {
+			show_scope_change = no
+
+			limit = {
+				OR = {
+					holy_order = yes
+					mercenary = yes
+				}
+			}
+
+			hidden_effect = {
+				create_character = {
+					age = 38
+					dynasty = random
+					religion = PREV
+					culture = PREV
+					random_traits = yes
+				}
+			}
+
+			grant_title = new_character
+
+			holder_scope = {
+				show_scope_change = no
+
+				any_vassal = {
+					show_scope_change = no
+
+					set_defacto_liege = event_target:liege_target
+				}
+			}
+		}
+
+		hidden_effect = {
+			set_defacto_liege = event_target:liege_target
 		}
 	}
 }

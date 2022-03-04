@@ -174,11 +174,7 @@ character_event = {
 
 		if = { # If you are a councillor, stop working and return home
 			limit = {
-				OR = {
-					is_councillor = yes
-					has_minor_title = title_councilmember_king
-					has_minor_title = title_councilmember_emperor
-				}
+				is_voter = yes
 
 				host = {
 					NOT = { character = ROOT }
@@ -188,73 +184,64 @@ character_event = {
 			force_host = ROOT
 		}
 
-		hidden_effect = {
-			# character_event = { id = RIP.12000 }
+		# character_event = { id = RIP.12000 }
 
-			any_courtier = {
-				limit = {
-					vassal_of = ROOT
-					prisoner = no
-					NOT = { character = ROOT }
-				}
-
-				# Unlanded councillors stop working in order to go into seclusion with their liege
-				# Unlanded non-councillors join their liege in seclusion
-				if = {
-					limit = { is_ruler = no }
-
-					add_character_modifier = {
-						name = in_seclusion
-						duration = -1
-					}
-				}
-
-				# Landed councillors return home while you, their liege, is in seclusion
-				else_if = {
-					limit = {
-						OR = {
-							is_councillor = yes
-							has_minor_title = title_councilmember_king
-							has_minor_title = title_councilmember_emperor
-						}
-					}
-
-					force_host = THIS
-				}
+		any_courtier = {
+			limit = {
+				vassal_of = ROOT
+				prisoner = no
+				NOT = { character = ROOT }
 			}
 
-			# Landed children being educated in your court are sent home, with the guardianship ending
-			any_courtier = {
-				limit = {
-					has_guardian = yes
-					is_landed = yes
-					prisoner = no
-					is_adult = no
-				}
-
-				remove_guardian = yes
-			}
-
-			any_vassal = {
-				character_event = {
-					id = RIP.12001
-					days = 7
-					random = 7
-				}
-			}
-
-			# Notify employer that councillor is going into seclusion
+			# Unlanded councillors stop working in order to go into seclusion with their liege
+			# Unlanded non-councillors join their liege in seclusion
 			if = {
-				limit = {
-					is_councillor = yes
-					liege = { ai = no }
-				}
+				limit = { is_ruler = no }
 
-				liege = {
-					character_event = {
-						id = RIP.12101
-						days = 1
-					}
+				add_character_modifier = {
+					name = in_seclusion
+					duration = -1
+				}
+			}
+
+			# Landed councillors return home while you, their liege, is in seclusion
+			else_if = {
+				limit = { is_voter = yes }
+				force_host = THIS
+			}
+		}
+
+		# Landed children being educated in your court are sent home, with the guardianship ending
+		any_courtier = {
+			limit = {
+				has_guardian = yes
+				is_landed = yes
+				prisoner = no
+				is_adult = no
+			}
+
+			remove_guardian = yes
+		}
+
+		any_vassal = {
+			character_event = {
+				id = RIP.12001
+				days = 7
+				random = 7
+			}
+		}
+
+		# Notify employer that councillor is going into seclusion
+		if = {
+			limit = {
+				is_voter = yes
+				liege = { ai = no }
+			}
+
+			liege = {
+				character_event = {
+					id = RIP.12101
+					days = 1
 				}
 			}
 		}
@@ -326,29 +313,12 @@ character_event = {
 character_event = {
 	id = RIP.12099
 
+	is_triggered_only = yes
 	hide_window = yes
 
 	only_playable = yes
 
 	trigger = { in_seclusion = yes }
-
-	mean_time_to_happen = {
-		months = 9
-
-		mult_modifier = {
-			factor = 3.0
-
-			ai = no
-			war = yes
-		}
-
-		mult_modifier = {
-			factor = 3.0
-
-			ai = no
-			multiplayer = yes
-		}
-	}
 
 	immediate = {
 		random_list = {
@@ -630,6 +600,43 @@ character_event = {
 
 			40 = { }
 		}
+
+		if = {
+			limit = {
+				ai = no
+				war = yes
+				multiplayer = yes
+			}
+
+			repeat_event = {
+				id = RIP.12099
+				months = 40
+				random = 1800
+			}
+		}
+		else_if = {
+			limit = {
+				ai = no
+
+				OR = {
+					war = yes
+					multiplayer = yes
+				}
+			}
+
+			repeat_event = {
+				id = RIP.12099
+				months = 15
+				random = 540
+			}
+		}
+		else = {
+			repeat_event = {
+				id = RIP.12099
+				months = 5
+				random = 180
+			}
+		}
 	}
 }
 
@@ -840,6 +847,142 @@ character_event = {
 			}
 		}
 	}
+
+	after = {
+		character_event = {
+			id = RIP.11558
+			days = 25
+			random = 10
+		}
+	}
+}
+
+# Rip Seclusion Food Shortage Tombola
+character_event = {
+	id = RIP.11558
+
+	is_triggered_only = yes
+	hide_window = yes
+
+	has_character_flag = seclusion_food_shortage
+	only_rulers = yes
+
+	trigger = { in_seclusion = yes }
+
+	immediate = {
+		random_list = {
+			2 = { } # Nothing
+
+			3 = { # Eat rats?
+				trigger = {
+					NOT = { has_character_flag = seclusion_rats_eaten }
+
+					trigger_if = {
+						limit = { has_character_flag = seclusion_refuse_to_eat_rats }
+
+						had_character_flag = {
+							flag = seclusion_refuse_to_eat_rats
+							months >= 6
+						}
+					}
+				}
+
+				character_event = { id = RIP.11552 }
+			}
+
+			2 = { # Rats eat your food
+				trigger = {
+					NOT = { has_character_flag = seclusion_rats_eaten }
+
+					trigger_if = {
+						limit = { has_character_flag = rats_ate_food }
+
+						had_character_flag = {
+							flag = rats_ate_food
+							months >= 4
+						}
+					}
+				}
+
+				character_event = { id = RIP.11553 }
+			}
+
+			3 = { # Courtier ate your food
+				trigger = {
+					check_variable = {
+						which = remaining_food
+						value >= 1
+					}
+
+					# Check for gluttons or hedonists
+					any_courtier = {
+						OR = {
+							trait = gluttonous
+							trait = hedonist
+						}
+
+						in_seclusion = yes
+						prisoner = no
+						is_incapable = no
+						NOT = { has_character_flag = stole_food }
+					}
+				}
+
+				character_event = { id = RIP.11554 }
+			}
+
+			2 = { # Eat people
+				trigger = {
+					any_courtier = {
+						in_seclusion = yes
+						at_location = ROOT
+						ai = yes
+
+						NOR = {
+							is_parent_of = ROOT
+							is_child_of = ROOT
+							is_married = ROOT
+						}
+					}
+
+					trigger_if = {
+						limit = { has_character_flag = seclusion_refuse_to_eat_fellow_man }
+
+						had_character_flag = {
+							flag = seclusion_refuse_to_eat_fellow_man
+							months >= 6
+						}
+					}
+
+					check_variable = {
+						which = remaining_food
+						value < 1
+					}
+				}
+
+				character_event = { id = RIP.11555 }
+			}
+
+			3 = { # Out of food
+				trigger = {
+					NOT = { has_character_flag = seclusion_starving }
+
+					check_variable = {
+						which = remaining_food
+						value < 1
+					}
+				}
+
+				character_event = { id = RIP.11556 }
+			}
+		}
+
+		repeat_event = {
+			id = RIP.11558
+			days = 25
+			random = 10
+		}
+	}
 }
 
 # Eat rats?
@@ -849,26 +992,7 @@ character_event = {
 	picture = GFX_evt_castle_construction
 	border = GFX_event_normal_frame_religion
 
-	only_rulers = yes
-	has_character_flag = seclusion_food_shortage
-
-	trigger = {
-		in_seclusion = yes
-		NOT = { has_character_flag = seclusion_rats_eaten }
-
-		trigger_if = {
-			limit = { has_character_flag = seclusion_refuse_to_eat_rats }
-
-			had_character_flag = {
-				flag = seclusion_refuse_to_eat_rats
-				months >= 6
-			}
-		}
-	}
-
-	mean_time_to_happen = {
-		months = 2
-	}
+	is_triggered_only = yes
 
 	option = {
 		name = RIP.11552.a # Yum
@@ -903,26 +1027,7 @@ character_event = {
 	picture = GFX_evt_castle_construction
 	border = GFX_event_normal_frame_religion
 
-	only_rulers = yes
-	has_character_flag = seclusion_food_shortage
-
-	trigger = {
-		in_seclusion = yes
-		NOT = { has_character_flag = seclusion_rats_eaten }
-
-		trigger_if = {
-			limit = { has_character_flag = rats_ate_food }
-
-			had_character_flag = {
-				flag = rats_ate_food
-				months >= 4
-			}
-		}
-	}
-
-	mean_time_to_happen = {
-		months = 3
-	}
+	is_triggered_only = yes
 
 	option = {
 		name = CURSES
@@ -943,34 +1048,7 @@ character_event = {
 	picture = GFX_evt_castle_construction
 	border = GFX_event_normal_frame_religion
 
-	only_rulers = yes
-	has_character_flag = seclusion_food_shortage
-
-	trigger = {
-		in_seclusion = yes
-
-		check_variable = {
-			which = remaining_food
-			value >= 1
-		}
-
-		# Check for gluttons or hedonists
-		any_courtier = {
-			OR = {
-				trait = gluttonous
-				trait = hedonist
-			}
-
-			in_seclusion = yes
-			prisoner = no
-			is_incapable = no
-			NOT = { has_character_flag = stole_food }
-		}
-	}
-
-	mean_time_to_happen = {
-		months = 2
-	}
+	is_triggered_only = yes
 
 	immediate = {
 		random_courtier = {
@@ -1177,42 +1255,7 @@ character_event = {
 	picture = GFX_evt_castle_construction
 	border = GFX_event_normal_frame_religion
 
-	only_rulers = yes
-	has_character_flag = seclusion_food_shortage
-
-	trigger = {
-		in_seclusion = yes
-
-		any_courtier = {
-			in_seclusion = yes
-			at_location = ROOT
-			ai = yes
-
-			NOR = {
-				is_parent_of = ROOT
-				is_child_of = ROOT
-				is_married = ROOT
-			}
-		}
-
-		trigger_if = {
-			limit = { has_character_flag = seclusion_refuse_to_eat_fellow_man }
-
-			had_character_flag = {
-				flag = seclusion_refuse_to_eat_fellow_man
-				months >= 6
-			}
-		}
-
-		check_variable = {
-			which = remaining_food
-			value < 1
-		}
-	}
-
-	mean_time_to_happen = {
-		months = 2
-	}
+	is_triggered_only = yes
 
 	option = {
 		name = RIP.11555.a
@@ -1284,22 +1327,7 @@ character_event = {
 	desc = RIP.11556.d
 	border = GFX_event_normal_frame_religion
 
-	only_rulers = yes
-	has_character_flag = seclusion_food_shortage
-
-	trigger = {
-		in_seclusion = yes
-		NOT = { has_character_flag = seclusion_starving }
-
-		check_variable = {
-			which = remaining_food
-			value < 1
-		}
-	}
-
-	mean_time_to_happen = {
-		months = 3
-	}
+	is_triggered_only = yes
 
 	option = {
 		name = RIP.11556.a
@@ -5678,6 +5706,30 @@ narrative_event = {
 		clr_character_flag = good_outcome_D
 		clr_character_flag = good_outcome_E
 		clr_character_flag = picked_lunatic_opt
+	}
+}
+
+# Remove seclusion for courtiers on_new_holder
+character_event = {
+	id = RIP.12095
+
+	is_triggered_only = yes # on_new_holder(_inheritance)
+	hide_window = yes
+
+	trigger = { in_seclusion = no }
+
+	immediate = {
+		any_courtier = {
+			limit = { in_seclusion = yes }
+			clr_character_flag = seclusion_events_on
+			clr_character_flag = do_not_disturb
+			remove_character_modifier = in_seclusion
+			remove_character_modifier = tiny_food_shortage
+			remove_character_modifier = minor_food_shortage
+			remove_character_modifier = normal_food_shortage
+			remove_character_modifier = starving_food_shortage
+			remove_character_modifier = greedy_food_shortage
+		}
 	}
 }
 

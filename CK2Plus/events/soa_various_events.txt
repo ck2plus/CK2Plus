@@ -96,8 +96,136 @@ diploresponse_event = {
 
 # Apart from these events, other events have been modified to make sure the Demon character is very likely to start adventures and is hard to kill
 
+# Newborn is a demon child
+character_event = {
+	id = SoA.3001
+
+	is_triggered_only = yes # on_post_birth, random_events, demon_child_chance
+	hide_window = yes
+
+	trigger = {
+		is_ill = no
+
+		OR = {
+			has_dlc = "Sons of Abraham"
+			has_dlc = "Mystics"
+		}
+
+		NOR = {
+			trait = inbred
+			has_global_flag = demon_child_born
+			event_target:demon_child_non_pagan = { is_alive = yes }
+
+			has_game_rule = {
+				name = supernatural_events
+				value = off
+			}
+		}
+
+		any_close_relative = {
+			is_parent_of = ROOT
+			is_playable = yes
+
+			OR = {
+				religion_group = christian
+				religion_group = muslim
+				religion_group = zoroastrian_group
+				religion_group = jewish_group
+			}
+
+			trigger_if = {
+				limit = { ai = yes }
+
+				has_game_rule = {
+					name = supernatural_events
+					value = unrestricted
+				}
+			}
+		}
+	}
+
+	weight_multiplier = {
+		factor = 1
+
+		mult_modifier = {
+			factor = 2
+
+			any_close_relative = {
+				is_parent_of = ROOT
+				is_playable = yes
+				trait = possessed
+			}
+		}
+
+		mult_modifier = {
+			factor = 1.33
+
+			any_close_relative = {
+				is_parent_of = ROOT
+				is_playable = yes
+				trait = lunatic
+			}
+		}
+
+		mult_modifier = {
+			factor = 1.33
+
+			any_close_relative = {
+				is_parent_of = ROOT
+				is_playable = yes
+				trait = cruel
+			}
+		}
+
+		mult_modifier = {
+			factor = 1.33
+
+			any_close_relative = {
+				is_parent_of = ROOT
+				is_playable = yes
+				trait = impaler
+			}
+		}
+
+		mult_modifier = {
+			factor = 4
+
+			any_close_relative = {
+				is_parent_of = ROOT
+				is_playable = yes
+				society_member_of = the_satanists
+			}
+		}
+	}
+
+	immediate = {
+		save_global_event_target_as = demon_child_non_pagan
+
+		random_close_relative = {
+			limit = {
+				is_parent_of = ROOT
+				is_playable = yes
+
+				OR = {
+					religion_group = christian
+					religion_group = muslim
+					religion_group = zoroastrian_group
+					religion_group = jewish_group
+				}
+			}
+
+			preferred_limit = { ai = no }
+
+			narrative_event = {
+				id = SoA.3002 # Demon child
+				years = 2
+			}
+		}
+	}
+}
+
 # Event triggers for a player
-# Can also be fired from event 335
+# Can also be fired from event MNM.20005
 
 # First narrative event
 narrative_event = {
@@ -106,6 +234,8 @@ narrative_event = {
 	desc = EVTDESC_SOA_3002
 	picture = GFX_evt_birth
 	border = GFX_event_narrative_frame_religion
+
+	is_triggered_only = yes
 
 	only_playable = yes
 
@@ -132,16 +262,7 @@ narrative_event = {
 		}
 
 		any_child = {
-			OR = {
-				AND = {
-					age < 3
-					is_ill = no
-					NOT = { trait = inbred }
-					mother = { always = yes }
-				}
-
-				character = event_target:demon_child_non_pagan # event 335, base_birth_events.txt
-			}
+			character = event_target:demon_child_non_pagan
 		}
 
 		NOR = {
@@ -154,47 +275,8 @@ narrative_event = {
 		}
 	}
 
-	mean_time_to_happen = {
-		years = 500
-
-		mult_modifier = {
-			factor = 0.5
-			trait = possessed
-		}
-
-		mult_modifier = {
-			factor = 0.75
-			trait = lunatic
-		}
-
-		mult_modifier = {
-			factor = 0.75
-			trait = cruel
-		}
-
-		mult_modifier = {
-			factor = 0.75
-			trait = impaler
-		}
-
-		mult_modifier = {
-			factor = 0.25
-			society_member_of = the_satanists
-		}
-	}
-
 	immediate = {
-		random_child = {
-			preferred_limit = {
-				character = event_target:demon_child_non_pagan
-			}
-
-			preferred_limit = {
-				age < 3
-				is_ill = no
-				NOT = { trait = inbred }
-			}
-
+		event_target:demon_child_non_pagan = {
 			save_global_event_target_as = demon_child_non_pagan
 			set_character_flag = demon_child_non_pagan
 			set_global_flag = demon_child_born
@@ -216,6 +298,16 @@ narrative_event = {
 				months = 3
 				random = 90
 			}
+		}
+	}
+
+	fail_trigger_effect = {
+		if = {
+			limit = {
+				NOT = { has_global_flag = demon_child_born }
+			}
+
+			clear_global_event_target = demon_child_non_pagan
 		}
 	}
 
@@ -274,11 +366,11 @@ narrative_event = {
 			}
 		}
 
-		if = {
-			limit = { is_female = yes }
+		random = {
+			chance = 50
 
-			random = {
-				chance = 50
+			event_target:demon_child_mother = {
+				show_scope_change = no
 
 				add_character_modifier = {
 					name = suspected_witch
@@ -972,6 +1064,29 @@ character_event = {
 	hide_window = yes
 
 	immediate = {
+		# Witch nanny commits suicide for the demon child
+		if = {
+			limit = {
+				has_character_flag = demon_child_non_pagan_got_nanny
+				age >= 6
+
+				NOT = { has_character_flag = demon_child_non_pagan_nanny_suicide }
+
+				trigger_if = {
+					limit = { ai = yes }
+					liege = { ai = no }
+				}
+			}
+
+			set_character_flag = demon_child_non_pagan_nanny_suicide
+
+			character_event = {
+				id = SoA.3075
+				days = 1
+				random = 4745 # 13 years, i.e. ~70% of occuring before demon child becomes an adult
+			}
+		}
+
 		# Spawn the Witch Nanny
 		if = {
 			limit = {
@@ -1152,9 +1267,7 @@ character_event = {
 
 	is_triggered_only = yes # on_adulthood
 
-	trigger = {
-		has_character_flag = demon_child_non_pagan
-	}
+	trigger = { has_character_flag = demon_child_non_pagan }
 
 	immediate = {
 		remove_trait = chaste
@@ -2382,17 +2495,15 @@ character_event = {
 character_event = {
 	id = SoA.3075
 
+	is_triggered_only = yes
 	hide_window = yes
 
 	has_character_flag = demon_child_non_pagan_got_nanny
-	has_dlc = "Sons of Abraham"
-	prisoner = no
-	min_age = 6
 	max_age = 15
+	prisoner = no
 
 	trigger = {
 		has_character_flag = demon_child_non_pagan
-		NOT = { religion_group = pagan_group }
 
 		trigger_if = {
 			limit = { ai = yes }
@@ -2414,37 +2525,36 @@ character_event = {
 		}
 	}
 
-	mean_time_to_happen = {
-		years = 13 # Does not always happen
+	fail_trigger_effect = {
+		if = {
+			limit = {
+				is_adult = no
+				has_character_flag = demon_child_non_pagan_got_nanny
+				has_character_flag = demon_child_non_pagan
+				event_target:demon_child_non_pagan_nanny = { is_alive = yes }
+			}
+
+			repeat_event = {
+				id = SoA.3075
+				months = 3
+			}
+		}
 	}
 
 	immediate = {
 		event_target:demon_child_non_pagan_nanny = {
-			character_event = { id = SoA.3076 }
-		}
-	}
-}
-
-# Witch nanny commits suicide for the demon child
-character_event = {
-	id = SoA.3076
-
-	is_triggered_only = yes
-	hide_window = yes
-
-	immediate = {
-		liege = {
-			if = {
-				limit = { has_character_flag = demon_child_non_pagan }
-				narrative_event = { id = SoA.3078 }
+			liege = {
+				if = {
+					limit = { has_character_flag = demon_child_non_pagan }
+					narrative_event = { id = SoA.3078 }
+				}
+				else = {
+					narrative_event = { id = SoA.3077 }
+				}
 			}
-			else = {
-				narrative_event = { id = SoA.3077 }
-			}
-		}
 
-		death = { death_reason = death_suicide_fall }
-		clear_global_event_target = demon_child_non_pagan_nanny
+			death = { death_reason = death_suicide_fall }
+		}
 	}
 }
 
@@ -2458,8 +2568,6 @@ narrative_event = {
 
 	is_triggered_only = yes
 
-	ai = no
-
 	option = {
 		name = {
 			text = EVTOPTA_SOA_3077
@@ -2471,6 +2579,8 @@ narrative_event = {
 			text = EVTOPTA_SOA_3078
 			trigger = { society_member_of = the_satanists }
 		}
+
+		clear_global_event_target = demon_child_non_pagan_nanny
 	}
 }
 
@@ -2484,10 +2594,10 @@ narrative_event = {
 
 	is_triggered_only = yes
 
-	ai = no
-
 	option = {
 		name = EVTOPTA_SOA_3078
+
+		clear_global_event_target = demon_child_non_pagan_nanny
 	}
 }
 
