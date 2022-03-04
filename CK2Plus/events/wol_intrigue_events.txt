@@ -524,7 +524,7 @@ character_event = {
 						OR = {
 							AND = {
 								has_plot = yes
-								plot_target_char = { character = FROMFROM }
+								plot_target_char = { character = event_target:target_spy_on }
 								NOR = {
 									has_character_modifier = plot_assisted_spying
 									has_character_modifier = plot_assisted_spying2
@@ -534,7 +534,7 @@ character_event = {
 								}
 							}
 							any_backed_character = {
-								plot_target_char = { character = FROMFROM }
+								plot_target_char = { character = event_target:target_spy_on }
 								NOR = {
 									has_character_modifier = plot_assisted_spying
 									has_character_modifier = plot_assisted_spying2
@@ -555,16 +555,20 @@ character_event = {
 				}
 
 				30 = { # Discovers real father
-					modifier = {
-						factor = 0
-						FROMFROM = {
-							OR = {
+					trigger = {
+						event_target:target_spy_on = {
+							NOR = {
 								trait = bastard
 								trait = legit_bastard
 								is_child_of = ROOT
 								is_father_real_father = yes
 								real_father = { character = ROOT }
-								reverse_has_opinion_modifier = { who = ROOT modifier = opinion_spy_discovered_father } # Already done this once
+
+								# Already done this once
+								reverse_has_opinion_modifier = {
+									name = opinion_spy_discovered_father
+									who = ROOT
+								}
 							}
 						}
 					}
@@ -573,19 +577,30 @@ character_event = {
 
 					character_event = { id = Plus.1505 }
 				}
+
 				30 = { # Discovers lover
-					modifier = {
+					mult_modifier = {
 						factor = 2
 						OR = {
-							is_married = FROMFROM
-							is_consort = FROMFROM
+							is_married = event_target:target_spy_on
+							is_consort = event_target:target_spy_on
 						}
 					}
-					modifier = {
-						factor = 0
-						FROMFROM = {
-							OR = {
-								has_lover = no
+
+					trigger = {
+						NOR = {
+							# Already done this once
+							has_opinion_modifier = {
+								name = opinion_spy_discovered_lover
+								who = event_target:target_spy_on
+							}
+						}
+
+						event_target:target_spy_on = {
+							is_married = event_target:target_spy_on
+							has_lover = yes
+
+							NOR = {
 								has_character_modifier = adulteress
 								has_character_modifier = adulterer
 								has_character_modifier = incestuous_adulteress
@@ -595,55 +610,75 @@ character_event = {
 								has_character_modifier = known_sodomite
 								has_character_modifier = known_sodomite_pagan
 							}
-						}
-					}
-					modifier = {
-						factor = 0
-						FROMFROM = {
-							is_married = no
-							NOT = {
-								any_lover = {
-									NOT = { any_consort = { character = FROMFROM } }
-									OR = {
-										is_married = yes
-										same_sex = FROMFROM
-										is_close_relative = FROMFROM
-										is_priest = yes
-										trait = monk
-										trait = nun
-										age_diff = { who = FROMFROM years = 25 }
+
+							any_lover = {
+								NOR = {
+									is_consort = event_target:target_spy_on
+									is_married = event_target:target_spy_on
+								}
+
+								OR = {
+									is_married = yes
+									same_sex = event_target:target_spy_on
+									is_close_relative = event_target:target_spy_on
+									is_priest = yes
+									trait = monk
+									trait = nun
+
+									age_diff = {
+										who = event_target:target_spy_on
+										years >= 25
 									}
 								}
 							}
 						}
-					}
-					modifier = {
-						factor = 0
-						FROMFROM = {
-							NOT = { any_spouse = { character = event_target:target_spy_on } }
-						}
-					}
-					modifier = {
-						factor = 0
-						has_opinion_modifier = { who = FROMFROM modifier = opinion_spy_discovered_lover } # Already done this once
 					}
 
 					character_event = { id = WoL.2000 days = 1 } # Chance of levelling up Intrigue skills
 
 					character_event = { id = Plus.1515 }
 				}
+
 				30 = { # Chance to enflame rivalry
-					modifier = {
-						factor = 0
-						has_opinion_modifier = { who = FROMFROM modifier = opinion_spy_enflamed_rivalry } # Already done this once
+					trigger = {
+						NOT = {
+							# Already done this once
+							has_opinion_modifier = {
+								name = opinion_spy_enflamed_rivalry
+								who = event_target:target_spy_on
+							}
+						}
+
+						event_target:target_spy_on = {
+							is_ruler = yes
+
+							top_liege = {
+								any_realm_lord = {
+									has_regent = no
+
+									OR = {
+										real_tier = event_target:target_spy_on
+										vassal_of = event_target:target_spy_on
+									}
+
+									reverse_opinion = { who = event_target:target_spy_on value < 0 }
+									opinion = { who = event_target:target_spy_on value < 0 }
+
+									NOR = {
+										character = event_target:target_spy_on
+										character = ROOT
+										is_rival = event_target:target_spy_on
+
+									}
+								}
+							}
+						}
 					}
-					modifier = {
-						factor = 0
-						FROMFROM = { is_ruler = no }
-					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 2
-						FROMFROM = {
+
+						event_target:target_spy_on = {
 							OR = {
 								trait = envious
 								trait = wroth
@@ -652,35 +687,15 @@ character_event = {
 							}
 						}
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 0.5
-						FROMFROM = {
+
+						event_target:target_spy_on = {
 							OR = {
 								trait = humble
 								trait = content
 								trait = kind
-							}
-						}
-					}
-					modifier = {
-						factor = 0
-						NOT = {
-							FROMFROM = {
-								top_liege = {
-									any_realm_character = {
-										is_ruler = yes
-										has_regent = no
-										OR = {
-											tier = FROMFROM
-											vassal_of = FROMFROM
-										}
-										NOT = { character = FROMFROM }
-										NOT = { character = ROOT }
-										NOT = { is_rival = FROMFROM }
-										NOT = { reverse_opinion = { who = FROMFROM value = 0 } }
-										NOT = { opinion = { who = FROMFROM value = 0 } }
-									}
-								}
 							}
 						}
 					}
@@ -689,14 +704,36 @@ character_event = {
 
 					character_event = { id = Plus.1525 }
 				}
+
 				30 = { # Chance to reduce relations with liege
-					modifier = {
-						factor = 0
-						has_opinion_modifier = { who = FROMFROM modifier = opinion_spy_enflamed_rivalry } # Already done this once
+					trigger = {
+						NOT = {
+							# Already done this once
+							has_opinion_modifier = {
+								name = opinion_spy_enflamed_rivalry
+								who = event_target:target_spy_on
+							}
+						}
+
+						event_target:target_spy_on = {
+							independent = no
+
+							NOR = {
+								vassal_of = ROOT
+								is_rival = liege
+							}
+
+							OR = {
+								opinion = { who = liege value < 0 }
+								reverse_opinion = { who = liege value < 0 }
+							}
+						}
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 2
-						FROMFROM = {
+
+						event_target:target_spy_on = {
 							OR = {
 								trait = envious
 								trait = wroth
@@ -705,36 +742,15 @@ character_event = {
 							}
 						}
 					}
-					modifier = {
+
+					mult_modifier = {
 						factor = 0.5
-						FROMFROM = {
+
+						event_target:target_spy_on = {
 							OR = {
 								trait = humble
 								trait = content
 								trait = kind
-							}
-						}
-					}
-					modifier = {
-						factor = 0
-						FROMFROM = { independent = yes }
-					}
-					modifier = {
-						factor = 0
-						FROMFROM = { vassal_of = ROOT }
-					}
-					modifier = {
-						factor = 0
-						FROMFROM = {
-							liege = { is_rival = FROMFROM }
-						}
-					}
-					modifier = {
-						factor = 0
-						FROMFROM = {
-							liege = {
-								opinion = { who = FROMFROM value = 0 }
-								reverse_opinion = { who = FROMFROM value = 0 }
 							}
 						}
 					}
