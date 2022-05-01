@@ -1,0 +1,2634 @@
+targeted_decisions = {
+
+	vassal_generic_sacrifice_decision = {
+		diplomacy_icon = GFX_sacrifice_decision
+
+		ai_target_filter = home_court
+		ai_check_interval = 8
+
+		only_playable = yes
+
+		from_potential = {
+			has_religion_feature = religion_ritual_sacrifice
+
+			# Already have their special decision
+			religion_openly_aztec_or_reformed_trigger = no
+		}
+
+		potential = {
+			prisoner = yes
+			host = { character = FROM }
+		}
+
+		allow = {
+			show_only_failed_conditions = yes
+
+			NOT = { religion = FROM } # Only on infidels
+			diplomatic_immunity = no
+		}
+
+		effect = {
+			any_liege = {
+				limit = {
+					ai = no
+					NOT = { religion = FROM }
+				}
+
+				character_event = { id = HF.23001 } # Notify of ritual sacrifice
+			}
+
+			FROM = {
+				character_event = { id = HF.23002 }
+			}
+
+			if = {
+				limit = {
+					FROM = { ai = no }
+					controls_religion = yes
+					is_ironman = yes
+					religion_openly_aztec_or_reformed_trigger = no
+				}
+
+				FROM = { set_character_flag = achievement_holy_smoke }
+			}
+
+			death = {
+				death_reason = death_execution_aztec_sacrifice
+				killer = FROM
+			}
+		}
+
+		ai_will_do = {
+			factor = 1
+
+			trigger = {
+				FROM = {
+					NOT = { trait = cynical }
+				}
+			}
+
+			mult_modifier = {
+				factor = 1.5
+				FROM = { trait = zealous }
+			}
+
+			mult_modifier = {
+				factor = 1.5
+				FROM = { trait = bloodthirsty_gods_1 }
+			}
+
+			mult_modifier = {
+				factor = 1.75
+				FROM = { trait = bloodthirsty_gods_2 }
+			}
+
+			mult_modifier = {
+				factor = 2
+				FROM = { trait = bloodthirsty_gods_3 }
+			}
+		}
+	}
+
+	stable_attribute_improvement_decision = {
+		diplomacy_icon = GFX_stable_prestige_icon_decision
+
+		filter = court_including_me
+		ai_target_filter = court_including_me
+		ai_check_interval = 50
+
+		only_playable = yes
+
+		from_potential = {
+			has_dlc = "Holy Fury"
+			is_adult = yes
+			is_incapable = no
+			prisoner = no
+
+			OR = {
+				has_religion_feature = religion_stable
+				has_religion_feature = religion_feature_slavic
+				has_religion_feature = religion_feature_finnish
+			}
+		}
+
+		potential = {
+			prisoner = no
+			is_incapable = no
+			is_adult = yes
+		}
+
+		allow = {
+			FROM = {
+				piety >= 150
+
+				trigger_if = {
+					limit = { has_character_modifier = stable_attribute_improvement_cooldown }
+
+					custom_tooltip = {
+						text = tooltip_stable_attribute_improvement_cooldown
+						always = no
+					}
+				}
+			}
+
+			ROOT = {
+				show_only_failed_conditions = yes
+
+				trigger_if = {
+					limit = { has_character_modifier = stable_attribute_improvement_target_cooldown }
+
+					custom_tooltip = {
+						text = tooltip_attribute_improvement_target_cooldown
+						always = no
+					}
+				}
+
+				religion = FROM
+				diplomatic_immunity = no
+
+				trigger_if = {
+					limit = { is_female = yes }
+					NOT = { has_religion_feature = religion_patriarchal }
+				}
+				trigger_else = {
+					NOT = { has_religion_feature = religion_matriarchal }
+				}
+
+				# Either self-improving, or MUST have +1 point in one of the possible attributes compared to the target
+				custom_tooltip = {
+					text = tooltip_attribute_requirements_to_improve
+
+					FROM = {
+						OR = {
+							character = ROOT
+							combat_rating > ROOT
+							diplomacy > ROOT
+							martial > ROOT
+							stewardship > ROOT
+							intrigue > ROOT
+							learning > ROOT
+						}
+					}
+				}
+			}
+		}
+
+		effect = {
+			FROM = {
+				show_scope_change = no
+
+				piety = -150
+
+				if = {
+					limit = { character = ROOT }
+					prestige = -500
+				}
+			}
+
+			custom_tooltip = {
+				text = tooltip_stable_attribute_improvement_effect
+
+				FROM = {
+					add_character_modifier = {
+						name = stable_attribute_improvement_cooldown
+						years = 5
+						hidden = yes
+					}
+
+					character_event = { id = HF.23760 } # Pick attribute to improve
+
+					if = { # Chance for Family Bloodline
+						limit = {
+							is_close_relative = ROOT
+							higher_real_tier_than = COUNT
+
+							NOT = {
+								any_owned_bloodline = {
+									has_bloodline_flag = created_bloodline
+									bloodline_is_active_for = PREV
+								}
+							}
+						}
+
+						if = {
+							limit = {
+								# 5 x 8 = 40 years to achieve
+								check_variable = {
+									which = stable_family_variable
+									value < 8
+								}
+							}
+
+							change_variable = {
+								which = stable_family_variable
+								value = 1
+							}
+						}
+						else = {
+							narrative_event = {
+								id = HF.23770 # Gain Family Bloodline
+								days = 15
+								random = 15
+							}
+						}
+					}
+					else_if = { # Chance for Benevolent Bloodline when using action on councilmembers
+						limit = {
+							higher_real_tier_than = COUNT
+
+							ROOT = {
+								is_councillor = yes
+								NOT = { character = PREV }
+							}
+
+							NOT = {
+								any_owned_bloodline = {
+									has_bloodline_flag = created_bloodline
+									bloodline_is_active_for = PREV
+								}
+							}
+						}
+
+						if = {
+							limit = {
+								# 5 x 8 = 40 years to achieve
+								check_variable = {
+									which = stable_benevolent_variable
+									value < 8
+								}
+							}
+
+							change_variable = {
+								which = stable_benevolent_variable
+								value = 1
+							}
+						}
+						else = {
+							narrative_event = {
+								id = HF.23771 # Gain Benevolent Bloodline
+								days = 15
+								random = 15
+							}
+						}
+					}
+				}
+
+				# Other AI shouldn't target a recent target
+				add_character_modifier = {
+					name = stable_attribute_improvement_target_cooldown
+					years = 5
+					hidden = yes
+				}
+
+				character_event = {
+					id = HF.23772 # Delayed safety flag clean-up
+					days = 75
+				}
+			}
+		}
+
+		ai_will_do = {
+			factor = 1
+
+			trigger = {
+				FROM = {
+					NOR = {
+						trait = slothful
+						is_rival = ROOT
+					}
+				}
+			}
+
+			mult_modifier = {
+				factor = 2
+				FROM = { trait = diligent }
+			}
+
+			mult_modifier = {
+				factor = 2
+				character = FROM
+				FROM = { trait = ambitious }
+			}
+
+			mult_modifier = {
+				factor = 2
+				is_councillor = yes
+				NOT = { character = FROM }
+
+				FROM = {
+					OR = {
+						trait = kind
+						trait = charitable
+						trait = content
+					}
+				}
+			}
+
+			mult_modifier = {
+				factor = 2
+				is_close_relative = FROM
+				NOT = { character = FROM }
+
+				FROM = {
+					OR = {
+						trait = kind
+						trait = charitable
+						trait = content
+						has_focus = focus_family
+					}
+				}
+			}
+
+			mult_modifier = {
+				factor = 2
+
+				FROM = {
+					is_married = ROOT
+
+					OR = {
+						trait = ambitious
+						trait = envious
+						trait = wroth
+						has_focus = focus_family
+					}
+				}
+			}
+
+			mult_modifier = {
+				factor = 2
+				is_friend = FROM
+			}
+
+			mult_modifier = {
+				factor = 2
+				is_lover = FROM
+			}
+
+			mult_modifier = {
+				factor = 2
+				is_primary_heir = FROM
+			}
+
+			mult_modifier = {
+				factor = 0.5
+				trait = stressed
+			}
+
+			mult_modifier = {
+				factor = 0.5
+				trait = depressed
+			}
+		}
+	}
+}
+
+decisions = {
+	syncretic_sympathy_decision = {
+		ai_check_interval = 20
+
+		is_high_prio = yes
+
+		only_playable = yes
+
+		potential = {
+			OR = {
+				has_religion_feature = religion_syncretic
+				has_religion_feature = religion_feature_hellenic
+			}
+
+			is_adult = yes
+			is_incapable = no
+			has_any_sympathy_trait_trigger = no
+			NOT = { has_character_flag = flag_picking_sympathy }
+		}
+
+		allow = {
+			OR = {
+				has_religion_feature = religion_syncretic
+				has_religion_feature = religion_feature_hellenic
+			}
+
+			prisoner = no
+		}
+
+		effect = {
+			hidden_effect = {
+				if = {
+					limit = { ai = no }
+					set_character_flag = flag_picking_sympathy
+					character_event = { id = HF.23003 } # Pick sympathy trait
+				}
+				else = {
+					random_list = {
+						100 = {
+							add_trait = sympathy_christendom
+
+							trigger = {
+								NOT = { religion_group = christian }
+
+								OR = {
+									any_liege = {
+										OR = {
+											religion_group = christian
+
+											AND = {
+												trait = sympathy_christendom
+												religion = ROOT
+											}
+										}
+									}
+
+									any_spouse = {
+										religion_group = christian
+									}
+
+									any_courtier_or_vassal = {
+										religion_group = christian
+									}
+
+									any_neighbor_independent_ruler = {
+										religion_group = christian
+									}
+
+									any_demesne_province = {
+										religion_group = christian
+									}
+								}
+
+							}
+
+							mult_modifier = { # Prioritize getting a sympathy trait that is useful
+								factor = 100
+
+								OR = {
+									any_demesne_province = {
+										religion_group = christian
+									}
+
+									any_vassal = {
+										religion_group = christian
+									}
+								}
+							}
+
+							mult_modifier = { # Otherwise try to emulate your liege
+								factor = 5
+
+								NOR = {
+									any_demesne_province = {
+										religion_group = christian
+									}
+
+									any_vassal = {
+										religion_group = christian
+									}
+								}
+
+								any_liege = {
+									OR = {
+										religion_group = christian
+
+										AND = {
+											trait = sympathy_christendom
+											religion = ROOT
+										}
+									}
+								}
+							}
+						}
+
+						100 = {
+							add_trait = sympathy_islam
+
+							trigger = {
+								NOT = { religion_group = muslim }
+
+								OR = {
+									any_liege = {
+										OR = {
+											religion_group = muslim
+
+											AND = {
+												trait = sympathy_islam
+												religion = ROOT
+											}
+										}
+									}
+
+									any_spouse = {
+										religion_group = muslim
+									}
+
+									any_courtier_or_vassal = {
+										religion_group = muslim
+									}
+
+									any_neighbor_independent_ruler = {
+										religion_group = muslim
+									}
+
+									any_demesne_province = {
+										religion_group = muslim
+									}
+								}
+							}
+
+							mult_modifier = { # Prioritize getting a sympathy trait that is useful
+								factor = 100
+
+								OR = {
+									any_demesne_province = {
+										religion_group = muslim
+									}
+
+									any_vassal = {
+										religion_group = muslim
+									}
+								}
+							}
+
+							mult_modifier = { # Otherwise try to emulate your liege
+								factor = 5
+
+								NOR = {
+									any_demesne_province = {
+										religion_group = muslim
+									}
+
+									any_vassal = {
+										religion_group = muslim
+									}
+								}
+
+								any_liege = {
+									OR = {
+										religion_group = muslim
+
+										AND = {
+											trait = sympathy_islam
+											religion = ROOT
+										}
+									}
+								}
+							}
+						}
+
+						100 = {
+							add_trait = sympathy_pagans
+
+							trigger = {
+								NOT = { religion_group = pagan_group }
+
+								OR = {
+									any_liege = {
+										OR = {
+											religion_group = pagan_group
+
+											AND = {
+												trait = sympathy_pagans
+												religion = ROOT
+											}
+										}
+									}
+
+									any_spouse = {
+										religion_group = pagan_group
+									}
+
+									any_courtier_or_vassal = {
+										religion_group = pagan_group
+									}
+
+									any_neighbor_independent_ruler = {
+										religion_group = pagan_group
+									}
+
+									any_demesne_province = {
+										religion_group = pagan_group
+									}
+								}
+							}
+
+							mult_modifier = { # Prioritize getting a sympathy trait that is useful
+								factor = 100
+
+								OR = {
+									any_demesne_province = {
+										religion_group = pagan_group
+									}
+
+									any_vassal = {
+										religion_group = pagan_group
+									}
+								}
+							}
+
+							mult_modifier = { # Otherwise try to emulate your liege
+								factor = 5
+
+								NOR = {
+									any_demesne_province = {
+										religion_group = pagan_group
+									}
+
+									any_vassal = {
+										religion_group = pagan_group
+									}
+								}
+
+								any_liege = {
+									OR = {
+										religion_group = pagan_group
+
+										AND = {
+											trait = sympathy_pagans
+											religion = ROOT
+										}
+									}
+								}
+							}
+						}
+
+						100 = {
+							add_trait = sympathy_zoroastrianism
+
+							trigger = {
+								NOT = { religion_group = zoroastrian_group }
+
+								OR = {
+									any_liege = {
+										OR = {
+											religion_group = zoroastrian_group
+
+											AND = {
+												trait = sympathy_zoroastrianism
+												religion = ROOT
+											}
+										}
+									}
+
+									any_spouse = {
+										religion_group = zoroastrian_group
+									}
+
+									any_courtier_or_vassal = {
+										religion_group = zoroastrian_group
+									}
+
+									any_neighbor_independent_ruler = {
+										religion_group = zoroastrian_group
+									}
+
+									any_demesne_province = {
+										religion_group = zoroastrian_group
+									}
+								}
+							}
+
+							mult_modifier = { # Prioritize getting a sympathy trait that is useful
+								factor = 100
+
+								OR = {
+									any_demesne_province = {
+										religion_group = zoroastrian_group
+									}
+
+									any_vassal = {
+										religion_group = zoroastrian_group
+									}
+								}
+							}
+
+							mult_modifier = { # Otherwise try to emulate your liege
+								factor = 5
+
+								NOR = {
+									any_demesne_province = {
+										religion_group = zoroastrian_group
+									}
+
+									any_vassal = {
+										religion_group = zoroastrian_group
+									}
+								}
+
+								any_liege = {
+									OR = {
+										religion_group = zoroastrian_group
+
+										AND = {
+											trait = sympathy_zoroastrianism
+											religion = ROOT
+										}
+									}
+								}
+							}
+						}
+
+						100 = {
+							add_trait = sympathy_judaism
+
+							trigger = {
+								NOT = { religion_group = jewish_group }
+
+								OR = {
+									any_liege = {
+										OR = {
+											religion_group = jewish_group
+
+											AND = {
+												trait = sympathy_judaism
+												religion = ROOT
+											}
+										}
+									}
+
+									any_spouse = {
+										religion_group = jewish_group
+									}
+
+									any_courtier_or_vassal = {
+										religion_group = jewish_group
+									}
+
+									any_neighbor_independent_ruler = {
+										religion_group = jewish_group
+									}
+
+									any_demesne_province = {
+										religion_group = jewish_group
+									}
+								}
+							}
+
+							mult_modifier = { # Prioritize getting a sympathy trait that is useful
+								factor = 100
+
+								OR = {
+									any_demesne_province = {
+										religion_group = jewish_group
+									}
+
+									any_vassal = {
+										religion_group = jewish_group
+									}
+								}
+							}
+
+							mult_modifier = { # Otherwise try to emulate your liege
+								factor = 5
+
+								NOR = {
+									any_demesne_province = {
+										religion_group = jewish_group
+									}
+
+									any_vassal = {
+										religion_group = jewish_group
+									}
+								}
+
+								any_liege = {
+									OR = {
+										religion_group = jewish_group
+
+										AND = {
+											trait = sympathy_judaism
+											religion = ROOT
+										}
+									}
+								}
+							}
+						}
+
+						100 = {
+							add_trait = sympathy_indian
+
+							trigger = {
+								NOT = { religion_group = indian_group }
+
+								OR = {
+									any_liege = {
+										OR = {
+											religion_group = indian_group
+
+											AND = {
+												trait = sympathy_indian
+												religion = ROOT
+											}
+										}
+									}
+
+									any_spouse = {
+										religion_group = indian_group
+									}
+
+									any_courtier_or_vassal = {
+										religion_group = indian_group
+									}
+
+									any_neighbor_independent_ruler = {
+										religion_group = indian_group
+									}
+
+									any_demesne_province = {
+										religion_group = indian_group
+									}
+								}
+							}
+
+							mult_modifier = { # Prioritize getting a sympathy trait that is useful
+								factor = 100
+
+								OR = {
+									any_demesne_province = {
+										religion_group = indian_group
+									}
+
+									any_vassal = {
+										religion_group = indian_group
+									}
+								}
+							}
+
+							mult_modifier = { # Otherwise try to emulate your liege
+								factor = 5
+
+								NOR = {
+									any_demesne_province = {
+										religion_group = indian_group
+									}
+
+									any_vassal = {
+										religion_group = indian_group
+									}
+								}
+
+								any_liege = {
+									OR = {
+										religion_group = indian_group
+
+										AND = {
+											trait = sympathy_indian
+											religion = ROOT
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		ai_will_do = {
+			factor = 1
+
+			trigger = {
+				# Zealous characters do not want to understand
+				NOT = { trait = zealous }
+
+				# The AI needs a reason to do the decision at all
+				OR = {
+					any_liege = {
+						OR = {
+							NOT = { religion_group = ROOT }
+
+							AND = {
+								has_any_sympathy_trait_trigger = yes
+								religion = ROOT
+							}
+						}
+					}
+
+					any_spouse = {
+						NOT = { religion_group = ROOT }
+					}
+
+					any_courtier_or_vassal = {
+						NOT = { religion_group = ROOT }
+					}
+
+					any_neighbor_independent_ruler = {
+						NOT = { religion_group = ROOT }
+					}
+
+					any_demesne_province = {
+						NOT = { religion_group = ROOT }
+					}
+				}
+			}
+
+			# These are the most important reasons to gain a sympathy trait, if the AI has neither they are less likely to gain a trait
+			mult_modifier = {
+				factor = 0.25
+
+				NOR = {
+					any_demesne_province = {
+						NOT = { religion_group = ROOT }
+					}
+
+					any_vassal = {
+						NOT = { religion_group = ROOT }
+					}
+
+					any_liege = {
+						religion = ROOT
+						has_any_sympathy_trait_trigger = yes
+					}
+				}
+			}
+		}
+	}
+
+	pagan_branch_decision = {
+		ai_check_interval = 70
+
+		is_high_prio = yes
+
+		potential = {
+			has_religion_feature = religion_no_leader
+			is_adult = yes
+
+			NOR = {
+				trait = pagan_branch_1
+				trait = pagan_branch_2
+				trait = pagan_branch_3
+				trait = pagan_branch_4
+				has_character_flag = flag_picking_branch
+			}
+		}
+
+		allow = {
+			prisoner = no
+			is_incapable = no
+		}
+
+		effect = {
+			custom_tooltip = {
+				text = tooltip_pick_pagan_branch
+
+				set_character_flag = flag_picking_branch
+				character_event = { id = HF.23016 } # Pick branch trait
+
+				add_character_modifier = {
+					name = picked_pagan_branch_cooldown
+					years = 5
+					hidden = yes
+				}
+			}
+		}
+
+		ai_will_do = {
+			factor = 1
+
+			mult_modifier = {
+				factor = 1.5
+				trait = zealous
+			}
+		}
+	}
+
+	change_pagan_branch_decision = {
+		ai = no
+
+		potential = {
+			has_religion_feature = religion_no_leader
+			is_adult = yes
+
+			OR = {
+				trait = pagan_branch_1
+				trait = pagan_branch_2
+				trait = pagan_branch_3
+				trait = pagan_branch_4
+			}
+
+			NOR = {
+				has_character_flag = flag_picking_branch
+				has_character_flag = flag_changed_branch
+			}
+		}
+
+		allow = {
+			prisoner = no
+			is_incapable = no
+
+			custom_tooltip = {
+				text = pagan_branch_timer
+				NOT = { has_character_modifier = picked_pagan_branch_cooldown }
+			}
+		}
+
+		effect = {
+			custom_tooltip = {
+				text = tooltip_change_pagan_branch
+
+				set_character_flag = flag_picking_branch
+				set_character_flag = flag_changed_branch
+				character_event = { id = HF.23017 } # Switch branch trait
+			}
+		}
+
+		ai_will_do = { factor = 0 }
+	}
+
+	determine_zodiac_sign_decision = {
+		is_high_prio = yes
+
+		ai = no
+
+		potential = {
+			is_adult = yes
+
+			OR = {
+				religion_openly_hellenic_or_reformed_trigger = yes
+				has_religion_feature = religion_astrology
+			}
+
+			has_any_astrology_trait_trigger = no
+			NOT = { has_character_flag = flag_child_forsaken_zodiac }
+		}
+
+		allow = {
+			prisoner = no
+			is_incapable = no
+			learning >= 6
+		}
+
+		effect = {
+			custom_tooltip = {
+				text = gain_zodiac_trait_effect_tt
+
+				add_western_zodiac_trait_effect = yes
+				character_event = { id = HFP.23925 } # Notify, show trait gain
+			}
+		}
+
+		ai_will_do = {
+			factor = 1
+
+			mult_modifier = {
+				factor = 1.5
+				trait = zealous
+			}
+
+			mult_modifier = {
+				factor = 0.1
+				trait = cynical
+			}
+		}
+	}
+
+	delve_into_classics_decision = {
+		ai_check_interval = 400
+
+		is_high_prio = yes
+
+		only_playable = yes
+
+		potential = {
+			has_dlc = "Holy Fury"
+
+			has_game_rule = {
+				name = hellenism_rule
+				value = on
+			}
+
+			religion_group = christian
+			is_adult = yes
+			is_heretic = no
+
+			# Must be of the interested cultures
+			OR = {
+				culture = greek
+				culture = italian
+				culture = roman
+				culture = sardinian
+			}
+
+			# Must be eccentric or crazy
+			OR = {
+				trait = lunatic
+				trait = possessed
+				trait = scholar
+				trait = mystic
+				has_focus = focus_scholarship
+			}
+
+			# Must control an Hellenic Holy Site
+			OR = {
+				completely_controls = c_thessalonike
+				completely_controls = c_atheniai
+				completely_controls = c_siracusa
+				completely_controls = c_roma
+				completely_controls = c_alexandria
+			}
+
+			# Must not have used this decision or be Hellenic already
+			is_theocracy = no
+			religion_openly_hellenic_or_reformed_trigger = no
+			religion_secretly_hellenic_or_reformed_trigger = no
+
+			NOR = {
+				has_character_modifier = caesars_insight
+				has_character_modifier = ciceros_insight
+				has_character_modifier = justinians_insight
+				has_character_flag = flag_delving_into_classics
+
+				hellenic_pagan = {
+					has_flag = has_been_reformed # No point in secrecy, there are other ways to convert
+				}
+			}
+
+			# Court must also be localized in Italy or Greece
+			capital_scope = {
+				OR = {
+					region = world_europe_south_italy
+					region = world_europe_south_east
+				}
+			}
+		}
+
+		allow = {
+			prisoner = no
+			is_incapable = no
+			learning >= 6
+		}
+
+		effect = {
+			custom_tooltip = {
+				text = tooltip_delve_into_classics
+
+				set_character_flag = flag_delving_into_classics
+				character_event = { id = HF.23026 } # Pick topic
+			}
+		}
+
+		ai_will_do = {
+			factor = 1
+
+			trigger = {
+				NOT = { trait = zealous }
+			}
+		}
+	}
+
+	# Create Myrmidons - Hellenic Holy Order
+	create_myrmidons = {
+		ai_check_interval = 120
+
+		is_high_prio = yes
+
+		only_playable = yes
+
+		potential = {
+			religion = hellenic_pagan_reformed
+			NOT = { is_title_active = d_myrmidons }
+
+			# NOT = { has_landed_title = e_roman_empire } # To activate in the event of special case being defined for Roman Emperors. (!!!!)
+
+			trigger_if = {
+				limit = { independent = no }
+				real_tier = KING
+			}
+
+			NOT = {
+				has_alternate_start_parameter = {
+					key = religion_names
+					value = random
+				}
+			}
+		}
+
+		allow = {
+			OR = {
+				AND = {
+					completely_controls = c_thessalonike
+					completely_controls = c_atheniai
+					completely_controls = c_siracusa
+					completely_controls = c_roma
+					completely_controls = c_alexandria
+					piety >= 1000
+				}
+
+				AND = {
+					year >= 1100
+					piety >= 200
+				}
+			}
+		}
+
+		effect = {
+			custom_tooltip = {
+				text = create_myrmidons_tooltip
+
+				activate_title = {
+					title = d_myrmidons
+					status = yes
+				}
+
+				create_character = {
+					random_traits = no
+					dynasty = random
+					religion = ROOT
+					culture = greek
+					female = no
+					age = 33
+					add_trait = brilliant_strategist
+					add_trait = zealous
+					add_trait = humble
+					add_trait = ambitious
+					add_trait = strategist
+					add_trait = holy_warrior
+				}
+
+				new_character = {
+					wealth = 500
+
+					grant_title = d_myrmidons
+					set_government_type = order_government
+					save_event_target_as = leader_of_myrmidons
+
+					while = {
+						count = 7
+
+						create_character = {
+							random_traits = yes
+							dynasty = random
+							religion = ROOT
+							culture = greek
+							female = no
+							min_age = 16
+							max_age = 28
+						}
+					}
+
+					while = {
+						count = 2
+
+						create_character = {
+							random_traits = yes
+							dynasty = random
+							religion = ROOT
+							culture = greek
+							female = yes
+							min_age = 16
+							max_age = 18
+						}
+					}
+				}
+
+				any_player = {
+					limit = {
+						OR = {
+							religion = hellenic_pagan_reformed
+							capital_scope = { region = world_europe_west }
+						}
+					}
+
+					narrative_event = { id = HF.23120 } # Notify
+				}
+			}
+		}
+
+		ai_will_do = {
+			factor = 1
+		}
+	}
+
+	# Create Bacchants - Hellenic Satanists
+	create_bacchants = {
+		ai_check_interval = 120
+
+		is_high_prio = yes
+
+		only_playable = yes
+
+		potential = {
+			has_dlc = "Mystics"
+
+			OR = {
+				hellenic_pagan = {
+					has_flag = has_been_reformed
+				}
+
+				has_global_flag = flag_started_roman_renaissance # Required cultural basis in order for them to take root
+			}
+
+			NOR = {
+				has_global_flag = flag_restored_bacchants
+
+				has_alternate_start_parameter = {
+					key = religion_names
+					value = random
+				}
+
+				has_game_rule = {
+					name = devil_worshipers
+					value = none
+				}
+			}
+
+			has_bacchants_prerequisites = yes
+
+			the_bacchants = {
+				society_has_members = no
+			}
+		}
+
+		allow = {
+			is_in_society = no
+			is_incapable = no
+			NOT = { trait = zealous }
+			is_inaccessible_trigger = no
+		}
+
+		effect = {
+			piety = -800
+
+			custom_tooltip = {
+				text = create_bacchants_tooltip
+
+				set_global_flag = flag_restored_bacchants
+				join_society = the_bacchants
+				set_society_grandmaster = yes
+				add_society_currency_massive_effect = yes
+
+				while = {
+					count = 6
+
+					create_character = {
+						random_traits = yes
+						dynasty = random
+						religion = ROOT
+						culture = ROOT
+						female = no
+						min_age = 16
+						max_age = 28
+					}
+
+					new_character = {
+						join_society = the_bacchants
+					}
+				}
+
+				while = {
+					count = 3
+
+					create_character = {
+						random_traits = yes
+						dynasty = random
+						religion = ROOT
+						culture = ROOT
+						female = yes
+						min_age = 16
+						max_age = 18
+					}
+
+					new_character = {
+						join_society = the_bacchants
+					}
+				}
+
+				any_vassal = {
+					limit = {
+						ai = yes
+						can_join_society = the_bacchants
+						is_within_diplo_range = ROOT
+					}
+
+					random = {
+						chance = 35
+						join_society = the_bacchants
+					}
+				}
+
+				any_independent_ruler = {
+					limit = {
+						ai = yes
+						can_join_society = the_bacchants
+						is_within_diplo_range = ROOT
+					}
+
+					random = {
+						chance = 35
+						join_society = the_bacchants
+					}
+				}
+
+				any_player = {
+					limit = {
+						OR = {
+							religion_openly_hellenic_or_reformed_trigger = yes
+							culture = roman
+							is_within_diplo_range = ROOT
+						}
+					}
+
+					narrative_event = { id = HF.23122 }
+				}
+			}
+		}
+
+		ai_will_do = { factor = 1 }
+	}
+
+	# Create Stoics - Hellenic Monks
+	create_stoics = {
+		ai_check_interval = 120
+
+		is_high_prio = yes
+
+		only_playable = yes
+
+		potential = {
+			has_dlc = "Mystics"
+
+			OR = {
+				religion_openly_hellenic_or_reformed_trigger = yes
+
+				AND = {
+					culture = roman
+
+					# Somewhat compatible when mixed with Roman culture
+					OR = {
+						religion_group = christian
+						religion_group = jewish_group
+						religion_openly_bon_or_reformed_trigger = yes
+						religion = buddhist
+					}
+				}
+			}
+
+			OR = {
+				hellenic_pagan = {
+					has_flag = has_been_reformed # No point in secrecy, there are other ways to convert
+				}
+
+				has_global_flag = flag_started_roman_renaissance # Required cultural basis in order for them to take root
+			}
+
+			is_adult = yes
+
+			# Not for savages
+			is_tribal = no
+			is_nomadic = no
+
+			NOR = {
+				has_religion_feature = religion_dogmatic
+				trait = excommunicated
+				has_global_flag = flag_restored_stoic_intelligentia
+
+				has_alternate_start_parameter = {
+					key = religion_names
+					value = random
+				}
+			}
+
+			monastic_order_stoics = {
+				society_has_members = no
+			}
+		}
+
+		allow = {
+			higher_real_tier_than = COUNT
+			is_in_society = no
+			is_incapable = no
+			is_inaccessible_trigger = no
+
+			# Must have one of the Stoic virtues to restart the movement
+			OR = {
+				trait = temperate
+				trait = erudite
+				trait = brave
+				trait = just
+			}
+
+			learning >= 15
+			scaled_wealth = 0.25
+		}
+
+		effect = {
+			scaled_wealth = -0.25
+
+			custom_tooltip = {
+				text = create_stoics_tooltip
+
+				set_global_flag = flag_restored_stoic_intelligentia
+				join_society = monastic_order_stoics
+				set_society_grandmaster = yes
+				add_society_currency_massive_effect = yes
+
+				while = {
+					count = 6
+
+					create_random_priest = {
+						random_traits = yes
+						dynasty = random
+						religion = ROOT
+						culture = ROOT
+						female = no
+						min_age = 16
+						max_age = 28
+
+						attributes = {
+							learning = 10
+						}
+					}
+
+					new_character = {
+						join_society = monastic_order_stoics
+					}
+				}
+
+				any_vassal = {
+					limit = {
+						ai = yes
+						can_join_society = monastic_order_stoics
+					}
+
+					join_society = monastic_order_stoics
+				}
+
+				any_independent_ruler = {
+					limit = {
+						ai = yes
+						can_join_society = monastic_order_stoics
+						is_within_diplo_range = ROOT
+					}
+
+					random = {
+						chance = 35
+						join_society = monastic_order_stoics
+					}
+				}
+
+				any_player = {
+					limit = {
+						OR = {
+							religion_openly_hellenic_or_reformed_trigger = yes
+							culture = roman
+							is_within_diplo_range = ROOT
+						}
+					}
+
+					narrative_event = { id = HF.23123 }
+				}
+			}
+		}
+
+		ai_will_do = { factor = 1 }
+	}
+
+	bloodthirsty_games_decision = {
+		ai_check_interval = 240
+
+		is_high_prio = yes
+
+		only_independent = yes
+
+		potential = {
+			has_dlc = "Holy Fury"
+
+			OR = {
+				religion_openly_aztec_or_reformed_trigger = yes
+				has_religion_feature = religion_ritual_sacrifice
+			}
+
+			independent = yes
+			higher_real_tier_than = COUNT
+			is_landed = yes
+			is_adult = yes
+			is_incapable = no
+
+			NOR = {
+				has_any_opinion_modifier = opinion_blood_games_guest
+				has_religion_feature = religion_peaceful
+			}
+		}
+
+		allow = {
+			OR = {
+				trait = bloodthirsty_gods_1
+				trait = bloodthirsty_gods_2
+				trait = bloodthirsty_gods_3
+			}
+
+			piety >= 100
+			prisoner = no
+			is_inaccessible_trigger = no
+
+			trigger_if = {
+				limit = { has_character_modifier = bloodthirsty_games_cooldown }
+
+				custom_tooltip = {
+					text = tooltip_bloodthirsty_games_cooldown
+					always = no
+				}
+			}
+		}
+
+		effect = {
+			piety = -100
+
+			custom_tooltip = {
+				text = tooltip_start_bloodthirsty_games
+
+				character_event = { id = HF.23440 } # Send invitations
+
+				add_character_modifier = {
+					name = bloodthirsty_games_cooldown
+					years = 5
+					hidden = yes
+				}
+			}
+		}
+
+		ai_will_do = {
+			factor = 1
+
+			trigger = {
+				NOT = { trait = cynical }
+
+				# Enough contender to make it interesting
+				num_of_vassals >= 6
+
+				# Enough valid free candidates
+				OR = {
+					any_realm_character = {
+						count >= 5
+
+						prisoner = yes
+						host = { character = ROOT }
+
+						# Sex laws check
+						trigger_if = {
+							limit = { is_female = no }
+							male_can_hold_minor_title_trigger = yes
+						}
+						trigger_else = {
+							female_can_hold_minor_title_trigger = yes
+						}
+					}
+
+					any_courtier = {
+						count >= 2
+
+						has_minor_title = title_commander
+						is_ruler = no
+					}
+				}
+			}
+
+			mult_modifier = {
+				factor = 1.5
+				trait = zealous
+			}
+
+			mult_modifier = {
+				factor = 1.25
+				trait = bloodthirsty_gods_2
+			}
+
+			mult_modifier = {
+				factor = 1.5
+				trait = bloodthirsty_gods_3
+			}
+		}
+	}
+
+	bloodthirsty_mass_sacrifice_decision = {
+		ai_check_interval = 150
+
+		is_high_prio = yes
+
+		only_independent = yes
+
+		potential = {
+			has_dlc = "Holy Fury"
+
+			OR = {
+				religion_openly_aztec_or_reformed_trigger = yes
+				has_religion_feature = religion_ritual_sacrifice
+			}
+
+			independent = yes
+			higher_real_tier_than = COUNT
+			is_landed = yes
+			is_adult = yes
+			is_incapable = no
+
+			# Aztecs could reform as Peaceful
+			NOT = { has_religion_feature = religion_peaceful }
+		}
+
+		allow = {
+			OR = {
+				trait = bloodthirsty_gods_2
+				trait = bloodthirsty_gods_3
+			}
+
+			piety >= 200
+			war = yes
+			prisoner = no
+			is_inaccessible_trigger = no
+			NOT = { trait = cynical }
+
+			trigger_if = {
+				limit = { has_character_modifier = bloodthirsty_mass_sacrifice_cooldown }
+
+				custom_tooltip = {
+					text = tooltip_bloodthirsty_mass_sacrifice_cooldown
+					always = no
+				}
+			}
+		}
+
+		effect = {
+			piety = -200
+
+			custom_tooltip = {
+				text = tooltip_start_bloodthirsty_mass_sacrifice
+
+				character_event = { id = HF.23462 } # Decide how many people are you going to sacrifice.
+
+				add_character_modifier = {
+					name = bloodthirsty_mass_sacrifice_cooldown
+					years = 100 # CleanSlate: tooltip mention 'last few decades', but religion modifier in event also lasts a century
+					hidden = yes
+				}
+			}
+		}
+
+		ai_will_do = {
+			factor = 1
+
+			trigger = {
+				# I could use some help winning this war
+				any_war = {
+					is_primary_war_defender = yes
+					attacker = { war_score < 50 }
+				}
+			}
+
+			mult_modifier = {
+				factor = 1.5
+				trait = zealous
+			}
+
+			mult_modifier = {
+				factor = 1.5
+				trait = bloodthirsty_gods_3
+			}
+
+			mult_modifier = { # I am losing the war, help!
+				factor = 10
+
+				any_war = {
+					defender = { character = ROOT }
+					attacker = { war_score >= -50 }
+				}
+			}
+		}
+	}
+}
+
+title_decisions = {
+	# Stoics Rank 4 Power - Convert County
+	stoic_order_culture_convert_county = {
+		ai_check_interval = 3
+
+		only_playable = yes
+
+		from_potential = {
+			has_dlc = "Mystics"
+			society_member_of = monastic_order_stoics
+			society_rank == 4
+		}
+
+		potential = {
+			tier = COUNT
+
+			location = {
+				NOT = { culture = FROM }
+			}
+
+			holder_scope = {
+				OR = {
+					is_vassal_or_below_of = FROM
+					character = FROM
+				}
+			}
+		}
+
+		allow = {
+			FROM = {
+				society_currency >= 1000
+			}
+
+			location = {
+				NOR = {
+					culture = FROM
+					culture = owner # Cannot convert counties of owners' culture
+				}
+			}
+		}
+
+		effect = {
+			FROM = {
+				show_scope_change = no
+
+				change_society_currency = -1000
+				character_event = { id = HF.23124 } # Notify
+			}
+
+			location = {
+				show_scope_change = no
+
+				culture = FROM
+
+				add_province_modifier = {
+					name = peasant_unrest
+					years = 2
+				}
+			}
+
+			holder_scope = {
+				if = { # Notify county owner
+					limit = {
+						NOT = { character = FROM }
+					}
+
+					character_event = { id = HF.23125 }
+				}
+			}
+		}
+
+		ai_will_do = { factor = 1 }
+	}
+
+	hellenic_dedicate_temple = {
+		filter = sub_realm_owned
+		ai_target_filter = vassal_owned
+		ai_check_interval = 120
+
+		is_high_prio = yes
+
+		only_playable = yes
+
+		from_potential = {
+			has_dlc = "Holy Fury"
+			higher_real_tier_than = BARON
+			religion_openly_hellenic_or_reformed_trigger = yes
+			is_tribal = no
+			is_nomadic = no
+
+			NOR = {
+				has_character_flag = flag_dedicating_temple
+
+				has_alternate_start_parameter = {
+					key = religion_names
+					value = random
+				}
+			}
+		}
+
+		potential = {
+			holding_type = temple
+
+			NOR = {
+				has_title_flag = flag_dedicated_to_zeus
+				has_title_flag = flag_dedicated_to_poseidon
+				has_title_flag = flag_dedicated_to_hades
+				has_title_flag = flag_dedicated_to_hermes
+				has_title_flag = flag_dedicated_to_demeter
+				has_title_flag = flag_dedicated_to_athena
+				has_title_flag = flag_dedicated_to_apollo
+				has_title_flag = flag_dedicated_to_arthemis
+				has_title_flag = flag_dedicated_to_ares
+				has_title_flag = flag_dedicated_to_aphrodite
+				has_title_flag = flag_dedicated_to_ephaestus
+				has_title_flag = flag_dedicated_to_hestia
+			}
+		}
+
+		allow = {
+			FROM = {
+				wealth >= 250
+				piety  >= 200
+
+				trigger_if = {
+					limit = { has_character_modifier = recently_dedicated_temple_cooldown }
+
+					custom_tooltip = {
+						text = tooltip_not_dedicated_temple_recently
+						always = no
+					}
+				}
+			}
+
+			has_siege = no
+
+			custom_tooltip = {
+				text = tooltip_temple_must_have_priest
+
+				# Temple must have an Hellenic priest
+				holder_scope = {
+					is_theocracy = yes
+					religion = FROM
+				}
+			}
+		}
+
+		effect = {
+			custom_tooltip = {
+				text = tooltip_hellenic_dedicate_temple
+
+				save_event_target_as = scoped_temple_barony
+
+				FROM = {
+					set_character_flag = flag_dedicating_temple
+					character_event = { id = HF.23200 } # Pick a god category
+				}
+			}
+
+		}
+
+		ai_will_do = {
+			factor = 1
+
+			trigger = {
+				# Better to have the AI only dedicate one per lifetime, otherwise it might leave the player out of options
+				FROM = {
+					NOR = {
+						has_character_modifier = dedicated_to_zeus
+						has_character_modifier = dedicated_to_poseidon
+						has_character_modifier = dedicated_to_hades
+						has_character_modifier = dedicated_to_hermes
+						has_character_modifier = dedicated_to_demeter
+						has_character_modifier = dedicated_to_athena
+						has_character_modifier = dedicated_to_apollo
+						has_character_modifier = dedicated_to_arthemis
+						has_character_modifier = dedicated_to_ares
+						has_character_modifier = dedicated_to_aphrodite
+						has_character_modifier = dedicated_to_ephaestus
+						has_character_modifier = dedicated_to_hestia
+					}
+				}
+			}
+		}
+	}
+}
+
+settlement_decisions = {
+	tribal_build_great_pillar = {
+		# filter = owned # CleanSlate: Nonfunctional
+		ai_target_filter = owned
+		ai_check_interval = 200
+
+		is_high_prio = yes
+
+		only_independent = yes
+
+		from_potential = {
+			has_dlc = "Holy Fury"
+			independent = yes
+			is_tribal = yes
+			higher_real_tier_than = COUNT
+			is_unreformed_pagan_trigger = yes
+
+			# Only one Pillar of your own religion per realm. So, the more neighbors you subjugate, the less pillars are going to be built
+			trigger_if = {
+				limit = { religion = norse_pagan }
+				NOT = { any_realm_province = { has_province_flag = flag_great_pillar_norse } }
+			}
+			trigger_else_if = {
+				limit = { religion = tengri_pagan }
+				NOT = { any_realm_province = { has_province_flag = flag_great_pillar_tengri } }
+			}
+			trigger_else_if = {
+				limit = { religion = slavic_pagan }
+				NOT = { any_realm_province = { has_province_flag = flag_great_pillar_slavic } }
+			}
+			trigger_else_if = {
+				limit = { religion = baltic_pagan }
+				NOT = { any_realm_province = { has_province_flag = flag_great_pillar_baltic } }
+			}
+			trigger_else_if = {
+				limit = { religion = finnish_pagan }
+				NOT = { any_realm_province = { has_province_flag = flag_great_pillar_finnish } }
+			}
+			trigger_else_if = {
+				limit = { religion = west_african_pagan }
+				NOT = { any_realm_province = { has_province_flag = flag_great_pillar_west_african } }
+			}
+			trigger_else_if = {
+				limit = { religion = aztec_pagan }
+				NOT = { any_realm_province = { has_province_flag = flag_great_pillar_aztec } }
+			}
+			trigger_else_if = {
+				limit = { religion = bon_pagan }
+				NOT = { any_realm_province = { has_province_flag = flag_great_pillar_bon } }
+			}
+			trigger_else_if = {
+				limit = { religion = zun_pagan }
+				NOT = { any_realm_province = { has_province_flag = flag_great_pillar_zun } }
+			}
+			trigger_else = {
+				religion = hellenic_pagan
+				NOT = { any_realm_province = { has_province_flag = flag_great_pillar_hellenic } }
+			}
+		}
+
+		potential = {
+			FROM = {
+				is_capital = PREV
+			}
+
+			holding_type = tribal
+			is_capital = yes
+		}
+
+		allow = {
+			FROM = {
+				wealth >= 350
+				piety  >= 150
+			}
+
+			location = { religion = FROM } # Locals must already worship your gods
+
+			custom_tooltip = {
+				text = tooltip_province_already_has_great_pillar
+
+				location = {
+					NOR = {
+						has_province_flag = flag_great_pillar_norse
+						has_province_flag = flag_great_pillar_tengri
+						has_province_flag = flag_great_pillar_slavic
+						has_province_flag = flag_great_pillar_baltic
+						has_province_flag = flag_great_pillar_finnish
+						has_province_flag = flag_great_pillar_west_african
+						has_province_flag = flag_great_pillar_aztec
+						has_province_flag = flag_great_pillar_bon
+						has_province_flag = flag_great_pillar_zun
+						has_province_flag = flag_great_pillar_hellenic
+					}
+				}
+			}
+
+			custom_tooltip = {
+				text = tooltip_ruler_recently_had_pillar_destroyed
+
+				FROM = {
+					NOT = { has_character_modifier = recently_destroyed_great_pillar_cooldown }
+				}
+			}
+		}
+
+		effect = {
+			FROM = {
+				show_scope_change = no
+
+				wealth = -350
+				piety  = -150
+
+				character_event = {
+					id = HF.23470
+					tooltip = tooltip_celebrate_new_great_pillar
+				}
+			}
+
+			hidden_effect = {
+				if = {
+					limit = { FROM = { religion = norse_pagan } }
+
+					location = {
+						set_province_flag = flag_great_pillar_norse
+					}
+
+					if = {
+						limit = { NOT = { has_building = tb_great_pillar_norse } }
+						add_building = tb_great_pillar_norse
+					}
+				}
+				else_if = {
+					limit = { FROM = { religion = tengri_pagan } }
+
+					location = {
+						set_province_flag = flag_great_pillar_tengri
+					}
+
+					if = {
+						limit = { NOT = { has_building = tb_great_pillar_tengri } }
+						add_building = tb_great_pillar_tengri
+					}
+				}
+				else_if = {
+					limit = { FROM = { religion = slavic_pagan } }
+
+					location = {
+						set_province_flag = flag_great_pillar_slavic
+					}
+
+					if = {
+						limit = { NOT = { has_building = tb_great_pillar_slavic } }
+						add_building = tb_great_pillar_slavic
+					}
+				}
+				else_if = {
+					limit = { FROM = { religion = baltic_pagan } }
+
+					location = {
+						set_province_flag = flag_great_pillar_baltic
+					}
+
+					if = {
+						limit = { NOT = { has_building = tb_great_pillar_baltic } }
+						add_building = tb_great_pillar_baltic
+					}
+				}
+				else_if = {
+					limit = { FROM = { religion = finnish_pagan } }
+
+					location = {
+						set_province_flag = flag_great_pillar_finnish
+					}
+
+					if = {
+						limit = { NOT = { has_building = tb_great_pillar_finnish } }
+						add_building = tb_great_pillar_finnish
+					}
+				}
+				else_if = {
+					limit = { FROM = { religion = west_african_pagan } }
+
+					location = {
+						set_province_flag = flag_great_pillar_west_african
+					}
+
+					if = {
+						limit = { NOT = { has_building = tb_great_pillar_west_african } }
+						add_building = tb_great_pillar_west_african
+					}
+				}
+				else_if = {
+					limit = { FROM = { religion = aztec_pagan } }
+
+					location = {
+						set_province_flag = flag_great_pillar_aztec
+					}
+
+					if = {
+						limit = { NOT = { has_building = tb_great_pillar_aztec } }
+						add_building = tb_great_pillar_aztec
+					}
+				}
+				else_if = {
+					limit = { FROM = { religion = zun_pagan } }
+
+					location = {
+						set_province_flag = flag_great_pillar_zun
+					}
+
+					if = {
+						limit = { NOT = { has_building = tb_great_pillar_zun } }
+						add_building = tb_great_pillar_zun
+					}
+				}
+				else_if = {
+					limit = { FROM = { religion = bon_pagan } }
+
+					location = {
+						set_province_flag = flag_great_pillar_bon
+					}
+
+					if = {
+						limit = { NOT = { has_building = tb_great_pillar_bon } }
+						add_building = tb_great_pillar_bon
+					}
+				}
+				else_if = {
+					limit = { FROM = { religion = hellenic_pagan } }
+
+					location = {
+						set_province_flag = flag_great_pillar_hellenic
+					}
+
+					if = {
+						limit = { NOT = { has_building = tb_great_pillar_hellenic } }
+						add_building = tb_great_pillar_hellenic
+					}
+				}
+			}
+		}
+
+		ai_will_do = {
+			factor = 1
+
+			trigger = {
+				FROM = { NOT = { trait = cynical } }
+			}
+
+			mult_modifier = {
+				factor = 2
+				FROM = { trait = zealous }
+			}
+
+			mult_modifier = {
+				factor = 0.25
+				FROM = { trait = greedy }
+			}
+
+			mult_modifier = {
+				factor = 0.5
+				FROM = { lower_real_tier_than = KING }
+			}
+		}
+	}
+
+	destroy_great_pillar = {
+		# filter = owned # CleanSlate: Nonfunctional
+		ai_target_filter = owned
+		ai_check_interval = 30
+
+		is_high_prio = yes
+
+		only_playable = yes
+
+		from_potential = {
+			has_dlc = "Holy Fury"
+			is_tribal = no
+			is_nomadic = no
+			is_not_unreformed_pagan_trigger = yes
+		}
+
+		potential = {
+			holder = FROM
+
+			trigger_if = {
+				limit = { holding_type = tribal }
+				is_capital = yes
+				capital_scope = { location = { province = ROOT } }
+			}
+			trigger_else = {
+				holding_type = temple # Irminsul
+				location = { province = c_braunschweig }
+			}
+
+			location = {
+				OR = {
+					has_province_flag = flag_great_pillar_norse_irminsul
+					has_province_flag = flag_great_pillar_norse
+					has_province_flag = flag_great_pillar_tengri
+					has_province_flag = flag_great_pillar_slavic
+					has_province_flag = flag_great_pillar_baltic
+					has_province_flag = flag_great_pillar_finnish
+					has_province_flag = flag_great_pillar_west_african
+					has_province_flag = flag_great_pillar_aztec
+					has_province_flag = flag_great_pillar_bon
+					has_province_flag = flag_great_pillar_zun
+					has_province_flag = flag_great_pillar_hellenic
+				}
+			}
+		}
+
+		effect = {
+			FROM = {
+				show_scope_change = no
+
+				if = {
+					limit = { has_religion_feature = religion_dogmatic }
+					tiered_piety_reward_effect = yes
+				}
+				else_if = {
+					limit = { has_religion_feature = religion_cosmopolitan }
+					tiered_piety_negative_effect = yes
+				}
+
+				character_event = {
+					id = HF.23476 # Notify
+					tooltip = tooltip_celebrate_destroyed_great_pillar
+				}
+			}
+
+			if = {
+				limit = { location = { has_province_flag = flag_great_pillar_norse_irminsul } }
+
+				location = {
+					clr_province_flag = flag_great_pillar_norse_irminsul
+				}
+
+				FROM = {
+					top_liege = {
+						any_realm_character = {
+							limit = { religion = norse_pagan }
+							character_event = { id = HF.23477 } # Vassals react
+						}
+					}
+				}
+
+				norse_pagan = {
+					show_scope_change = no
+
+					religion_authority = {
+						name = destroyed_great_pillar
+						years = 10
+					}
+				}
+			}
+			else_if = {
+				limit = { location = { has_province_flag = flag_great_pillar_norse } }
+
+				location = {
+					clr_province_flag = flag_great_pillar_norse
+				}
+
+				FROM = {
+					top_liege = {
+						any_realm_character = {
+							limit = { religion = norse_pagan }
+							character_event = { id = HF.23477 } # Vassals react
+						}
+					}
+				}
+
+				norse_pagan = {
+					show_scope_change = no
+
+					religion_authority = {
+						name = destroyed_great_pillar
+						years = 10
+					}
+				}
+			}
+
+			if = {
+				limit = { location = { has_province_flag = flag_great_pillar_tengri } }
+
+				location = {
+					clr_province_flag = flag_great_pillar_tengri
+				}
+
+				FROM = {
+					top_liege = {
+						any_realm_character = {
+							limit = { religion = tengri_pagan }
+							character_event = { id = HF.23477 } # Vassals react
+						}
+					}
+				}
+
+				tengri_pagan = {
+					show_scope_change = no
+
+					religion_authority = {
+						name = destroyed_great_pillar
+						years = 10
+					}
+				}
+			}
+
+			if = {
+				limit = { location = { has_province_flag = flag_great_pillar_slavic } }
+
+				location = {
+					clr_province_flag = flag_great_pillar_slavic
+				}
+
+				FROM = {
+					top_liege = {
+						any_realm_character = {
+							limit = { religion = slavic_pagan }
+							character_event = { id = HF.23477 } # Vassals react
+						}
+					}
+				}
+
+				slavic_pagan = {
+					show_scope_change = no
+
+					religion_authority = {
+						name = destroyed_great_pillar
+						years = 10
+					}
+				}
+			}
+
+			if = {
+				limit = { location = { has_province_flag = flag_great_pillar_baltic } }
+
+				location = {
+					clr_province_flag = flag_great_pillar_baltic
+				}
+
+				FROM = {
+					top_liege = {
+						any_realm_character = {
+							limit = { religion = baltic_pagan }
+							character_event = { id = HF.23477 } # Vassals react
+						}
+					}
+				}
+
+				baltic_pagan = {
+					show_scope_change = no
+
+					religion_authority = {
+						name = destroyed_great_pillar
+						years = 10
+					}
+				}
+			}
+
+			if = {
+				limit = { location = { has_province_flag = flag_great_pillar_finnish } }
+
+				location = {
+					clr_province_flag = flag_great_pillar_finnish
+				}
+
+				FROM = {
+					top_liege = {
+						any_realm_character = {
+							limit = { religion = finnish_pagan }
+							character_event = { id = HF.23477 } # Vassals react
+						}
+					}
+				}
+
+				finnish_pagan = {
+					show_scope_change = no
+
+					religion_authority = {
+						name = destroyed_great_pillar
+						years = 10
+					}
+				}
+			}
+
+			if = {
+				limit = { location = { has_province_flag = flag_great_pillar_west_african } }
+
+				location = {
+					clr_province_flag = flag_great_pillar_west_african
+				}
+
+				FROM = {
+					top_liege = {
+						any_realm_character = {
+							limit = { religion = west_african_pagan }
+							character_event = { id = HF.23477 } # Vassals react
+						}
+					}
+				}
+
+				west_african_pagan = {
+					show_scope_change = no
+
+					religion_authority = {
+						name = destroyed_great_pillar
+						years = 10
+					}
+				}
+			}
+
+			if = {
+				limit = { location = { has_province_flag = flag_great_pillar_aztec } }
+
+				location = {
+					clr_province_flag = flag_great_pillar_aztec
+				}
+
+				FROM = {
+					top_liege = {
+						any_realm_character = {
+							limit = { religion = aztec_pagan }
+							character_event = { id = HF.23477 } # Vassals react
+						}
+					}
+				}
+
+				aztec_pagan = {
+					show_scope_change = no
+
+					religion_authority = {
+						name = destroyed_great_pillar
+						years = 10
+					}
+				}
+			}
+
+			if = {
+				limit = { location = { has_province_flag = flag_great_pillar_zun } }
+
+				location = {
+					clr_province_flag = flag_great_pillar_zun
+				}
+
+				FROM = {
+					top_liege = {
+						any_realm_character = {
+							limit = { religion = zun_pagan }
+							character_event = { id = HF.23477 } # Vassals react
+						}
+					}
+				}
+
+				zun_pagan = {
+					show_scope_change = no
+
+					religion_authority = {
+						name = destroyed_great_pillar
+						years = 10
+					}
+				}
+			}
+
+			if = {
+				limit = { location = { has_province_flag = flag_great_pillar_bon } }
+
+				location = {
+					clr_province_flag = flag_great_pillar_bon
+				}
+
+				FROM = {
+					top_liege = {
+						any_realm_character = {
+							limit = { religion = bon_pagan }
+							character_event = { id = HF.23477 } # Vassals react
+						}
+					}
+				}
+
+				bon_pagan = {
+					show_scope_change = no
+
+					religion_authority = {
+						name = destroyed_great_pillar
+						years = 10
+					}
+				}
+			}
+
+			if = {
+				limit = { location = { has_province_flag = flag_great_pillar_hellenic } }
+
+				location = {
+					clr_province_flag = flag_great_pillar_hellenic
+				}
+
+				FROM = {
+					top_liege = {
+						any_realm_character = {
+							limit = { religion = hellenic_pagan }
+							character_event = { id = HF.23477 } # Vassals react
+						}
+					}
+				}
+
+				hellenic_pagan = {
+					show_scope_change = no
+
+					religion_authority = {
+						name = destroyed_great_pillar
+						years = 10
+					}
+				}
+			}
+		}
+
+		ai_will_do = {
+			factor = 1
+
+			mult_modifier = {
+				factor = 5
+				FROM = { has_religion_feature = religion_dogmatic }
+			}
+
+			mult_modifier = {
+				factor = 0.25
+				FROM = { has_religion_feature = religion_cosmopolitan }
+			}
+
+			mult_modifier = {
+				factor = 2
+				FROM = { trait = zealous }
+			}
+
+			mult_modifier = {
+				factor = 0.5
+				FROM = { trait = cynical }
+			}
+
+			mult_modifier = {
+				factor = 0.3
+				FROM = { trait = sympathy_pagans }
+			}
+
+			mult_modifier = {
+				factor = 0.4
+				FROM = { religion_group = pagan_group }
+			}
+		}
+	}
+}
