@@ -35,7 +35,7 @@ character_event = {
 character_event = {
 	id = Plus.2702
 
-	is_triggered_only = yes # currently untriggered
+	is_triggered_only = yes # PlusStartUp.002
 	hide_window = yes
 
 	trigger = {
@@ -61,7 +61,7 @@ character_event = {
 
 			# Distribute the pope's titles
 			k_papacy = {
-				owner = {
+				holder_scope = {
 					any_vassal = {
 						limit = { higher_real_tier_than = BARON }
 						set_defacto_liege = THIS
@@ -133,8 +133,6 @@ character_event = {
 						remove_trait = crowned_by_pope
 						add_trait = crowned # Lets keep ordinary trait here, papal coronation shouldn't matter to pagans.
 					}
-
-					set_character_flag = centralize_without_penalties
 				}
 			}
 
@@ -189,15 +187,19 @@ character_event = {
 
 				destroy_landed_title = yes
 			}
-
-			event_target:hre_kaiser = {
-				clr_character_flag = centralize_without_penalties
-			}
 		}
 
-		any_independent_ruler = { # Now that the world is set up, convert them all to Ancient Relgions
+		# Now that the world is set up, convert them all to Ancient Relgions
+		any_independent_ruler = {
 			any_realm_province = {
-				limit = { num_of_settlements >= 1 }
+				limit = {
+					OR = {
+						has_castle = yes
+						has_temple = yes
+						has_city = yes
+						has_tribal = yes
+					}
+				}
 
 				if = {
 					limit = {
@@ -207,10 +209,9 @@ character_event = {
 						}
 					}
 
-					emf_nwo_generate_ancient_religion_provinces = yes
+					emf_nwo_generate_ancient_religion_provinces_region = yes
 				}
-
-				if = {
+				else_if = {
 					limit = {
 						OR = {
 							has_game_rule = {
@@ -227,8 +228,7 @@ character_event = {
 
 					emf_nwo_generate_ancient_religion_provinces_culture = yes
 				}
-
-				if = {
+				else_if = {
 					limit = {
 						has_game_rule = {
 							name = ancient_religions
@@ -248,6 +248,7 @@ character_event = {
 					}
 				}
 
+				# Change religion based on culture
 				if = {
 					limit = {
 						has_game_rule = {
@@ -257,33 +258,69 @@ character_event = {
 					}
 
 					capital_scope = {
-						emf_nwo_generate_ancient_religion_characters = yes #change religion of independent ruler based on their culture
+						emf_nwo_generate_ancient_religion_province_character_culture = yes # save target_religion
+						religion = event_target:target_religion
+					}
+
+					if = {
+						limit = { event_target:target_religion = { always = yes } }
+						convert_religion_failsafe_effect = yes # use_target_religion
 					}
 
 					any_courtier = {
-						emf_nwo_generate_ancient_religion_characters = yes #change courtier religion based on their culture
+						limit = { is_ruler = no }
+
+						emf_nwo_generate_ancient_religion_province_character_culture = yes # save target_religion
+
+						if = {
+							limit = { event_target:target_religion = { always = yes } }
+							convert_religion_failsafe_effect = yes # use_target_religion
+						}
 					}
 
 					any_realm_lord = {
-						emf_nwo_generate_ancient_religion_characters = yes #change realm lord religion based on their culture
+						emf_nwo_generate_ancient_religion_province_character_culture = yes # save target_religion
+
+						if = {
+							limit = { event_target:target_religion = { always = yes } }
+							convert_religion_failsafe_effect = yes # use_target_religion
+						}
 
 						any_courtier = {
-							emf_nwo_generate_ancient_religion_characters = yes #change courtier religion based on their culture
+							limit = { is_ruler = no }
+
+							emf_nwo_generate_ancient_religion_province_character_culture = yes # save target_religion
+
+							if = {
+								limit = { event_target:target_religion = { always = yes } }
+								convert_religion_failsafe_effect = yes # use_target_religion
+							}
 						}
 					}
 				}
 				else = {
-					religion = capital_scope # Change religion of independent ruler based on their capital
-
-					any_courtier = {
-						religion = PREV # Match courtier religion to ruler religion
+					# change religion of independent ruler based on their capital
+					capital_scope = {
+						religion_scope = { save_event_target_as = target_religion }
 					}
 
-					any_realm_lord = {
-						religion = PREV # Match realm lord religion to ruler religion
+					convert_religion_failsafe_effect = yes
 
+					# Match courtier religion to liege religion
+					any_courtier = {
+						limit = { is_ruler = no }
+						religion = liege
+					}
+
+					# Match vassal religion to top liege religion
+					any_realm_lord = {
+						capital_scope = { religion_scope = { save_event_target_as = target_religion } }
+						convert_religion_failsafe_effect = yes
+
+						# Match courtier religion to liege religion
 						any_courtier = {
-							religion = PREV # Match courtier religion to realm lord religion
+							limit = { is_ruler = no }
+							religion = liege
 						}
 					}
 				}
