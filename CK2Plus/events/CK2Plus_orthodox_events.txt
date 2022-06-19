@@ -16,6 +16,8 @@ character_event = {
 	desc = EVTDESC_Plus_2100
 	picture = GFX_evt_icon
 
+	is_triggered_only = yes # on_decade_pulse, random_events
+
 	only_playable = yes
 	religion = iconoclast
 	min_age = 16
@@ -50,21 +52,21 @@ character_event = {
 		}
 	}
 
-	mean_time_to_happen = {
-		years = 75
+	weight_multiplier = {
+		factor = 1
 
 		mult_modifier = {
-			factor = 0.5
+			factor = 2
 			trait = zealous
 		}
 
 		mult_modifier = {
-			factor = 2.0
+			factor = 0.5
 			trait = cynical
 		}
 
 		mult_modifier = {
-			factor = 0.5
+			factor = 2
 			trait = iconoclast_trait
 		}
 	}
@@ -351,7 +353,7 @@ character_event = {
 	}
 }
 
-# Constantine's Return
+# Constantine V's Return
 narrative_event = {
 	id = Plus.2102
 	title = EVTNAME_Plus_2102
@@ -359,9 +361,11 @@ narrative_event = {
 	picture = GFX_evt_icon
 	border = GFX_event_narrative_frame_religion
 
+	is_triggered_only = yes # on_yearly_pulse
 	major = yes
 
 	only_independent = yes
+	religion_group = christian
 	min_age = 16
 	only_capable = yes
 	prisoner = no
@@ -405,14 +409,22 @@ narrative_event = {
 			has_character_flag = renounced_iconoclasm
 			has_character_flag = converted_religion
 		}
+
+		c_70501 = { # Constantine V
+			is_alive = no
+
+			trigger_if = {
+				limit = { religion = chalcedonian }
+				trait = iconoclast_rites
+			}
+			trigger_else = {
+				religion = iconoclast
+			}
+		}
 	}
 
 	major_trigger = {
 		same_realm = ROOT
-	}
-
-	mean_time_to_happen = {
-		days = 3
 	}
 
 	immediate = {
@@ -427,14 +439,18 @@ narrative_event = {
 		set_character_flag = renounced_iconoclasm
 		set_character_flag = converted_religion
 
-		tooltip = {
-			religion = iconoclast # For nicer tooltip
+		if = {
+			limit = { has_global_flag = great_schism_happened }
+			tooltip = { religion = iconoclast } # For nicer tooltip
+		}
+		else = {
+			add_trait = iconoclast_rites
 		}
 
 		add_trait = zealous
 
 		if = {
-			limit = { higher_real_tier_than = BARON }
+			limit = { has_global_flag = great_schism_happened }
 
 			religion_authority = { name = ruler_converted_from }
 
@@ -442,14 +458,14 @@ narrative_event = {
 				religion = iconoclast
 				religion_authority = { name = ruler_converted_to }
 			}
-		}
 
-		if = {
-			limit = { NOT = { is_title_active = d_iconoclast } }
+			if = {
+				limit = { NOT = { is_title_active = d_iconoclast } }
 
-			activate_title = {
-				title = d_iconoclast
-				status = yes
+				activate_title = {
+					title = d_iconoclast
+					status = yes
+				}
 			}
 		}
 
@@ -463,13 +479,19 @@ narrative_event = {
 							religion = ROOT
 						}
 
-						grant_title = d_iconoclast
-						set_character_flag = converting_religion
-						unsafe_religion = iconoclast # Use this effect with care
-						set_defacto_liege = ROOT
-						pf_liege_change_effect = yes
-						clr_character_flag = converting_religion
-						set_government_type = theocracy_government
+						if = {
+							limit = { has_global_flag = great_schism_happened }
+
+							grant_title = d_iconoclast
+							iconoclast = { save_event_target_as = target_religion }
+							convert_religion_failsafe_effect = yes
+							set_defacto_liege = ROOT
+							pf_liege_change_effect = yes
+						}
+						else_if = {
+							limit = { trait = greek_rites }
+							add_trait = iconoclast_rites
+						}
 					}
 				}
 			}
@@ -486,7 +508,7 @@ narrative_event = {
 			}
 
 			any_realm_character = {
-				limit = { NOT = { has_landed_title = d_iconoclast } }
+				limit = { NOT = { has_landed_title = b_hagiasophia } }
 
 				character_event = {
 					id = Plus.2103
@@ -582,21 +604,31 @@ character_event = {
 
 		trigger = {
 			religion_group = christian
-			NOT = { religion = iconoclast }
 			can_change_religion = yes
-		}
 
-		tooltip = {
-			religion = iconoclast # For nicer tooltip
+			NOR = {
+				religion = iconoclast
+				trait = iconoclast_rites
+			}
 		}
 
 		if = {
-			limit = { higher_real_tier_than = BARON }
+			limit = { religion = chalcedonian }
+			add_trait = iconoclast_rites
+		}
+		else = {
+			tooltip = {
+				religion = iconoclast # For nicer tooltip
+			}
+		}
+
+		if = {
+			limit = {
+				higher_real_tier_than = BARON
+				NOT = { religion = chalcedonian }
+			}
+
 			religion_authority = { name = ruler_converted_from }
-		}
-
-		if = {
-			limit = { higher_real_tier_than = BARON }
 
 			hidden_effect = {
 				religion = iconoclast
@@ -629,8 +661,12 @@ character_event = {
 
 		trigger = {
 			religion_group = christian
-			NOT = { religion = iconoclast }
 			can_change_religion = yes
+
+			NOR = {
+				religion = iconoclast
+				trait = iconoclast_rites
+			}
 		}
 
 		ai_chance = {
@@ -659,8 +695,12 @@ character_event = {
 
 		trigger = {
 			religion_group = christian
-			NOT = { religion = iconoclast }
 			can_change_religion = no
+
+			NOR = {
+				religion = iconoclast
+				trait = iconoclast_rites
+			}
 		}
 	}
 
@@ -681,11 +721,11 @@ narrative_event = {
 	picture = GFX_evt_heretic
 	border = GFX_event_narrative_frame_religion
 
+	is_triggered_only = yes # on_yearly_pulse
 	major = yes
 
-	religion = paulician
-	only_rulers = yes
 	only_playable = yes
+	religion = paulician
 	min_age = 16
 	only_capable = yes
 	prisoner = no
@@ -744,15 +784,6 @@ narrative_event = {
 			religion = orthodox
 			religion = iconoclast
 			religion = paulician
-		}
-	}
-
-	mean_time_to_happen = {
-		months = 1
-
-		mult_modifier = {
-			factor = 0.1
-			diplomacy >= 15
 		}
 	}
 
@@ -978,6 +1009,7 @@ narrative_event = {
 	picture = GFX_evt_heretic
 	border = GFX_event_narrative_frame_religion
 
+	is_triggered_only = yes
 	major = yes
 
 	only_playable = yes
@@ -1027,10 +1059,6 @@ narrative_event = {
 				}
 			}
 		}
-	}
-
-	mean_time_to_happen = {
-		years = 25
 	}
 
 	immediate = {

@@ -14,11 +14,12 @@ character_event = {
 	desc = EVTDESC_GoPagan_200
 	picture = GFX_evt_bandits
 
+	is_triggered_only = yes # on_yearly_pulse, random_events
+
 	only_playable = yes
 	religion_group = zoroastrian_group
 	min_age = 16
 	only_capable = yes
-	only_men = yes
 	prisoner = no
 	war = no
 	is_sick = no
@@ -36,16 +37,16 @@ character_event = {
 		is_inaccessible_trigger = no
 	}
 
-	mean_time_to_happen = {
-		years = 3
+	weight_multiplier = {
+		factor = 1
 
 		mult_modifier = {
-			factor = 0.8
+			factor = 1.25
 			trait = diligent
 		}
 
 		mult_modifier = {
-			factor = 0.6
+			factor = 1.67
 			realm_learning >= 30
 		}
 	}
@@ -84,6 +85,8 @@ character_event = {
 	desc = EVTDESC_GoPagan_201
 	picture = GFX_evt_burning_house
 
+	is_triggered_only = yes # on_yearly_pulse, random_events
+
 	only_playable = yes
 	religion_group = zoroastrian_group
 	min_age = 16
@@ -108,16 +111,16 @@ character_event = {
 		}
 	}
 
-	mean_time_to_happen = {
-		years = 25
+	weight_multiplier = {
+		factor = 1
 
 		mult_modifier = {
-			factor = 0.8
+			factor = 1.25
 			trait = kind
 		}
 
 		mult_modifier = {
-			factor = 0.7
+			factor = 1.43
 			trait = charitable
 		}
 	}
@@ -173,6 +176,8 @@ character_event = {
 	desc = EVTDESC_GoPagan_202
 	picture = GFX_evt_child_bully
 
+	is_triggered_only = yes
+
 	religion_group = zoroastrian_group
 	min_age = 7
 	max_age = 15
@@ -199,26 +204,26 @@ character_event = {
 		is_inaccessible_trigger = no
 	}
 
-	mean_time_to_happen = {
+	weight_multiplier = {
 		years = 1
 
 		mult_modifier = {
-			factor = 0.5
+			factor = 2
 			age >= 11
 		}
 
 		mult_modifier = {
-			factor = 0.5
+			factor = 2
 			age >= 12
 		}
 
 		mult_modifier = {
-			factor = 0.5
+			factor = 2
 			age >= 13
 		}
 
 		mult_modifier = {
-			factor = 0.1
+			factor = 10
 			age >= 14
 		}
 	}
@@ -392,15 +397,27 @@ character_event = {
 
 	is_triggered_only = yes
 
-	option = {
-		name = EVTOPTC_GoPagan_205 # Make it the greatest city there ever was!
-
+	immediate = {
 		add_character_modifier = {
 			name = is_rebuilding_persepolis
 			duration = -1
 			hidden = yes
 			inherit = yes
 		}
+
+		c_esfahan = {
+			location = {
+				province_event = {
+					id = GoPagan.206 # Phase 2
+					years = 7
+					random = 730 # 2 years
+				}
+			}
+		}
+	}
+
+	option = {
+		name = EVTOPTC_GoPagan_205 # Make it the greatest city there ever was!
 	}
 }
 
@@ -411,30 +428,7 @@ province_event = {
 	desc = EVTDESC_GoPagan_206
 	picture = GFX_persepolis_built
 
-	has_flag = reb_pers_1
-	has_global_flag = rebuilding_persepolis
-
-	trigger = {
-		province_id = c_esfahan
-
-		had_province_flag = {
-			flag = reb_pers_1
-			years >= 7
-		}
-
-		NOR = {
-			has_global_flag = persepolis_rebuilt
-			has_province_flag = reb_pers_2
-		}
-	}
-
-	immediate = {
-		set_province_flag = reb_pers_2
-	}
-
-	mean_time_to_happen = {
-		years = 1
-	}
+	is_triggered_only = yes
 
 	option = {
 		name = EVTOPTA_GoPagan_206 # Library
@@ -462,6 +456,14 @@ province_event = {
 			duration = -1
 		}
 	}
+
+	after = {
+		province_event = {
+			id = GoPagan.207 # Phase 3
+			months = 18
+			random = 90
+		}
+	}
 }
 
 # Rebuild Persepolis Phase 3
@@ -471,29 +473,12 @@ province_event = {
 	desc = EVTDESC_GoPagan_207
 	picture = GFX_persepolis_built
 
-	has_flag = reb_pers_2
-	has_global_flag = rebuilding_persepolis
-
-	trigger = {
-		province_id = c_esfahan
-		NOT = { has_global_flag = persepolis_rebuilt }
-
-		had_province_flag = {
-			flag = reb_pers_2
-			days >= 638 # 1.75 years
-		}
-	}
-
-	mean_time_to_happen = {
-		days = 99
-	}
+	is_triggered_only = yes
 
 	immediate = {
 		owner = { remove_character_modifier = is_rebuilding_persepolis }
 		clr_global_flag = rebuilding_persepolis
 		set_global_flag = persepolis_rebuilt
-		clr_province_flag = reb_pers_1
-		clr_province_flag = reb_pers_2
 	}
 
 	option = {
@@ -522,37 +507,34 @@ province_event = {
 }
 
 # Esfahan owned by someone else before Persepolis is rebuilt
-# TODO: Turn into on_action
-province_event = {
+# TODO: Add notification event
+character_event = {
 	id = GoPagan.208
 
+	is_triggered_only = yes # on_new_holder(_inheritance/usurpation)
 	hide_window = yes
 
 	has_global_flag = rebuilding_persepolis
 
 	trigger = {
-		province_id = c_esfahan
-		NOT = { has_global_flag = persepolis_rebuilt }
-
-		owner = {
-			NOT = { has_character_modifier = is_rebuilding_persepolis }
-		}
-	}
-
-	mean_time_to_happen = {
-		days = 1
+		FROM = { title = c_esfahan }
+		NOT = { has_character_modifier = is_rebuilding_persepolis }
 	}
 
 	immediate = {
 		clr_global_flag = rebuilding_persepolis
-		clr_province_flag = reb_pers_1
-		clr_province_flag = reb_pers_2
-		remove_province_modifier = persepolis_library
-		remove_province_modifier = persepolis_irrigation
-		remove_province_modifier = persepolis_gate
 
-		any_character = {
-			limit = { has_character_modifier = is_rebuilding_persepolis }
+		FROM = {
+			location = {
+				clear_delayed_event = { id = GoPagan.206 } # Phase 2
+				clear_delayed_event = { id = GoPagan.207 } # Phase 3
+				remove_province_modifier = persepolis_library
+				remove_province_modifier = persepolis_irrigation
+				remove_province_modifier = persepolis_gate
+			}
+		}
+
+		FROMFROM = {
 			remove_character_modifier = is_rebuilding_persepolis
 		}
 	}
@@ -955,6 +937,8 @@ character_event = {
 	picture = GFX_evt_bishop_byzantine
 	border = GFX_event_normal_frame_religion
 
+	is_triggered_only = yes # on_yearly_pulse, random_events
+
 	only_playable = yes
 	religion_group = muslim
 	min_age = 16
@@ -991,10 +975,6 @@ character_event = {
 			has_character_flag = refused_manichaean_murder
 			has_global_flag = manichaean_leader_murdered
 		}
-	}
-
-	mean_time_to_happen = {
-		years = 1
 	}
 
 	option = {
@@ -1203,11 +1183,10 @@ character_event = {
 	picture = GFX_evt_feast
 	border = GFX_event_normal_frame_religion
 
-	hide_from = yes
+	is_triggered_only = yes
 
-	only_rulers = yes
+	only_playable = yes
 	has_character_flag = planning_bema_feast
-	min_age = 16
 	only_capable = yes
 	prisoner = no
 	war = no
@@ -1218,8 +1197,15 @@ character_event = {
 		is_inaccessible_trigger = no
 	}
 
-	mean_time_to_happen = {
-		days = 1
+	fail_trigger_effect = {
+		if = {
+			limit = { has_character_flag = planning_bema_feast }
+
+			repeat_event = {
+				id = GoPagan.238
+				months = 1
+			}
+		}
 	}
 
 	option = {
@@ -1742,42 +1728,49 @@ character_event = {
 #######################################
 
 # Babak and Banu's Rebellion
-province_event = {
+character_event = {
 	id = GoPagan.255
 
+	is_triggered_only = yes
 	hide_window = yes
 
+	only_playable = yes
+
 	trigger = {
-		province_id = c_hamadan
+		has_landed_title = c_hamadan
 		year >= 815
 		year < 850
 		total_years_played >= 2
 		NOT = { has_global_flag = babak_and_banu }
-		kingdom = { culture = persian }
 
-		owner = {
-			top_liege = {
-				has_landed_title = d_sunni
-				NOT = { culture = persian }
+		c_hamadan = {
+			location = {
+				kingdom = { culture = persian }
 			}
 		}
-	}
 
-	mean_time_to_happen = {
-		days = 100
+		top_liege = {
+			has_landed_title = d_sunni
+			NOT = { culture = persian }
+		}
 	}
 
 	immediate = {
 		set_global_flag = babak_and_banu
 
-		if = {
-			limit = { has_province_modifier = cultural_unrest }
-			remove_province_modifier = cultural_unrest
+		c_hamadan = {
+			location = {
+				if = {
+					limit = { has_province_modifier = cultural_unrest }
+					remove_province_modifier = cultural_unrest
+				}
+
+				save_event_target_as = revolt_location
+				kingdom = { save_event_target_as = revolt_kingdom }
+			}
 		}
 
-		save_event_target_as = revolt_location
-		owner = { top_liege = { save_event_target_as = revolt_top_liege } }
-		kingdom = { save_event_target_as = revolt_kingdom }
+		top_liege = { save_event_target_as = revolt_top_liege }
 
 		create_character = {
 			random_traits = yes
@@ -2011,7 +2004,7 @@ narrative_event = {
 			capital_scope = {
 				distance = {
 					where = c_hamadan
-					value > 600	# Same part of the world
+					value <= 600 # Same part of the world
 				}
 			}
 		}
@@ -2206,7 +2199,9 @@ character_event = {
 	picture = GFX_evt_feast
 	border = GFX_event_normal_frame_religion
 
-	only_rulers = yes
+	is_triggered_only = yes
+
+	only_playable = yes
 	has_character_flag = planning_peacock_feast
 	min_age = 16
 	only_capable = yes
@@ -2219,8 +2214,15 @@ character_event = {
 		is_inaccessible_trigger = no
 	}
 
-	mean_time_to_happen = {
-		days = 1
+	fail_trigger_effect = {
+		if = {
+			limit = { has_character_flag = planning_peacock_feast }
+
+			repeat_event = {
+				id = GoPagan.260
+				months = 1
+			}
+		}
 	}
 
 	option = {
@@ -2796,25 +2798,54 @@ character_event = {
 }
 
 # The feast is cancelled due to war
-# TODO: Change to on_action
+character_event = {
+	id = GoPagan.291
+
+	is_triggered_only = yes # on_war_started
+	hide_window = yes
+
+	immediate = {
+		ROOT = {
+			if = {
+				limit = {
+					OR = {
+						has_character_flag = holding_peacock_feast
+						has_character_flag = planning_peacock_feast
+					}
+				}
+
+				character_event = { id = GoPagan.274 }
+			}
+		}
+
+		FROM = {
+			if = {
+				limit = {
+					OR = {
+						has_character_flag = holding_peacock_feast
+						has_character_flag = planning_peacock_feast
+					}
+				}
+
+				character_event = { id = GoPagan.274 }
+			}
+		}
+	}
+}
+
 character_event = {
 	id = GoPagan.274
 	desc = EVTDESC72112
 	picture = GFX_evt_feast
 	border = GFX_event_normal_frame_religion
 
-	only_rulers = yes
-	war = yes
+	is_triggered_only = yes
 
 	trigger = {
 		OR = {
 			has_character_flag = holding_peacock_feast
 			has_character_flag = planning_peacock_feast
 		}
-	}
-
-	mean_time_to_happen = {
-		days = 1
 	}
 
 	option = {
@@ -2951,6 +2982,7 @@ narrative_event = {
 		trigger = { ROOT = { trait = koasasa_nurael } }
 	}
 
+	is_triggered_only = yes
 	major = yes
 	hide_from = yes
 	show_root = yes
@@ -3005,20 +3037,21 @@ narrative_event = {
 	}
 
 	major_trigger = {
+		ai = no
 		religion = yazidi
 		same_realm = ROOT
 	}
 
-	mean_time_to_happen = {
-		years = 100
+	weight_multiplier = {
+		factor = 1
 
 		mult_modifier = {
-			factor = 0.5
+			factor = 2
 			ai = no
 		}
 
 		mult_modifier = {
-			factor = 1.25
+			factor = 0.8
 
 			martial < 15
 			diplomacy < 15
@@ -3028,17 +3061,17 @@ narrative_event = {
 		}
 
 		mult_modifier = {
-			factor = 0.75
+			factor = 1.33
 			trait = zealous
 		}
 
 		mult_modifier = {
-			factor = 0.5
+			factor = 2
 			trait = possessed
 		}
 
 		mult_modifier = {
-			factor = 0.5
+			factor = 2
 
 			NOR = {
 				koasasa_taus = { is_alive = yes }
@@ -3052,7 +3085,7 @@ narrative_event = {
 		}
 
 		mult_modifier = {
-			factor = 0.5
+			factor = 2
 
 			calc_true_if = {
 				amount >= 3
@@ -3070,7 +3103,7 @@ narrative_event = {
 		}
 
 		mult_modifier = {
-			factor = 0.25
+			factor = 4
 
 			calc_true_if = {
 				amount >= 4
@@ -3785,6 +3818,8 @@ character_event = {
 	desc = EVTDESC_GoPagan_288
 	picture = GFX_evt_avesta
 
+	is_triggered_only = yes
+
 	only_playable = yes
 	has_character_flag = planning_nowruz
 	war = no
@@ -3802,13 +3837,20 @@ character_event = {
 		NOT = { has_character_flag = celebrating_nowruz }
 	}
 
+	fail_trigger_effect = {
+		if = {
+			limit = { has_character_flag = planning_nowruz }
+
+			repeat_event = {
+				id = GoPagan.288
+				days = 15 # Can only fire in March, so smaller time window
+			}
+		}
+	}
+
 	immediate = {
 		clr_character_flag = planning_nowruz
 		set_character_flag = celebrating_nowruz
-	}
-
-	mean_time_to_happen = {
-		days = 1
 	}
 
 	option = {

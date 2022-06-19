@@ -129,70 +129,45 @@ character_event = {
 province_event = {
 	id = Plus.332
 
+	is_triggered_only = yes
 	hide_window = yes
 
-	has_flag = building_third_temple
-
 	trigger = {
-		province_id = c_jerusalem
 		has_province_modifier = third_temple_builder
-
-		NAND = {
-			religion = jewish
-
-			owner = {
-				top_liege = {
-					religion = jewish
-					completely_controls = c_jerusalem
-				}
-			}
-		}
-	}
-
-	mean_time_to_happen = {
-		days = 1
-	}
-
-	immediate = {
-		clr_province_flag = building_third_temple
-		remove_province_modifier = third_temple_builder
-	}
-}
-
-# 333: Finishes construction of the Third Temple
-province_event = {
-	id = Plus.333
-
-	hide_window = yes
-
-	has_flag = building_third_temple
-
-	trigger = {
 		religion = jewish
-		province_id = c_jerusalem
-		NOT = { has_province_modifier = third_temple_builder }
 
 		owner = {
-			war = no
-
 			top_liege = {
-				war = no
 				religion = jewish
 				completely_controls = c_jerusalem
 			}
 		}
 	}
 
-	mean_time_to_happen = {
-		days = 1
+	fail_trigger_effect = {
+		remove_province_modifier = third_temple_builder
 	}
 
 	immediate = {
-		clr_province_flag = building_third_temple
-		set_province_flag = third_temple_built
+		if = {
+			limit = {
+				NOT = { has_province_modifier = third_temple_builder }
+				owner = { war = no }
+				top_liege = { war = no }
+			}
 
-		owner = {
-			top_liege = { narrative_event = { id = SoA.101 } }
+			# Finishes construction
+			set_global_flag = third_temple_built
+
+			top_liege = {
+				top_liege = { narrative_event = { id = SoA.101 } } # Restore priesthood
+			}
+		}
+		else = {
+			repeat_event = {
+				id = Plus.332
+				days = 1
+			}
 		}
 	}
 }
@@ -976,76 +951,249 @@ character_event = {
 	}
 }
 
-# 353: Adds Away From Court modifier when leading armies away from the capital
+# 353: Manage Away From Court modifier when leading armies away from the capital
+# TODO: Add notification events?
+# TODO: Also activate when raiding?
 character_event = {
 	id = Plus.353
 
+	is_triggered_only = yes # on_unit_entering_province
 	hide_window = yes
 
-	only_playable = yes
-	min_age = 16
-	only_capable = yes
-	prisoner = no
-	in_command = yes
+	only_rulers = yes
 
 	trigger = {
 		OR = {
 			war = yes
 			any_liege = { war = yes }
 		}
-
-		NOR = {
-			has_character_modifier = away_from_court
-			at_location = capital_scope
-		}
-	}
-
-	mean_time_to_happen = {
-		days = 1
 	}
 
 	immediate = {
-		set_character_flag = away_from_court
+		if = {
+			limit = {
+				has_character_modifier = away_from_court
+				at_location = capital_scope
+			}
 
-		add_character_modifier = {
-			name = away_from_court
-			duration = -1
+			remove_character_modifier = away_from_court
+		}
+		else_if = {
+			limit = {
+				NOR = {
+					has_character_modifier = away_from_court
+					at_location = capital_scope
+				}
+			}
+
+			add_character_modifier = {
+				name = away_from_court
+				duration = -1
+			}
 		}
 	}
 }
 
-# 354: Removes Away From Court modifier
 character_event = {
 	id = Plus.354
 
+	is_triggered_only = yes # on_command_(sub_)unit
 	hide_window = yes
 
-	has_character_flag = away_from_court
+	only_rulers = yes
 
 	trigger = {
-		has_character_modifier = away_from_court
-
-		NAND = {
-			is_playable = yes
-			is_incapable = no
-			prisoner = no
-			in_command = yes
-			NOT = { at_location = capital_scope }
-
-			OR = {
-				war = yes
-				any_liege = { war = yes }
-			}
+		OR = {
+			war = yes
+			any_liege = { war = yes }
 		}
 	}
 
-	mean_time_to_happen = {
-		days = 1
+	immediate = {
+		if = {
+			limit = {
+				has_character_modifier = away_from_court
+				at_location = capital_scope
+			}
+
+			remove_character_modifier = away_from_court
+		}
+		else_if = {
+			limit = {
+				NOR = {
+					has_character_modifier = away_from_court
+					at_location = capital_scope
+				}
+			}
+
+			add_character_modifier = {
+				name = away_from_court
+				duration = -1
+			}
+		}
+	}
+}
+
+character_event = {
+	id = Plus.356
+
+	is_triggered_only = yes # on_war_started
+	hide_window = yes
+
+	immediate = {
+		ROOT = {
+			if = {
+				limit = {
+					in_command = yes
+
+					NOR = {
+						has_character_modifier = away_from_court
+						at_location = capital_scope
+					}
+				}
+
+				add_character_modifier = {
+					name = away_from_court
+					duration = -1
+				}
+			}
+
+			any_realm_lord = {
+				if = {
+					limit = {
+						in_command = yes
+
+						NOR = {
+							has_character_modifier = away_from_court
+							at_location = capital_scope
+						}
+					}
+
+					add_character_modifier = {
+						name = away_from_court
+						duration = -1
+					}
+				}
+			}
+		}
+
+		FROM = {
+			if = {
+				limit = {
+					in_command = yes
+
+					NOR = {
+						has_character_modifier = away_from_court
+						at_location = capital_scope
+					}
+				}
+
+				add_character_modifier = {
+					name = away_from_court
+					duration = -1
+				}
+			}
+
+			any_realm_lord = {
+				if = {
+					limit = {
+						in_command = yes
+
+						NOR = {
+							has_character_modifier = away_from_court
+							at_location = capital_scope
+						}
+					}
+
+					add_character_modifier = {
+						name = away_from_court
+						duration = -1
+					}
+				}
+			}
+		}
+	}
+}
+
+character_event = {
+	id = Plus.357
+
+	is_triggered_only = yes # on_war_ended_victory/whitepeace/defeat/invalid
+	hide_window = yes
+
+	immediate = {
+		ROOT = {
+			if = {
+				limit = {
+					has_character_modifier = away_from_court
+					war = no
+					NOT = { any_liege = { war = yes } }
+				}
+
+				remove_character_modifier = away_from_court
+			}
+
+			any_realm_lord = {
+				if = {
+					limit = {
+						has_character_modifier = away_from_court
+						war = no
+						NOT = { any_liege = { war = yes } }
+					}
+
+					add_character_modifier = {
+						name = away_from_court
+						duration = -1
+					}
+				}
+			}
+		}
+
+		FROM = {
+			if = {
+				limit = {
+					has_character_modifier = away_from_court
+					war = no
+					NOT = { any_liege = { war = yes } }
+				}
+
+				add_character_modifier = {
+					name = away_from_court
+					duration = -1
+				}
+			}
+
+			any_realm_lord = {
+				if = {
+					limit = {
+						has_character_modifier = away_from_court
+						war = no
+						NOT = { any_liege = { war = yes } }
+					}
+
+					add_character_modifier = {
+						name = away_from_court
+						duration = -1
+					}
+				}
+			}
+		}
+	}
+}
+
+character_event = {
+	id = Plus.358
+
+	is_triggered_only = yes # on_unlanded
+	hide_window = yes
+
+	trigger = {
+		has_character_modifier = away_from_court
+		is_ruler = no
 	}
 
 	immediate = {
 		remove_character_modifier = away_from_court
-		clr_character_flag = away_from_court
 	}
 }
 
