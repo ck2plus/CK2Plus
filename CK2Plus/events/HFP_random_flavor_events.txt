@@ -2051,30 +2051,46 @@ character_event = {
 ###########    Deal with Inherited artifacts    ###########
 ###########################################################
 
+# ROOT is new artifact owner
+# FROM is inherited artifact
+# FROMFROM is previous owner
+
+# CleanSlate meta event to sort out artifact inheritance logic
 character_event = {
-	id = HFP.16005
+	id = HFP.16004
 
 	is_triggered_only = yes # on_artifact_inheritance
 	hide_window = yes
 
-	trigger = {
-		NOR = {
-			FROM = { has_artifact_flag = ingredient } # The artifact inherited is NOT an ingredient (those have their own event)...
-			has_character_flag = dealing_with_inherited_artifacts
+	immediate = {
+		if = {
+			limit = { FROM = { has_artifact_flag = ingredient } }
+			repeat_event = { id = MN.5108 } # Deal with inherited ingredients
 		}
+		else = {
+			random = {
+				chance = 5 # Old destruction chance
+				repeat_event = { id = HFP.16005 } # Deal with all other inherited artifacts
+			}
+		}
+	}
+}
+
+character_event = {
+	id = HFP.16005
+
+	is_triggered_only = yes
+	hide_window = yes
+
+	trigger = {
+		NOT = { has_character_flag = dealing_with_inherited_artifacts }
 	}
 
 	fail_trigger_effect = {
-		if = { # If you are already dealing with another artifact, queue this one up...
-			limit = {
-				ai = no
-				has_character_flag = dealing_with_inherited_artifacts
-			}
-
-			repeat_event = {
-				id = HFP.16005
-				days = 12
-			}
+		# If you are already dealing with another artifact, queue this one up...
+		repeat_event = {
+			id = HFP.16005
+			days = 12
 		}
 	}
 
@@ -2087,9 +2103,7 @@ character_event = {
 
 			FROM = { destroy_artifact = yes }
 		}
-		else_if = { # Players get a choice...
-			limit = { ai = no }
-
+		else = { # Players get a choice... (CleanSlate: as does AI for indestructible artifacts)
 			set_character_flag = dealing_with_inherited_artifacts
 			FROM = { save_event_target_as = inherited_artifact }
 			FROMFROM = { save_event_target_as = previous_owner }
@@ -2098,7 +2112,6 @@ character_event = {
 				id = HFP.16006 # Actual event
 				days = 5
 			}
-
 		}
 	}
 }
