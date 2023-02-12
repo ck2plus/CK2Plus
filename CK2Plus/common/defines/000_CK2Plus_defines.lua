@@ -73,8 +73,8 @@ NDefines.NCharacter.TRIBAL_EMPTY_HOLDING_TAX_MULTIPLIER = 0.5           -- vanil
 NDefines.NCharacter.TRIBAL_EMPTY_HOLDING_LEVY_MULTIPLIER = 0.5          -- vanilla: 0.5
 NDefines.NCharacter.TRIBAL_EMPTY_HOLDING_GARRISON_MULTIPLIER = 0.5      -- vanilla: 0.5
 NDefines.NCharacter.AGE_CHILDHOOD_PULSE = 2								-- vanilla:	6		-- The childhood pulse events start from this age
-NDefines.NCharacter.TREASURY_CHANCE_TO_DISAPPEAR_STANDARD = 0.01		-- vanilla:	0.00	-- Chances that artifacts disappear on inheritance
-NDefines.NCharacter.TREASURY_CHANCE_TO_DISAPPEAR_NO_HEIR = 0.1			-- vanilla:	0.5		-- Chances that artifacts disappear on inheritance when the dying character doesn't have an heir
+NDefines.NCharacter.TREASURY_CHANCE_TO_DISAPPEAR_STANDARD = 0.01		-- vanilla:	0.00	-- Chances that artifacts disappear on inheritance TODO: Rework this chance into on_action events
+NDefines.NCharacter.TREASURY_CHANCE_TO_DISAPPEAR_NO_HEIR = 0.1			-- vanilla:	0.5		-- Chances that artifacts disappear on inheritance when the dying character doesn't have an heir TODO: Rework this chance into on_action events
 
 NDefines.NTitle.BARON_AS_VASSAL_PRESTIGE = 0.005                        -- vanilla: 0.025
 NDefines.NTitle.COUNT_AS_VASSAL_PRESTIGE = 0.025                        -- vanilla: 0.1
