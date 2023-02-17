@@ -26,7 +26,8 @@ character_event = {
 	}
 
 	immediate = {
-		character_event = { id = PlusFaction.221 } # setup effects
+		log = "PlusFaction.200: On-demand faction maintenance for [Root.GetBestName]"
+		pf_faction_vote_count = yes
 
 		# Make any one-time adjustments to faction opinions (fired from events & decisions)
 		any_vassal = {
@@ -37,7 +38,7 @@ character_event = {
 			while = {
 				limit = {
 					check_variable = {
-						which = faction_mood_increase
+						which = local_faction_mood_increase
 						value > 0
 					}
 				}
@@ -61,7 +62,7 @@ character_event = {
 				}
 
 				change_variable = {
-					which = faction_mood_increase
+					which = local_faction_mood_increase
 					value = -1
 				}
 			}
@@ -69,7 +70,7 @@ character_event = {
 			while = {
 				limit = {
 					check_variable = {
-						which = faction_mood_decrease
+						which = local_faction_mood_decrease
 						value > 0
 					}
 				}
@@ -93,7 +94,7 @@ character_event = {
 				}
 
 				change_variable = {
-					which = faction_mood_decrease
+					which = local_faction_mood_decrease
 					value = -1
 				}
 			}
@@ -362,7 +363,6 @@ character_event = {
 
 			# Reset heir's faction variables
 			event_target:heir = {
-				pf_reset_maintenance_vars_effect = yes
 				clr_character_flag = faction_court_happy
 				clr_character_flag = faction_court_unhappy
 				clr_character_flag = faction_court_angry
@@ -2308,36 +2308,8 @@ character_event = {
 	}
 
 	immediate = {
-		character_event = { id = PlusFaction.221 } # setup effects
-
-		# Remove any [invalid] faction_mood increase/decrease on non-faction-leaders
-		if = {
-			limit = {
-				pf_leader_trigger = no
-
-				OR = {
-					check_variable = { which = faction_mood_increase value > 0 }
-					check_variable = { which = faction_mood_decrease value > 0 }
-				}
-			}
-
-			set_variable = { which = faction_mood_increase value = 0 }
-			set_variable = { which = faction_mood_decrease value = 0 }
-		}
-
-		any_vassal = {
-			limit = {
-				pf_leader_trigger = no
-
-				OR = {
-					check_variable = { which = faction_mood_increase value > 0 }
-					check_variable = { which = faction_mood_decrease value > 0 }
-				}
-			}
-
-			set_variable = { which = faction_mood_increase value = 0 }
-			set_variable = { which = faction_mood_decrease value = 0 }
-		}
+		log = "PlusFaction.220: Annual faction maintenance for [Root.GetBestName]"
+		pf_faction_vote_count = yes
 
 		# In the future, we will support execution of deferred faction mood impulse
 		# maintenance here: ---->   <------
@@ -3643,70 +3615,6 @@ character_event = {
 	}
 }
 
-# PlusFaction.221 [Liege]
-# Faction maintenance setup effects
-character_event = {
-	id = PlusFaction.221
-
-	is_triggered_only = yes
-	hide_window = yes
-
-	immediate = {
-		pf_reset_maintenance_vars_effect = yes
-
-		# Count the number of votes in each faction
-		any_vassal = {
-			trigger_switch = {
-				on_trigger = in_faction
-
-				faction_court = {
-					trigger_switch = {
-						on_trigger = real_tier
-
-						BARON = { ROOT = { change_variable = { which = faction_votes_court value = 1 } } }
-						COUNT = { ROOT = { change_variable = { which = faction_votes_court value = 2 } } }
-						DUKE  = { ROOT = { change_variable = { which = faction_votes_court value = 4 } } }
-						KING  = { ROOT = { change_variable = { which = faction_votes_court value = 8 } } }
-					}
-				}
-
-				faction_prosperity = {
-					trigger_switch = {
-						on_trigger = real_tier
-
-						BARON = { ROOT = { change_variable = { which = faction_votes_prosperity value = 1 } } }
-						COUNT = { ROOT = { change_variable = { which = faction_votes_prosperity value = 2 } } }
-						DUKE  = { ROOT = { change_variable = { which = faction_votes_prosperity value = 4 } } }
-						KING  = { ROOT = { change_variable = { which = faction_votes_prosperity value = 8 } } }
-					}
-				}
-
-				faction_glory = {
-					trigger_switch = {
-						on_trigger = real_tier
-
-						BARON = { ROOT = { change_variable = { which = faction_votes_glory value = 1 } } }
-						COUNT = { ROOT = { change_variable = { which = faction_votes_glory value = 2 } } }
-						DUKE  = { ROOT = { change_variable = { which = faction_votes_glory value = 4 } } }
-						KING  = { ROOT = { change_variable = { which = faction_votes_glory value = 8 } } }
-					}
-				}
-
-				faction_tradition = {
-					trigger_switch = {
-						on_trigger = real_tier
-
-						BARON = { ROOT = { change_variable = { which = faction_votes_tradition value = 1 } } }
-						COUNT = { ROOT = { change_variable = { which = faction_votes_tradition value = 2 } } }
-						DUKE  = { ROOT = { change_variable = { which = faction_votes_tradition value = 4 } } }
-						KING  = { ROOT = { change_variable = { which = faction_votes_tradition value = 8 } } }
-					}
-				}
-			}
-		}
-	}
-}
-
 # PlusFaction.222 [Liege]
 # Faction maintenance completion effects
 character_event = {
@@ -3716,6 +3624,8 @@ character_event = {
 	hide_window = yes
 
 	immediate = {
+		log = "PlusFaction.222: Faction maintenance completion for [Root.GetBestName]"
+
 		# Now calculate each faction's mood, which is the average of each faction member's
 		# overall opinion of the liege, weighted by the number of votes they have in the faction
 		if = {
@@ -3727,38 +3637,38 @@ character_event = {
 				# Set a number based on their opinion of the liege (from 1 to 100, 100 being the best)
 				if = {
 					limit = { opinion = { who = ROOT value >= 75 } }
-					ROOT = { set_variable = { which = faction_member_approval value = 100 } }
+					set_variable = { which = local_faction_member_approval value = 100 }
 				}
 				else_if = {
 					limit = { opinion = { who = ROOT value >= 50 } }
-					ROOT = { set_variable = { which = faction_member_approval value = 87.5 } }
+					set_variable = { which = local_faction_member_approval value = 87.5 }
 				}
 				else_if = {
 					limit = { opinion = { who = ROOT value >= 25 } }
-					ROOT = { set_variable = { which = faction_member_approval value = 75 } }
+					set_variable = { which = local_faction_member_approval value = 75 }
 				}
 				else_if = {
 					limit = { opinion = { who = ROOT value >= 0 } }
-					ROOT = { set_variable = { which = faction_member_approval value = 62.5 } }
+					set_variable = { which = local_faction_member_approval value = 62.5 }
 				}
 				else_if = {
 					limit = { opinion = { who = ROOT value >= -25 } }
-					ROOT = { set_variable = { which = faction_member_approval value = 50 } }
+					set_variable = { which = local_faction_member_approval value = 50 }
 				}
 				else_if = {
 					limit = { opinion = { who = ROOT value >= -50 } }
-					ROOT = { set_variable = { which = faction_member_approval value = 37.5 } }
+					set_variable = { which = local_faction_member_approval value = 37.5 }
 				}
 				else_if = {
 					limit = { opinion = { who = ROOT value >= -75 } }
-					ROOT = { set_variable = { which = faction_member_approval value = 25 } }
+					set_variable = { which = local_faction_member_approval value = 25 }
 				}
 				else_if = {
 					limit = { opinion = { who = ROOT value >= -99 } }
-					ROOT = { set_variable = { which = faction_member_approval value = 12.5 } }
+					set_variable = { which = local_faction_member_approval value = 12.5 }
 				}
 				else = {
-					ROOT = { set_variable = { which = faction_member_approval value = 1 } }
+					set_variable = { which = local_faction_member_approval value = 1 }
 				}
 
 				# then multiply that number by the number of votes they have in the faction
@@ -3766,9 +3676,9 @@ character_event = {
 				trigger_switch = {
 					on_trigger = real_tier
 
-					COUNT = { ROOT = { multiply_variable = { which = faction_member_approval value = 2 } } }
-					DUKE  = { ROOT = { multiply_variable = { which = faction_member_approval value = 4 } } }
-					KING  = { ROOT = { multiply_variable = { which = faction_member_approval value = 8 } } }
+					COUNT = { multiply_variable = { which = local_faction_member_approval value = 2 } }
+					DUKE  = { multiply_variable = { which = local_faction_member_approval value = 4 } }
+					KING  = { multiply_variable = { which = local_faction_member_approval value = 8 } }
 				}
 
 				# then divide by the total number of votes in the faction and add that to the liege's mood variable
@@ -3776,31 +3686,23 @@ character_event = {
 					on_trigger = in_faction
 
 					faction_court = {
-						ROOT = {
-							divide_variable = { which = faction_member_approval which = faction_votes_court }
-							change_variable = { which = faction_mood_court which = faction_member_approval }
-						}
+						divide_variable = { which = local_faction_member_approval which = local_faction_votes_court }
+						change_variable = { which = local_local_faction_mood_court which = local_faction_member_approval }
 					}
 
 					faction_prosperity = {
-						ROOT = {
-							divide_variable = { which = faction_member_approval which = faction_votes_prosperity }
-							change_variable = { which = faction_mood_prosperity which = faction_member_approval }
-						}
+						divide_variable = { which = local_faction_member_approval which = local_faction_votes_prosperity }
+						change_variable = { which = local_faction_mood_prosperity which = local_faction_member_approval }
 					}
 
 					faction_glory = {
-						ROOT = {
-							divide_variable = { which = faction_member_approval which = faction_votes_glory }
-							change_variable = { which = faction_mood_glory which = faction_member_approval }
-						}
+						divide_variable = { which = local_faction_member_approval which = local_faction_votes_glory }
+						change_variable = { which = local_faction_mood_glory which = local_faction_member_approval }
 					}
 
 					faction_tradition = {
-						ROOT = {
-							divide_variable = { which = faction_member_approval which = faction_votes_tradition }
-							change_variable = { which = faction_mood_tradition which = faction_member_approval }
-						}
+						divide_variable = { which = local_faction_member_approval which = local_faction_votes_tradition }
+						change_variable = { which = local_faction_mood_tradition which = local_faction_member_approval }
 					}
 				}
 			}
@@ -3813,38 +3715,38 @@ character_event = {
 				# set a number based on their opinion of the liege (from 1 to 100, 100 being the best)
 				if = {
 					limit = { opinion = { who = ROOT value >= 90 } }
-					ROOT = { set_variable = { which = faction_member_approval value = 100 } }
+					set_variable = { which = local_faction_member_approval value = 100 }
 				}
 				else_if = {
 					limit = { opinion = { who = ROOT value >= 70 } }
-					ROOT = { set_variable = { which = faction_member_approval value = 87.5 } }
+					set_variable = { which = local_faction_member_approval value = 87.5 }
 				}
 				else_if = {
 					limit = { opinion = { who = ROOT value >= 50 }}
-					ROOT = { set_variable = { which = faction_member_approval value = 75 } }
+					set_variable = { which = local_faction_member_approval value = 75 }
 				}
 				else_if = {
 					limit = { opinion = { who = ROOT value >= 30 } }
-					ROOT = { set_variable = { which = faction_member_approval value = 62.5 } }
+					set_variable = { which = local_faction_member_approval value = 62.5 }
 				}
 				else_if = {
 					limit = { opinion = { who = ROOT value >= 10 } }
-					ROOT = { set_variable = { which = faction_member_approval value = 50 } }
+					set_variable = { which = local_faction_member_approval value = 50 }
 				}
 				else_if = {
 					limit = { opinion = { who = ROOT value >= -10 } }
-					ROOT = { set_variable = { which = faction_member_approval value = 37.5 } }
+					set_variable = { which = local_faction_member_approval value = 37.5 }
 				}
 				else_if = {
 					limit = { opinion = { who = ROOT value >= -30 } }
-					ROOT = { set_variable = { which = faction_member_approval value = 25 } }
+					set_variable = { which = local_faction_member_approval value = 25 }
 				}
 				else_if = {
 					limit = { opinion = { who = ROOT value >= -50 } }
-					ROOT = { set_variable = { which = faction_member_approval value = 12.5 } }
+					set_variable = { which = local_faction_member_approval value = 12.5 }
 				}
 				else = {
-					ROOT = { set_variable = { which = faction_member_approval value = 1 } }
+					set_variable = { which = local_faction_member_approval value = 1 }
 				}
 
 				# then multiply that number by the number of votes they have in the faction
@@ -3852,9 +3754,9 @@ character_event = {
 				trigger_switch = {
 					on_trigger = real_tier
 
-					COUNT = { ROOT = { multiply_variable = { which = faction_member_approval value = 2 } } }
-					DUKE  = { ROOT = { multiply_variable = { which = faction_member_approval value = 4 } } }
-					KING  = { ROOT = { multiply_variable = { which = faction_member_approval value = 8 } } }
+					COUNT = { multiply_variable = { which = local_faction_member_approval value = 2 } }
+					DUKE  = { multiply_variable = { which = local_faction_member_approval value = 4 } }
+					KING  = { multiply_variable = { which = local_faction_member_approval value = 8 } }
 				}
 
 				#then divide by the total number of votes in the faction and add that to the liege's mood variable
@@ -3862,43 +3764,49 @@ character_event = {
 					on_trigger = in_faction
 
 					faction_court = {
-						ROOT = {
-							divide_variable = { which = faction_member_approval which = faction_votes_court }
-							change_variable = { which = faction_mood_court which = faction_member_approval }
-						}
+						divide_variable = { which = local_faction_member_approval which = local_faction_votes_court }
+						change_variable = { which = local_faction_mood_court which = local_faction_member_approval }
 					}
 
 					faction_prosperity = {
-						ROOT = {
-							divide_variable = { which = faction_member_approval which = faction_votes_prosperity }
-							change_variable = { which = faction_mood_prosperity which = faction_member_approval }
-						}
+						divide_variable = { which = local_faction_member_approval which = local_faction_votes_prosperity }
+						change_variable = { which = local_faction_mood_prosperity which = local_faction_member_approval }
 					}
 
 					faction_glory = {
-						ROOT = {
-							divide_variable = { which = faction_member_approval which = faction_votes_glory }
-							change_variable = { which = faction_mood_glory which = faction_member_approval }
-						}
+						divide_variable = { which = local_faction_member_approval which = local_faction_votes_glory }
+						change_variable = { which = local_faction_mood_glory which = local_faction_member_approval }
 					}
 
 					faction_tradition = {
-						ROOT = {
-							divide_variable = { which = faction_member_approval which = faction_votes_tradition }
-							change_variable = { which = faction_mood_tradition which = faction_member_approval }
-						}
+						divide_variable = { which = local_faction_member_approval which = local_faction_votes_tradition }
+						change_variable = { which = local_faction_mood_tradition which = local_faction_member_approval }
 					}
 				}
 			}
 		}
+
+		log = "local_faction_votes_court: [local_faction_votes_court.GetValue]"
+		log = "local_faction_votes_prosperity: [local_faction_votes_prosperity.GetValue]"
+		log = "local_faction_votes_glory: [local_faction_votes_glory.GetValue]"
+		log = "local_faction_votes_tradition: [local_faction_votes_tradition.GetValue]"
+
+		log = "local_faction_mood_court: [local_faction_mood_court.GetValue]"
+		log = "local_faction_mood_prosperity: [local_faction_mood_prosperity.GetValue]"
+		log = "local_faction_mood_glory: [local_faction_mood_glory.GetValue]"
+		log = "local_faction_mood_tradition: [local_faction_mood_tradition.GetValue]"
 
 		# Now determine the overall mood category of the faction and set the flag if it's different than before
 		# and notify the liege if it's actually changed (and only then, to avoid spam)
 		if = {
 			limit = { faction_exists = { faction = faction_court } }
 
+			log = "Setting court faction mood for [Root.GetBestName]"
+
 			if = {
-				limit = { check_variable = { which = faction_mood_court value >= 75 } }
+				limit = { check_variable = { which = local_faction_mood_court value >= 75 } }
+
+				log = "Court faction mood for [Root.GetBestName] is happy"
 
 				if = {
 					limit = { NOT = { has_character_flag = faction_court_happy } }
@@ -3915,7 +3823,9 @@ character_event = {
 				}
 			}
 			else_if = {
-				limit = { check_variable = { which = faction_mood_court value >= 50 } }
+				limit = { check_variable = { which = local_faction_mood_court value >= 50 } }
+
+				log = "Court faction mood for [Root.GetBestName] is content"
 
 				if = {
 					limit = {
@@ -3938,7 +3848,9 @@ character_event = {
 				}
 			}
 			else_if = {
-				limit = { check_variable = { which = faction_mood_court value >= 37.5 } }
+				limit = { check_variable = { which = local_faction_mood_court value >= 37.5 } }
+
+				log = "Court faction mood for [Root.GetBestName] is unhappy"
 
 				if = {
 					limit = { NOT = { has_character_flag = faction_court_unhappy } }
@@ -3955,6 +3867,8 @@ character_event = {
 				}
 			}
 			else = {
+				log = "Court faction mood for [Root.GetBestName] is angry"
+
 				if = {
 					limit = { NOT = { has_character_flag = faction_court_angry } }
 
@@ -3974,8 +3888,12 @@ character_event = {
 		if = {
 			limit = { faction_exists = { faction = faction_prosperity } }
 
+			log = "Setting prosperity faction mood for [Root.GetBestName]"
+
 			if = {
-				limit = { check_variable = { which = faction_mood_prosperity value >= 75 } }
+				limit = { check_variable = { which = local_faction_mood_prosperity value >= 75 } }
+
+				log = "Prosperity faction mood for [Root.GetBestName] is happy"
 
 				if = {
 					limit = { NOT = { has_character_flag = faction_prosperity_happy } }
@@ -3992,7 +3910,9 @@ character_event = {
 				}
 			}
 			else_if = {
-				limit = { check_variable = { which = faction_mood_prosperity value >= 50 } }
+				limit = { check_variable = { which = local_faction_mood_prosperity value >= 50 } }
+
+				log = "Prosperity faction mood for [Root.GetBestName] is content"
 
 				if = {
 					limit = {
@@ -4015,7 +3935,9 @@ character_event = {
 				}
 			}
 			else_if = {
-				limit = { check_variable = { which = faction_mood_prosperity value >= 37.5 } }
+				limit = { check_variable = { which = local_faction_mood_prosperity value >= 37.5 } }
+
+				log = "Prosperity faction mood for [Root.GetBestName] is unhappy"
 
 				if = {
 					limit = { NOT = { has_character_flag = faction_prosperity_unhappy } }
@@ -4032,6 +3954,8 @@ character_event = {
 				}
 			}
 			else = {
+				log = "Prosperity faction mood for [Root.GetBestName] is angry"
+
 				if = {
 					limit = { NOT = { has_character_flag = faction_prosperity_angry } }
 
@@ -4051,8 +3975,12 @@ character_event = {
 		if = {
 			limit = { faction_exists = { faction = faction_glory } }
 
+			log = "Setting glory faction mood for [Root.GetBestName]"
+
 			if = {
-				limit = { check_variable = { which = faction_mood_glory value >= 75 } }
+				limit = { check_variable = { which = local_faction_mood_glory value >= 75 } }
+
+				log = "Glory faction mood for [Root.GetBestName] is happy"
 
 				if = {
 					limit = { NOT = { has_character_flag = faction_glory_happy } }
@@ -4069,7 +3997,9 @@ character_event = {
 				}
 			}
 			else_if = {
-				limit = { check_variable = { which = faction_mood_glory value >= 50 } }
+				limit = { check_variable = { which = local_faction_mood_glory value >= 50 } }
+
+				log = "Glory faction mood for [Root.GetBestName] is content"
 
 				if = {
 					limit = {
@@ -4092,7 +4022,9 @@ character_event = {
 				}
 			}
 			else_if = {
-				limit = { check_variable = { which = faction_mood_glory value >= 37.5 } }
+				limit = { check_variable = { which = local_faction_mood_glory value >= 37.5 } }
+
+				log = "Glory faction mood for [Root.GetBestName] is unhappy"
 
 				if = {
 					limit = { NOT = { has_character_flag = faction_glory_unhappy } }
@@ -4109,6 +4041,8 @@ character_event = {
 				}
 			}
 			else = {
+				log = "Glory faction mood for [Root.GetBestName] is angry"
+
 				if = {
 					limit = { NOT = { has_character_flag = faction_glory_angry } }
 
@@ -4128,8 +4062,12 @@ character_event = {
 		if = {
 			limit = { faction_exists = { faction = faction_tradition } }
 
+			log = "Setting tradition faction mood for [Root.GetBestName]"
+
 			if = {
-				limit = { check_variable = { which = faction_mood_tradition value >= 75 } }
+				limit = { check_variable = { which = local_faction_mood_tradition value >= 75 } }
+
+				log = "Tradition faction mood for [Root.GetBestName] is happy"
 
 				if = {
 					limit = { NOT = { has_character_flag = faction_tradition_happy } }
@@ -4146,7 +4084,9 @@ character_event = {
 				}
 			}
 			else_if = {
-				limit = { check_variable = { which = faction_mood_tradition value >= 50 } }
+				limit = { check_variable = { which = local_faction_mood_tradition value >= 50 } }
+
+				log = "Tradition faction mood for [Root.GetBestName] is content"
 
 				if = {
 					limit = {
@@ -4169,7 +4109,9 @@ character_event = {
 				}
 			}
 			else_if = {
-				limit = { check_variable = { which = faction_mood_tradition value >= 37.5 } }
+				limit = { check_variable = { which = local_faction_mood_tradition value >= 37.5 } }
+
+				log = "Tradition faction mood for [Root.GetBestName] is unhappy"
 
 				if = {
 					limit = { NOT = { has_character_flag = faction_tradition_unhappy } }
@@ -4186,6 +4128,8 @@ character_event = {
 				}
 			}
 			else = {
+				log = "Tradition faction mood for [Root.GetBestName] is angry"
+
 				if = {
 					limit = { NOT = { has_character_flag = faction_tradition_angry } }
 
