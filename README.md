@@ -34,10 +34,10 @@ Paradox Interactive Mod Policy: http://www.paradoxplaza.com/mod-static-info-ca.h
 
 CK2Plus Team
 ===============================================================================
+Whizzer - Lead Dev  
 Aerkhanite  
 daniloy  
 Fall of Stars  
 mightnight  
-schwarherz - Lead Dev  
+schwarherz  
 vukica  
-Whizzer
