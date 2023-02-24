@@ -227,6 +227,8 @@ NDefines.NDisease.INFECTION_CHANCE_MODIFIER_TRADEPOST = 0.03            -- vanil
 NDefines.NDisease.INFECTION_CHANCE_MODIFIER_TRADEROUTE = 0.03           -- vanilla: 0.5
 
 NDefines.NGraphics.CITY_SPRAWL_AMOUNT = 0.75							-- vanilla:	1		-- Size of cities, higher gives larger cities
+NDefines.NGraphics.CITY_MAIN_BUILDING_LEVEL_2 = 15						-- vanilla: 25
+NDefines.NGraphics.CITY_MAIN_BUILDING_LEVEL_3 = 33						-- vanilla: 35
 
 NDefines.NTechnology.IDEAL_YEAR_AHEAD_PENALTY_INVEST = 0.4				-- vanilla:	0.6		-- Percent increase in cost pre level ahead of ideal date
 
