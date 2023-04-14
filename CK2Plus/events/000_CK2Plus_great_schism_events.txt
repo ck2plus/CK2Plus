@@ -192,18 +192,31 @@ character_event = {
 
 				if = {
 					limit = {
-						e_byzantium = {
-							holder_scope = {
-								trait = iconoclast_rites
+						OR = {
+							AND = {
+								date >= 730.6.1   # Official start iconoclasm, under Leo III, after a volcanic explosion in the Aegean Sea (island of Thera) in 726
+								date <= 787.10.13 # until the end of Second Council of Nicaea, under Irene
+							}
 
-								OR = {
-									is_liege_or_above_of = PREVPREV
-									de_jure_vassal_or_below = PREVPREV
-								}
+							AND = {
+								date >= 815.6.1  # From a synod of Constantinople, under Leo V
+								date <= 843.3.11 # until the Council of Constantinople, under Theodora
 							}
 						}
 
-						culture_group = byzantine
+						# The Imperial court and poorer lands suffering from Arab raids were Iconoclast
+						realm = { title = e_byzantium }
+
+						OR = {
+							capital_scope = { region = world_middle_east_asia_minor }
+							has_landed_title = e_byzantium
+							has_landed_title = k_orthodox
+
+							trigger_if = {
+								limit = { vassal_of = e_byzantium }
+								is_ruler = no
+							}
+						}
 					}
 
 					add_trait = iconoclast_rites
@@ -830,6 +843,7 @@ character_event = {
 				limit = { region = custom_greek_rites }
 				religion = event_target:eastern_religion
 			}
+			# TODO: Add logic to determine which provinces should be iconoclast instead.
 		}
 
 		# Reset catholic/orthodox heresies
@@ -1012,6 +1026,37 @@ character_event = {
 				}
 
 				catholic = { save_event_target_as = target_religion }
+			}
+			else_if = {
+				limit = {
+					OR = {
+						AND = {
+							date >= 730.6.1   # Official start iconoclasm, under Leo III, after a volcanic explosion in the Aegean Sea (island of Thera) in 726
+							date <= 787.10.13 # until the end of Second Council of Nicaea, under Irene
+						}
+
+						AND = {
+							date >= 815.6.1  # From a synod of Constantinople, under Leo V
+							date <= 843.3.11 # until the Council of Constantinople, under Theodora
+						}
+					}
+
+					# The Imperial court and poorer lands suffering from Arab raids were Iconoclast
+					realm = { title = e_byzantium }
+
+					OR = {
+						capital_scope = { region = world_middle_east_asia_minor }
+						has_landed_title = e_byzantium
+						has_landed_title = d_iconoclast
+
+						trigger_if = {
+							limit = { vassal_of = e_byzantium }
+							is_ruler = no
+						}
+					}
+				}
+
+				iconoclast = { save_event_target_as = target_religion }
 			}
 			else = {
 				orthodox = { save_event_target_as = target_religion }
@@ -1900,6 +1945,7 @@ character_event = {
 # 051: Assign pentarch to titles
 # Used for both Chalcedonian and vanilla religions that use pentarchy in any way
 # Fired, directly or indirectly, during Plus start-up event
+# At this time, Latin, Greek and Iconoclast rites have already been handed (in post 1054 starts this is based on religion - Catholic/Orthodox)
 character_event = {
 	id = PlusGreatSchism.051
 
@@ -1952,93 +1998,19 @@ character_event = {
 			# Assign titles to Rome
 			if = {
 				limit = {
-					NOT = { has_global_flag = great_schism_happened } # for post-1054 starts with Schism in place
+					trigger_if = {
+						limit = { holder_scope = { has_pentarchy = no } }
 
-					OR = {
-						# Avoid assigning lands held by Greeks and 'Russian' slavs rulers inside the Latin sphere
-						# Do assign lands held by core 'Catholic' cultures outside the Latin sphere (for late starts, if Schism is reverted)
-						AND = {
-							trigger_if = {
-								limit = {
-									OR = {
-										AND = {
-											lower_tier_than = DUKE
-											location = {
-												NOT = {
-													region = custom_latin_rites
-												}
-											}
-										}
-										AND = {
-											higher_tier_than = COUNT
-
-											holder_scope = {
-												has_pentarchy = yes
-
-												any_demesne_title = {
-													tier = COUNT
-
-													location = {
-														NOT = {
-															region = custom_latin_rites
-														}
-													}
-												}
-											}
-										}
-									}
-								}
-
-								holder_scope = {
-									OR = {
-										culture_group = latin
-										culture_group = gallo_roman
-										culture_group = italian_group
-									}
-								}
-							}
-
-							holder_scope = {
-								NOR = {
-									culture_group = byzantine
-									culture_group = east_slavic
-								}
-							}
-						}
-
-						# Non-iconoclast, non-Byzantines under iconoclast Byzantine emperor
-						location = {
-							has_pentarchy = yes
-							NOT = { religion = iconoclast }
-
-							owner = {
-								NOR = {
-									religion = iconoclast
-									culture_group = byzantine
-								}
-								top_liege = {
-									has_landed_title = e_byzantium
-									religion = iconoclast
-								}
-							}
+						OR = {
+							location = { region = custom_latin_rites }
+							capital_scope = { region = custom_latin_rites }
 						}
 					}
-
-					# Religious heads don't report to the Pope
-					trigger_if = {
-						limit = { controls_religion = yes }
-						title = k_papacy
-					}
-
-					# Special check for Mercenary leaders, all others default to Constantinople
-					trigger_if = {
-						limit = { mercenary = yes }
-
-						capital_scope = {
-							region = custom_latin_rites
-						}
+					trigger_else = {
+						holder_scope = { trait = latin_rites }
 					}
 				}
+
 				log = "[This.GetID]: Pentarch of Rome was assigned the [This.GetFullBaseName]"
 				set_pentarch_title = b_roma
 			}
@@ -2285,58 +2257,15 @@ character_event = {
 			else_if = {
 				limit = {
 					trigger_if = {
-						limit = {
-							NOT = { has_global_flag = great_schism_happened }
-						}
-						holder_scope = { # Crusader states, etc.
-							NOR = {
-								culture_group = italian_group
-								culture_group = gallo_roman
-								culture_group = latin
-							}
+						limit = { holder_scope = { has_pentarchy = no } }
+
+						OR = {
+							location = { NOT = { region = custom_latin_rites } }
+							capital_scope = { NOT = { region = custom_latin_rites } }
 						}
 					}
-
-					OR = {
-						# Not under a kingdom title outside the Latin sphere, which has an autocephalous patriarch
-						NOR = {
-							trigger_if = {
-								limit = { higher_tier_than = DUKE }
-								NOR = { # exceptions
-									title = e_byzantium
-									title = k_orthodox
-								}
-							}
-						}
-
-						# Greeks outside the Greek sphere
-						trigger_if = {
-							limit = {
-								NOT = { region = custom_greek_rites }
-								lower_tier_than = DUKE
-							}
-							OR = {
-								location = {
-									culture_group = byzantine
-								}
-								holder_scope = {
-									culture_group = byzantine
-								}
-							}
-						}
-						trigger_else_if = {
-							limit = {
-								NOT = { region = custom_greek_rites }
-								higher_tier_than = COUNT
-							}
-							holder_scope = {
-								culture_group = byzantine
-							}
-						}
-					}
-
-					controls_religion = no
 				}
+
 				log = "[This.GetID]: Pentarch of Constantinople was assigned the [This.GetFullBaseName]"
 				set_pentarch_title = b_hagiasophia
 			}
