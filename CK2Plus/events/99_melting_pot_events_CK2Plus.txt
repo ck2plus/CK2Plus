@@ -1,0 +1,183 @@
+namespace = meltingPot
+
+########################################
+# CULTURAL MELTING POT EVENTS
+########################################
+
+character_event = {
+	id = meltingPot.001
+	hide_window = yes
+
+	is_triggered_only = yes # on_yearly_pulse
+
+	only_rulers = yes
+	trigger = { owns = event_target:pulse_province }
+
+	immediate = {
+		# English
+		random_province = {
+			limit = {
+				culture = anglo_saxon
+				holder = {
+					culture_group = gallo_roman
+					NOT = { has_character_flag = melting_tyrant }
+				}
+				NOR = {
+					has_province_flag = english_emerging
+					has_province_flag = english_growing
+				}
+			}
+			preferred_limit = { is_capital = yes }
+			preferred_limit = {
+				any_neighbor_province = { has_province_flag = english_growing }
+			}
+
+			set_province_flag = english_growing
+		}
+		any_province = {
+			limit = { has_province_flag = english_growing }
+
+			if = {
+				limit = {
+					culture = anglo_saxon
+					holder = {
+						NOT = { has_character_flag = melting_tyrant } # Actively discouraging melting pots
+						OR = {
+							culture_group = gallo_roman
+							culture = english # allow conversions started to pre-conversion to finish
+						}
+					}
+				}
+
+				if = { # initial setup
+					limit = {
+						culture = anglo_saxon
+						holder = { culture_group = gallo_roman }
+						check_variable = {
+							which = english_meltingpot
+							value < 1
+						}
+					}
+					set_variable = {
+						which = english_meltingpot
+						value = 1
+					}
+				}
+				else_if = { # Prime for melting pot event
+					limit = {
+						culture = anglo_saxon
+						holder = { culture_group = gallo_roman }
+						check_variable = {
+							which = english_meltingpot
+							value >= 100 # >= in case of errors, could probably be ==
+						}
+					}
+					clr_province_flag = english_growing
+					set_province_flag = english_emerging # To fire via on_action to prevent multiple events for the same ruler
+				}
+				else = { # increment variable if not yet ready for melting pot
+					change_variable = {
+						which = english_meltingpot
+						value = 1
+					}
+				}
+			}
+			else = { # If province no longer meets melting pot requirements
+				if = { # de-increment melting pot variable
+					limit = {
+						check_variable = {
+							which = english_meltingpot
+							value >= 1
+						}
+					}
+					subtract_variable = {
+						which = english_meltingpot
+						value = 1
+					}
+				}
+				else = { # Remove flag if the variable would be negative
+					clr_province_flag = english_growing
+				}
+			}
+		}
+	}
+}
+
+# English
+narrative_event = { # Ruler responds to new growing culture
+	id = meltingPot.010
+	desc = EVTDESC_MeltingPot_010
+	picture = GFX_evt_throne_room
+
+	is_triggered_only = yes # on_random_pulse
+
+	only_rulers = yes
+	min_age = 16
+	only_capable = yes
+	prisoner = no
+
+	trigger = {
+		NOR = {
+			has_character_flag = no_melting_pot
+			has_character_flag = melting_tyrant
+		}
+		culture_group = gallo_roman
+		any_demesne_province = { has_province_flag = english_emerging }
+	}
+
+	weight_multiplier = { days = 7 }
+
+	immediate = { # Culture has already changed, ruler's actions will determine where it goes from here
+		any_demesne_province = {
+			limit = { has_province_flag = english_emerging }
+
+			culture = english
+			clr_province_flag = english_emerging
+		}
+	}
+
+	option = {
+		desc = EVTOPTA_meltingPot_010 # Embrace the locals and convert
+
+		# Convert family and loyal courtiers
+	}
+	option = {
+		desc = EVTOPTB_meltingPot_010 # Allow the peasants their eccentricities but don't convert
+
+		set_character_flag = no_melting_pot
+		# No changes
+	}
+	option = {
+		desc = EVTOPTC_meltingPot_010 # Absolutely not, the peasants must be [ruler culture]
+
+		set_character_flag = melting_tyrant
+		# increase revolt risk, increase cultural conversion chance
+	}
+}
+character_event = { # New culture expands
+	id = meltingPot.011
+	hide_window = yes
+
+	is_triggered_only = yes # on_random_pulse
+
+	only_rulers = yes
+
+	trigger = {
+		OR = {
+			culture = english
+			has_character_flag = no_melting_pot
+		}
+		any_demesne_province = { has_province_flag = english_emerging }
+	}
+
+	weight_multiplier = { days = 1 }
+
+	immediate = {
+		any_demesne_province = {
+			limit = { has_province_flag = english_emerging }
+
+			culture = english
+			clr_province_flag = english_emerging
+		}
+	}
+}
