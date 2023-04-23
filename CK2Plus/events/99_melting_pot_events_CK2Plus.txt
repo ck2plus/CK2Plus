@@ -15,7 +15,7 @@ character_event = {
 
 	immediate = {
 		# English
-		random_province = {
+		random_province = { # identify potential meltingpot
 			limit = {
 				culture = anglo_saxon
 				holder = {
@@ -34,10 +34,10 @@ character_event = {
 
 			set_province_flag = english_growing
 		}
-		any_province = {
+		any_province = { # Actually do the meltingpot
 			limit = { has_province_flag = english_growing }
 
-			if = {
+			if = { # Still meets the requirements, increment variable or add the event flag
 				limit = {
 					culture = anglo_saxon
 					holder = {
@@ -51,8 +51,6 @@ character_event = {
 
 				if = { # initial setup
 					limit = {
-						culture = anglo_saxon
-						holder = { culture_group = gallo_roman }
 						check_variable = {
 							which = english_meltingpot
 							value < 1
@@ -63,22 +61,38 @@ character_event = {
 						value = 1
 					}
 				}
-				else_if = { # Prime for melting pot event
+				else_if = { # Count has been achieved, prime for melting pot event
 					limit = {
-						culture = anglo_saxon
-						holder = { culture_group = gallo_roman }
 						check_variable = {
 							which = english_meltingpot
-							value >= 100 # >= in case of errors, could probably be ==
+							value >= 100
 						}
 					}
 					clr_province_flag = english_growing
 					set_province_flag = english_emerging # To fire via on_action to prevent multiple events for the same ruler
 				}
 				else = { # increment variable if not yet ready for melting pot
-					change_variable = {
-						which = english_meltingpot
-						value = 1
+					if = { # Faster if top liege is also gallo-roman or already english
+						limit = {
+							holder = {
+								top_liege = {
+									OR = {
+										culture_group = gallo_roman
+										culture = english
+									}
+								}
+							}
+						}
+						change_variable = {
+							which = english_meltingpot
+							value = 1
+						}
+					}
+					else = {
+						change_variable = {
+							which = english_meltingpot
+							value = 0.5
+						}
 					}
 				}
 			}
@@ -118,7 +132,7 @@ narrative_event = { # Ruler responds to new growing culture
 
 	trigger = {
 		NOR = {
-			has_character_flag = no_melting_pot
+			has_character_flag = no_meltingpot_self
 			has_character_flag = melting_tyrant
 		}
 		culture_group = gallo_roman
@@ -136,22 +150,34 @@ narrative_event = { # Ruler responds to new growing culture
 		}
 	}
 
-	option = {
-		desc = EVTOPTA_meltingPot_010 # Embrace the locals and convert
+	option = { # Convert
+		desc = EVTOPTA_meltingPot_010
+
+		trigger = { top_liege = { NOT = { has_law = culture_conversion_2 } } }
 
 		# Convert family and loyal courtiers
 	}
-	option = {
-		desc = EVTOPTB_meltingPot_010 # Allow the peasants their eccentricities but don't convert
+	option = { # Don't convert, allow meltingpot to continue
+		desc = EVTOPTB_meltingPot_010
 
-		set_character_flag = no_melting_pot
-		# No changes
+		trigger = { top_liege = { NOT = { has_law = culture_conversion_2 } } }
+
+		set_character_flag = no_meltingpot_self
 	}
-	option = {
-		desc = EVTOPTC_meltingPot_010 # Absolutely not, the peasants must be [ruler culture]
+	option = { # Don't convert, disallow meltingpot to continue
+		desc = EVTOPTC_meltingPot_010
 
 		set_character_flag = melting_tyrant
 		# increase revolt risk, increase cultural conversion chance
+
+		if = { # Enforce it and add consequences
+			limit = { is_law_potential = culture_conversion_0 } # the same potential is used for all three culture conversion laws
+
+			add_law = culture_conversion_2
+		}
+		else = {
+			# add_character_modifier = forced_culture
+		}
 	}
 }
 character_event = { # New culture expands
@@ -165,7 +191,7 @@ character_event = { # New culture expands
 	trigger = {
 		OR = {
 			culture = english
-			has_character_flag = no_melting_pot
+			has_character_flag = no_meltingpot_self
 		}
 		any_demesne_province = { has_province_flag = english_emerging }
 	}
