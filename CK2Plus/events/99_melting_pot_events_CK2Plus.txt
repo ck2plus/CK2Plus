@@ -5,7 +5,7 @@ namespace = meltingPot
 # Sorted by base culture
 ########################################
 
-# Control Tombola Event
+# Seed the melting pots
 character_event = {
 	id = meltingPot.001
 	hide_window = yes
@@ -69,7 +69,79 @@ character_event = {
 
 			set_province_flag = english_growing
 		}
-		any_province = { # Actually do the meltingpot
+
+		# Ænglisc
+		random_province = {
+			limit = {
+				culture = anglo_saxon
+				holder_scope = {
+					NOT = { has_character_flag = melting_tyrant }
+
+					OR = {
+						culture_group = north_germanic
+						any_liege = { culture_group = north_germanic }
+					}
+				}
+				NOR = {
+					has_province_flag = aenglisc_emerging
+					has_province_flag = aenglisc_growing
+				}
+			}
+			preferred_limit = { # Start with the top ruler if possible
+				holder_scope = {
+					independent = yes
+					capital_scope = { province = PREVPREV }
+				}
+			}
+			preferred_limit = { # Kings first
+				holder_scope = {
+					higher_real_tier_than = DUKE
+					capital_scope = { province = PREVPREV }
+				}
+			}
+			preferred_limit = { # Then Dukes
+				holder_scope = {
+					higher_real_tier_than = COUNT
+					capital_scope = { province = PREVPREV }
+				}
+			}
+			preferred_limit = { # Then Counts
+				holder_scope = {
+					higher_real_tier_than = BARON # Otherwise this is basically meaningless
+					capital_scope = { province = PREVPREV }
+				}
+			}
+			preferred_limit = { # Then the countryside
+				any_neighbor_province = {
+					OR = {
+						has_province_flag = aenglisc_growing
+						has_province_flag = aenglisc_emerging
+						culture = english_norse
+					}
+				}
+			}
+
+			set_province_flag = aenglisc_growing
+		}
+	}
+}
+
+### Anglo-Saxon
+# English (Gallo-Roman)
+character_event = { # Track and implement the meltingpot
+	id = meltingPot.010
+	hide_window = yes
+
+	is_triggered_only = yes # on_yearly_pulse
+
+	only_rulers = yes
+	only_independent = yes
+	trigger = {
+		any_demesne_province = { has_province_flag = english_growing }
+	}
+
+	immediate = {
+		any_demesne_province = {
 			limit = { has_province_flag = english_growing }
 
 			if = { # Make sure it still meets the requirements
@@ -199,61 +271,159 @@ character_event = {
 				}
 			}
 		}
+	}
+}
+narrative_event = { # Ruler responds to new growing culture
+	id = meltingPot.011
+	desc = EVTDESC_Plus_670 # EVTDESC_MeltingPot_010 (currently using old melting pot localization because it works, noting the replacement name for future ref)
+	picture = GFX_evt_throne_room
 
-		# Ænglisc
-		random_province = {
-			limit = {
-				culture = anglo_saxon
-				holder_scope = {
-					NOT = { has_character_flag = melting_tyrant }
+	is_triggered_only = yes # on_yearly_pulse
 
-					OR = {
-						culture_group = north_germanic
-						any_liege = { culture_group = north_germanic }
-					}
-				}
-				NOR = {
-					has_province_flag = aenglisc_emerging
-					has_province_flag = aenglisc_growing
-				}
-			}
-			preferred_limit = { # Start with the top ruler if possible
-				holder_scope = {
-					independent = yes
-					capital_scope = { province = PREVPREV }
-				}
-			}
-			preferred_limit = { # Kings first
-				holder_scope = {
-					higher_real_tier_than = DUKE
-					capital_scope = { province = PREVPREV }
-				}
-			}
-			preferred_limit = { # Then Dukes
-				holder_scope = {
-					higher_real_tier_than = COUNT
-					capital_scope = { province = PREVPREV }
-				}
-			}
-			preferred_limit = { # Then Counts
-				holder_scope = {
-					higher_real_tier_than = BARON # Otherwise this is basically meaningless
-					capital_scope = { province = PREVPREV }
-				}
-			}
-			preferred_limit = { # Then the countryside
-				any_neighbor_province = {
-					OR = {
-						has_province_flag = aenglisc_growing
-						has_province_flag = aenglisc_emerging
-						culture = english_norse
-					}
-				}
-			}
+	only_rulers = yes
+	min_age = 16
+	only_capable = yes
+	prisoner = no
 
-			set_province_flag = aenglisc_growing
+	weight_multiplier = {
+		years = 41
+
+		# These shouldn't happen but...just in case
+		mult_modifier = {
+			factor = 0.5
+
+			any_demesne_province = {
+				had_province_flag = {
+					flag = english_emerging
+					years >= 50
+				}
+			}
 		}
-		any_province = { # Actually do the meltingpot
+		mult_modifier = {
+			factor = 0.5
+
+			any_demesne_province = {
+				had_province_flag = {
+					flag = english_emerging
+					years >= 100
+				}
+			}
+		}
+
+		meltingpot_multiplier = yes
+	}
+
+	trigger = {
+		NOR = {
+			top_liege = { has_law = culture_conversion_2 } # We already know their answer and/or their leige wouldn't allow it
+			has_character_flag = no_meltingpot_self
+			has_character_flag = melting_tyrant
+		}
+		culture_group = gallo_roman
+		any_demesne_province = { has_province_flag = english_emerging }
+	}
+
+	immediate = { # Culture has already changed, ruler's actions will determine where it goes from here
+		any_demesne_province = {
+			limit = { has_province_flag = english_emerging }
+
+			culture = english
+			clr_province_flag = english_emerging
+		}
+	}
+
+	option = { # Convert
+		name = EVTOPTA55002 # EVTOPTA_meltingPot_010 (currently using old melting pot localization because it works, noting the replacement name for future ref)
+
+		culture = english
+
+		# Convert loyal family and courtiers
+		any_courtier = {
+			limit = {
+				prisoner = no # Prisoners tend not to be involved in palace politics
+				is_ruler = no # They should get their own events (blackjack and hookers optional)
+				OR = {
+					culture_group = gallo_roman
+					culture = anglo_saxon
+				}
+
+				reverse_opinion = {
+					who = ROOT
+					value >= 10 # 25 was too restrictive
+				}
+			}
+
+			culture = english
+		}
+	}
+	option = { # Don't convert, allow meltingpot to continue
+		name = EVTOPTB_Plus_630 #EVTOPTB_meltingPot_010
+
+		set_character_flag = no_meltingpot_self
+
+		ai_chance = { factor = 0 } # Mirror old event, TODO: add more nuance
+	}
+	option = { # Don't convert, disallow meltingpot to continue
+		name = "Why would I allow such barbarism?" # EVTOPTC_meltingPot_010 (TODO: Actually localize this instead of the ad-hoc solution)
+
+		set_character_flag = melting_tyrant
+		# increase revolt risk, increase cultural conversion chance
+
+		if = { # Enforce it and add consequences
+			limit = { is_law_potential = culture_conversion_0 } # the same potential is used for all three culture conversion laws
+
+			primary_title = { add_law = culture_conversion_2 }
+		}
+		else = {
+			# add_character_modifier = forced_culture # Gives the same negative modifier as culture_conversion_0 law for the lifetime of the ruler
+		}
+
+		ai_chance = { factor = 0 } # Mirror old event, TODO: add more nuance
+	}
+}
+character_event = { # New culture expands
+	id = meltingPot.012
+	hide_window = yes
+
+	is_triggered_only = yes # on_yearly_pulse
+
+	only_rulers = yes
+
+	weight_multiplier = { days = 1 }
+
+	trigger = {
+		OR = {
+			culture = english
+			has_character_flag = no_meltingpot_self
+		}
+		any_demesne_province = { has_province_flag = english_emerging }
+	}
+
+	immediate = {
+		any_demesne_province = {
+			limit = { has_province_flag = english_emerging }
+
+			culture = english
+			clr_province_flag = english_emerging
+		}
+	}
+}
+
+# Ænglisc (North Germanic)
+character_event = {
+	id = meltinPot.020
+	hide_window = yes
+
+	is_triggered_only = yes # on_yearly_pulse
+
+	only_rulers = yes
+	only_independent = yes
+	trigger = {
+		any_demesne_province = { has_province_flag = aenglisc_growing }
+	}
+
+	immediate = {
+		any_demesne_province = { # Actually do the meltingpot
 			limit = { has_province_flag = aenglisc_growing }
 
 			if = { # Make sure it still meets the requirements
@@ -384,148 +554,8 @@ character_event = {
 		}
 	}
 }
-
-### Anglo-Saxon
-# English (Gallo-Roman)
 narrative_event = { # Ruler responds to new growing culture
-	id = meltingPot.010
-	desc = EVTDESC_Plus_670 # EVTDESC_MeltingPot_010 (currently using old melting pot localization because it works, noting the replacement name for future ref)
-	picture = GFX_evt_throne_room
-
-	is_triggered_only = yes # on_yearly_pulse
-
-	only_rulers = yes
-	min_age = 16
-	only_capable = yes
-	prisoner = no
-
-	weight_multiplier = {
-		years = 41
-
-		# These shouldn't happen but...just in case
-		mult_modifier = {
-			factor = 0.5
-
-			any_demesne_province = {
-				had_province_flag = {
-					flag = english_emerging
-					years >= 50
-				}
-			}
-		}
-		mult_modifier = {
-			factor = 0.5
-
-			any_demesne_province = {
-				had_province_flag = {
-					flag = english_emerging
-					years >= 100
-				}
-			}
-		}
-
-		meltingpot_multiplier = yes
-	}
-
-	trigger = {
-		NOR = {
-			top_liege = { has_law = culture_conversion_2 } # We already know their answer and/or their leige wouldn't allow it
-			has_character_flag = no_meltingpot_self
-			has_character_flag = melting_tyrant
-		}
-		culture_group = gallo_roman
-		any_demesne_province = { has_province_flag = english_emerging }
-	}
-
-	immediate = { # Culture has already changed, ruler's actions will determine where it goes from here
-		any_demesne_province = {
-			limit = { has_province_flag = english_emerging }
-
-			culture = english
-			clr_province_flag = english_emerging
-		}
-	}
-
-	option = { # Convert
-		name = EVTOPTA55002 # EVTOPTA_meltingPot_010 (currently using old melting pot localization because it works, noting the replacement name for future ref)
-
-		culture = english
-
-		# Convert loyal family and courtiers
-		any_courtier = {
-			limit = {
-				prisoner = no # Prisoners tend not to be involved in palace politics
-				is_ruler = no # They should get their own events (blackjack and hookers optional)
-				OR = {
-					culture_group = gallo_roman
-					culture = anglo_saxon
-				}
-
-				reverse_opinion = {
-					who = ROOT
-					value >= 10 # 25 was too restrictive
-				}
-			}
-
-			culture = english
-		}
-	}
-	option = { # Don't convert, allow meltingpot to continue
-		name = EVTOPTB_Plus_630 #EVTOPTB_meltingPot_010
-
-		set_character_flag = no_meltingpot_self
-
-		ai_chance = { factor = 0 } # Mirror old event, TODO: add more nuance
-	}
-	option = { # Don't convert, disallow meltingpot to continue
-		name = "Why would I allow such barbarism?" # EVTOPTC_meltingPot_010 (TODO: Actually localize this instead of the ad-hoc solution)
-
-		set_character_flag = melting_tyrant
-		# increase revolt risk, increase cultural conversion chance
-
-		if = { # Enforce it and add consequences
-			limit = { is_law_potential = culture_conversion_0 } # the same potential is used for all three culture conversion laws
-
-			primary_title = { add_law = culture_conversion_2 }
-		}
-		else = {
-			# add_character_modifier = forced_culture # Gives the same negative modifier as culture_conversion_0 law for the lifetime of the ruler
-		}
-
-		ai_chance = { factor = 0 } # Mirror old event, TODO: add more nuance
-	}
-}
-character_event = { # New culture expands
-	id = meltingPot.011
-	hide_window = yes
-
-	is_triggered_only = yes # on_yearly_pulse
-
-	only_rulers = yes
-
-	weight_multiplier = { days = 1 }
-
-	trigger = {
-		OR = {
-			culture = english
-			has_character_flag = no_meltingpot_self
-		}
-		any_demesne_province = { has_province_flag = english_emerging }
-	}
-
-	immediate = {
-		any_demesne_province = {
-			limit = { has_province_flag = english_emerging }
-
-			culture = english
-			clr_province_flag = english_emerging
-		}
-	}
-}
-
-# Ænglisc (North Germanic)
-narrative_event = { # Ruler responds to new growing culture
-	id = meltingPot.020
+	id = meltingPot.021
 	desc = EVTDESC_Plus_670 # EVTDESC_MeltingPot_010 (currently using old melting pot localization because it works, noting the replacement name for future ref)
 	picture = GFX_evt_throne_room
 
@@ -633,7 +663,7 @@ narrative_event = { # Ruler responds to new growing culture
 	}
 }
 character_event = { # New culture expands
-	id = meltingPot.21
+	id = meltingPot.22
 	hide_window = yes
 
 	is_triggered_only = yes # on_yearly_pulse
@@ -668,6 +698,8 @@ character_event = { # New culture expands
 # Dalmatian (???)
 
 # Dutch/Franconian (Frankish) # Not really meltingpots but the events to make them fit best here
+
+# French (Gallo-Roman/Frankish)
 
 # Gallawa (Irish/Norse)
 
