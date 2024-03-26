@@ -8,13 +8,15 @@
 #
 #	001: New-game set-up
 #	002: Apply Plus game rules
+#	003: Apply Ruler Designer fixes
+#	004: Ruler Designer fixes that require a delay
 #
 #####################################
 
-namespace = PlusStartUp
+namespace = startPlus
 
 character_event = {
-	id = PlusStartUp.001
+	id = startPlus.001
 
 	hide_window = yes
 	is_triggered_only = yes # on_startup
@@ -27,38 +29,56 @@ character_event = {
 	}
 
 	immediate = {
-		log = "PlusStartUp.001"
-		character_event = { id = PlusStartUp.002 } # Apply Plus game rules
-		character_event = { id = CombatTraits.600 } # Hand out combat traits
+		log = "startPlus.001"
+
+		plus_game_rules = yes
+		character_event = { id = startPlus.002 } # Apply Plus game rules (TODO: Move to on_actions or scripted effects)
+		character_event = { id = CombatTraits.600 } # Hand out combat traits (TODO: Move to on_actions?)
 
 		# Hand out coronation traits to independent feudal kings and emperors
 		any_independent_ruler = {
 			limit = {
-				higher_real_tier_than = DUKE
 				is_feudal = yes
 				has_horde_culture = no
-				is_crowned_trigger = no
 				is_offmap_trigger = no
-				NOT = { trait = uncrowned }
+				higher_real_tier_than = DUKE
+
+				NOR = { # grouped for ease of reading
+					is_crowned_trigger = yes
+					trait = uncrowned
+				}
 			}
 
 			if = {
 				limit = { is_adult = yes }
 
-				if = {
-					limit = { has_landed_title = e_hre }
-					add_trait = crowned_by_pope
-				}
-				else_if = {
-					limit = { has_landed_title = e_byzantium }
-
-					random_list = {
-						50 = { add_trait = strong_basileus }
-						50 = { add_trait = weak_basileus }
+				trigger_switch = {
+					on_trigger = has_landed_title
+					e_byzantium = {
+						# TODO: This needs more nuance
+						random_list = {
+							50 = {
+								mult_modifier = {
+									factor = 2
+									ruled_years >= 10
+								}
+								add_trait = strong_basileus
+							}
+							50 = {
+								add_trait = weak_basileus
+							}
+						}
 					}
-				}
-				else = {
-					add_trait = crowned
+					e_hre = {
+						if = {
+							limit = { trait = excommunicated }
+							add_trait = uncrowned
+						}
+						else = {
+							add_trait = crowned_by_pope
+						}
+					}
+					fallback = { add_trait = crowned }
 				}
 			}
 			else = {
@@ -89,253 +109,14 @@ character_event = {
 			character_event = { id = Plus.1852 days = 1 }
 		}
 
-		any_player = {
-			narrative_event = { id = maintPlus.010 } # Greeting
-			narrative_event = { id = maintPlus.011 } # Ironman warning
-			narrative_event = { id = maintPlus.012 } # Checksum warning
-		}
-
-		# Ruler designer setup
-		character_event = { id = maintPlus.013 days = 14 }
-
 		# Adjust necessary CoAs for some titles
-		e_byzantium = {
-			if = {
-				limit = { holder_scope = { culture = roman } }
+		set_byzantium_name = yes
+		set_english_coas = yes
+		set_carpathia_coas = yes
+		set_finland_coas = yes
 
-				set_name = EARLY_ERE
-				adjective = EARLY_ERE_ADJ
-			}
-			else_if = {
-				limit = {
-					OR = {
-						has_global_flag = hre_formed
-						has_global_flag = carolingian_empire_formed
-					}
-				}
-
-				set_name = ""
-				adjective = ""
-			}
-		}
-
-		k_england = {
-			if = {
-				limit = { holder_scope = { dynasty = 106 } } # Plantagenet
-
-				set_coa = k_plantagenet
-				d_kent = { set_coa = d_kent_norman }
-				d_cornwall = { set_coa = d_cornwall_norman }
-				d_hwicce = { set_coa = d_hwicce_norman }
-				d_mercia = { set_coa = d_mercia_norman }
-				d_lancaster = { set_coa = d_lancaster_norman }
-				d_east_anglia = { set_coa = d_east_anglia_norman }
-				# d_oxford = { set_coa = d_oxford_norman }
-				d_wessex = { set_coa = d_wessex_norman }
-				d_york = { set_coa = d_york_norman }
-			}
-			else_if = {
-				limit = { has_global_flag = england_is_saxon }
-
-				set_coa = k_england_saxon
-				d_kent = { set_coa = d_kent_saxon }
-				d_cornwall = { set_coa = d_cornwall_saxon }
-				d_hwicce = { set_coa = d_hwicce_saxon }
-				d_mercia = { set_coa = d_mercia_saxon }
-				d_lancaster = { set_coa = d_lancaster_saxon }
-				d_east_anglia = { set_coa = d_east_anglia_saxon }
-				# d_oxford = { set_coa = d_oxford_saxon }
-				d_wessex = { set_coa = d_wessex_saxon }
-				d_york = { set_coa = d_york_saxon }
-			}
-			else_if = {
-				limit = { has_global_flag = england_is_norman }
-
-				set_coa = k_england_norman
-				d_kent = { set_coa = d_kent_norman }
-				d_cornwall = { set_coa = d_cornwall_norman }
-				d_hwicce = { set_coa = d_hwicce_norman }
-				d_mercia = { set_coa = d_mercia_norman }
-				d_lancaster = { set_coa = d_lancaster_norman }
-				d_east_anglia = { set_coa = d_east_anglia_norman }
-				# d_oxford = { set_coa = d_oxford_norman }
-				d_wessex = { set_coa = d_wessex_norman }
-				d_york = { set_coa = d_york_norman }
-			}
-			else_if = {
-				limit = { has_global_flag = england_is_norwegian }
-
-				set_coa = k_englandnorwegian
-				d_kent = { set_coa = d_kent_saxon }
-				d_cornwall = { set_coa = d_cornwall_saxon }
-				d_hwicce = { set_coa = d_hwicce_saxon }
-				d_mercia = { set_coa = d_mercia_saxon }
-				d_lancaster = { set_coa = d_lancaster_saxon }
-				d_east_anglia = { set_coa = d_east_anglia_saxon }
-				# d_oxford = { set_coa = d_oxford_saxon }
-				d_wessex = { set_coa = d_wessex_saxon }
-				d_york = { set_coa = d_york_saxon }
-			}
-		}
-
-		k_carpathia = {
-			if = {
-				limit = { has_global_flag = carpathia_is_avaria }
-				set_coa = k_avaria
-			}
-		}
-
-		d_finland = {
-			if = {
-				limit = { has_global_flag = finland_is_satakunta }
-				set_coa = d_satakunta
-			}
-		}
-
-		# Global set-up of religion flags and variables
-		if = {
-			limit = {
-				has_alternate_start_setting = {
-					setting = religion
-					option = historical
-				}
-
-				NOT = { has_global_flag = religions_initialized }
-			}
-
-			set_global_flag = religions_initialized
-
-			## Used for lord spiritual event 903
-			# Christian
-			apostolic = {
-				set_flag = accuse_of_heresy
-			}
-
-			paulician = {
-				set_flag = accuse_of_heresy
-			}
-
-			tondrakian = {
-				set_flag = accuse_of_heresy
-			}
-
-			catholic = {
-				set_flag = accuse_of_heresy
-			}
-
-			adoptionist = {
-				set_flag = accuse_of_heresy
-			}
-
-			cathar = {
-				set_flag = accuse_of_heresy
-			}
-
-			fraticelli = {
-				set_flag = accuse_of_heresy
-			}
-
-			lollard = {
-				set_flag = accuse_of_heresy
-			}
-
-			waldensian = {
-				set_flag = accuse_of_heresy
-			}
-
-			chalcedonian = {
-				set_flag = accuse_of_heresy
-			}
-
-			miaphysite = {
-				set_flag = accuse_of_heresy
-			}
-
-			monophysite = {
-				set_flag = accuse_of_heresy
-			}
-
-			nestorian = {
-				set_flag = accuse_of_heresy
-			}
-
-			messalian = {
-				set_flag = accuse_of_heresy
-			}
-
-			orthodox = {
-				set_flag = accuse_of_heresy
-			}
-
-			bogomilist = {
-				set_flag = accuse_of_heresy
-			}
-
-			iconoclast = {
-				set_flag = accuse_of_heresy
-			}
-
-			monothelite = {
-				set_flag = accuse_of_heresy
-			}
-
-			# Muslim
-			ibadi = {
-				set_flag = accuse_of_heresy
-			}
-
-			kharijite = {
-				set_flag = accuse_of_heresy
-			}
-
-			shiite = {
-				set_flag = accuse_of_heresy
-			}
-
-			bektashi = {
-				set_flag = accuse_of_heresy
-			}
-
-			druze = {
-				set_flag = accuse_of_heresy
-			}
-
-			hurufi = {
-				set_flag = accuse_of_heresy
-			}
-
-			qarmatian = {
-				set_flag = accuse_of_heresy
-			}
-
-			sunni = {
-				set_flag = accuse_of_heresy
-			}
-
-			quranist = {
-				set_flag = accuse_of_heresy
-			}
-
-			zikri = {
-				set_flag = accuse_of_heresy
-			}
-
-			# Jewish
-			jewish = {
-				set_flag = accuse_of_heresy
-			}
-
-			karaite = {
-				set_flag = accuse_of_heresy
-			}
-
-			samaritan = {
-				set_flag = accuse_of_heresy
-			}
-		}
-
+		# Remove irrelevant claims
 		any_character = {
-			# Remove undesirable claims
 			any_claim = {
 				limit = {
 					has_holder = no
@@ -370,13 +151,6 @@ character_event = {
 			add_cousin_opinion_effect = yes
 			bloodlust_control_effect = yes
 			indian_caste_fix_effect = yes
-		}
-
-		# State of the empire
-		e_byzantium = {
-			holder_scope = {
-				narrative_event = { id = Plus.1300 }
-			}
 		}
 
 		# Apply Imperial government to all historical Roman/Byzantine Emperors
@@ -539,13 +313,26 @@ character_event = {
 		c_70532 = { set_government_type = imperial_government } # Theodosios III
 		c_70533 = { set_government_type = imperial_government } # Theodosius II
 		c_70534 = { set_government_type = imperial_government } # Theodosius
+	}
 
-		set_global_flag = plus_startup
+	after = {
+		any_player = {
+			character_event = { id = startPlus.003 } # Ruler designer cleanup
+			narrative_event = { id = maintPlus.011 } # Ironman warning
+			narrative_event = { id = maintPlus.012 } # Checksum warning
+		}
+
+		# State of the empire
+		e_byzantium = {
+			holder_scope = {
+				narrative_event = { id = Plus.1300 }
+			}
+		}
 	}
 }
 
 character_event = { # Apply Plus game rules
-	id = PlusStartUp.002
+	id = startPlus.002
 
 	is_triggered_only = yes
 	hide_window = yes
@@ -858,6 +645,96 @@ character_event = { # Apply Plus game rules
 				}
 
 				assign_baby_portrait_effect = yes # Automatically choses the proper trait based on gender & ethnicity
+			}
+		}
+	}
+}
+
+character_event = { # Apply Ruler Designer fixes
+	id = startPlus.003
+
+	is_triggered_only = yes # startPlus.003
+	hide_window = yes
+
+	immediate = {
+		# Fix RD Immortal
+		if = {
+			limit = { trait = immortal }
+
+			remove_trait = immortal
+			add_trait = immortal
+		}
+
+		# Fix fired councilor opinions on game start due to new ruler
+		any_courtier_or_vassal = {
+			limit = {
+				has_opinion_modifier = {
+					name = opinion_recently_fired
+					who = PREV
+				}
+			}
+
+			remove_opinion = {
+				name = opinion_recently_fired
+				who = PREV
+			}
+		}
+	}
+
+	after = {
+		character_event = { id = startPlus.004 } # RD fixes that require a delay
+	}
+}
+
+character_event = { # Ruler Designer fixes that require a delay
+	id = startPlus.004
+
+	is_triggered_only = yes # startPlus.003
+	hide_window = yes
+
+	immediate = {
+		# Remove RD Traits
+		if = {
+			limit = {
+				trait = customize_ruler
+				NOT = { has_character_flag = customizing_ruler }
+			}
+
+			remove_trait = customize_ruler
+		}
+
+		if = {
+			limit = { trait = minority_culture }
+
+			save_event_target_as = minority_culture
+			remove_trait = minority_culture
+
+			if = {
+				limit = {
+					top_liege = {
+						NOT = {
+							any_realm_province = {
+								culture = event_target:minority_culture
+								held_under_PREV = yes
+							}
+						}
+					}
+				}
+
+				capital_scope = {
+					culture = event_target:minority_culture
+
+					any_neighbor_province = {
+						if = {
+							limit = { owned_by = event_target:minority_culture }
+
+							random = {
+								chance = 50
+								culture = event_target:minority_culture
+							}
+						}
+					}
+				}
 			}
 		}
 	}
