@@ -1,0 +1,552 @@
+# Effects to control the Great Schism
+
+
+# Pre Schism Scenario
+pre_schism_parent_religions = {
+	# Set Catholic/Orthodox heresies to Chalcedonian
+	log = "Great Schism: Setting parent religions. [Pre-Schism]"
+
+	set_parent_religion = { religion = cathar parent = chalcedonian }
+	set_parent_religion = { religion = waldensian parent = chalcedonian }
+	set_parent_religion = { religion = lollard parent = chalcedonian }
+	set_parent_religion = { religion = adoptionist parent = chalcedonian }
+	set_parent_religion = { religion = bogomilist parent = chalcedonian }
+	set_parent_religion = { religion = monothelite parent = chalcedonian }
+	# set_parent_religion = { religion = iconoclast parent = chalcedonian } # Iconoclasm is a trait now, so we don't want random Iconoclast heresies popping up
+}
+
+pre_schism_religion_heads = {
+	# Set the Papacy as Chalcedonian and adjust religion heads
+	# NOTE: Do not set character religion here. That is handled in a later step.
+	log = "Great Schism: Setting Religion heads. [Pre-Schism]"
+
+	catholic = { set_religion_head = none }
+	orthodox = { set_religion_head = none }
+	k_papacy = { unsafe_religion = chalcedonian }
+	k_orthodox = { unsafe_religion = chalcedonian }
+
+	chalcedonian = { set_religion_head = k_papacy }
+}
+
+pre_schism_character_conversion = {
+	# Convert characters to Chalcedonian.
+	log = "Great Schism: Converting characters."
+	any_character = {
+		limit = {
+			OR = {
+				religion = catholic
+				religion = orthodox
+				religion = iconoclast
+				trigger_if = {
+					limit = { religion = chalcedonian }
+					NOR = {
+						trait = latin_rites
+						trait = greek_rites
+						trait = iconoclast_rites
+					}
+				}
+			}
+		}
+
+		chalcedonian = { save_event_target_as = target_religion }
+
+		if = {
+			limit = {
+				OR = {
+					has_minor_title = title_cardinal
+					has_minor_title = title_chalcedonian_cardinal
+				}
+			}
+
+			set_flag = restore_cardinal
+		}
+
+		trigger_switch = {
+			on_trigger = religion
+
+			catholic = {
+				convert_religion_failsafe_effect = yes
+				add_trait = latin_rites
+			}
+			orthodox = {
+				convert_religion_failsafe_effect = yes
+				add_trait = greek_rites
+			}
+			iconoclast = {
+				convert_religion_failsafe_effect = yes
+				add_trait = iconoclast_rites
+			}
+			chalcedonian = {
+				if = { # Iconoclasts first because they're so specific
+					limit = {
+						realm = { title = e_byzantium } # The Imperial court and poorer lands suffering from Arab raids were Iconoclast
+
+						OR = {
+							AND = {
+								date >= 730.6.1   # Official start iconoclasm, under Leo III, after a volcanic explosion in the Aegean Sea (island of Thera) in 726
+								date <= 787.10.13 # until the end of Second Council of Nicaea, under Irene
+							}
+
+							AND = {
+								date >= 815.6.1  # From a synod of Constantinople, under Leo V
+								date <= 843.3.11 # until the Council of Constantinople, under Theodora
+							}
+						}
+
+						OR = {
+							capital_scope = { region = world_middle_east_asia_minor }
+							has_landed_title = e_byzantium
+							has_landed_title = k_orthodox
+
+							trigger_if = {
+								limit = { vassal_of = e_byzantium }
+								is_ruler = no
+							}
+						}
+					}
+
+					add_trait = iconoclast_rites
+				}
+				else_if = { # Then the Latins because reasons
+					limit = {
+						trigger_if = {
+							limit = { location = { region = custom_latin_rites } }
+
+							NOR = {
+								culture_group = byzantine
+								culture_group = east_slavic
+								culture = bulgarian
+								culture = serbian
+							}
+						}
+						trigger_else = {
+							OR = {
+								culture_group = gallo_roman
+								culture_group = italian_group
+								culture_group = island_romance
+								culture_group = central_germanic
+								culture_group = latin
+							}
+						}
+					}
+					add_trait = latin_rites
+				}
+				else = { # Everyone else is Greek
+					add_trait = greek_rites
+				}
+			}
+		}
+
+		if = {
+			limit = { has_flag = restore_cardinal }
+
+			give_minor_title = title_chalcedonian_cardinal
+		}
+
+		# Convert Holy Orders and Mercenaries
+		any_demesne_title = {
+			limit = {
+				OR = {
+					holy_order = yes
+					mercenary = yes
+				}
+			}
+
+			unsafe_religion = chalcedonian
+		}
+
+		# Manually set investiture succession - not set automatically, due to requiring unset latin_rites trait
+		any_demesne_title = {
+			limit = { is_law_potential = succ_catholic_bishopric }
+			add_law = succ_catholic_bishopric
+		}
+
+		# Remember to clean up after ourselves
+		clear_event_target = target_religion
+		clr_flag = restore_cardinal
+	}
+}
+
+pre_schism_provinces = {
+	# Convert provinces
+	any_province = {
+		limit = {
+			OR = {
+				religion = catholic
+				religion = orthodox
+				religion = iconoclast
+			}
+		}
+
+		unsafe_religion = chalcedonian
+	}
+}
+
+pre_schism_cardinals = {
+	set_variable = {
+		which = cardinal_count
+		value = 0
+	}
+	any_character = {
+		limit = { title = title_chalcedonian_cardinal }
+
+		change_variable = {
+			which = cardinal_count
+			value = 1
+		}
+	}
+	while = {
+		limit = {
+			check_variable = {
+				which = cardinal_count
+				value <= 9
+			}
+		}
+
+		random_character = {
+			limit = {
+				NOT = { has_minor_title = title_chalcedonian_cardinal }
+				religion = chalcedonian
+				is_theocracy = yes
+
+				rightful_religious_head_scope = {
+					controls_religion = yes # Not in a realm with an anti-pope/autocephalous patriarch
+					is_within_diplo_range = PREV
+				}
+			}
+
+			give_minor_title = title_chalcedonian_cardinal
+		}
+
+		change_variable = {
+			which = cardinal_count
+			value = 1
+		}
+	}
+}
+
+set_to_pre_schism = {
+	log = "Great Schism: Setting to pre-schism world state"
+
+	if = {
+		limit = { has_global_flag = great_schism_happened }
+		clr_global_flag = great_schism_happened
+	}
+	pre_schism_parent_religions = yes
+	pre_schism_religion_heads = yes
+	pre_schism_character_conversion = yes
+	pre_schism_provinces = yes
+	pre_schism_cardinals = yes # Failsafe for when there aren't any (or enough) cardinals
+}
+
+# Post Schism Scenario
+post_schism_parent_religions = {
+	set_parent_religion = { religion = cathar parent = catholic }
+	set_parent_religion = { religion = waldensian parent = catholic }
+	set_parent_religion = { religion = lollard parent = catholic }
+
+	set_parent_religion = { religion = adoptionist parent = orthodox }
+	set_parent_religion = { religion = bogomilist parent = orthodox }
+	set_parent_religion = { religion = monothelite parent = orthodox }
+}
+
+post_schism_religion_heads = {
+	chalcedonian = { set_religion_head = none }
+
+	# Convert the religion head titles
+	k_papacy = { unsafe_religion = catholic }
+	k_orthodox = { unsafe_religion = orthodox } # iconoclast patriarchs will be dealt with in character conversion
+
+	catholic = { set_religion_head = k_papacy }
+	orthodox = { set_religion_head = k_orthodox }
+}
+
+post_schism_character_conversion = {
+	any_character = {
+		limit = { religion = chalcedonian }
+
+		if = {
+			limit = {
+				OR = {
+					has_minor_title = title_cardinal
+					has_minor_title = title_chalcedonian_cardinal
+				}
+			}
+
+			set_flag = restore_cardinal
+		}
+
+		trigger_switch = {
+			on_trigger = trait
+
+			latin_rites = {
+				catholic = { save_event_target_as = target_religion }
+			}
+			greek_rites = {
+				orthodox = { save_event_target_as = target_religion }
+			}
+			iconoclast_rites = {
+				iconoclast = { save_event_target_as = target_religion }
+
+				# Handle iconoclast patriarchs
+				if = {
+					limit = { has_landed_title = k_orthodox }
+
+					d_iconoclast = {
+						activate_title = {
+							title = THIS
+							status = yes
+						}
+
+						gain_title = PREV
+					}
+
+					k_orthodox = {
+						unsafe_destroy_landed_title = THIS
+
+						activate_title = {
+							title = THIS
+							status = no
+						}
+					}
+
+					set_name = "" # Name changes upon becoming a religious head
+				}
+			}
+			fallback = {
+				if = { # Iconoclasts first because they're so specific
+					limit = {
+						realm = { title = e_byzantium } # The Imperial court and poorer lands suffering from Arab raids were Iconoclast
+
+						OR = {
+							AND = {
+								date >= 730.6.1   # Official start iconoclasm, under Leo III, after a volcanic explosion in the Aegean Sea (island of Thera) in 726
+								date <= 787.10.13 # until the end of Second Council of Nicaea, under Irene
+							}
+
+							AND = {
+								date >= 815.6.1  # From a synod of Constantinople, under Leo V
+								date <= 843.3.11 # until the Council of Constantinople, under Theodora
+							}
+						}
+
+						OR = {
+							capital_scope = { region = world_middle_east_asia_minor }
+							has_landed_title = e_byzantium
+							has_landed_title = k_orthodox
+
+							trigger_if = {
+								limit = { vassal_of = e_byzantium }
+								is_ruler = no
+							}
+						}
+					}
+
+					iconoclast = { save_event_target_as = target_religion }
+				}
+				else_if = { # Then the Latins because reasons
+					limit = {
+						trigger_if = {
+							limit = { location = { region = custom_latin_rites } }
+
+							NOR = {
+								culture_group = byzantine
+								culture_group = east_slavic
+								culture = bulgarian
+								culture = serbian
+							}
+						}
+						trigger_else = {
+							OR = {
+								culture_group = gallo_roman
+								culture_group = italian_group
+								culture_group = island_romance
+								culture_group = central_germanic
+								culture_group = latin
+							}
+						}
+					}
+
+					catholic = { save_event_target_as = target_religion }
+				}
+				else = { # Everyone else is Greek
+					orthodox = { save_event_target_as = target_religion }
+				}
+			}
+		}
+
+		convert_religion_failsafe_effect = yes
+
+		if = {
+			limit = {
+				has_flag = restore_cardinal
+				religion = catholic # No heretic cardinals
+			}
+
+			give_minor_title = title_cardinal
+		}
+
+		any_demesne_title = {
+			limit = {
+				OR = {
+					mercenary = yes
+					holy_order = yes
+				}
+			}
+
+			religion = PREV
+		}
+
+		clear_event_target = target_religion # Clean up after ourselves
+	}
+}
+
+post_schism_provinces = {
+	# MUST be fired AFTER Character Conversion or will not work correctly
+	any_province = {
+		limit = { religion = chalcedonian }
+
+		holder_scope = {
+			trigger_switch = {
+				on_trigger = religion
+
+				catholic = { PREV = { unsafe_religion = catholic } }
+				orthodox = { PREV = { unsafe_religion = orthodox } }
+				iconoclast = { PREV = { unsafe_religion = iconoclast } }
+				fallback = { # Covering bases
+					# Simplified version of character conversion because that *should* have already been addressed
+					# Iconoclast conversion left out to avoid giving them too much of a buff
+					PREV = {
+						if = { # Then the Latins because reasons
+							limit = {
+								trigger_if = {
+									limit = { location = { region = custom_latin_rites } }
+
+									NOR = {
+										culture_group = byzantine
+										culture_group = east_slavic
+										culture = bulgarian
+										culture = serbian
+									}
+								}
+								trigger_else = {
+									OR = {
+										culture_group = gallo_roman
+										culture_group = italian_group
+										culture_group = island_romance
+										culture_group = central_germanic
+										culture_group = latin
+									}
+								}
+							}
+
+							unsafe_religion = catholic
+						}
+						else = { # Everyone else is Greek
+							unsafe_religion = orthodox
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+post_schism_cardinals = {
+	set_variable = {
+		which = cardinal_count
+		value = 0
+	}
+	any_character = {
+		limit = { title = title_cardinal }
+
+		change_variable = {
+			which = cardinal_count
+			value = 1
+		}
+	}
+	while = {
+		limit = {
+			check_variable = {
+				which = cardinal_count
+				value <= 9
+			}
+		}
+
+		random_character = {
+			limit = {
+				NOT = { has_minor_title = title_cardinal }
+				religion = catholic
+				is_theocracy = yes
+
+				rightful_religious_head_scope = {
+					controls_religion = yes # Not in a realm with an anti-pope/autocephalous patriarch
+					is_within_diplo_range = PREV
+				}
+			}
+
+			give_minor_title = title_cardinal
+		}
+
+		change_variable = {
+			which = cardinal_count
+			value = 1
+		}
+	}
+}
+
+set_to_post_schism = {
+	log = "Great Schism: Setting to post-schism world state"
+
+	set_global_flag = great_schism_happened
+	post_schism_parent_religions = yes
+	post_schism_religion_heads = yes
+	post_schism_character_conversion = yes
+	post_schism_provinces = yes
+}
+
+# Control Variable
+increment_schism_tracker = {
+	change_variable = {
+		which = global_great_schism_tracker
+		value = 1
+	}
+}
+
+start_schism_tracker = {
+	log = "Great Schism: Applying control variables."
+
+	set_variable = {
+		which = global_great_schism_tracker
+		value = 0
+	}
+
+	# Advance tracker if Carolingian Empire was already formed
+	if = {
+		limit = { has_global_flag = carolingian_empire_formed }
+
+		change_variable = {
+			which = global_great_schism_tracker
+			value = 1
+		}
+	}
+
+	# Advance tracker if using New Millenium or later bookmark
+	if = {
+		limit = { year >= 999 }
+
+		# TODO: Move these to histories
+		set_global_flag = filioque_adopted
+		set_global_flag = eucharist_conflict
+
+		change_variable = {
+			which = global_great_schism_tracker
+			value = 2
+		}
+	}
+}
+
+# Actually Schism
+trigger_great_schism = {
+
+}
