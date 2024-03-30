@@ -183,6 +183,9 @@ pre_schism_provinces = {
 }
 
 pre_schism_cardinals = {
+	# Note: Preferatus is not selected until the pope has died.
+	# Expected next cardinal does not work until a member of the college has died (after the pope has died once)
+	# Functions as normal after. Recalculating succession does not affect this.
 	set_variable = {
 		which = cardinal_count
 		value = 0
@@ -205,7 +208,10 @@ pre_schism_cardinals = {
 
 		random_character = {
 			limit = {
-				NOT = { has_minor_title = title_chalcedonian_cardinal }
+				NOR = {
+					has_minor_title = title_chalcedonian_cardinal
+					rightful_religious_head = THIS
+				}
 				religion = chalcedonian
 				is_theocracy = yes
 
@@ -245,9 +251,28 @@ post_schism_parent_religions = {
 	set_parent_religion = { religion = waldensian parent = catholic }
 	set_parent_religion = { religion = lollard parent = catholic }
 
-	set_parent_religion = { religion = adoptionist parent = orthodox }
-	set_parent_religion = { religion = bogomilist parent = orthodox }
-	set_parent_religion = { religion = monothelite parent = orthodox }
+	if = {
+		limit = {
+			has_global_flag = great_schism_happening
+
+			k_orthodox = {
+				holder_scope = {
+					religion = chalcedonian
+					trait = iconoclast_rites
+				}
+			}
+		}
+
+		set_parent_religion = { religion = orthodox parent = iconoclast }
+		set_parent_religion = { religion = adoptionist parent = iconoclast }
+		set_parent_religion = { religion = bogomilist parent = iconoclast }
+		set_parent_religion = { religion = monothelite parent = iconoclast }
+	}
+	else = {
+		set_parent_religion = { religion = adoptionist parent = orthodox }
+		set_parent_religion = { religion = bogomilist parent = orthodox }
+		set_parent_religion = { religion = monothelite parent = orthodox }
+	}
 }
 
 post_schism_religion_heads = {
@@ -384,9 +409,15 @@ post_schism_character_conversion = {
 			}
 
 			give_minor_title = title_cardinal
+			clr_flag = restore_cardinal
+		}
+		else_if = {
+			limit = { has_flag = restore_cardinal }
+
+			clr_flag = restore_cardinal # Don't leave things laying around
 		}
 
-		any_demesne_title = {
+		any_demesne_title = { # This section needs further testing. It may not work or may result in too many holy orders for one side or the other post-schism
 			limit = {
 				OR = {
 					mercenary = yes
@@ -417,7 +448,7 @@ post_schism_provinces = {
 					# Simplified version of character conversion because that *should* have already been addressed
 					# Iconoclast conversion left out to avoid giving them too much of a buff
 					PREV = {
-						if = { # Then the Latins because reasons
+						if = { # Latins are most specific
 							limit = {
 								trigger_if = {
 									limit = { location = { region = custom_latin_rites } }
@@ -453,6 +484,8 @@ post_schism_provinces = {
 }
 
 post_schism_cardinals = {
+	# See note on pre_schism_cardinals
+	# This one is less of a problem because pre-existing cardinals seem to prevent the issue.
 	set_variable = {
 		which = cardinal_count
 		value = 0
@@ -475,7 +508,10 @@ post_schism_cardinals = {
 
 		random_character = {
 			limit = {
-				NOT = { has_minor_title = title_cardinal }
+				NOR = {
+					has_minor_title = title_cardinal
+					rightful_religious_head = THIS
+				}
 				religion = catholic
 				is_theocracy = yes
 
@@ -498,11 +534,12 @@ post_schism_cardinals = {
 set_to_post_schism = {
 	log = "Great Schism: Setting to post-schism world state"
 
-	set_global_flag = great_schism_happened
 	post_schism_parent_religions = yes
 	post_schism_religion_heads = yes
 	post_schism_character_conversion = yes
 	post_schism_provinces = yes
+	post_schism_cardinals = yes
+	set_global_flag = great_schism_happened
 }
 
 # Control Variable
@@ -525,28 +562,32 @@ start_schism_tracker = {
 	if = {
 		limit = { has_global_flag = carolingian_empire_formed }
 
-		change_variable = {
-			which = global_great_schism_tracker
-			value = 1
-		}
+		increment_schism_tracker = yes
 	}
 
-	# Advance tracker if using New Millenium or later bookmark
+	# Advance tracker if Filioque was adopted by Rome
 	if = {
-		limit = { year >= 999 }
+		limit = { has_global_flag = filioque_adopted }
 
-		# TODO: Move these to histories
-		set_global_flag = filioque_adopted
-		set_global_flag = eucharist_conflict
+		increment_schism_tracker = yes
+	}
 
-		change_variable = {
-			which = global_great_schism_tracker
-			value = 2
-		}
+	# Advance tracker if the eucharist conflict has happened
+	if = {
+		limit = { has_global_flag = eucharist_conflict }
+
+		increment_schism_tracker = yes
 	}
 }
 
 # Actually Schism
 trigger_great_schism = {
-
+	set_global_flag = great_schism_happening # causes conditions within the post_schism effects to occur
+	post_schism_parent_religions = yes
+	post_schism_religion_heads = yes
+	post_schism_character_conversion = yes
+	post_schism_provinces = yes
+	post_schism_cardinals = yes
+	clr_global_flag = great_schism_happening # don't leave a mess
+	set_global_flag = great_schism_happened
 }
