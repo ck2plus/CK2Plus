@@ -7,8 +7,6 @@ character_event = {
 	hide_window = yes
 	is_triggered_only = yes # on_startup
 
-	only_playable = yes
-
 	trigger = {
 		owns = event_target:pulse_province
 		is_save_game = no
@@ -96,4 +94,345 @@ character_event = {
 			}
 		}
 	}
+}
+
+# Schism Occurs
+character_event = {
+	id = schismPlus.002
+
+	hide_window = yes
+
+	trigger = {
+		owns = event_target:pulse_province
+		year >= 950
+
+		check_variable = {
+			which = global_great_schism_tracker
+			value >= 4.0
+		}
+
+		k_papacy = {
+			holder_scope = {
+				religion = chalcedonian
+				trait = latin_rites
+			}
+		}
+
+		k_orthodox = {
+			holder_scope = {
+				religion = chalcedonian
+
+				OR = {
+					trait = greek_rites
+					trait = iconoclast_rites
+				}
+			}
+		}
+
+		NOR = {
+			has_global_flag = great_schism_disabled
+			has_global_flag = great_schism_prevented
+			has_global_flag = great_schism_happened
+		}
+	}
+
+	mean_time_to_happen = {
+		years = 100
+		# Original event also included a 0.5 mult_modifier for the year being after 1000, 1050, and 1100. Left them out for now to try and make it less year-dependent
+
+		mult_modifier = {
+			factor = 0.5
+
+			check_variable = {
+				which = global_great_schism_tracker
+				value >= 5.0
+			}
+		}
+
+		mult_modifier = {
+			factor = 0.5
+
+			check_variable = {
+				which = global_great_schism_tracker
+				value >= 6.0
+			}
+		}
+
+		mult_modifier = {
+			factor = 0.5
+
+			check_variable = {
+				which = global_great_schism_tracker
+				value >= 7.0
+			}
+		}
+	}
+
+	immediate = {
+		trigger_great_schism = yes
+	}
+
+	after = {
+		k_papacy = {
+			holder_scope = { narrative_event = { id = schismPlus.004 } }
+		}
+	}
+
+}
+
+# Schism Prevented
+character_event = {
+	id = schismPlus.003
+
+	is_triggered_only = yes
+	hide_window = yes
+
+	immediate = {
+		set_global_flag = great_schism_prevented
+
+		# This is primarily for those firing the event via console
+		# Might be best to remove once testing is completed
+		if = {
+			limit = {
+				NOR = {
+					has_global_flag = patriarch_supreme_is_greek
+					has_global_flag = patriarch_supreme_is_latin
+				}
+			}
+
+			if = {
+				limit = {
+					k_papacy = {
+						holder_scope = {
+							OR = {
+								trait = greek_rites
+								trait = iconoclast_rites
+							}
+						}
+					}
+				}
+				set_global_flag = patriarch_supreme_is_greek
+			}
+			else = {
+				set_global_flag = patriarch_supreme_is_latin
+			}
+		}
+
+		trigger_switch = {
+			on_trigger = has_global_flag
+
+			patriarch_supreme_is_greek = {
+				k_orthodox = { holder_scope = { save_event_target_as = schism_winner } }
+
+				chalcedonian = {
+					set_religion_head = k_orthodox
+
+					# Activate Orthodox-like features, elevating primacy of bishop of Constantinople
+					set_can_grant_invasion_cb = invasion
+					set_
+				}
+
+				# Disable the Papacy
+				# TODO: Make extra special sure that no important events still fire from the pope
+				k_papacy = {
+					unsafe_destroy_landed_title = THIS
+
+					activate_title = {
+						title = THIS
+						status = no
+					}
+				}
+				# Deal with the Papal State
+				k_papal_state = {
+					holder_scope = { grant_title_no_opinion = k_romagna }
+
+					any_direct_de_jure_vassal_title = {
+						de_jure_liege = k_romagna
+					}
+
+					empire = {
+						k_romagna = {
+							de_jure_liege = PREV
+						}
+					}
+
+					unsafe_destroy_landed_title = THIS
+
+					activate_title = {
+						title = THIS
+						status = no
+					}
+				}
+				# Deal with the Papal Guards
+				d_papal_guards = {
+					unsafe_destroy_landed_title = THIS
+
+					activate_title = {
+						title = THIS
+						status = no
+					}
+				}
+			}
+			patriarch_supreme_is_latin = {
+				k_papacy = { holder_scope = { save_event_target_as = schism_winner } }
+
+				chalcedonian = {
+					set_religion_head = k_papacy # This is currently the default for UI purposes
+
+					# Activate Catholic-like features, elevating primacy of bishop of Rome
+					set_pentarchy = no
+					set_autocephaly = no
+					set_can_grant_invasion_cb = invasion
+					set_can_have_antipopes = yes
+					set_can_grant_claim = yes
+				}
+
+				# Make sure there aren't any antipopes immediately after preventing the schism.
+				any_character = {
+					limit = { has_claim = k_papacy }
+					remove_claim = k_papacy
+				}
+
+				# Disable Ecumenical Patriarchate
+				k_orthodox = {
+					unsafe_destroy_landed_title = THIS
+
+					activate_title = {
+						title = THIS
+						status = no
+					}
+				}
+			}
+			fallback = { break = yes }
+		}
+	}
+
+	after = {
+		event_target:schism_winner = {
+			narrative_event = { id = schismPlus.004 }
+		}
+	}
+}
+
+# Narrate either Schism Prevented or Schism Occurs
+narrative_event = {
+	id = schismPlus.004
+	border = GFX_event_narrative_frame_religion
+
+	is_triggered_only = yes # schismPlus.002 or schismPlus.003
+	major = yes
+
+	trigger = {
+		OR = {
+			has_global_flag = great_schism_prevented
+			has_global_flag = great_schism_happened
+		}
+	}
+	major_trigger = {
+		ai = no
+	}
+
+	# Great Schism Prevented!
+	title = {
+		trigger = { has_global_flag = great_schism_prevented }
+		text = PlusGreatSchism_003_title # The Patriarch Supreme
+	}
+	picture = {
+		trigger = { has_global_flag = great_schism_prevented }
+		picture = GFX_evt_pope
+	}
+	desc = {
+		trigger = {
+			has_global_flag = great_schism_prevented
+			ROOT = { has_landed_title = k_papacy }
+			FROM = { NOT = { character = ROOT } }
+		}
+		text = PlusGreatSchism_003_text_pope_1
+	}
+	desc = {
+		trigger = {
+			has_global_flag = great_schism_prevented
+			ROOT = { has_landed_title = k_papacy }
+			FROM = { character = ROOT }
+		}
+		text = PlusGreatSchism_003_text_pope_2
+	}
+	desc = {
+		trigger = {
+			has_global_flag = great_schism_prevented
+			ROOT = { has_landed_title = k_orthodox }
+			FROM = { NOT = { character = ROOT } }
+		}
+		text = PlusGreatSchism_003_text_patriarch_1
+	}
+	desc = {
+		trigger = {
+			has_global_flag = great_schism_prevented
+			ROOT = { has_landed_title = k_orthodox }
+			FROM = { character = ROOT }
+		}
+		text = PlusGreatSchism_003_text_patriarch_2
+	}
+	option = {
+		trigger = { has_global_flag = great_schism_prevented }
+		name = {
+			trigger = { religion = chalcedonian }
+			text = PlusGreatSchism_003_1a # Hail to [Root.GetHerHisCap] Holiness
+		}
+		name = {
+			trigger = {
+				religion_group = christian
+				NOT = { religion = chalcedonian }
+			}
+			text = PlusGreatSchism_003_1b # So there will be no schism? How unexpected
+		}
+		name = {
+			trigger = { NOT = { religion_group = christian } }
+			text = PlusGreatSchism_003_1c # This does not bode well...
+		}
+	}
+
+	# Great Schism Happens
+	title = {
+		trigger = { has_global_flag = great_schism_happened }
+		text = PlusGreatSchism_005_title # The Great Schism
+	}
+	picture = {
+		trigger = { has_global_flag = great_schism_happened }
+		picture = GFX_evt_great_schism
+	}
+	desc = {
+		trigger = { has_global_flag = great_schism_happened }
+		text = PlusGreatSchism_005_text
+	}
+	option = {
+		trigger = { has_global_flag = great_schism_happened }
+
+		# Formerly Chalcedonian response
+		name = {
+			text = PlusGreatSchism_005_1c # This is of great concern...
+			trigger = {
+				OR = {
+					religion = catholic
+					religion = orthodox
+					religion = iconoclast
+				}
+			}
+		}
+		# No one else cares
+		name = {
+			text = PlusGreatSchism_005_1d # So Christianity divides itself yet again
+			trigger = {
+				NOR = {
+					religion = catholic
+					religion = orthodox
+					religion = iconoclast
+				}
+			}
+		}
+
+		show_portrait = k_papacy
+		show_portrait = k_orthodox
+	}
+
 }
