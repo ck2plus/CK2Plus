@@ -471,3 +471,521 @@ narrative_event = {
 	}
 
 }
+
+## Greek/Latin/Iconoclast Rites
+# AI Rites Control
+character_event = {
+	id = plusSchism.110
+	is_triggered_only = yes # on_birth, on_character_convert_religion, on_host_change, on_new_holder, on_new_holder_inheritance
+	hide_window = yes
+
+	ai = yes
+	religion = chalcedonian
+
+	trigger = {
+		any_player = { NOT = { character = THIS } } # force the game to respect ai = yes before game-start
+		NOR = {
+			has_global_flag = great_schism_happened
+			has_global_flag = great_schism_prevented
+			trait = latin_rites
+			trait = greek_rites
+			trait = iconoclast_rites
+		}
+	}
+
+	immediate = {
+		save_event_target_as = needs_rites
+
+		if = {
+			limit = {
+				any_close_relative = {
+					is_parent_of = event_target:needs_rites
+					religion = chalcedonian
+
+					OR = {
+						trait = latin_rites
+						trait = greek_rites
+						trait = iconoclast_rites
+					}
+				}
+			}
+
+			any_close_relative = {
+				limit = {
+					is_parent_of = event_target:needs_rites
+					religion = chalcedonian
+				}
+
+				score_value = {
+					value = 1
+
+					additive_modifier = {
+						value = 1000
+
+						trigger_if = {
+							limit = { is_ruler = yes }
+							is_liege_of = event_target:needs_rites
+						}
+						trigger_else = {
+							same_liege = event_target:needs_rites
+						}
+					}
+
+					additive_modifier = {
+						value = 500
+						real_tier = EMPEROR
+					}
+
+					additive_modifier = {
+						value = 250
+						real_tier = KING
+					}
+
+					additive_modifier = {
+						value = 125
+						real_tier = DUKE
+					}
+
+					additive_modifier = {
+						value = 50
+						real_tier = COUNT
+					}
+
+					additive_modifier = {
+						value = 25
+						real_tier = BARON
+					}
+				}
+
+				trigger_switch = {
+					on_trigger = trait
+
+					latin_rites = { event_target:needs_rites = { add_trait = latin_rites } }
+					greek_rites = { event_target:needs_rites = { add_trait = greek_rites } }
+					iconoclast_rites = { event_target:needs_rites = { add_trait = iconoclast_rites } }
+				}
+			}
+		}
+		else_if = {
+			limit = {
+				any_liege = {
+					religion = chalcedonian
+					OR = {
+						trait = greek_rites
+						trait = iconoclast_rites
+						trait = latin_rites
+					}
+				}
+			}
+
+			any_liege = { # because there isn't a random_liege scope
+				limit = {
+					religion = chalcedonian
+					OR = {
+						trait = greek_rites
+						trait = iconoclast_rites
+						trait = latin_rites
+					}
+				}
+				score_value = {
+					value = 1
+
+					additive_modifier = { # Prefer the direct liege
+						value = 10000
+
+						trigger_if = {
+							limit = { is_ruler = yes }
+							is_liege_of = event_target:needs_rites
+						}
+						trigger_else = {
+							same_liege = event_target:needs_rites
+						}
+					}
+				}
+
+				trigger_switch = {
+					on_trigger = trait
+
+					greek_rites = { event_target:needs_rites = { add_trait = greek_rites } }
+					iconoclast_rites = { event_target:needs_rites = { add_trait = iconoclast_rites } }
+					latin_rites = { event_target:needs_rites = { add_trait = latin_rites } }
+
+					fallback = { event_target:needs_rites = { add_trait = greek_rites } }
+				}
+			}
+		}
+		else = {
+			random_list = {
+				33 = {
+					trigger = {
+						OR = {
+							rightful_religious_head_scope = { trait = greek_rites }
+							any_close_relative = { trait = greek_rites }
+						}
+					}
+					mult_modifier = {
+						factor = 2
+
+						OR = {
+							culture_group = byzantine
+
+							top_liege = {
+								OR = {
+									has_landed_title = e_byzantium
+									has_landed_title = e_roman_empire
+								}
+							}
+						}
+					}
+
+					add_trait = greek_rites
+				}
+				33 = {
+					trigger = {
+						OR = {
+							rightful_religious_head_scope = { trait = iconoclast_rites }
+							any_close_relative = { trait = iconoclast_rites }
+						}
+					}
+					mult_modifier = {
+						factor = 2
+
+						OR = {
+							culture_group = byzantine
+
+							top_liege = {
+								OR = {
+									has_landed_title = e_byzantium
+									has_landed_title = e_roman_empire
+								}
+							}
+						}
+					}
+
+					add_trait = iconoclast_rites
+				}
+				33 = {
+					trigger = {
+						OR = {
+							rightful_religious_head_scope = { trait = latin_rites }
+							any_close_relative = { trait = latin_rites }
+						}
+					}
+					mult_modifier = {
+						factor = 2
+
+						OR = {
+							culture_group = gallo_roman
+							culture_group = latin
+							culture_group = iberian
+							culture_group = italian_group
+							culture_group = island_romance
+							culture_group = central_germanic
+
+							top_liege = {
+								OR = {
+									has_landed_title = e_hre
+									has_landed_title = e_karling
+								}
+							}
+						}
+					}
+
+					add_trait = latin_rites
+				}
+				fallback = { add_trait = greek_rites }
+			}
+		}
+
+		clear_event_target = needs_rites
+	}
+	after = {
+		if = {
+			limit = { trait = latin_rites }
+
+			# Change bishop from open elective to investiture succession
+			any_demesne_title = {
+				limit = { is_law_potential = succ_catholic_bishopric }
+				add_law = succ_catholic_bishopric
+			}
+		}
+	}
+}
+
+# Player Rites Control
+narrative_event = {
+	id = plusSchism.111
+	desc = PlusGreatSchism_041_text
+	picture = GFX_evt_icon
+	border = GFX_event_narrative_frame_religion
+
+	# is_triggered_only = yes # This is probably safe
+
+	ai = no
+	religion = chalcedonian
+
+	trigger = {
+		NOR = {
+			has_global_flag = great_schism_happened
+			has_global_flag = great_schism_prevented
+			trait = latin_rites
+			trait = greek_rites
+			trait = iconoclast_rites
+		}
+	}
+
+	mean_time_to_happen = { days = 1 }
+
+	option = {
+		name = PlusGreatSchism_041_1
+
+		add_trait = latin_rites
+	}
+	option = {
+		name = PlusGreatSchism_041_2
+
+		add_trait = greek_rites
+	}
+	option = {
+		name = PlusGreatSchism_041_3
+
+		add_trait = iconoclast_rites
+	}
+
+	after = {
+		if = {
+			limit = { trait = latin_rites }
+
+			# Below shouldn't do anything for players but putting it in just in case we make playable theocracies later
+			# Change from open elective to investiture succession
+			any_demesne_title = {
+				limit = { is_law_potential = succ_catholic_bishopric }
+				add_law = succ_catholic_bishopric
+			}
+		}
+	}
+}
+
+# Patriarch demands that a priest switch rites
+# Original version had localization for some reason despite only firing for a non-playable character
+character_event = {
+	id = plusSchism.112
+	hide_window = yes
+
+	only_rulers = yes
+	religion = chalcedonian
+	min_age = 16
+	capable_only = yes
+	prisoner = no
+
+	trigger = {
+		religion_authority >= 0.50
+		is_theocracy = yes
+		has_regent = no
+		OR = {
+			trait = greek_rites
+			trait = iconoclast_rites
+			trait = latin_rites
+		}
+
+		rightful_religious_head_scope = {
+			has_regent = no
+
+			NOR = {
+				character = ROOT
+
+				has_opinion_modifier = {
+					name = refused_to_change_rite
+					who = ROOT
+				}
+			}
+
+			OR = {
+				opinion = { who = ROOT value < 0 }
+				is_liege_or_above_of = ROOT
+			}
+
+			# Must adhere to different rites
+			trigger_if = {
+				limit = { trait = latin_rites }
+				ROOT = { NOT = { trait = latin_rites} }
+			}
+			trigger_else_if = {
+				limit = { trait = greek_rites }
+				ROOT = { NOT = { trait = greek_rites} }
+			}
+			trigger_else_if = {
+				limit = { trait = iconoclast_rites }
+				ROOT = { NOT = { trait = iconoclast_rites} }
+			}
+		}
+	}
+
+	mean_time_to_happen = {
+		years = 10
+
+		mult_modifier = {
+			factor = 0.5
+			rightful_religious_head_scope = { is_liege_or_above_of = ROOT }
+		}
+
+		mult_modifier = {
+			factor = 0.8
+
+			rightful_religious_head_scope = {
+				opinion = {
+					who = ROOT
+					value < -20
+				}
+			}
+		}
+
+		mult_modifier = {
+			factor = 0.8
+
+			rightful_religious_head_scope = {
+				opinion = {
+					who = ROOT
+					value < -40
+				}
+			}
+		}
+
+		mult_modifier = {
+			factor = 0.8
+
+			rightful_religious_head_scope = {
+				opinion = {
+					who = ROOT
+					value < -60
+				}
+			}
+		}
+
+		mult_modifier = {
+			factor = 0.8
+
+			rightful_religious_head_scope = {
+				opinion = {
+					who = ROOT
+					value < -80
+				}
+			}
+		}
+	}
+
+	immediate = {
+		save_event_target_as = rite_priest
+		rightful_religious_head_scope = { save_event_target_as = rightful_relhead }
+
+		random_list = {
+			# Agree
+			50 = {
+				trigger = { always = yes }
+				# Removed opinion-based mult_modifiers pending testing
+
+				event_target:rightful_relhead = {
+					trigger_switch = {
+						on_trigger = trait
+
+						greek_rites = {
+							remove_trait = iconoclast_rites
+							remove_trait = latin_rites
+							add_trait = greek_rites
+						}
+						iconoclast_rites = {
+							remove_trait = greek_rites
+							remove_trait = latin_rites
+							add_trait = iconoclast_rites
+						}
+						latin_rites = {
+							event_target:rite_priest = {
+								remove_trait = greek_rites
+								remove_trait = iconoclast_rites
+								add_trait = latin_rites
+							}
+						}
+					}
+				}
+			}
+			# Refuse
+			50 = {
+				trigger = { always = yes } # Just because I like clear triggers
+				mult_modifier = {
+					factor = 0.5
+
+					event_target:rightful_relhead = {
+						is_liege_or_above = event_target:rite_priest
+						NOT = { is_liege_of = event_target:rite_priest }
+					}
+				}
+				mult_modifier = {
+					factor = 0.1
+					event_target:rightful_relhead = { is_liege_of = event_target:rite_priest }
+				}
+				# Removed opinion-based mult_modifiers pending testing
+
+				piety = -25
+
+				event_target:rightful_relhead = {
+					show_scope_change = no
+
+					opinion = {
+						name = refused_to_change_rite
+						who = ROOT
+						years = 10
+					}
+
+					prestige = -25
+				}
+			}
+		}
+
+		clear_event_target = rite_priest
+		clear_event_target = rightful_relhead
+	}
+
+	after = {
+		if = {
+			limit = { trait = latin_rites }
+
+			# Change from open elective to investiture succession
+			any_demesne_title = {
+				limit = { is_law_potential = succ_catholic_bishopric }
+				add_law = succ_catholic_bishopric
+			}
+		}
+	}
+}
+
+#######################################
+#
+#	Council of Chalcedon (Miaphysite)
+#
+#######################################
+#
+#	INDEX
+#
+#######################################
+
+#######################################
+#
+#	Council of Ephesus (Nestorian)
+#
+#######################################
+#
+#	INDEX
+#
+#######################################
+
+
+#######################################
+#
+#	Council of Nicaea (Apostolic)
+#	Note: Must be DIFFICULT
+#
+#######################################
+#
+#	INDEX
+#
+#######################################
