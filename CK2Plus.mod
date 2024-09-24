@@ -4,6 +4,5 @@ dependencies = { "CleanSlate" }
 picture = "ck2plus.jpg"
 
 replace_path = "history/provinces"
-replace_path = "history/titles"
 replace_path = "history/wars"
 replace_path = "common/trade_routes"
