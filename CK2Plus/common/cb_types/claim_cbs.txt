@@ -22,7 +22,6 @@ claim = {
 	can_use_gui = {
 		check_if_crusader_trigger = yes
 
-		# CK2Plus
 		# Attacker
 		ROOT = {
 			can_use_cb_preamble = yes
@@ -61,59 +60,63 @@ claim = {
 							is_contested = yes # Already being contested in some war
 							holder_scope = { has_regent = yes }
 
+							# A female ruler without full equality cannot be ousted by another female ruler without full equality
+							trigger_if = {
+								limit = {
+									has_gender_equal_game_rule_trigger = no # Makes the below moot
+									ROOT = { is_female = yes }
+									holder_scope = {
+										is_female = yes
+										NOR = {
+											has_religion_feature = religion_matriarchal
+											has_religion_feature = religion_equal
+											has_religion_feature = religion_feature_bon
+											has_law = status_of_women_4
+										}
+									}
+								}
+								ROOT = {
+									OR = {
+										has_law = status_of_women_4
+										has_religion_feature = religion_matriarchal
+										has_religion_feature = religion_equal
+										has_religion_feature = religion_feature_bon
+									}
+								}
+							}
+
+							# More vulnerable to claimants when not crowned
 							trigger_if = {
 								limit = { higher_real_tier_than = DUKE }
 								holder_scope = { is_uncrowned_trigger = yes }
 							}
 
-							AND = {
-								succ_law_title = {
-									OR = {
-										has_law = enatic_succession
-										has_law = enatic_cognatic_succession
-									}
-								}
-
-								holder_scope = { is_female = no }
-							}
-
-							AND = {
-								succ_law_title = {
-									OR = {
-										has_law = agnatic_succession
-										has_law = cognatic_succession
-									}
-								}
-
-								holder_scope = { is_female = yes }
-							}
-
-							AND = {
-								holder_scope = {
-									is_female = yes
-
-									NOR = {
-										succ_law_title = { has_law = status_of_women_4 }
-										has_religion_feature = religion_matriarchal
-										has_religion_feature = religion_equal
-										has_religion_feature = religion_feature_bon
-										has_gender_equal_game_rule_trigger = yes
-									}
-								}
-
-								ROOT = {
-									trigger_if = {
-										limit = { is_female = yes }
-
+							# Claimant is better gender fit than holder (may be redundant with other arguments)
+							trigger_if = {
+								limit = {
+									holder_scope = { is_female = yes }
+									succ_law_title = {
 										OR = {
-											succ_law_title = { has_law = status_of_women_4 }
-											has_religion_feature = religion_matriarchal
-											has_religion_feature = religion_equal
-											has_religion_feature = religion_feature_bon
-											has_gender_equal_game_rule_trigger = yes
+											has_law = agnatic_succession # I don't think this can actually happen, but just in case
+											has_law = cognatic_succession
 										}
 									}
 								}
+
+								ROOT = { is_female = no }
+							}
+							trigger_else_if = {
+								limit = {
+									holder_scope = { is_female = no }
+									succ_law_title = {
+										OR = {
+											has_law = enatic_succession # I don't think this can actually happen, but just in case
+											has_law = enatic_cognatic_succession
+										}
+									}
+								}
+
+								ROOT = { is_female = yes }
 							}
 						}
 					}
@@ -220,7 +223,6 @@ claim = {
 			}
 		}
 
-		# CK2Plus
 		# Decentralize target realm
 		title_reduce_CA_effect = yes
 		title_reduce_TO_effect = yes
@@ -381,66 +383,7 @@ claim = {
 		factor = 1
 
 		trigger = {
-			is_contested = no
-
-			ROOT = {
-				sufficient_treasury_for_war_trigger = yes
-
-				# Most Christian and Jewish AI will not attack their religion head
-				can_attack_religion_head_trigger = yes
-
-				# AI will not fight for baronies held by a patriarch
-				can_attack_patriarch_trigger = yes
-
-				# Only dishonorable ai will break the a tributary's trust
-				can_attack_tributary_trigger = yes
-
-				# Only cynics or adventurers can press claims on same-faith holy orders unless one is a player
-				trigger_if = {
-					limit = {
-						FROM = {
-							ai = yes
-							holy_order = yes
-							lower_tier_than = king
-							religion = ROOT
-						}
-					}
-					OR = {
-						has_character_flag = claimant_adventurer
-						trait = cynical
-					}
-				}
-
-				trigger_if = {
-					limit = { controls_religion = yes }
-
-					realm_size >= 1
-				}
-
-				OR = {
-					FROM = { higher_tier_than = count }
-					religion_group = FROM
-					has_character_flag = claimant_adventurer
-				}
-			}
-
-			FROM = {
-				# Disallow wrong gender ai from pressing claims on agnatic/enatic nomadic titles
-				trigger_if = {
-					limit = { is_nomadic = yes }
-
-					trigger_if = {
-						limit = {
-							ROOT = { is_female = yes }
-						}
-
-						NOT = { has_law = agnatic_succession }
-					}
-					trigger_else = {
-						NOT = { has_law = enatic_succession }
-					}
-				}
-			}
+			ai_willing_to_attack = yes
 		}
 
 		modifier = {
@@ -471,7 +414,6 @@ claim_all = {
 	can_use_gui = {
 		check_if_crusader_trigger = yes
 
-		# CK2Plus
 		# Attacker
 		ROOT = {
 			can_use_cb_preamble = yes
@@ -731,7 +673,7 @@ claim_all = {
 				limit = { has_character_flag = claimant_adventurer }
 
 				hidden_effect = {
-					disband_event_forces = claimant_adventure
+					disband_event_forces = yes
 					clr_character_flag = claimant_adventurer
 				}
 
@@ -766,33 +708,7 @@ claim_all = {
 		factor = 1
 
 		trigger = {
-			FROM = {
-				trigger_if = {
-					limit = {
-						primary_title = { holy_order = yes }
-					}
-
-					OR = {
-						NOT = { religion = ROOT }
-						ROOT = { trait = cynical }
-					}
-				}
-			}
-
-			ROOT = {
-				sufficient_treasury_for_war_trigger = yes
-
-				# Most Christian and Jewish AI will not attack their religion head
-				can_attack_religion_head_trigger = yes
-
-				# Only dishonorable ai will break the a tributary's trust
-				can_attack_tributary_trigger = yes
-
-				trigger_if = {
-					limit = { controls_religion = yes }
-					realm_size >= 1
-				}
-			}
+			ai_willing_to_attack = yes
 		}
 
 		mult_modifier = {
@@ -825,7 +741,6 @@ claim_on_liege = {
 	can_use_gui = {
 		check_if_crusader_trigger = yes
 
-		# CK2Plus
 		# Attacker
 		ROOT = {
 			can_use_cb_preamble = yes
@@ -833,10 +748,6 @@ claim_on_liege = {
 	}
 
 	can_use_title = {
-		# Defender
-		holder = FROM
-		is_vice_royalty = no
-
 		# Attacker
 		ROOT = {
 			OR = {
@@ -868,10 +779,31 @@ claim_on_liege = {
 
 								holder_scope = { # title holder
 									is_female = yes
-									NOT = { has_law = status_of_women_4 }has_gender_equal_game_rule_trigger = no
+									NOT = { has_law = status_of_women_4}
+									has_gender_equal_game_rule_trigger = no
 								}
 							}
 						}
+					}
+				}
+			}
+		}
+
+		# Defender
+		holder_scope = {
+			character = FROM
+		}
+
+		is_vice_royalty = no
+		trigger_if = { # Can't take out merchant republic with this CB
+			limit = { ROOT = { is_patrician = no } }
+			FROM = {
+				trigger_if = {
+					limit = { is_patrician = yes }
+
+					NOR = {
+						capital_holding = { title = PREVPREV }
+						PREV = { is_primary_holder_title_tier = yes }
 					}
 				}
 			}
@@ -912,18 +844,18 @@ claim_on_liege = {
 			has_law = succ_hre_elective
 		}
 
-		ROOT = {
-			is_patrician = no
-		}
+		trigger_if = { # Can't take out merchant republic with this CB
+			limit = {
+				ROOT = { is_patrician = no }
+			}
+			FROM = {
+				trigger_if = {
+					limit = { is_patrician = yes }
 
-		# Can't take out merchant republic with this CB
-		FROM = {
-			trigger_if = {
-				limit = { is_patrician = yes }
-
-				NOR = {
-					capital_holding = { title = PREVPREV }
-					PREV = { is_primary_holder_title_tier = yes }
+					NOR = {
+						capital_holding = { title = PREVPREV }
+						PREV = { is_primary_holder_title_tier = yes }
+					}
 				}
 			}
 		}
@@ -1169,7 +1101,7 @@ claim_on_liege = {
 		}
 
 		any_attacker = {
-			limit = { vassal_of = defender }
+			limit = { vassal_of	= defender }
 
 			hidden_effect = {
 				disband_event_forces = faction_revolters
@@ -1248,6 +1180,14 @@ claim_on_liege = {
 
 	defender_ai_defeat_worth = {
 		factor = 100
+	}
+
+	ai_will_do = {
+		factor = 1
+
+		trigger = {
+			ai_willing_to_attack = yes
+		}
 	}
 }
 
@@ -1780,6 +1720,7 @@ claim_on_liege_plot = {
 }
 
 # 4 - Disabled in CK2Plus
+# Triggered via event chain from plot_gain_vassal_title_decision which is disabled
 claim_on_vassal_plot = {
 	name = CB_NAME_CLAIM_VASSAL
 	war_name = WAR_NAME_CLAIM_VASSAL
@@ -1796,9 +1737,6 @@ claim_on_vassal_plot = {
 
 	can_use_gui = {
 		check_if_crusader_trigger = yes
-	}
-
-	can_use = {
 		always = no # Disabled in CK2Plus
 	}
 
@@ -2017,7 +1955,7 @@ other_claim = {
 			# claimant requirements
 			trigger_if = {
 				limit = {
-					NOT = {	has_strong_claim = PREV	}
+					NOT = { has_strong_claim = PREV }
 				}
 
 				has_weak_claim = PREV
@@ -2034,30 +1972,28 @@ other_claim = {
 							}
 						}
 
-						AND = {
-							ROOT = { # claimant
-								trigger_if = {
-									limit = { is_female = yes }
+						trigger_if = {
+							limit = {
+								has_gender_equal_game_rule_trigger = no
+								holder_scope = {
+									is_female = yes
 
-									OR = {
+									NOR = {
 										has_law = status_of_women_4
 										has_religion_feature = religion_matriarchal
 										has_religion_feature = religion_equal
 										has_religion_feature = religion_feature_bon
-										has_gender_equal_game_rule_trigger = yes
 									}
 								}
 							}
 
-							holder_scope = { # title holder
-								is_female = yes
-
-								NOR = {
+							ROOT = {
+								OR = {
+									is_female = no
 									has_law = status_of_women_4
 									has_religion_feature = religion_matriarchal
 									has_religion_feature = religion_equal
 									has_religion_feature = religion_feature_bon
-									has_gender_equal_game_rule_trigger = yes
 								}
 							}
 						}
@@ -2515,157 +2451,7 @@ other_claim = {
 		factor = 1
 
 		trigger = {
-			# The AI doesn't want involved in messy situations
-			is_contested = no
-
-			FROMFROM = {
-				sufficient_treasury_for_war_trigger = yes
-
-				# Most Christian and Jewish AI will not attack their religion head
-				can_attack_religion_head_trigger = yes
-
-				# AI will not fight for baronies held by a patriarch
-				can_attack_patriarch_trigger = yes
-
-				# Only dishonorable ai will break the a tributary's trust
-				can_attack_tributary_trigger = yes
-
-				trigger_if = {
-					limit = { lower_real_tier_than = DUKE }
-					religion_group = ROOT
-				}
-			}
-
-			trigger_if = {
-				limit = {
-					OR = {
-						has_law = enatic_succession
-						has_law = enatic_cognatic_succession
-					}
-				}
-
-				ROOT = {
-					trigger_if = {
-						limit = { is_female = no }
-					}
-
-					OR = {
-						FROMFROM = { is_feminist_trigger = no }
-						has_religion_feature = religion_patriarchal
-
-						trigger_if = {
-							limit = { practical_age < 40 }
-
-							OR = {
-								any_child = {
-									is_female = yes
-									has_inheritance_blocker = no
-									NOT = { trait = bastard }
-								}
-
-								calc_true_if = {
-									amount >= 2
-
-									diplomacy >= 12
-									diplomacy >= 20
-									intrigue >= 12
-									prestige >= 1000
-									is_ruler = yes
-								}
-							}
-						}
-					}
-				}
-			}
-			trigger_else = {
-				ROOT = {
-					trigger_if = {
-						limit = { is_female = yes }
-
-						OR = {
-							FROMFROM = { is_feminist_trigger = yes }
-							has_religion_feature = religion_matriarchal
-
-							trigger_if = {
-								limit = { practical_age < 40 }
-
-								OR = {
-									any_child = {
-										is_female = no
-										has_inheritance_blocker = no
-										NOT = { trait = bastard }
-									}
-
-									calc_true_if = {
-										amount >= 2
-
-										diplomacy >= 12
-										diplomacy >= 20
-										intrigue >= 12
-										prestige >= 1000
-										is_ruler = yes
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-
-			# If the attacker is not the de jure liege of the target, attacker has some other reason to want to press the claim.
-			trigger_if = {
-				limit = {
-					NOT = { de_jure_liege_or_above = FROMFROM }
-				}
-
-				trigger_if = {
-					limit = { controls_religion = yes }
-
-					# Attacker, claimant and defender are all the same religion
-					# TODO: Check title holder instead of/in addition to defender?
-					FROM = {
-						religion = ROOT
-						religion = ROOT_FROMFROM
-					}
-				}
-				trigger_else = {
-					ROOT = {
-						is_lover = FROMFROM
-						is_married = FROMFROM
-						is_friend = FROMFROM
-					}
-				}
-			}
-
-			# Only cynics can press claims against holy orders of their religion unless they have other kingdoms.
-			trigger_if = {
-				limit = {
-					holder = FROM
-					holy_order = yes
-				}
-
-				ROOT = { religion = FROM } # Make sure you're not trying to install a heretic
-
-				FROMFROM = {
-					OR = {
-						trait = cynical
-						NOT = { religion = ROOT_FROM }
-					}
-				}
-			}
-			trigger_else_if = {
-				limit = {
-					FROM = { holy_order = yes }
-				}
-
-				FROMFROM = {
-					OR = {
-						trait = cynical
-						NOT = { religion = ROOT_FROM }
-						ROOT_FROM = { higher_real_tier_than = DUKE }
-					}
-				}
-			}
+			ai_willing_to_attack_for_third_party = yes
 		}
 
 		mult_modifier = {
@@ -2706,6 +2492,21 @@ other_claim_on_liege = {
 	can_use_title = {
 		holder = FROM
 		is_vice_royalty = no
+
+
+		trigger_if = { # Can't take out merchant republic with this CB
+			limit = { ROOT = { is_patrician = no } }
+			FROM = {
+				trigger_if = {
+					limit = { is_patrician = yes }
+
+					NOR = {
+						capital_holding = { title = PREVPREV }
+						PREV = { is_primary_holder_title_tier = yes }
+					}
+				}
+			}
+		}
 
 		OR = {
 			# Third-party claimant
@@ -2811,18 +2612,16 @@ other_claim_on_liege = {
 			}
 		}
 
-		ROOT = {
-			is_patrician = no
-		}
+		trigger_if = { # Can't take out merchant republic with this CB
+			limit = { ROOT = { is_patrician = no } }
+			FROM = {
+				trigger_if = {
+					limit = { is_patrician = yes }
 
-		# Can't take out merchant republic with this CB
-		FROM = {
-			trigger_if = {
-				limit = { is_patrician = yes }
-
-				NOR = {
-					capital_holding = { title = PREVPREV }
-					PREV = { is_primary_holder_title_tier = yes }
+					NOR = {
+						capital_holding = { title = PREVPREV }
+						PREV = { is_primary_holder_title_tier = yes }
+					}
 				}
 			}
 		}
@@ -3005,8 +2804,10 @@ other_claim_on_liege = {
 					higher_real_tier_than = ROOT
 
 					holder_scope = {
-						is_feudal = yes
-						is_tribal = yes
+						OR = {
+							is_feudal = yes
+							is_tribal = yes
+						}
 					}
 
 					ROOT = {

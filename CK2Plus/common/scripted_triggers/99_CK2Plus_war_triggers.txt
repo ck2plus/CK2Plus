@@ -206,3 +206,196 @@ sufficient_treasury_for_war_trigger = {
 	# Should have enough treasury to wage war
 	scaled_wealth = 0.5
 }
+
+ai_willing_to_attack = {
+	# Starting scope is the title
+	# ROOT is the attacker
+	# FROM is the defender
+
+	# The AI doesn't want involved in messy situations
+	is_contested = no
+
+	ROOT = {
+		sufficient_treasury_for_war_trigger = yes
+
+
+		# Most Christian and Jewish AI will not attack their religion head
+		can_attack_religion_head_trigger = yes
+		# AI will not fight for baronies held by a patriarch
+		can_attack_patriarch_trigger = yes
+		# Only dishonorable ai will break the a tributary's trust
+		can_attack_tributary_trigger = yes
+
+		# Only cynical or adventurer ai will press claims on same-faith holy orders
+		trigger_if = {
+			limit = {
+				FROM = {
+					holy_order = yes
+					lower_real_tier_than = KING
+					religion = ROOT
+				}
+			}
+			OR = {
+				has_character_flag = claimant_adventurer
+				trait = cynical
+			}
+		}
+
+		# Landless religion heads declaring war causes problems
+		trigger_if = {
+			limit = { controls_religion = yes }
+
+			realm_size >= 1
+		}
+
+		# AI doesn't want to fight over small infidel potatoes unless they're an adventurer or subjugated
+		trigger_if = {
+			limit = { FROM = { lower_real_tier_than = DUKE } }
+
+			OR = {
+				religion_group = FROM
+				has_character_flag = claimant_adventurer
+				is_vassal_or_below_of = FROM
+			}
+		}
+	}
+}
+
+ai_willing_to_attack_for_third_party = {
+	# Starting scope is the title
+	# FROMFROM is the attacker
+	# FROM is the defender
+	# ROOT is the third party
+
+	# The AI doesn't want involved in messy situations
+	is_contested = no
+
+	FROMFROM = {
+		sufficient_treasury_for_war_trigger = yes
+		# Most Christian and Jewish AI will not attack their religion head
+		can_attack_religion_head_trigger = yes
+		# Only dishonorable ai will break the a tributary's trust
+		can_attack_tributary_trigger = yes
+
+		# Only cynical ai will attack same-faith holy orders unless they hold a higher title
+		trigger_if = {
+			limit = {
+				FROM = {
+					holy_order = yes
+					lower_real_tier_than = KING
+					religion = FROMFROM
+				}
+			}
+
+			trait = cynical
+		}
+
+		# Landless religion heads declaring war causes problems
+		trigger_if = {
+			limit = { controls_religion = yes }
+
+			realm_size >= 1
+		}
+
+		# Why put in the effort if I can't have it myself?
+		trigger_if = {
+			limit = {
+				NOT = { de_jure_vassal_or_below = PREV }
+
+				OR = {
+					is_lover = ROOT
+					is_married = ROOT
+					is_friend = ROOT
+				}
+			}
+		}
+	}
+
+	# Gender considerations
+	trigger_if = {
+		limit = {
+			OR = {
+				has_law = agnatic_succession
+				has_law = cognatic_succession
+			}
+			ROOT = { is_female = yes }
+		}
+		ROOT = {
+			OR = {
+				FROMFROM = { is_feminist_trigger = yes }
+				has_religion_feature = religion_matriarchal
+
+				trigger_if = {
+					limit = { practical_age < 40 }
+
+					OR = {
+						any_child = {
+							is_female = no
+							has_inheritance_blocker = no
+							NOT = { trait = bastard }
+						}
+
+						calc_true_if = {
+							amount >= 2
+
+							diplomacy >= 12
+							diplomacy >= 20
+							intrigue >= 12
+							prestige >= 1000
+							is_ruler = yes
+						}
+					}
+				}
+			}
+		}
+	}
+	trigger_else_if = {
+		limit = {
+			OR = {
+				has_law = enatic_succession
+				has_law = enatic_cognatic_succession
+			}
+			ROOT = { is_female = no }
+		}
+		ROOT = {
+			OR = {
+				FROMFROM = { is_feminist_trigger = no }
+				has_religion_feature = religion_patriarchal
+
+				trigger_if = {
+					limit = { practical_age < 40 }
+
+					OR = {
+						any_child = {
+							is_female = yes
+							has_inheritance_blocker = no
+							NOT = { trait = bastard }
+						}
+
+						calc_true_if = {
+							amount >= 2
+
+							diplomacy >= 12
+							diplomacy >= 20
+							intrigue >= 12
+							prestige >= 1000
+							is_ruler = yes
+						}
+					}
+				}
+			}
+		}
+	}
+
+	# No heretics or infidels taking over religion heads or holy orders
+	trigger_if = {
+		limit = {
+			OR = {
+				controls_religion = yes
+				holy_order = yes
+			}
+		}
+
+		holder_scope = { religion = ROOT } # This feels backwards, but it's the most efficient way to check
+	}
+}
