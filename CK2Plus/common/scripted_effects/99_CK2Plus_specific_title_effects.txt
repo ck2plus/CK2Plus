@@ -1,0 +1,258 @@
+carlings_fall = {
+	log = "The Carolingian Empire has fallen"
+	e_karling = {
+		any_direct_de_jure_vassal_title = {
+			de_jure_liege = k_placeholder
+		}
+	}
+	if = {
+		limit = { NOT = { has_global_flag = carolingian_empire_fallen } }
+		set_global_flag = carolingian_empire_fallen
+	}
+}
+
+reset_carolingian_title_names = {
+	# Reset East Francia to Germany
+	k_germany = {
+		set_name = ""
+		adjective = ""
+	}
+
+	# Rename West Francia if it hasn't been already
+	if = {
+		limit = { NOT = { has_global_flag = west_francia_renamed } }
+
+		set_global_flag = west_francia_renamed
+
+		k_france = {
+			set_name = ""
+			adjective = ""
+		}
+	}
+
+	# Reset ERE to Byzantine Empire in case Charlemagne was never crowned
+	e_byzantium = {
+		set_name = ""
+		adjective = ""
+	}
+}
+
+make_character_hre_founder = {
+	if = { # Failsafe for accidental usage outside of character scope
+		limit = { character = yes }
+		save_event_target_as = hre_emperor
+	}
+	else = {
+		holder_scope = { save_event_target_as = hre_emperor }
+	}
+
+	e_hre = {
+		set_pentarch_title = b_roma
+		activate_title = {
+			title = THIS
+			status = yes
+		}
+		set_title_flag = non_manual_law_change # No prestige loss
+		grant_title = event_target:hre_emperor
+		copy_title_laws = PREV
+		add_law_w_cooldown = crown_authority_0
+		add_law = succ_hre_elective
+		copy_prev_gender_law_effect = yes
+		set_title_flag = do_not_destroy
+		set_global_flag = hre_formed
+		clr_title_flag = non_manual_law_change # No prestige loss
+	}
+}
+
+# Give out the stem duchies
+distribute_stem_duchies = {
+	k_arch_austria = {
+		save_event_target_as = stem_duchy
+		k_austria = { save_event_target_as = stem_duchy_base }
+		create_stem_duchy = yes
+	}
+	k_arch_lotharingia = {
+		save_event_target_as = stem_duchy
+		k_lotharingia = { save_event_target_as = stem_duchy_base }
+		create_stem_duchy = yes
+	}
+	k_grand_bavaria = {
+		save_event_target_as = stem_duchy
+		k_bavaria = { save_event_target_as = stem_duchy_base }
+		create_stem_duchy = yes
+	}
+	k_grand_franconia = {
+		save_event_target_as = stem_duchy
+		k_franconia = { save_event_target_as = stem_duchy_base }
+		create_stem_duchy = yes
+	}
+	k_grand_luxembourg = {
+		save_event_target_as = stem_duchy
+		k_luxembourg = { save_event_target_as = stem_duchy_base }
+		create_stem_duchy = yes
+	}
+	k_grand_saxony = {
+		save_event_target_as = stem_duchy
+		k_saxony = { save_event_target_as = stem_duchy_base }
+		create_stem_duchy = yes
+	}
+	k_grand_swabia = {
+		save_event_target_as = stem_duchy
+		k_swabia = { save_event_target_as = stem_duchy_base }
+		create_stem_duchy = yes
+	}
+	k_grand_tuscany = {
+		save_event_target_as = stem_duchy
+		k_tuscany = { save_event_target_as = stem_duchy_base }
+	}
+	k_grand_napels = {
+		save_event_target_as = stem_duchy
+		k_napels = { save_event_target_as = stem_duchy_base }
+	}
+	k_grand_sicily = {
+		save_event_target_as = stem_duchy
+		k_sicily = { save_event_target_as = stem_duchy_base }
+	}
+}
+
+create_stem_duchy = {
+	event_target:stem_duchy_base = {
+		# If the kingdom is already an HRE vassal, convert it to the duchy
+		if = {
+			limit = {
+				has_holder = yes
+				holder_scope = {
+					OR = {
+						character = event_target:hre_emperor
+						same_realm = event_target:hre_emperor
+					}
+				}
+			}
+
+			# Label the Duke
+			holder_scope = { save_event_target_as = archduke }
+
+			# Convert the Duchy
+			event_target:stem_duchy = {
+				activate_title = {
+					title = event_target:stem_duchy
+					status = yes
+				}
+				set_title_flag = non_manual_law_change # No prestige loss
+				copy_title_history = event_target:stem_duchy_base
+				copy_title_laws = event_target:stem_duchy_base
+				de_jure_liege = e_hre
+				grant_title = event_target:archduke
+				clr_title_flag = non_manual_law_change # No prestige loss
+			}
+			convert_stem_duchy_claims = yes
+			any_direct_de_jure_vassal_title = { de_jure_liege = event_target:stem_duchy }
+			unsafe_destroy_landed_title = THIS
+			activate_title = {
+				title = event_target:stem_duchy_base
+				status = no
+			}
+		}
+		else_if = {
+			limit = {
+				has_holder = no # probably implied but I'm paranoid
+				# completely_controls requires all baronies which is dumb so we'll do it manually
+				any_direct_de_jure_vassal_title = { # Duke
+					same_realm = event_target:hre_emperor
+					NOT = {
+						any_direct_de_jure_vassal_title = { # Count
+							NOT = { same_realm = event_target:hre_emperor }
+						}
+					}
+				}
+				# any_direct_de_jure_vassal_title = {
+				# 	event_target:hre_emperor = { completely_controls = PREV }
+				# }
+			}
+
+			event_target:stem_duchy = {
+				activate_title = {
+					title = THIS
+					status = yes
+				}
+				copy_title_history = event_target:stem_duchy_base
+				de_jure_liege = e_hre
+			}
+			convert_stem_duchy_claims = yes
+			any_direct_de_jure_vassal_title = { de_jure_liege = event_target:stem_duchy }
+			activate_title = {
+				title = event_target:stem_duchy_base
+				status = no
+			}
+		}
+		else_if = { # This is mostly for the ones that Germany breaks up into to make sure they're active
+			limit = {
+				has_holder = no
+				is_titular = yes
+			}
+
+			event_target:stem_duchy = {
+				activate_title = {
+					title = THIS
+					status = yes
+				}
+				copy_title_history = event_target:stem_duchy_base
+				de_jure_liege = e_hre
+			}
+			convert_stem_duchy_claims = yes # Probably not necessary but I like consistency
+			event_target:stem_duchy_base = {
+				de_jure_liege = e_placeholder
+				activate_title = {
+					title = THIS
+					status = no
+				}
+			}
+		}
+	}
+}
+
+convert_stem_duchy_claims = {
+	# Convert claims
+	any_claimant = {
+		if = {
+			limit = { has_pressed_claim = event_target:stem_duchy_base }
+			add_pressed_claim = event_target_stem_duchy
+		}
+		else_if = {
+			limit = { has_claim = event_target:stem_duchy_base }
+			add_claim = event_target:stem_duchy
+		}
+		else_if = {
+			limit = { has_weak_pressed_claim = event_target:stem_duchy_base }
+			add_weak_claim = event_target:stem_duchy
+		}
+		else_if = {
+			limit = { has_weak_claim = event_target:stem_duchy_base }
+			add_weak_claim = event_target:stem_duchy
+		}
+
+		remove_claim = event_target:stem_duchy_base
+	}
+}
+
+hre_single_empire = {
+	# Clean up any non-HRE held empire titles
+	event_target:hre_emperor = {
+		any_demesne_title = {
+			show_scope_change = no
+
+			limit = {
+				tier = EMPEROR
+				NOT = { title = e_hre }
+			}
+
+			hidden_effect = {
+				any_direct_de_jure_vassal_title = {
+					de_jure_liege = e_hre
+				}
+			}
+
+			destroy_landed_title = THIS
+		}
+	}
+}
