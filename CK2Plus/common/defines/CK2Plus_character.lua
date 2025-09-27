@@ -1,0 +1,32 @@
+-- Format for overwriting define values:
+--
+-- NDefines.NDiplomacy.DEMESNE_BASE_MAX_SIZE = 2.0
+NDefines.NCharacter.NEED_GUARDIAN_AT_AGE = 6                            -- vanilla: 6
+NDefines.NCharacter.NON_AGGRESSION_PACT_BLOCKS_FACTIONS = 0             -- vanilla: 1
+NDefines.NCharacter.WRONG_GOV_FORM_TAX_MOD = -0.5                       -- vanilla: -0.75
+NDefines.NCharacter.WRONG_GOV_FORM_LEVY_MOD = -0.5                      -- vanilla: -0.75
+NDefines.NCharacter.ASSIGN_ACTION_DAYS = 180							-- vanilla:	183		-- Days before a Councillor can be assigned a new job in a county
+NDefines.NCharacter.RAISED_TROOPS_VASSAL_OPINION_DAYS = 73				-- vanilla:	61		-- After 73 days of having their troops raised vassals will get -1 opinion more of you
+NDefines.NCharacter.MAX_GENERATED_TRAITS_FOR_HISTORICAL = 3				-- vanilla:	4		-- Generate random traits up this number for adult historical characters
+NDefines.NCharacter.PORTRAIT_ADULT_MALE_AGE_THRESHOLD = 16				-- vanilla:	16		-- Male child to adult age portrait switch
+NDefines.NCharacter.PORTRAIT_ADULT_FEMALE_AGE_THRESHOLD = 16			-- vanilla:	16		-- Female child to adult age portrait switch
+NDefines.NCharacter.PORTRAIT_MID_AGE_THRESHOLD = 32						-- vanilla:	30		-- Middle age switch for character portraits
+NDefines.NCharacter.NATURAL_DEATH_CHANCE_AGE_0 = 0						-- vanilla:	5		-- Natural deaths per decade out of 10000 people: Age 0-9
+NDefines.NCharacter.NATURAL_DEATH_CHANCE_AGE_10 = 0						-- vanilla:	1		-- Natural deaths per decade out of 10000 people: Age 10-19
+NDefines.NCharacter.NATURAL_DEATH_CHANCE_AGE_20 = 0						-- vanilla:	15		-- Natural deaths per decade out of 10000 people: Age 20-29
+NDefines.NCharacter.NATURAL_DEATH_CHANCE_AGE_30 = 0						-- vanilla:	20		-- Natural deaths per decade out of 10000 people: Age 30-39
+NDefines.NCharacter.NATURAL_DEATH_CHANCE_AGE_40 = 0						-- vanilla:	51		-- Natural deaths per decade out of 10000 people: Age 40-49
+NDefines.NCharacter.NATURAL_DEATH_CHANCE_AGE_50 = 0						-- vanilla:	100		-- Natural deaths per decade out of 10000 people: Age 50-59
+NDefines.NCharacter.NATURAL_DEATH_CHANCE_AGE_60 = 320					-- vanilla:	400		-- Natural deaths per decade out of 10000 people: Age 60-69
+NDefines.NCharacter.NATURAL_DEATH_CHANCE_AGE_70 = 734					-- vanilla:	4400	-- Natural deaths per decade out of 10000 people: Age 70-79
+NDefines.NCharacter.NATURAL_DEATH_CHANCE_AGE_80 = 1728					-- vanilla:	3500	-- Natural deaths per decade out of 10000 people: Age 80-90
+NDefines.NCharacter.NATURAL_DEATH_CHANCE_AGE_90 = 4000					-- vanilla:	7000	-- Natural deaths per decade out of 10000 people: Age 90-99
+NDefines.NCharacter.NATURAL_DEATH_CHANCE_AGE_100 = 8160					-- vanilla:	9000	-- Natural deaths per decade out of 10000 people: Age 100+
+NDefines.NCharacter.NOT_SPOUSE_FERTILITY_MULT = 0.25					-- vanilla:	0.50	-- Applied to fertility when the two characters are not married
+NDefines.NCharacter.INFANT_DEATH_CHANCE = 0								-- vanilla:	0.0		-- Chance of stillbirth / death at birth TODO: simulate 0.03% chance via event using "cancel_pregnancy"
+NDefines.NCharacter.TRIBAL_EMPTY_HOLDING_TAX_MULTIPLIER = 0.5           -- vanilla: 0.5
+NDefines.NCharacter.TRIBAL_EMPTY_HOLDING_LEVY_MULTIPLIER = 0.5          -- vanilla: 0.5
+NDefines.NCharacter.TRIBAL_EMPTY_HOLDING_GARRISON_MULTIPLIER = 0.5      -- vanilla: 0.5
+NDefines.NCharacter.AGE_CHILDHOOD_PULSE = 2								-- vanilla:	6		-- The childhood pulse events start from this age
+NDefines.NCharacter.TREASURY_CHANCE_TO_DISAPPEAR_STANDARD = 0.01		-- vanilla:	0.00	-- Chances that artifacts disappear on inheritance TODO: Rework this chance into on_action events
+NDefines.NCharacter.TREASURY_CHANCE_TO_DISAPPEAR_NO_HEIR = 0.1			-- vanilla:	0.5		-- Chances that artifacts disappear on inheritance when the dying character doesn't have an heir TODO: Rework this chance into on_action events
