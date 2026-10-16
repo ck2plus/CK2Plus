@@ -146,7 +146,7 @@ character_event = {
 
 				mult_modifier = {
 					factor = 0.5
-					lower_tier_than = KING
+					lower_real_tier_than = KING
 					OR = {
 						has_character_flag = feast_jongleur
 						has_character_flag = feast_minstrel
@@ -419,7 +419,6 @@ character_event = {
 		}
 	}
 }
-
 
 ###################################
 # Events before the Feast
@@ -1088,35 +1087,40 @@ character_event = {
 		trigger = {
 			any_child = {
 				practical_age >= 14
+				is_alive = yes
 				vassal_of = ROOT
 				is_abroad = no
 				prisoner = no
 				health_traits < 1
-				is_alive = yes
+
+				trigger_if = {
+					limit = { is_female = yes }
+
+					OR = {
+						gender_equality_trigger = yes
+						religion_is_matriarchal_trigger = yes
+					}
+				}
 			}
 		}
 
 		any_child = {
 			limit = {
 				practical_age >= 14
+				is_alive = yes
+				vassal_of = ROOT
+				is_abroad = no
+				prisoner = no
+				health_traits < 1
 
 				trigger_if = {
 					limit = { is_female = yes }
 
 					OR = {
-						has_law = status_of_women_4
-						has_gender_equal_game_rule_trigger = yes
-						has_religion_feature = religion_matriarchal
-						has_religion_feature = religion_equal
-						has_religion_feature = religion_feature_bon
+						gender_equality_trigger = yes
+						religion_is_matriarchal_trigger = yes
 					}
 				}
-
-				is_abroad = no
-				prisoner = no
-				vassal_of = ROOT
-				health_traits < 1
-				is_alive = yes
 			}
 
 			score_value = {
@@ -1159,11 +1163,8 @@ character_event = {
 				limit = { is_female = yes }
 
 				OR = {
-					has_law = status_of_women_4
-					has_gender_equal_game_rule_trigger = yes
-					has_religion_feature = religion_matriarchal
-					has_religion_feature = religion_equal
-					has_religion_feature = religion_feature_bon
+					gender_equality_trigger = yes
+					religion_is_matriarchal_trigger = yes
 				}
 			}
 
@@ -3714,6 +3715,7 @@ character_event = {
 
 		event_target:target_pretty_guest_spouse = {
 			show_scope_change = no
+			show_portrait = yes
 
 			character_event = {
 				id = 72041
@@ -3733,6 +3735,7 @@ character_event = {
 
 		event_target:target_pretty_guest = {
 			show_scope_change = no
+			show_portrait = yes
 
 			character_event = {
 				id = 72041
@@ -5113,6 +5116,7 @@ character_event = {
 
 		event_target:pretty_vassal_spouse = {
 			show_scope_change = no
+			show_portrait = yes
 
 			character_event = {
 				id = 72076
@@ -5132,6 +5136,7 @@ character_event = {
 
 		event_target:pretty_single_vassal = {
 			show_scope_change = no
+			show_portrait = yes
 
 			character_event = {
 				id = 72076
@@ -5151,6 +5156,7 @@ character_event = {
 
 		event_target:pretty_married_vassal = {
 			show_scope_change = no
+			show_portrait = yes
 
 			character_event = {
 				id = 72076
@@ -5587,6 +5593,8 @@ character_event = {
 				}
 			}
 
+			save_event_target_as = guest_title
+
 			holder_scope = {
 				save_event_target_as = claimant_guest
 			}
@@ -5645,17 +5653,7 @@ character_event = {
 
 		prestige = -10
 
-		random_claim = {
-			show_scope_change = no
-
-			limit = {
-				ROOT = { has_strong_claim = PREV }
-				can_be_given_away = yes
-				holder = event_target:claimant_guest
-			}
-
-			remove_claim = ROOT
-		}
+		remove_claim = event_target:guest_title
 	}
 }
 
@@ -5670,18 +5668,28 @@ character_event = {
 	option = {
 		name = EVTOPTA72086 # Grant any_liege title
 
-		character_event = {
-			id = 72087
-			tooltip = EVTTOOLTIP72087
+		trigger = {
+			event_target:guest_title = {
+				can_be_given_away = yes
+			}
+		}
+
+		FROM = {
+			character_event = {
+				id = 72087
+				tooltip = EVTTOOLTIP72087
+			}
 		}
 	}
 
 	option = {
 		name = EVTOPTB72086 # Refuse
 
-		character_event = {
-			id = 72088
-			tooltip = EVTTOOLTIP72088
+		FROM = {
+			character_event = {
+				id = 72088
+				tooltip = EVTTOOLTIP72088
+			}
 		}
 	}
 }
@@ -5697,17 +5705,7 @@ character_event = {
 	option = {
 		name = EVTOPTA72087
 
-		random_claim = {
-			show_scope_change = no
-
-			limit = {
-				ROOT = { has_strong_claim = PREV }
-				can_be_given_away = yes
-				holder = FROM
-			}
-
-			grant_title = ROOT
-		}
+		grant_title = event_target:guest_title
 	}
 }
 
@@ -5749,20 +5747,16 @@ character_event = {
 	option = {
 		name = EVTOPTB72089
 
-		FROM = {
+		trigger = {
+			event_target:guest_title = {
+				can_be_given_away = yes
+			}
+		}
+
+		event_target:guest_title = {
 			show_scope_change = no
 
-			random_claim = {
-				show_scope_change = no
-
-				limit = {
-					FROM = { has_strong_claim = PREV }
-					can_be_given_away = yes
-					holder = ROOT
-				}
-
-				grant_title = FROM
-			}
+			grant_title = FROM
 		}
 
 		imprison = no
@@ -6671,22 +6665,6 @@ character_event = {
 					liege = {
 						show_scope_change = no
 
-						if = {
-							limit = { has_dlc = "Reapers" }
-
-							set_character_flag = disease_not_serious
-							add_trait = vomiting
-
-							character_event = {
-								id = RIP.11005
-								days = 10
-								random = 30
-							}
-						}
-						else = {
-							add_trait = ill
-						}
-
 						character_event = {
 							id = 100523
 							tooltip = EVTTOOLTIP100523
@@ -6736,7 +6714,11 @@ character_event = {
 	option = {
 		name = EVTOPTA100522
 
-		trigger = { has_character_flag = death_murder_poison }
+		trigger = { has_character_flag = poisoned_killed }
+
+		tooltip = {
+			death = { death_reason = death_murder_poison }
+		}
 
 		if = {
 			limit = { intrigue >= 15 }
@@ -6752,8 +6734,6 @@ character_event = {
 				random = 1
 			}
 		}
-
-		death = { death_reason = death_accident }
 	}
 
 	option = {
@@ -6981,10 +6961,10 @@ character_event = {
 		name = EVTOPTA100524
 
 		trigger = {
-			FROM = { has_character_flag = death_accident }
+			FROM = { has_character_flag = poisoned_killed }
 		}
 
-		FROM = { clr_character_flag = death_accident }
+		FROM = { clr_character_flag = poisoned_killed }
 
 		add_character_modifier = {
 			name = master_poisoner
@@ -7025,6 +7005,8 @@ character_event = {
 					}
 				}
 			}
+
+			death = { death_reason = death_murder_poison }
 		}
 	}
 
@@ -7189,7 +7171,7 @@ character_event = {
 	is_triggered_only = yes
 
 	option = {
-		name = EVTOTPA100526
+		name = EVTOPTA100526
 
 		tooltip = {
 			opinion = {
@@ -7218,7 +7200,7 @@ character_event = {
 	is_triggered_only = yes
 
 	option = {
-		name = EVTOTPA100527
+		name = EVTOPTA100527
 
 		trigger = { has_character_flag = imprisoned_poisoner }
 
@@ -7230,7 +7212,7 @@ character_event = {
 	}
 
 	option = {
-		name = EVTOTPB100527
+		name = EVTOPTB100527
 
 		trigger = { has_character_flag = banished_poisoner }
 

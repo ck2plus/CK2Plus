@@ -602,14 +602,14 @@ shepherds_crusade_invasion = {
 					add_trait = crusader_king
 
 					create_bloodline = {
-						type = crusader_commander
+						type = crusader_commander_bloodline
 					}
 				}
 				else = {
 					add_trait = crusader_queen
 
 					create_bloodline = {
-						type = crusader_commander
+						type = crusader_commander_bloodline
 						inheritance = matrilineal
 					}
 				}
@@ -783,7 +783,7 @@ shepherds_crusade_invasion = {
 			}
 
 			if = {
-				limit = { can_apply_average_nickname_trigger = yes }
+				limit = { can_apply_cool_nickname_trigger = yes }
 
 				random_list = {
 					10 = { give_nickname = nick_the_crusader }
@@ -1095,10 +1095,6 @@ northern_crusade_war = {
 						narrative_event = { id = HF.49115 } # Northern Crusade Successful
 					}
 
-					any_playable_ruler = {
-						narrative_event = { id = HF.49115 } # Northern Crusade Successful
-					}
-
 					set_global_flag = northern_crusade_success
 					clr_global_flag = northern_crusades_active
 				}
@@ -1254,12 +1250,10 @@ childrens_crusade = {
 	}
 
 	is_valid_title = {
-		# Defender
-		FROM = {
-			num_of_realm_counties = {
-				value >= 1
-				title = PREV
-			}
+		# Defender must have at least 1 county within the target kingdom
+		num_title_realm_provs = {
+			value >= 1
+			who = FROM
 		}
 	}
 
@@ -1282,15 +1276,12 @@ childrens_crusade = {
 				death = { death_reason = death_slavery }
 			}
 
-			primary_title = {
-				activate_title = {
-					title = THIS
-					status = no
-				}
-
-				destroy_landed_title = THIS
+			activate_title = {
+				title = primary_title
+				status = no
 			}
 
+			destroy_landed_title = primary_title
 			death = { death_reason = death_slavery }
 		}
 
@@ -1337,10 +1328,20 @@ childrens_crusade = {
 
 				grant_title = attacker
 				hidden_effect = { make_primary_title = yes }
-
 				set_title_flag = non_manual_law_change # No prestige loss
-				add_law = succ_primogeniture
-				add_law = cognatic_succession
+
+				add_law = {
+					law = succ_primogeniture
+					cooldown = no
+					opinion_effect = no
+				}
+
+				add_law = {
+					law = cognatic_succession
+					cooldown = no
+					opinion_effect = no
+				}
+
 				clr_title_flag = non_manual_law_change # No prestige loss
 			}
 
@@ -1490,10 +1491,10 @@ childrens_crusade = {
 				}
 
 				if = {
-					limit = { has_super_cool_nickname_trigger = no }
+					limit = { can_apply_cool_nickname_trigger = yes }
 
 					random_list = {
-						20 = { give_nickname = nick_the_angel_of_location }
+						20 = { give_nickname = nick_the_angel_of_jerusalem }
 						15 = { give_nickname = nick_the_chosen_of_gabriel }
 
 						15 = {
@@ -1599,15 +1600,12 @@ childrens_crusade = {
 				death = { death_reason = death_slavery }
 			}
 
-			primary_title = {
-				activate_title = {
-					title = THIS
-					status = no
-				}
-
-				destroy_landed_title = THIS
+			activate_title = {
+				title = primary_title
+				status = no
 			}
 
+			destroy_landed_title = primary_title
 			death = { death_reason = death_slavery }
 
 			hidden_effect = {
@@ -1764,11 +1762,7 @@ pepin_religious = {
 		# Defender
 		FROM = {
 			is_within_diplo_range = ROOT
-
-			NOR = {
-				has_landed_title = k_papacy
-				has_landed_title = d_fraticelli
-			}
+			is_pope = no
 
 			# Target must either be a pagan or heretic of any government form, or it must be a disliked Catholic/Fraticelli who is not a bishop
 			OR = {
@@ -1776,12 +1770,10 @@ pepin_religious = {
 					is_theocracy = no
 					religion = ROOT
 
-					ROOT = {
-						religion_head = {
-							opinion = {
-								who = FROM
-								value < -50
-							}
+					religion_head = {
+						opinion = {
+							who = FROM
+							value < -50
 						}
 					}
 				}
@@ -1801,22 +1793,6 @@ pepin_religious = {
 			title = d_ancona
 			title = d_ferrara
 			title = d_benevento
-
-			dejure_liege_title = {
-				OR = {
-					title = d_latium
-					title = d_spoleto
-					title = d_ancona
-					title = d_ferrara
-					title = d_benevento
-				}
-			}
-		}
-
-		any_de_jure_vassal_title = {
-			location = {
-				region = world_europe_south_italy
-			}
 		}
 	}
 
@@ -1824,7 +1800,7 @@ pepin_religious = {
 		# Attacker
 		ROOT = {
 			OR = {
-				# has_character_flag = flag_pepin_for_coronation
+				has_character_flag = flag_pepin_for_coronation
 
 				trigger_if = {
 					limit = { religion = catholic }
@@ -1848,6 +1824,40 @@ pepin_religious = {
 			}
 
 			pacifist = no
+		}
+
+		# Defender
+		FROM = {
+			is_pope = no
+
+			# Target must either be a pagan or heretic of any government form, or it must be a disliked Catholic/Fraticelli who is not a bishop
+			OR = {
+				AND = {
+					is_theocracy = no
+					religion = ROOT
+
+					religion_head = {
+						opinion = {
+							who = PREV
+							value < -50
+						}
+					}
+				}
+
+				excommunicated_for = ROOT
+				NOT = { religion_group = ROOT }
+				is_heresy_of = ROOT
+			}
+		}
+	}
+
+	is_valid_title = {
+		# Defender
+		FROM = {
+			num_of_realm_counties = {
+				value >= 1
+				title = PREV
+			}
 		}
 	}
 
@@ -1988,7 +1998,7 @@ pepin_religious = {
 
 			if = {
 				limit = {
-					NOT = { has_character_modifier = known_satanist }
+					NOT = { religion = attacker }
 				}
 
 				religion_authority = {
@@ -2039,9 +2049,15 @@ pepin_religious = {
 			piety = -75
 			prestige = -150
 
-			religion_authority = {
-				name = lost_holy_war
-				years = 20
+			if = {
+				limit = {
+					NOT = { religion = attacker }
+				}
+
+				religion_authority = {
+					name = lost_holy_war
+					years = 20
+				}
 			}
 
 			if = {
@@ -2074,18 +2090,27 @@ pepin_religious = {
 				participation_scaled_decadence = -10
 			}
 
-			religion_authority = {
-				name = won_holy_war
-				years = 20
-			}
+			if = {
+				limit = {
+					NOT = { religion = attacker }
+				}
 
-			hidden_effect = {
-				if = {
-					limit = { has_ambition = obj_strengthen_religion }
+				religion_authority = {
+					name = lost_holy_war
+					years = 20
+				}
 
-					change_variable = {
-						which = strengthen_religion
-						value = 1
+				hidden_effect = {
+					if = {
+						limit = {
+							has_ambition = obj_strengthen_religion
+							NOT = { religion = ROOT }
+						}
+
+						change_variable = {
+							which = strengthen_religion
+							value = 1
+						}
 					}
 				}
 			}
@@ -2103,7 +2128,10 @@ pepin_religious = {
 				}
 
 				if = {
-					limit = { has_ambition = obj_strengthen_religion }
+					limit = {
+						has_ambition = obj_strengthen_religion
+						NOT = { religion = ROOT }
+					}
 
 					change_variable = {
 						which = strengthen_religion
@@ -2235,69 +2263,26 @@ pepin_religious = {
 			factor = 5
 
 			ROOT = {
-				NOT = { trait = cynical }
-			}
-
-			FROM = {
-				NOT = { religion = ROOT }
+				NOR = {
+					trait = cynical
+					religion = FROM
+				}
 			}
 		}
 
 		mult_modifier = { # The Papacy doesn't hold Rome, take action!
 			factor = 5
-
-			d_latium = {
-				OR = {
-					holder_scope = {
-						OR = {
-							character = FROM
-							is_vassal_or_below_of = FROM
-						}
-					}
-
-					any_de_jure_vassal_title = {
-						holder = FROM
-					}
-				}
-			}
+			title = d_latium
 		}
 
 		mult_modifier = {
 			factor = 2
-
-			d_spoleto = {
-				OR = {
-					holder_scope = {
-						OR = {
-							character = FROM
-							is_vassal_or_below_of = FROM
-						}
-					}
-
-					any_de_jure_vassal_title = {
-						holder = FROM
-					}
-				}
-			}
+			title = d_spoleto
 		}
 
 		mult_modifier = { # Historical tweaking
 			factor = 0.25
-
-			d_benevento = {
-				OR = {
-					holder_scope = {
-						OR = {
-							character = FROM
-							is_vassal_or_below_of = FROM
-						}
-					}
-
-					any_de_jure_vassal_title = {
-						holder = FROM
-					}
-				}
-			}
+			title = d_benevento
 		}
 
 		mult_modifier = {

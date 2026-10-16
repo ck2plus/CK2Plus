@@ -211,22 +211,47 @@ great_realm_conflict = {
 		is_titular = no
 
 		# The attacker needs at least one county in the target kingdom, a border or be at the most two sea zones away
-		any_direct_de_jure_vassal_title = { # duchies
-			any_direct_de_jure_vassal_title = { # counties
-				OR = {
+		any_de_jure_vassal_title = {
+			real_tier = COUNT
+
+			trigger_if = {
+				limit = {
 					holder_scope = {
-						OR = {
+						NOR = { # part of attacker's realm
 							character = ROOT
 							is_vassal_or_below_of = ROOT
 						}
 					}
+				}
 
-					location = {
+				holder_scope = {
+					OR = { # Actually part of Defender's realm, not a random title in the same de jure duchy
+						character = FROM
+						is_vassal_or_below_of = FROM
+					}
+				}
+			}
+
+			location = {
+				any_neighbor_province = { # bordering province
+					trigger_if = {
+						limit = { has_owner = yes }
+
+						owner = { # part of attacker's realm
+							OR = {
+								character = ROOT
+								is_vassal_or_below_of = ROOT
+							}
+						}
+					}
+					trigger_else = {
+						is_land = no # first sea zone
+
 						any_neighbor_province = {
 							trigger_if = {
-								limit = { has_owner = yes } # border county
+								limit = { has_owner = yes }
 
-								owner = {
+								owner = { # part of attacker's realm
 									OR = {
 										character = ROOT
 										is_vassal_or_below_of = ROOT
@@ -234,29 +259,13 @@ great_realm_conflict = {
 								}
 							}
 							trigger_else = {
-								is_land = no # first sea zone
+								is_land = no # second sea zone
 
 								any_neighbor_province = {
-									trigger_if = {
-										limit = { has_owner = yes }
-
-										owner = {
-											OR = {
-												character = ROOT
-												is_vassal_or_below_of = ROOT
-											}
-										}
-									}
-									trigger_else = {
-										is_land = no # second sea zone
-
-										any_neighbor_province = {
-											owner = {
-												OR = {
-													character = ROOT
-													is_vassal_or_below_of = ROOT
-												}
-											}
+									owner = { # part of attacker's realm
+										OR = {
+											character = ROOT
+											is_vassal_or_below_of = ROOT
 										}
 									}
 								}
@@ -269,12 +278,10 @@ great_realm_conflict = {
 	}
 
 	is_valid_title = {
-		# Defender
-		FROM = {
-			num_of_realm_counties = {
-				value >= 1
-				title = PREV
-			}
+		# Defender must have at least 1 county within the target kingdom
+		num_title_realm_provs = {
+			value >= 1
+			who = FROM
 		}
 	}
 
@@ -400,16 +407,14 @@ great_realm_conflict = {
 		factor = 1
 
 		trigger = {
-			# This ensures that the AI doesn't declare this type of war against someone who only holds a few counties within the targeted title
-			FROM = {
-				num_of_realm_counties = {
-					value >= 5
-					title = PREV
-				}
-
-				# Ck2Plus
-				ai_willing_to_attack = yes
+			# Defender must have at least 5 counties within the target kingdom
+			num_title_realm_provs = {
+				value >= 5
+				who = FROM
 			}
+
+			# CK2Plus
+			ai_willing_to_attack = yes
 		}
 
 		coronation_factor = yes
@@ -510,12 +515,12 @@ ducal_county_conquest = {
 			show_scope_change = no
 
 			if = {
-				limit = { tier = COUNT }
+				limit = { real_tier = COUNT }
 				piety = -100
 				scaled_wealth = -1.0
 			}
 			else_if = {
-				limit = { tier = DUKE }
+				limit = { real_tier = DUKE }
 				piety = -250
 				scaled_wealth = -1.0
 			}
@@ -663,7 +668,7 @@ ducal_county_conquest = {
 
 		trigger = {
 			ROOT = {
-				scaled_wealth = 1.25
+				scaled_wealth >= 1.25
 			}
 		}
 
@@ -1339,21 +1344,11 @@ unjust_conquest = {
 					trait = content
 				}
 
-				trigger_if = {
-					limit = {
-						has_character_flag = is_temujin
-						has_landed_title = e_mongol_empire
-						is_landed = yes
-					}
-
-					FROM = {
-						NOT = { has_landed_title = e_china_west_governor }
-					}
-				}
-
-				# CK2Plus
-				ai_willing_to_attack = yes
+				temujin_avoid_china_trigger = yes
 			}
+
+			# CK2Plus
+			ai_willing_to_attack = yes
 		}
 
 		coronation_factor = yes

@@ -119,9 +119,9 @@ province_event = {
 			factor = 3.0
 
 			OR = {
-				province_id = c_roma
-				province_id = c_thrake
-				province_id = c_mecca
+				province = c_roma
+				province = c_thrake
+				province = c_mecca
 			}
 		}
 
@@ -129,7 +129,7 @@ province_event = {
 			factor = 0.5
 
 			any_neighbor_province = {
-				is_land = yes
+				has_owner = yes
 				is_heresy_of = ROOT
 			}
 		}
@@ -138,7 +138,7 @@ province_event = {
 			factor = 0.25
 
 			any_neighbor_province = {
-				is_land = yes
+				has_owner = yes
 				has_province_modifier = heretic_stronghold
 				is_heresy_of = ROOT
 			}
@@ -149,7 +149,7 @@ province_event = {
 		# Prefer a neighboring heresy
 		random_neighbor_province = {
 			limit = {
-				is_land = yes
+				has_owner = yes
 				is_heresy_of = ROOT
 			}
 
@@ -164,7 +164,7 @@ province_event = {
 				top_liege = {
 					random_realm_province = {
 						limit = {
-							is_land = yes
+							has_owner = yes
 							is_heresy_of = ROOT
 							held_under_PREV = yes
 						}
@@ -352,8 +352,32 @@ character_event = {
 	has_dlc = "Sons of Abraham"
 
 	trigger = {
-		NOT = { religion = location }
 		can_change_religion = yes
+		has_secret_religion = no
+		is_heretic = no # Heretics, already people of strong conviction, never change religion spontaneously
+		is_theocracy = no
+		controls_religion = no
+		is_inaccessible_trigger = no
+
+		trigger_if = { # Can only convert once per lifetime between these three
+			limit = {
+				has_dharmic_religion_trigger = yes
+				location = { has_dharmic_religion_trigger = yes }
+			}
+
+			NOT = { has_character_flag = india_converted }
+		}
+
+		NOR = {
+			religion = location
+			religion_authority >= 0.9
+			trait = zealous
+			trait = shiite_claimant
+			has_character_flag = ai_flag_refuse_conversion
+			rightful_religious_head = ROOT
+			father = { trait = shiite_claimant }
+			any_sibling = { trait = shiite_claimant }
+		}
 
 		trigger_if = {
 			limit = {
@@ -376,20 +400,6 @@ character_event = {
 			}
 
 			NOT = { religion_group = pagan_group }
-		}
-
-		is_heretic = no # Heretics, already people of strong conviction, never change religion spontaneously
-		is_theocracy = no
-		controls_religion = no
-		is_inaccessible_trigger = no
-
-		NOR = {
-			religion_authority >= 0.9
-			trait = zealous
-			trait = shiite_claimant
-			father = { trait = shiite_claimant }
-			any_sibling = { trait = shiite_claimant }
-			rightful_religious_head = ROOT
 		}
 	}
 
@@ -459,6 +469,7 @@ character_event = {
 
 	immediate = {
 		save_event_target_as = converting_courtier
+		religion_scope = { save_event_target_as = old_religion }
 
 		location = {
 			religion_scope = {
@@ -484,14 +495,21 @@ character_event = {
 			}
 		}
 
-		# Workaround for automatic usurption of theocratic characters
+		# Workaround for automatic usurpation of theocratic characters
 		convert_religion_failsafe_effect = yes
 
 		if = {
 			limit = { has_dharmic_religion_trigger = yes }
 
-			set_character_flag = india_converted
-			character_event = { id = RoI.30120 } # Set religious branch randomly
+			add_random_dharmic_branch_effect = yes
+
+			if = { # Can only convert once per lifetime between these three
+				limit = { event_target:old_religion = { has_dharmic_religion_trigger = yes } }
+				set_character_flag = india_converted
+			}
+		}
+		else = {
+			add_religious_traits = yes
 		}
 	}
 
@@ -1593,6 +1611,7 @@ character_event = {
 			clear_secret_religion = yes
 		}
 
+		religion_scope = { save_event_target_as = old_religion }
 		# Workaround for automatic usuraption of theocratic characters
 		FROM = { religion_scope = { save_event_target_as = target_religion } }
 		convert_religion_failsafe_effect = yes
@@ -1634,10 +1653,18 @@ character_event = {
 		}
 
 		if = {
-			limit = { religion_group = indian_group }
+			limit = { has_dharmic_religion_trigger = yes }
 
-			set_character_flag = india_converted
-			character_event = { id = RoI.30122 }
+			event_target:converting_courtier = { save_event_target_as = religious_branch_target }
+			copy_religious_branch_from_target_effect = yes
+
+			if = { # Can only convert once per lifetime between these three
+				limit = { event_target:old_religion = { has_dharmic_religion_trigger = yes } }
+				set_character_flag = india_converted
+			}
+		}
+		else = {
+			add_religious_traits = yes
 		}
 
 		ai_chance = {

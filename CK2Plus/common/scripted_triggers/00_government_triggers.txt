@@ -5,6 +5,7 @@
 feudal_group_potential_trigger = {
 	could_be_temporal_religious_head_trigger = yes # If holder is a religion head, makes sure they shouldn't be a theocracy instead
 	is_patrician = no
+
 	NOR = { # Special governments that should be prioritized (only feudal by technicality)
 		is_government_potential = chinese_imperial_government
 		is_government_potential = order_government
@@ -16,14 +17,13 @@ feudal_group_allow_trigger = { plus_imperial_group_allow = no } # Be careful wit
 
 # Chinese Imperial
 chinese_imperial_government_potential_trigger = { # Special snowflake government. Doesn't get the group triggers
-	chinese_imperial_government_culture_trigger = yes
-	is_patrician = no
-	could_be_temporal_religious_head_trigger = yes # If holder is a religion head, makes sure they shouldn't be a theocracy instead (shouldn't happen, safety check)
-
 	primary_title = {
 		real_tier = EMPEROR
 		has_title_flag = pretender_chinese_empire
 	}
+
+	chinese_imperial_government_culture_trigger = yes
+	could_be_temporal_religious_head_trigger = yes # If holder is a religion head, makes sure they shouldn't be a theocracy instead (shouldn't happen, safety check)
 }
 
 chinese_imperial_government_allow_trigger = {} # Special snowflake government. Doesn't get the group triggers
@@ -59,19 +59,20 @@ order_government_potential_trigger = {
 	trigger_if = {
 		limit = { holy_order = no }
 
-		ai = yes
-
 		any_liege = {
 			holy_order = yes
 			religion = ROOT
 		}
 
-		NOT = { is_government_potential = merchant_republic_government }
+		ai = yes
 		could_be_temporal_religious_head_trigger = yes # If holder is a religion head, makes sure they shouldn't be a theocracy instead
+		NOT = { is_government_potential = merchant_republic_government }
 	}
 }
 
-order_government_allow_trigger = {}
+order_government_allow_trigger = {
+	feudal_group_allow_trigger = yes
+}
 
 # Imperial Roman
 roman_imperial_government_potential_trigger = {
@@ -95,7 +96,9 @@ roman_imperial_government_potential_trigger = {
 	}
 }
 
-roman_imperial_government_allow_trigger = {}
+roman_imperial_government_allow_trigger = {
+	feudal_group_allow_trigger = yes
+}
 
 # Theocratic Feudal
 monastic_feudal_government_potential_trigger = {
@@ -151,11 +154,42 @@ confucian_government_allow_trigger = {} # Special snowflake government. Doesn't 
 merchant_republic_government_potential_trigger = {
 	republic_group_potential_trigger = yes
 
-	trigger_if = { # Established MR requiremends
+	trigger_if = { # New game lobby screen, historical starts
 		limit = {
-			is_merchant_republic = yes
-			has_game_started = yes
+			has_game_started = no
+			historical = yes
 		}
+
+		is_patrician = yes # Family palace in title history
+	}
+	trigger_else_if = { # Established MR requirements, including shattered world lobbies
+		limit = { is_patrician = yes }
+
+		OR = {
+			AND = {
+				# Can't check for being a merchant republic
+				# since that's not true when the leader of the republic changes
+				# Independent patricians and patricians under a non-patrician liege
+				# therefore must be leaders of merchant republics
+				trigger_if = {
+					limit = { independent = no }
+					liege_before_war = { is_patrician = no }
+				}
+
+				# Require at least one province and be Duke tier or higher
+				higher_real_tier_than = COUNT
+				num_of_count_titles >= 1
+
+				# Must always be coastal
+				capital_scope = { is_coastal = yes }
+			}
+
+			# Liege must be MR
+			liege_before_war = { is_merchant_republic = yes }
+		}
+	}
+	trigger_else = { # New MR requirements
+		capital_scope = { is_coastal = yes }
 
 		# Require at least one province and be Duke tier or higher
 		higher_real_tier_than = COUNT
@@ -164,52 +198,7 @@ merchant_republic_government_potential_trigger = {
 		# MR can't be under MR
 		trigger_if = {
 			limit = { independent = no }
-
-			liege_before_war = {
-				is_merchant_republic = no
-			}
-		}
-	}
-	trigger_else_if = { # Established Patrician requirements
-		limit = {
-			is_patrician = yes
-			has_game_started = yes
-		}
-
-		# Liege must be MR
-		liege_before_war = {
-			is_merchant_republic = yes
-
-			# MR can't be under MR
-			trigger_if = {
-				limit = { independent = no }
-
-				liege_before_war = {
-					is_merchant_republic = no
-				}
-			}
-		}
-	}
-	trigger_else = { # Pre-game and new MR requirements
-		OR = {
-			is_patrician = yes
-
-			trigger_if = {
-				limit = { capital_scope = { is_coastal = yes } }
-
-				# Require at least one province and be Duke tier or higher
-				higher_real_tier_than = COUNT
-				num_of_count_titles >= 1
-
-				# MR can't be under MR
-				trigger_if = {
-					limit = { independent = no }
-
-					liege_before_war = {
-						is_merchant_republic = no
-					}
-				}
-			}
+			liege_before_war = { is_merchant_republic = no}
 		}
 	}
 }

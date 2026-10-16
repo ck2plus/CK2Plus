@@ -203,7 +203,7 @@ settlement_decisions = {
 			holder = FROM # filter doesn't seem to be enough
 			is_capital = no
 
-			dejure_liege_title = {
+			county = {
 				holder = FROM
 			}
 		}
@@ -228,20 +228,18 @@ settlement_decisions = {
 				is_allowed_holding_type = FROM
 
 				# Not if existing capital is preferred
-				defacto_liege_title = {
-					NOR = {
-						is_preferred_holding_type = FROM
-						title = c_roma
+				county = {
+					capital_holding = {
+						NOT = { is_preferred_holding_type = FROM }
 					}
 				}
-
 
 				# Not if this settlement is not preferred and another settlement is
 				trigger_if = {
 					limit = { NOT = { is_preferred_holding_type = FROM } }
 
 					NOT = {
-						defacto_liege_title = {
+						county = {
 							any_direct_de_jure_vassal_title = {
 								holder = FROM
 								is_preferred_holding_type = FROM
@@ -479,24 +477,27 @@ settlement_decisions = {
 			}
 
 			hidden_effect = {
-				location = { save_event_target_as = nickname_location }
+				location = { save_event_target_as = nickname_target }
 
 				FROM = {
 					save_event_target_as = nickname_receiver
 
 					if = {
 						limit = {
-							has_nickname = no
 							is_adult = yes
 							is_incapable = no
 						}
 
 						random_list = {
-							5 = { give_nickname = nick_the_destroyer }
+							5 = {
+								trigger = { can_apply_cool_nickname_trigger = yes }
+								give_nickname = nick_the_destroyer
+							}
 
 							5 = {
 								trigger = {
-									NOT = { religion = event_target:nickname_location }
+									can_apply_cool_nickname_trigger = yes
+									NOT = { religion = event_target:nickname_target }
 								}
 
 								give_nickname = nick_the_scourge_of_god
@@ -504,17 +505,22 @@ settlement_decisions = {
 
 							5 = {
 								trigger = {
-									NOT = { religion = event_target:nickname_location }
+									can_apply_cool_nickname_trigger = yes
+									NOT = { culture = event_target:nickname_target }
 								}
 
 								give_nickname = nick_the_slayer_of_culture
 							}
 
-							5 = { give_nickname = nick_the_terror_of_provincename }
+							5 = {
+								trigger = { can_apply_cool_nickname_trigger = yes }
+								give_nickname = nick_the_terror_of_provincename
+							}
 
 							5 = {
 								trigger = {
-									NOT = { religion = event_target:nickname_location }
+									can_apply_cool_nickname_trigger = yes
+									NOT = { culture = event_target:nickname_target }
 								}
 
 								give_nickname = nick_the_culture_marauder
@@ -606,6 +612,8 @@ settlement_decisions = {
 		}
 
 		potential = {
+			real_tier = BARON
+
 			OR = {
 				holding_type = tribal
 				holding_type = castle
@@ -803,8 +811,6 @@ settlement_decisions = {
 
 					create_title = {
 						tier = KING
-						landless = no
-						temporary = no
 						custom_created = yes
 						culture = FROM
 						holder = FROM
@@ -853,11 +859,13 @@ settlement_decisions = {
 						NOT = { religion_group = pagan_group }
 					}
 
-					any_realm_province = {
-						count < 7
+					NOT = {
+						any_realm_province = {
+							count >= 7
 
-						region = world_steppe
-						held_under_PREV = yes
+							region = world_steppe
+							held_under_PREV = yes
+						}
 					}
 				}
 
@@ -917,6 +925,8 @@ settlement_decisions = {
 		}
 
 		potential = {
+			real_tier = BARON
+
 			OR = {
 				holding_type = castle
 
@@ -968,6 +978,10 @@ settlement_decisions = {
 		effect = {
 			# Change culture and religion of new capital province and possibly more provinces depending on nomad population_and_manpower
 			location = {
+				show_scope_change = no
+
+				save_event_target_as = settled_province
+
 				if = {
 					limit = {
 						NOT = { culture = FROM }
@@ -991,14 +1005,12 @@ settlement_decisions = {
 						population_and_manpower >= 5000
 
 						any_realm_province = {
-							NOT = { culture = ROOT_FROM }
 							num_of_settlements >= 1
 							held_under_PREV = yes
 
-							ROOT = {
-								location = {
-									NOT = { province = PREVPREV } # Another province, not the capital
-								}
+							NOR = {
+								culture = ROOT_FROM
+								province = event_target:settled_province # Converted above and made capital below
 							}
 						}
 					}
@@ -1049,13 +1061,17 @@ settlement_decisions = {
 
 							random_realm_province = {
 								limit = {
-									NOT = { culture = ROOT_FROM }
 									num_of_settlements >= 1
 									held_under_PREV = yes
 
 									any_neighbor_province = {
 										culture = ROOT_FROM
 										religion = ROOT_FROM
+									}
+
+									NOR = {
+										culture = ROOT_FROM
+										province = event_target:settled_province # Converted above and made capital below
 									}
 								}
 
@@ -1076,7 +1092,7 @@ settlement_decisions = {
 						any_vassal = {
 							count == 1
 
-							tier = KING
+							real_tier = KING
 							is_feudal = yes
 						}
 
@@ -1085,7 +1101,7 @@ settlement_decisions = {
 					#			count >= 2
 					#
 					#			is_feudal = yes
-					#			tier = KING
+					#			real_tier = KING
 					#		}
 					#	}
 					}
@@ -1094,7 +1110,7 @@ settlement_decisions = {
 						show_scope_change = no
 
 						limit = {
-							tier = KING
+							real_tier = KING
 
 							OR = {
 								is_feudal = yes
@@ -1104,7 +1120,7 @@ settlement_decisions = {
 
 						any_demesne_title = {
 							show_scope_change = no
-							limit = { tier = KING }
+							limit = { real_tier = KING }
 
 							usurp_title = ROOT_FROM
 						}
@@ -1161,7 +1177,7 @@ settlement_decisions = {
 
 						k_hungary = {
 							any_direct_de_jure_vassal_title = {
-								limit = { tier = DUKE }
+								limit = { real_tier = DUKE }
 
 								add_claim = PREVPREV
 							}
@@ -1174,31 +1190,29 @@ settlement_decisions = {
 			custom_tooltip = {
 				text = NOMAD_CONVERSION_TROOP_SPAWN
 
-				location = {
-					FROM = {
-						any_realm_province = {
-							limit = {
-								OR = {
-									has_castle = yes
-									has_temple = yes
-									has_city = yes
-									has_tribal = yes
-								}
-
-								held_under_PREV = yes
+				FROM = {
+					any_realm_province = {
+						limit = {
+							OR = {
+								has_castle = yes
+								has_temple = yes
+								has_city = yes
+								has_tribal = yes
 							}
 
-							ROOT_FROM = {
-								spawn_unit = {
-									province = PREVPREVPREV
-									owner = THIS
-									attrition = 1
-									merge = yes
+							held_under_PREV = yes
+						}
 
-									troops = {
-										light_cavalry = { 140 140 }
-										horse_archers = { 60 60 }
-									}
+						ROOT_FROM = {
+							spawn_unit = {
+								province = event_target:settled_province
+								owner = THIS
+								attrition = 1
+								merge = yes
+
+								troops = {
+									light_cavalry = { 140 140 }
+									horse_archers = { 60 60 }
 								}
 							}
 						}
@@ -1274,7 +1288,7 @@ settlement_decisions = {
 				hidden_effect = {
 					if = {
 						limit = {
-							higher_tier_than = KING
+							higher_real_tier_than = KING
 							NOT = { has_dlc = "Conclave" }
 						}
 
@@ -1288,7 +1302,7 @@ settlement_decisions = {
 					}
 
 					if = {
-						limit = { higher_tier_than = COUNT }
+						limit = { higher_real_tier_than = COUNT }
 
 						primary_title = {
 							show_scope_change = no
@@ -1366,7 +1380,6 @@ settlement_decisions = {
 			independent = yes
 			has_dlc = "Horse Lords"
 			is_nomadic = yes
-			is_female = no
 
 			trigger_if = {
 				limit = { ai = no }
@@ -1377,12 +1390,13 @@ settlement_decisions = {
 		}
 
 		potential = {
+			real_tier = BARON
 			holding_type = city
 
 			trigger_if = {
 				limit = { FROM = { ai = no } }
 
-				capital_scope = {
+				location = {
 					is_coastal = yes
 				}
 			}
@@ -1405,11 +1419,12 @@ settlement_decisions = {
 				}
 			}
 		}
+
 		allow = {
 			OR = {
 				is_capital = yes
 
-				capital_scope = {
+				location = {
 					owned_by = FROM
 				}
 			}
@@ -1425,6 +1440,10 @@ settlement_decisions = {
 		effect = {
 			# Change culture and religion of new capital province and possibly more provinces depending on nomad population_and_manpower
 			location = {
+				show_scope_change = no
+
+				save_event_target_as = settled_province
+
 				if = {
 					limit = {
 						NOT = { culture = FROM }
@@ -1447,14 +1466,12 @@ settlement_decisions = {
 						population_and_manpower >= 5000
 
 						any_realm_province = {
-							NOT = { culture = ROOT_FROM }
 							num_of_settlements >= 1
 							held_under_PREV = yes
 
-							ROOT = {
-								location = {
-									NOT = { province = PREVPREV } # Another province, not the capital
-								}
+							NOR = {
+								culture = ROOT_FROM
+								province = event_target:settled_province # Converted above and made capital below
 							}
 						}
 					}
@@ -1505,13 +1522,17 @@ settlement_decisions = {
 
 							random_realm_province = {
 								limit = {
-									NOT = { culture = ROOT_FROM }
 									num_of_settlements >= 1
 									held_under_PREV = yes
 
 									any_neighbor_province = {
 										culture = ROOT_FROM
 										religion = ROOT_FROM
+									}
+
+									NOR = {
+										culture = ROOT_FROM
+										province = event_target:settled_province # Converted above and made capital below
 									}
 								}
 
@@ -1552,35 +1573,30 @@ settlement_decisions = {
 				}
 			}
 
-			# Spawn event troops based on amount of empty holdings abandoned.
+			# Spawn event troops based on amount of empty provinces abandoned.
 			custom_tooltip = {
 				text = NOMAD_CONVERSION_TROOP_SPAWN
 
-				location = {
-					FROM = {
-						any_realm_province = {
-							limit = {
-								OR = {
-									has_castle = yes
-									has_temple = yes
-									has_city = yes
-									has_tribal = yes
-								}
+				FROM = {
+					any_realm_province = {
+						limit = {
+							held_under_PREV = yes
+							has_castle = no
+							has_temple = no
+							has_city = no
+							has_tribal = no
+						}
 
-								held_under_PREV = yes
-							}
+						ROOT_FROM = {
+							spawn_unit = {
+								province = event_target:settled_province
+								owner = THIS
+								attrition = 1
+								merge = yes
 
-							ROOT_FROM = {
-								spawn_unit = {
-									province = PREVPREVPREV
-									owner = THIS
-									attrition = 1
-									merge = yes
-
-									troops = {
-										light_cavalry = { 140 140 }
-										horse_archers = { 60 60 }
-									}
+								troops = {
+									light_cavalry = { 140 140 }
+									horse_archers = { 60 60 }
 								}
 							}
 						}
@@ -1609,22 +1625,20 @@ settlement_decisions = {
 
 					custom_tooltip = { text = TT_NEW_KHAN }
 				}
-			}
 
-			hidden_effect = {
 				if = {
 					limit = {
-						capital_scope = {
-							is_coastal = yes
+						# Check here instead of FROM for the tooltip,
+						# because at this point the capital hasn't changed yet
+						ROOT = {
+							location = { is_coastal = yes }
 						}
 					}
 
-					FROM = {
+					hidden_effect = {
 						primary_title = {
 							create_title = {
 								tier = DUKE
-								landless = no
-								temporary = no
 								custom_created = yes
 								culture = ROOT_FROM
 								holder = ROOT_FROM
@@ -1632,7 +1646,34 @@ settlement_decisions = {
 							}
 						}
 
+						# Change to Absolute-Cognatic if eligible under normal circumstances
+						# since Agnatic/Enatic-Cognatic is unavailable for merchant republics
+						if = {
+							limit = {
+								OR = {
+									has_law = cognatic_succession
+									has_law = enatic_cognatic_succession
+								}
+
+								gender_equality_trigger = yes
+							}
+
+							any_demesne_title = {
+								limit = {
+									title = succ_law_title
+									is_law_potential = true_cognatic_succession
+								}
+
+								add_law = {
+									law = true_cognatic_succession
+									cooldown = no
+									opinion_effect = no
+								}
+							}
+						}
+
 						create_family_palace = yes
+						set_government_type = merchant_republic_government
 
 						if = {
 							limit = {
@@ -1652,7 +1693,6 @@ settlement_decisions = {
 									}
 
 									is_lowborn = no
-									is_female = no
 									is_patrician = no
 									prisoner = no
 									is_incapable = no
@@ -1664,7 +1704,7 @@ settlement_decisions = {
 
 									any_demesne_title = {
 										limit = {
-											tier = BARON
+											real_tier = BARON
 											holding_type = tribal
 										}
 
@@ -1724,54 +1764,61 @@ settlement_decisions = {
 									}
 								}
 
+								if = {
+									limit = {
+										OR = {
+											has_law = cognatic_succession
+											has_law = enatic_cognatic_succession
+										}
+
+										gender_equality_trigger = yes
+									}
+
+									any_demesne_title = {
+										limit = {
+											title = succ_law_title
+											is_law_potential = true_cognatic_succession
+										}
+
+										add_law = {
+											law = true_cognatic_succession
+											cooldown = no
+											opinion_effect = no
+										}
+									}
+								}
+
 								create_family_palace = yes
+								set_government_type = merchant_republic_government
 							}
 						}
+					}
 
+					tooltip = {
 						set_government_type = merchant_republic_government
 					}
-				}
-			}
 
-			if = {
-				limit = {
-					capital_scope = {
-						is_coastal = yes
+					if = {
+						limit = { ai = no }
+
+						chronicle = {
+							entry = CHRONICLE_NOMAD_FOUNDED_MERCHANT_REPUBLIC
+							picture = GFX_evt_busy_trading_dock_republic
+						}
 					}
 				}
-
-				FROM = {
-					show_scope_change = no
-
-					set_government_type = merchant_republic_government
-				}
-			}
-			else = {
-				FROM = {
-					show_scope_change = no
-
+				else = {
 					set_government_type = republic_government
 				}
 			}
 
-			FROM = {
-				show_scope_change = no
-
-				chronicle = {
-					entry = CHRONICLE_NOMAD_FOUNDED_MERCHANT_REPUBLIC
-					picture = GFX_evt_busy_trading_dock_republic
-				}
-
+			hidden_effect = {
 				any_player = {
-					limit = {
-						NOT = { character = ROOT_FROM }
-					}
-
+					limit = { NOT = { character = FROM } }
 					narrative_event = { id = HL.1 }
 				}
 			}
 		}
-
 
 		ai_will_do = {
 			factor = 1
@@ -1893,7 +1940,7 @@ settlement_decisions = {
 
 		from_potential = {
 			always = no # Disabled in CK2Plus
-			higher_tier_than = BARON
+			higher_real_tier_than = BARON
 			is_alternate_start = no
 		}
 
@@ -1935,7 +1982,7 @@ settlement_decisions = {
 							limit = {
 								controls_religion = no
 								holy_order = no
-								government = theocracy_government
+								is_theocracy = yes
 							}
 
 							set_government_type = tribal_government

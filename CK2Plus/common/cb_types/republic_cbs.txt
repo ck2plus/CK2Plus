@@ -32,7 +32,8 @@ coastal_republic = {
 			is_patrician = yes
 
 			NOR = {
-				same_realm = FROM
+				is_vassal_or_below_of = FROM
+				is_liege_or_above_of = FROM
 				has_character_modifier = rep_cb_cd
 			}
 		}
@@ -50,13 +51,10 @@ coastal_republic = {
 			}
 
 			# Not allowed to use this CB to take cities in the capital province of a rival merchant republic
-			FROM = {
+			owner = {
 				trigger_if = {
 					limit = { is_merchant_republic = yes }
-
-					capital_scope = {
-						NOT = { province_id = PREVPREV }
-					}
+					NOT = { is_capital = PREV }
 				}
 			}
 		}
@@ -79,6 +77,41 @@ coastal_republic = {
 		# Attacker
 		ROOT = {
 			is_patrician = yes
+
+			NOR = {
+				is_vassal_or_below_of = FROM
+				is_liege_or_above_of = FROM
+			}
+		}
+	}
+
+	is_valid_title = {
+		# CleanSlate: Needs to remain valid
+		location = {
+			trade_post_owner = {
+				character = ROOT
+			}
+
+			# Not allowed to use this CB to take cities in the capital province of a rival merchant republic
+			owner = {
+				trigger_if = {
+					limit = { is_merchant_republic = yes }
+					NOT = { is_capital = PREV }
+				}
+			}
+		}
+
+		# Attacker, or a vassal of the attacker, owns a city in the county
+		any_direct_de_jure_vassal_title = {
+			real_tier = BARON
+			holding_type = city
+
+			holder_scope = {
+				OR = {
+					character = ROOT
+					is_vassal_or_below_of = ROOT
+				}
+			}
 		}
 	}
 
@@ -108,13 +141,9 @@ coastal_republic = {
 				location = {
 					is_coastal = yes
 
-					ROOT = {
-						capital_scope = {
-							distance = {
-								where = PREVPREV # Comparing the distance between ROOT's capital and the title in question
-								value < 650	# From  aprox.Venice to East Cyprus and from Venice to Gibraltar
-							}
-						}
+					distance = {
+						who = ROOT # Comparing the distance between ROOT's capital and the title in question
+						value < 650	# From  aprox.Venice to East Cyprus and from Venice to Gibraltar
 					}
 				}
 			}
@@ -247,9 +276,7 @@ coastal_republic = {
 		factor = 1
 
 		trigger = {
-			ROOT = {
-				ai_willing_to_attack = yes
-			}
+			ai_willing_to_attack = yes
 		}
 	}
 }
@@ -277,26 +304,31 @@ coastal_county_republic = {
 		# Attacker
 		ROOT = {
 			is_patrician = yes
-			NOT = { same_realm = FROM }
+
+			NOR = {
+				is_vassal_or_below_of = FROM
+				is_liege_or_above_of = FROM
+			}
 		}
 	}
 
 	can_use_title = {
 		real_tier = COUNT
 
-		location = {
-			is_coastal = yes
+		# Must control a city in this county
+		any_direct_de_jure_vassal_title = {
+			holding_type = city
 
-			county = { # city part of attacker's subrealm
-				any_direct_de_jure_vassal_title = {
-					holder_scope = {
-						OR = {
-							character = ROOT
-							is_vassal_or_below_of = ROOT
-						}
-					}
+			holder_scope = {
+				OR = {
+					character = ROOT
+					is_vassal_or_below_of = ROOT
 				}
 			}
+		}
+
+		location = {
+			is_coastal = yes
 
 			any_neighbor_province = {
 				trigger_if = { # part of attacker's realm
@@ -345,12 +377,19 @@ coastal_county_republic = {
 		# Attacker
 		ROOT = {
 			is_patrician = yes
+
+			NOR = {
+				is_vassal_or_below_of = FROM
+				is_liege_or_above_of = FROM
+			}
 		}
 	}
 
 	is_valid_title = {
 		# Must control a city in this county at all times
 		any_direct_de_jure_vassal_title = {
+			holding_type = city
+
 			holder_scope = {
 				OR = {
 					character = ROOT
@@ -507,6 +546,8 @@ embargo_cb = {
 				has_trade_post = yes
 
 				trade_post_owner = {
+					is_patrician = yes
+
 					OR = {
 						character = FROM
 						is_vassal_or_below_of = FROM
@@ -521,15 +562,17 @@ embargo_cb = {
 		ROOT = {
 			independent = yes
 			NOT = { has_embargo = FROM }
-		}
 
-		# Defender
-		FROM = {
-			OR = { # is (liege of) a merchant republic
-				is_merchant_republic = yes
+			any_realm_province = {
+				has_trade_post = yes
 
-				any_realm_lord = {
-					is_merchant_republic = yes
+				trade_post_owner = {
+					is_patrician = yes
+
+					OR = {
+						character = FROM
+						is_vassal_or_below_of = FROM
+					}
 				}
 			}
 		}
@@ -576,7 +619,7 @@ embargo_cb = {
 				NOT = { character = attacker }
 			}
 
-			prestige = -1000
+			prestige = -100
 		}
 
 		defender = {
@@ -652,10 +695,10 @@ embargo_cb = {
 		factor = 0.9
 
 		trigger = {
-			ROOT = {
-				# CK2Plus
-				ai_willing_to_attack = yes
+			# CK2Plus
+			ai_willing_to_attack = yes
 
+			ROOT = {
 				# The AI needs at least three trade posts to attack
 				any_realm_province = {
 					count >= 3
@@ -746,10 +789,14 @@ seize_trade_post = {
 				has_character_modifier = rep_tp_cd
 			}
 
+			# We cannot overtly attack much weaker Patricians in the same republic
 			trigger_if = {
-				limit = { same_realm = FROM }
+				limit = {
+					same_liege = FROM
+					is_merchant_republic = no
+					FROM = { is_patrician = yes }
+				}
 
-				# We cannot overtly attack much weaker Patricians in the same republic
 				num_of_trade_post_diff = {
 					character = FROM
 					value < 3
@@ -767,18 +814,22 @@ seize_trade_post = {
 
 			# CK2Plus
 			# Within range of the capital
-			ROOT = {
-				capital_scope = {
-					distance = {
-						where = PREVPREV # Comparing the distance between ROOT's capital and the title in question
-						value < 650	#  From aprox. Venice to East Cyprus and from Venice to Gibraltar
-					}
-				}
+			distance = {
+				who = ROOT # Comparing the distance between ROOT's capital and the title in question
+				value < 650	#  From aprox. Venice to East Cyprus and from Venice to Gibraltar
 			}
 		}
 
 		trade_post_owner = {
 			OR = {
+				character = FROM
+				is_vassal_or_below_of = FROM
+			}
+		}
+
+		# Can't hold trade posts inside another republic, enforced by hardcoding
+		holder_scope = {
+			NOR = {
 				character = FROM
 				is_vassal_or_below_of = FROM
 			}
@@ -793,6 +844,13 @@ seize_trade_post = {
 			NOR = {
 				is_vassal_or_below_of = FROM # Can't attack liege
 				is_liege_or_above_of = FROM # and vassals
+			}
+		}
+
+		holder_scope = {
+			NOR = {
+				character = FROM
+				is_vassal_or_below_of = FROM
 			}
 		}
 	}
@@ -920,9 +978,7 @@ seize_trade_post = {
 
 		# CK2Plus
 		trigger = {
-			ROOT = {
-				ai_willing_to_attack = yes
-			}
+			ai_willing_to_attack = yes
 		}
 
 		coronation_factor = yes

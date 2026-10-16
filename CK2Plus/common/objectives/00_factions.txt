@@ -6,7 +6,6 @@
 # The succession law factions have hard coded elements to ensure that the correct heir is shown in Plot and
 # Faction interfaces and that AI faction members vote for laws in accordance with the faction goal.
 # The valid tags correspond to the law name: faction_succ_seniority, faction_succ_primogeniture, etc.
-# (faction_succ_ultimogeniture is fully supported by the code, but not currently implemented)
 
 ###############
 # FACTIONS
@@ -35,9 +34,10 @@ faction_succ_seniority = {
 			religion_group = muslim
 			religion_group = indian_group
 			religion = celtic_pagan
-			in_faction = faction_succ_primogeniture
-			in_faction = faction_succ_feudal_elective
 			in_faction = faction_succ_gavelkind
+			in_faction = faction_succ_primogeniture
+			in_faction = faction_succ_ultimogeniture
+			in_faction = faction_succ_feudal_elective
 			in_faction = faction_separatist
 			has_non_aggression_pact_with = liege
 
@@ -51,12 +51,7 @@ faction_succ_seniority = {
 			is_feudal = yes
 			has_imperial_government_trigger = no
 			is_vice_royalty = no
-
-			NOR = {
-				any_demesne_title = {
-					temporary = yes
-				}
-			}
+			in_revolt = no
 		}
 
 		trigger_if = {
@@ -161,9 +156,10 @@ faction_succ_seniority = {
 			trigger_if = {
 				limit = {
 					OR = {
-						in_faction = faction_succ_primogeniture
-						in_faction = faction_succ_feudal_elective
 						in_faction = faction_succ_gavelkind
+						in_faction = faction_succ_primogeniture
+						in_faction = faction_succ_ultimogeniture
+						in_faction = faction_succ_feudal_elective
 						in_faction = faction_separatist
 					}
 				}
@@ -700,13 +696,13 @@ faction_succ_seniority = {
 
 				opinion = {
 					who = liege
-					value < 0
+					value < 40
 				}
 			}
 			trigger_else = {
 				opinion = {
 					who = liege
-					value < 40
+					value < 0
 				}
 			}
 		}
@@ -893,9 +889,10 @@ faction_succ_primogeniture = {
 			religion_group = muslim
 			religion = celtic_pagan
 			has_non_aggression_pact_with = liege
+			in_faction = faction_succ_gavelkind
+			in_faction = faction_succ_ultimogeniture
 			in_faction = faction_succ_seniority
 			in_faction = faction_succ_feudal_elective
-			in_faction = faction_succ_gavelkind
 			in_faction = faction_separatist
 
 			has_opinion_modifier = {
@@ -907,13 +904,8 @@ faction_succ_primogeniture = {
 		liege = {
 			is_feudal = yes
 			is_vice_royalty = no
+			in_revolt = no
 			NOT = { government = chinese_imperial_government }
-
-			NOT = {
-				any_demesne_title = {
-					temporary = yes
-				}
-			}
 		}
 
 		trigger_if = {
@@ -994,9 +986,10 @@ faction_succ_primogeniture = {
 			trigger_if = {
 				limit = {
 					OR = {
+						in_faction = faction_succ_gavelkind
+						in_faction = faction_succ_ultimogeniture
 						in_faction = faction_succ_seniority
 						in_faction = faction_succ_feudal_elective
-						in_faction = faction_succ_gavelkind
 						in_faction = faction_separatist
 					}
 				}
@@ -1007,9 +1000,6 @@ faction_succ_primogeniture = {
 			NOR = {
 				religion_group = muslim
 				religion = celtic_pagan
-				in_faction = faction_succ_seniority
-				in_faction = faction_succ_feudal_elective
-				in_faction = faction_succ_gavelkind
 				has_non_aggression_pact_with = liege
 
 				has_opinion_modifier = {
@@ -1379,9 +1369,10 @@ faction_succ_primogeniture = {
 			trigger_if = {
 				limit = {
 					OR = {
-						in_faction = faction_succ_feudal_elective
-						in_faction = faction_succ_seniority
 						in_faction = faction_succ_gavelkind
+						in_faction = faction_succ_seniority
+						in_faction = faction_succ_ultimogeniture
+						in_faction = faction_succ_feudal_elective
 
 						# Either has to be the primogeniture heir or the primogeniture heir is someone I like better than my liege
 						FROMFROM = {
@@ -1651,6 +1642,712 @@ faction_succ_primogeniture = {
 	}
 }
 
+# Institute Succession by Ultimogeniture
+faction_succ_ultimogeniture = {
+	type = liege_titles
+
+	warning_level = 0.70
+
+	# Plotter scope
+	potential = {
+		always = no # CleanSlate: Added by CleanSlate, therefore disabled. Remove this line to enable.
+		is_landed = yes
+		NOT = { religion_group = muslim }
+		higher_real_tier_than = BARON
+		is_adult = yes
+		independent = no
+		prisoner = no
+		is_incapable = no
+		holy_order = no
+
+		NOR = {
+			in_faction = faction_succ_gavelkind
+			in_faction = faction_succ_seniority
+			in_faction = faction_succ_primogeniture
+			in_faction = faction_succ_feudal_elective
+			has_character_modifier = faction_succ_ultimogeniture_ultimatum_timer
+
+			has_opinion_modifier = {
+				name = opinion_coerced_into_leaving_faction
+				who = liege
+			}
+		}
+
+		liege = {
+			is_feudal = yes
+			is_vice_royalty = no
+			in_revolt = no
+
+			# Hordes should have less problems with this type of faction until ca 1350
+			trigger_if = {
+				limit = {
+					has_horde_culture = yes
+					culture = ROOT
+					religion = ROOT
+				}
+
+				year >= 1350
+			}
+		}
+
+		trigger_if = {
+			limit = {
+				has_dlc = "Conclave"
+				is_voter = yes
+				is_tribal = no
+				is_nomadic = no
+			}
+
+			liege = {
+				OR = {
+					has_council = no
+					is_council_content = no
+					has_law = war_voting_power_0
+				}
+			}
+		}
+		trigger_else_if = {
+			limit = {
+				# If affected by a Crown Law title not held by my liege
+				crownlaw_title = {
+					holder_scope = {
+						NOT = { is_liege_of = ROOT }
+					}
+				}
+			}
+
+			crownlaw_title = {
+				# The Crown Law title allows vassal infighting
+				NOR = {
+					has_law = crown_authority_2
+					has_law = crown_authority_3
+					has_law = crown_authority_4
+				}
+			}
+		}
+	}
+
+	# Target scope
+	# ROOT is title
+	# FROM is faction creator
+	allow = {
+		is_law_potential = succ_ultimogeniture
+		is_law_allowed = succ_ultimogeniture
+		NOT = { has_law = succ_ultimogeniture }
+
+		OR = {
+			is_primary_holder_title = yes
+			higher_real_tier_than = DUKE
+		}
+
+		# Isn't locked into elective succession
+		trigger_if = {
+			limit = { holder_scope = { has_law = succession_voting_power_1 } }
+
+			NOR = {
+				has_law = succ_feudal_elective
+				has_law = succ_hre_elective
+			}
+		}
+
+		holder_scope = {
+			NOT = {
+				any_war = {
+					war_title = ROOT
+					using_cb = change_ultimogeniture_succession_law
+				}
+			}
+		}
+	}
+
+	# Faction member scope
+	# ROOT = joiner
+	# FROM = target
+	allow_join = {
+		ROOT = {
+			is_landed = yes
+			NOT = { religion_group = muslim }
+			is_adult = yes
+			independent = no
+			prisoner = no
+			is_incapable = no
+
+			NOR = {
+				in_faction = faction_succ_gavelkind
+				in_faction = faction_succ_seniority
+				in_faction = faction_succ_primogeniture
+				in_faction = faction_succ_feudal_elective
+				has_character_modifier = faction_succ_ultimogeniture_ultimatum_timer
+
+				has_opinion_modifier = {
+					name = opinion_coerced_into_leaving_faction
+					who = liege
+				}
+			}
+
+			trigger_if = {
+				limit = {
+					has_dlc = "Conclave"
+					is_voter = yes
+					is_tribal = no
+					is_nomadic = no
+				}
+
+				liege = {
+					OR = {
+						has_council = no
+						is_council_content = no
+						has_law = war_voting_power_0
+					}
+				}
+			}
+		}
+	}
+
+	# AI creation weight
+	# FROM is faction creator
+	# ROOT is title scope
+	chance = {
+		factor = 1
+
+		trigger = {
+			would_be_heir_under_law = {
+				who = FROM
+				law = ultimogeniture
+			}
+
+			FROM = {
+				in_seclusion = no
+				preparing_invasion = no
+				NOT = { is_married = liege }
+
+				# To stay in the faction
+				trigger_if = {
+					limit = { leads_faction = faction_succ_ultimogeniture }
+
+					opinion = {
+						who = liege
+						value < 75
+					}
+				}
+				# To join the faction
+				trigger_else = {
+					opinion = {
+						who = liege
+						value < 50
+					}
+				}
+
+				trigger_if = {
+					limit = {
+						OR = {
+							trait = envious
+							trait = deceitful
+							trait = ambitious
+						}
+					}
+
+					opinion = {
+						who = liege
+						value < 50
+					}
+				}
+				trigger_else = {
+					opinion = {
+						who = liege
+						value < 25
+					}
+				}
+			}
+
+			current_heir = {
+				NOT = { character = FROM }
+			}
+		}
+
+		mult_modifier = {
+			factor = 0.2
+			FROM = { pacifist = yes }
+		}
+
+		mult_modifier = {
+			factor = 0.5
+
+			holder_scope = {
+				any_owned_bloodline = {
+					has_bloodline_flag = bloodline_less_factions
+					bloodline_is_active_for = PREV
+				}
+			}
+		}
+
+		mult_modifier = {
+			factor = 1.5
+
+			FROM = {
+				opinion = {
+					who = liege
+					value < 0
+				}
+			}
+		}
+
+		mult_modifier = {
+			factor = 2.0
+
+			FROM = {
+				opinion = {
+					who = liege
+					value < -50
+				}
+			}
+		}
+
+		mult_modifier = {
+			factor = 4.0
+
+			FROM = {
+				opinion = {
+					who = liege
+					value < -75
+				}
+			}
+		}
+
+		mult_modifier = {
+			factor = 0.01
+			FROM = { trait = content }
+		}
+
+		mult_modifier = {
+			factor = 0.01
+			FROM = { trait = imbecile }
+		}
+
+		mult_modifier = {
+			factor = 0.1
+			FROM = { trait = inbred }
+		}
+
+		mult_modifier = {
+			factor = 0.1
+			FROM = { trait = craven }
+		}
+
+		mult_modifier = {
+			factor = 0.2
+			FROM = { is_dumb_trigger = yes }
+		}
+
+		mult_modifier = {
+			factor = 0.5
+			FROM = { trait = kind }
+		}
+
+		mult_modifier = {
+			factor = 0.5
+			FROM = { trait = charitable }
+		}
+
+		mult_modifier = {
+			factor = 0.5
+			FROM = { trait = honest }
+		}
+
+		mult_modifier = {
+			factor = 0.75
+			FROM = { trait = humble }
+		}
+
+		mult_modifier = {
+			factor = 0.75
+			FROM = { trait = just }
+		}
+
+		mult_modifier = {
+			factor = 1.5
+			FROM = { trait = proud }
+		}
+
+		mult_modifier = {
+			factor = 1.5
+			FROM = { trait = brave }
+		}
+
+		mult_modifier = {
+			factor = 1.5
+			FROM = { trait = arbitrary }
+		}
+
+		mult_modifier = {
+			factor = 2.0
+			FROM = { trait = envious }
+		}
+
+		mult_modifier = {
+			factor = 2.0
+			FROM = { trait = greedy }
+		}
+
+		mult_modifier = {
+			factor = 2.0
+			FROM = { trait = impaler }
+		}
+
+		mult_modifier = {
+			factor = 2.0
+			FROM = { trait = deceitful }
+		}
+
+		mult_modifier = {
+			factor = 4.0
+			FROM = { trait = ambitious }
+		}
+	}
+
+	# AI membership weight
+	# ROOT is the prospective member
+	# FROM is the faction leader
+	# FROMFROM is the target title or character
+	membership = {
+		factor = 1
+
+		trigger = {
+			in_seclusion = no
+			preparing_invasion = no
+
+			# The following require spymaster coercion to overrule
+			trigger_if = {
+				limit = {
+					OR = {
+						in_faction = faction_succ_feudal_elective
+						in_faction = faction_succ_seniority
+						in_faction = faction_succ_primogeniture
+						in_faction = faction_succ_gavelkind
+
+						# Hordes should have less problems with this type of faction until ca 1350
+						liege = {
+							year < 1350
+							has_horde_culture = yes
+							culture = ROOT
+							religion = ROOT
+						}
+
+						# I'm the current heir
+						is_heir = FROMFROM
+
+						FROMFROM = {
+							heir_under_ultimogeniture_law = {
+								ROOT = {
+									# To stay in the faction
+									trigger_if = {
+										limit = { in_faction = faction_succ_ultimogeniture }
+
+										opinion_diff = {
+											first = liege
+											second = PREV
+											value >= 10
+											as_if_liege = yes
+										}
+									}
+									# To join the faction
+									trigger_else = {
+										opinion_diff = {
+											first = liege
+											second = PREV
+											value >= -10 # I don't like the pretender enough
+											as_if_liege = yes
+										}
+									}
+								}
+							}
+						}
+
+						# To stay in the faction
+						trigger_if = {
+							limit = { in_faction = faction_succ_ultimogeniture }
+
+							opinion = {
+								who = liege
+								value >= 75
+							}
+						}
+						# To join the faction
+						trigger_else = {
+							opinion = {
+								who = liege
+								value >= 50
+							}
+						}
+
+						trigger_if = {
+							limit = {
+								OR = {
+									trait = envious
+									trait = deceitful
+									trait = ambitious
+								}
+							}
+
+							opinion = {
+								who = liege
+								value >= 50
+							}
+						}
+						trigger_else = {
+							opinion = {
+								who = liege
+								value >= 25
+							}
+						}
+
+						# Try to exclude people who should rather support a claimant
+						# Remember: the faction leader is also the person who would inherit under this law
+						AND = {
+							FROMFROM = {
+								heir_under_ultimogeniture_law = {
+									NAND = {
+										culture = ROOT
+										religion = ROOT
+									}
+								}
+							}
+
+							liege = {
+								any_demesne_title = {
+									OR = {
+										is_primary_holder_title = yes
+										higher_real_tier_than = DUKE
+									}
+
+									ROOT = {
+										primary_title = {
+											de_jure_liege_or_above = PREVPREV
+										}
+									}
+
+									any_claimant = {
+										culture = ROOT
+										religion = ROOT
+									}
+								}
+							}
+						}
+					}
+				}
+
+				has_opinion_modifier = {
+					name = opinion_coerced_into_joining_faction
+					who = FROM
+				}
+			}
+		}
+
+		mult_modifier = {
+			factor = 1000
+
+			has_opinion_modifier = {
+				name = opinion_coerced_into_joining_faction
+				who = FROM
+			}
+		}
+
+		mult_modifier = {
+			factor = 0.5
+
+			liege = {
+				any_owned_bloodline = {
+					has_bloodline_flag = bloodline_less_factions
+					bloodline_is_active_for = PREV
+				}
+			}
+		}
+
+		mult_modifier = {
+			factor = 0.2
+
+			pacifist = yes
+
+			NOT = {
+				has_opinion_modifier = {
+					name = opinion_coerced_into_joining_faction
+					who = FROM
+				}
+			}
+		}
+
+		mult_modifier = {
+			factor = 2
+
+			# I like the ultmogeniture heir a LOT more than my liege
+			FROMFROM = {
+				heir_under_ultimogeniture_law = {
+					ROOT = {
+						opinion_diff = {
+							first = PREV
+							second = liege
+							value >= 25
+							as_if_liege = yes
+						}
+					}
+				}
+			}
+		}
+
+		mult_modifier = {
+			factor = 0.01
+
+			trait = content
+
+			NOT = {
+				has_opinion_modifier = {
+					name = opinion_coerced_into_joining_faction
+					who = FROM
+				}
+			}
+		}
+
+		mult_modifier = {
+			factor = 0.01
+
+			trait = imbecile
+
+			NOT = {
+				has_opinion_modifier = {
+					name = opinion_coerced_into_joining_faction
+					who = FROM
+				}
+			}
+		}
+
+		mult_modifier = {
+			factor = 0.1
+
+			trait = inbred
+
+			NOT = {
+				has_opinion_modifier = {
+					name = opinion_coerced_into_joining_faction
+					who = FROM
+				}
+			}
+		}
+
+		mult_modifier = {
+			factor = 0.1
+
+			trait = craven
+
+			NOT = {
+				has_opinion_modifier = {
+					name = opinion_coerced_into_joining_faction
+					who = FROM
+				}
+			}
+		}
+
+		mult_modifier = {
+			factor = 0.2
+
+			is_dumb_trigger = yes
+
+			NOT = {
+				has_opinion_modifier = {
+					name = opinion_coerced_into_joining_faction
+					who = FROM
+				}
+			}
+		}
+
+		mult_modifier = {
+			factor = 0.5
+			trait = kind
+		}
+
+		mult_modifier = {
+			factor = 0.5
+			trait = charitable
+		}
+
+		mult_modifier = {
+			factor = 0.5
+			trait = honest
+		}
+
+		mult_modifier = {
+			factor = 0.75
+			trait = humble
+		}
+
+		mult_modifier = {
+			factor = 0.75
+			trait = just
+		}
+
+		mult_modifier = {
+			factor = 1.5
+			trait = proud
+		}
+
+		mult_modifier = {
+			factor = 1.5
+			trait = brave
+		}
+
+		mult_modifier = {
+			factor = 1.5
+			trait = arbitrary
+		}
+
+		mult_modifier = {
+			factor = 2.0
+			trait = envious
+		}
+
+		mult_modifier = {
+			factor = 2.0
+			trait = greedy
+		}
+
+		mult_modifier = {
+			factor = 2.0
+			trait = impaler
+		}
+
+		mult_modifier = {
+			factor = 2.0
+			trait = deceitful
+		}
+
+		mult_modifier = {
+			factor = 4.0
+			trait = ambitious
+		}
+	}
+
+	success = {
+		has_law = succ_ultimogeniture
+	}
+
+	effect = {
+		FROM = {
+			any_faction_backer = {
+				faction = faction_succ_ultimogeniture
+
+				reverse_opinion = {
+					name = opinion_grateful
+					who = FROM
+					years = 5
+				}
+			}
+		}
+	}
+
+	abort = {
+		always = no	# Factions will abort if the Potential or Allow trigger is no longer valid
+	}
+}
+
 # Institute Succession by Gavelkind
 faction_succ_gavelkind = {
 	type = liege_titles
@@ -1675,6 +2372,7 @@ faction_succ_gavelkind = {
 			religion = celtic_pagan
 			in_faction = faction_succ_seniority
 			in_faction = faction_succ_primogeniture
+			in_faction = faction_succ_ultimogeniture
 			in_faction = faction_succ_feudal_elective
 			in_faction = faction_separatist
 			has_non_aggression_pact_with = liege
@@ -1697,12 +2395,7 @@ faction_succ_gavelkind = {
 
 			is_vice_royalty = no
 			has_imperial_government_trigger = no
-
-			NOT = {
-				any_demesne_title = {
-					temporary = yes
-				}
-			}
+			in_revolt = no
 		}
 
 		trigger_if = {
@@ -1764,9 +2457,10 @@ faction_succ_gavelkind = {
 			trigger_if = {
 				limit = {
 					OR = {
-						in_faction = faction_succ_primogeniture
-						in_faction = faction_succ_feudal_elective
 						in_faction = faction_succ_seniority
+						in_faction = faction_succ_primogeniture
+						in_faction = faction_succ_ultimogeniture
+						in_faction = faction_succ_feudal_elective
 						in_faction = faction_separatist
 					}
 				}
@@ -2070,6 +2764,33 @@ faction_succ_gavelkind = {
 						}
 					}
 				}
+
+				# Removed, we want Vassals to start Gavelkind factions in general
+				# OR = {
+				# 	# My liege has another title of this tier (so we can split the demesne)
+				# 	any_demesne_title = {
+				# 		real_tier = PREVPREV
+				# 		NOT = { title = PREVPREV }
+				# 	}
+				#
+				# 	# I'm a non-bastard child in the line of succession or a pretender (so I'll get something under gavelkind)
+				# 	FROM = {
+				# 		is_child_of = PREV
+				# 		NOT = { trait = bastard }
+				#
+				# 		OR = {
+				# 			is_pretender = yes # Always checks against ROOT!
+				#
+				# 			trigger_if = {
+				# 				limit = { is_female = yes }
+				# 				ROOT = { NOT = { has_law = agnatic_succession } }
+				# 			}
+				# 			trigger_else = {
+				# 				ROOT = { NOT = { has_law = enatic_succession } }
+				# 			}
+				# 		}
+				# 	}
+				# }
 			}
 
 			trigger_if = {
@@ -2085,29 +2806,6 @@ faction_succ_gavelkind = {
 				}
 			}
 		}
-
-		# mult_modifier = { # Removed, we want Vassals to start Gavelkind factions in general
-		#	factor = 0
-		#	# Is not a child of the title holder, and no need to split the demesne
-		#	holder_scope = {
-		#		NOT = {
-		#			any_demesne_title = {
-		#				tier = PREVPREV
-		#				NOT = { title = PREVPREV }
-		#			}
-		#		}
-		#		FROM = {
-		#			OR = {
-		#				NOT = { is_child_of = PREV }
-		#				trait = bastard
-		#				AND = {
-		#					is_female = yes
-		#					is_pretender = no
-		#				}
-		#			}
-		#		}
-		#	}
-		# }
 
 		mult_modifier = {
 			factor = 0.2
@@ -2321,9 +3019,10 @@ faction_succ_gavelkind = {
 			trigger_if = {
 				limit = {
 					OR = {
-						in_faction = faction_succ_feudal_elective
 						in_faction = faction_succ_seniority
 						in_faction = faction_succ_primogeniture
+						in_faction = faction_succ_ultimogeniture
+						in_faction = faction_succ_feudal_elective
 
 						# I'm the current heir
 						is_heir = FROMFROM
@@ -2653,9 +3352,10 @@ faction_succ_feudal_elective = {
 		NOR = {
 			religion_group = muslim
 			religion = celtic_pagan
+			in_faction = faction_succ_gavelkind
 			in_faction = faction_succ_seniority
 			in_faction = faction_succ_primogeniture
-			in_faction = faction_succ_gavelkind
+			in_faction = faction_succ_ultimogeniture
 			in_faction = faction_separatist
 			has_non_aggression_pact_with = liege
 
@@ -2672,7 +3372,7 @@ faction_succ_feudal_elective = {
 		liege = {
 			is_feudal = yes
 			is_vice_royalty = no
-			NOT = { government = chinese_imperial_government }
+			in_revolt = no
 
 			trigger_if = {
 				limit = { has_dlc = "Conclave" }
@@ -2680,7 +3380,7 @@ faction_succ_feudal_elective = {
 				primary_title = {
 					OR = {
 						title = e_hre
-						has_title_flag = alternate_hre
+						title = event_target:alternate_hre
 
 						AND = {
 							has_law = law_voting_power_1
@@ -2692,12 +3392,6 @@ faction_succ_feudal_elective = {
 							has_law = war_voting_power_1
 						}
 					}
-				}
-			}
-
-			NOT = {
-				any_demesne_title = {
-					temporary = yes
 				}
 			}
 		}
@@ -2780,9 +3474,10 @@ faction_succ_feudal_elective = {
 			trigger_if = {
 				limit = {
 					OR = {
-						in_faction = faction_succ_primogeniture
-						in_faction = faction_succ_seniority
 						in_faction = faction_succ_gavelkind
+						in_faction = faction_succ_seniority
+						in_faction = faction_succ_primogeniture
+						in_faction = faction_succ_ultimogeniture
 						in_faction = faction_separatist
 					}
 				}
@@ -2794,9 +3489,6 @@ faction_succ_feudal_elective = {
 				religion_group = muslim
 				religion_group = indian_group
 				religion = celtic_pagan
-				in_faction = faction_succ_seniority
-				in_faction = faction_succ_primogeniture
-				in_faction = faction_succ_gavelkind
 
 				has_opinion_modifier = {
 					name = opinion_coerced_into_leaving_faction
@@ -3658,22 +4350,17 @@ faction_lower_crown_authority = {
 
 		liege = {
 			is_feudal = yes
+			in_revolt = no
 
 			# Hordes should have less problems with this type of faction until ca 1350
 			trigger_if = {
-				limit = { has_horde_culture = yes }
-
-				NAND = {
-					year < 1350
+				limit = {
+					has_horde_culture = yes
 					culture = ROOT
 					religion = ROOT
 				}
-			}
 
-			NOT = {
-				any_demesne_title = {
-					temporary = yes
-				}
+				year >= 1350
 			}
 		}
 	}
@@ -4296,31 +4983,22 @@ faction_lower_tribal_organization = {
 		liege = {
 			is_tribal = yes
 			independent = yes
-
-			NOT = {
-				any_demesne_title = {
-					temporary = yes
-				}
-			}
 		}
 
 		trigger_if = {
-			limit = { has_dlc = "Conclave" }
+			limit = {
+				has_dlc = "Conclave"
+				is_voter = yes
+				is_tribal = no
+			}
 
-			OR = {
-				is_voter = no
-				is_nomadic = yes
-
-				liege = {
-					NAND = {
-						is_council_content = yes
-						has_law = war_voting_power_1
-					}
+			liege = {
+				OR = {
+					has_council = no
+					is_council_content = no
+					has_law = war_voting_power_0
 				}
 			}
-		}
-		trigger_else = {
-			is_tribal = yes
 		}
 	}
 
@@ -4354,22 +5032,19 @@ faction_lower_tribal_organization = {
 			is_incapable = no
 
 			trigger_if = {
-				limit = { has_dlc = "Conclave" }
+				limit = {
+					has_dlc = "Conclave"
+					is_voter = yes
+					is_tribal = no
+				}
 
-				OR = {
-					is_voter = no
-					is_nomadic = yes
-
-					liege = {
-						NAND = {
-							is_council_content = yes
-							has_law = war_voting_power_1
-						}
+				liege = {
+					OR = {
+						has_council = no
+						is_council_content = no
+						has_law = war_voting_power_0
 					}
 				}
-			}
-			trigger_else = {
-				is_tribal = yes
 			}
 
 			NOR = {
@@ -4939,17 +5614,6 @@ faction_independence = {
 			}
 		}
 
-		trigger_if = {
-			limit = { ai = no }
-
-			OR = {
-				is_feudal = yes
-				is_tribal = yes
-				is_nomadic = yes
-				higher_real_tier_than = COUNT
-			}
-		}
-
 		liege = {
 			independent = yes
 
@@ -4961,29 +5625,22 @@ faction_independence = {
 
 			## Hordes should have less problems with this type of faction until ca 1350
 			trigger_if = {
-				limit = { has_horde_culture = yes }
-
-				NAND = {
-					year < 1350
+				limit = {
+					has_horde_culture = yes
 					culture = ROOT
 					religion = ROOT
 				}
+
+				year >= 1350
 			}
 
 			# Not allowed to start factions like this if our capital borders the liege's capital
 			capital_scope = {
-				any_neighbor_province = {
-					ROOT = {
-						capital_scope = {
-							NOT = { province = PREVPREV }
-						}
+				NOT = {
+					any_neighbor_province = {
+						owned_by = ROOT
+						is_capital = yes
 					}
-				}
-			}
-
-			NOT = {
-				any_demesne_title = {
-					temporary = yes
 				}
 			}
 		}
@@ -5018,12 +5675,19 @@ faction_independence = {
 			}
 		}
 
-		# No independence factions in merchant republics
 		trigger_if = {
 			limit = { is_patrician = yes }
 
+			# No independence factions in merchant republics
+			is_merchant_republic = yes
+
+			# Can no longer be a merchant republic when becoming
+			# a direct vassal of another merchant republic
 			liege = {
-				is_merchant_republic = no
+				trigger_if = {
+					limit = { independent = no }
+					liege_before_war = { is_merchant_republic = no }
+				}
 			}
 		}
 	}
@@ -5088,8 +5752,15 @@ faction_independence = {
 			trigger_if = {
 				limit = { is_patrician = yes }
 
+				is_merchant_republic = yes
+
+				# Can no longer be a merchant republic when becoming
+				# a direct vassal of another merchant republic
 				liege = {
-					is_merchant_republic = no
+					trigger_if = {
+						limit = { independent = no }
+						liege_before_war = { is_merchant_republic = no }
+					}
 				}
 			}
 		}
@@ -5452,19 +6123,15 @@ faction_independence = {
 			in_seclusion = no
 			preparing_invasion = no
 
-			NOT = {
-				# Hordes should have less problems with this type of faction until ca 1350
-				liege = {
-					year < 1350
+			# Hordes should have less problems with this type of faction until ca 1350
+			trigger_if = {
+				limit = {
 					has_horde_culture = yes
 					culture = ROOT
 					religion = ROOT
 				}
-			}
 
-			trigger_if = {
-				limit = { is_patrician = yes }
-				is_merchant_republic = no
+				year >= 1350
 			}
 
 			# The following require spymaster coercion to overrule
@@ -5515,12 +6182,7 @@ faction_independence = {
 
 						AND = {
 							lower_real_tier_than = KING
-
-							trigger_if = {
-								limit = { religion_group = pagan_group }
-								is_reformed_religion = yes
-							}
-
+							is_not_unreformed_pagan_trigger = yes
 							culture_group = liege
 							religion_group = liege
 
@@ -5946,33 +6608,28 @@ faction_claimant = {
 
 		liege = {
 			is_vice_royalty = no
+			in_revolt = no
 
 			OR = {
 				is_feudal = yes
 				is_tribal = yes
 				is_nomadic = yes
 			}
-
-			NOT = {
-				any_demesne_title = {
-					temporary = yes
-				}
-			}
 		}
 
 		trigger_if = {
-			limit = { has_dlc = "Conclave" }
+			limit = {
+				has_dlc = "Conclave"
+				is_voter = yes
+				is_tribal = no
+				is_nomadic = no
+			}
 
-			OR = {
-				is_voter = no
-				is_nomadic = yes
-				is_tribal = yes
-
-				liege = {
-					NAND = {
-						is_council_content = yes
-						has_law = war_voting_power_1
-					}
+			liege = {
+				OR = {
+					has_council = no
+					is_council_content = no
+					has_law = war_voting_power_0
 				}
 			}
 		}
@@ -6048,24 +6705,20 @@ faction_claimant = {
 			trigger_if = {
 				limit = { is_female = no }
 
-				NOR = {
-					has_religion_feature = religion_matriarchal
+				religion_is_matriarchal_trigger = no
 
-					ROOT = {
-						succ_law_title = {
-							has_law = enatic_succession
-						}
+				ROOT = {
+					succ_law_title = {
+						NOT = { has_law = enatic_succession }
 					}
 				}
 			}
 			trigger_else = {
-				NOR = {
-					has_religion_feature = religion_patriarchal
+				religion_is_patriarchal_trigger = no
 
-					ROOT = {
-						succ_law_title = {
-							has_law = agnatic_succession
-						}
+				ROOT = {
+					succ_law_title = {
+						NOT = {	has_law = agnatic_succession }
 					}
 				}
 			}
@@ -6073,8 +6726,7 @@ faction_claimant = {
 			NOR = {
 				has_landed_title = PREV
 				is_liege_or_above_of = FROM
-				has_landed_title = k_papacy
-				has_landed_title = d_fraticelli
+				is_pope = yes
 			}
 
 			# The Pope, static mercs and holy orders shouldn't get titles at or above their tier
@@ -6186,11 +6838,11 @@ faction_claimant = {
 
 				# Religious dogma check
 				trigger_if = {
-					limit = { has_religion_feature = religion_patriarchal }
+					limit = { religion_is_patriarchal_trigger = yes }
 					new_character = { is_female = no }
 				}
 				trigger_else_if = {
-					limit = { has_religion_feature = religion_matriarchal }
+					limit = { religion_is_matriarchal_trigger = yes }
 					new_character = { is_female = yes }
 				}
 
@@ -6353,27 +7005,38 @@ faction_claimant = {
 					dynasty = FROM
 				}
 			}
-		}
 
-		# mult_modifier = {
-		#	factor = 0
-		#	NOT = { has_law = succ_feudal_elective }
-		#	holder_scope = {
-		#		culture_group = FROM
-		#		religion = FROM
-		#
-		#		any_war = {
-		#			war_title = ROOT
-		#			defender = { character = THIS }
-		#			attacker = {
-		#				OR = {
-		#					NOT = { culture_group = FROM }
-		#					NOT = { religion = FROM }
-		#				}
-		#			}
-		#		}
-		#	}
-		# }
+			# Protect elective realms against outsiders
+			# trigger_if = {
+			# 	limit = {
+			# 		holder_scope = {
+			# 			# Liege is quite like me
+			# 			culture_group = FROM
+			# 			religion = FROM
+			#
+			# 			# And is defending this title
+			# 			any_war = {
+			# 				war_title = ROOT
+			# 				defender = { character = PREVPREV }
+			#
+			# 				# Against some not quite like us
+			# 				attacker = {
+			# 					NAND = {
+			# 						culture_group = FROM
+			# 						religion = FROM
+			# 					}
+			# 				}
+			# 			}
+			# 		}
+			# 	}
+			#
+			# 	OR = {
+			# 		has_law = succ_feudal_elective
+			# 		has_law = succ_hre_elective
+			# 		has_law = succ_byzantine_elective
+			# 	}
+			# }
+		}
 
 		mult_modifier = {
 			factor = 0.1
@@ -6424,7 +7087,7 @@ faction_claimant = {
 			factor = 3
 
 			FROM = {
-				has_religion_feature = religion_patriarchal
+				religion_is_patriarchal_trigger = yes
 				is_female = yes
 			}
 
@@ -6437,7 +7100,7 @@ faction_claimant = {
 			factor = 3
 
 			FROM = {
-				has_religion_feature = religion_matriarchal
+				religion_is_matriarchal_trigger = yes
 				is_female = no
 			}
 
@@ -6454,21 +7117,16 @@ faction_claimant = {
 				NOT = { character = FROM }
 			}
 
+			FROM = {
+				religion_is_matriarchal_trigger = no
+				religion_is_equal_trigger = no
+			}
+
 			trigger_if = {
 				limit = { has_dlc = "Conclave" }
 
-				NOR = {
-					FROM = {
-						OR = {
-							has_religion_feature = religion_matriarchal
-							has_religion_feature = religion_equal
-							has_religion_feature = religion_feature_bon
-						}
-					}
-
-					has_law = status_of_women_4
-					has_gender_equal_game_rule_trigger = yes
-				}
+				NOT = { has_law = status_of_women_4 }
+				has_gender_equal_game_rule_trigger = no
 			}
 		}
 
@@ -6550,7 +7208,11 @@ faction_claimant = {
 		mult_modifier = {
 			factor = 0.5
 
-			title = e_byzantium
+			OR = {
+				title = e_byzantium
+				title = event_target:alternate_byz
+			}
+
 			FROM = { culture_group = byzantine }
 
 			new_character = {
@@ -6561,7 +7223,11 @@ faction_claimant = {
 		mult_modifier = {
 			factor = 2.0
 
-			title = e_byzantium
+			OR = {
+				title = e_byzantium
+				title = event_target:alternate_byz
+			}
+
 			FROM = { culture_group = byzantine }
 
 			new_character = {
@@ -6572,7 +7238,11 @@ faction_claimant = {
 		mult_modifier = {
 			factor = 0.5
 
-			title = e_byzantium
+			OR = {
+				title = e_byzantium
+				title = event_target:alternate_byz
+			}
+
 			FROM = { culture_group = byzantine }
 
 			holder_scope = {
@@ -6583,7 +7253,11 @@ faction_claimant = {
 		mult_modifier = {
 			factor = 2.0
 
-			title = e_byzantium
+			OR = {
+				title = e_byzantium
+				title = event_target:alternate_byz
+			}
+
 			FROM = { culture_group = byzantine }
 
 			holder_scope = {
@@ -6859,6 +7533,24 @@ faction_claimant = {
 								}
 							}
 						}
+
+						# Protect elective realms against outsiders
+						# liege = {
+						#	culture_group = ROOT
+						#	religion = ROOT
+						#
+						#	any_war = {
+						#		war_title = FROMFROM
+						#		defender = { character = PREVPREV }
+						#
+						#		attacker = {
+						#			NAND = {
+						#				culture_group = ROOT
+						#				religion = ROOT
+						#			}
+						#		}
+						#	}
+						# }
 					}
 				}
 
@@ -6868,32 +7560,6 @@ faction_claimant = {
 				}
 			}
 		}
-
-		# mult_modifier = {
-		#	factor = 0
-		#	liege = {
-		#		culture_group = ROOT
-		#		religion = ROOT
-		#
-		#		any_war = {
-		#			war_title = FROMFROM
-		#			defender = { character = THIS }
-		#
-		#			attacker = {
-		#				NAND = {
-		#					culture_group = ROOT
-		#					religion = ROOT
-		#				}
-		#			}
-		#		}
-		#	}
-		#	NOT = {
-		#		has_opinion_modifier = {
-		#			who = FROM
-		#			modifier = opinion_coerced_into_joining_faction
-		#		}
-		#	}
-		# }
 
 		mult_modifier = {
 			factor = 0.5
@@ -6961,15 +7627,14 @@ faction_claimant = {
 				NOT = { character = ROOT }
 			}
 
+			religion_is_matriarchal_trigger = no
+			religion_is_equal_trigger = no
+
 			trigger_if = {
 				limit = { has_dlc = "Conclave" }
 
-				NOR = {
-					has_law = status_of_women_4
-					has_religion_feature = religion_equal
-					has_religion_feature = religion_matriarchal
-					has_gender_equal_game_rule_trigger = yes
-				}
+				NOT = { has_law = status_of_women_4 }
+				has_gender_equal_game_rule_trigger = no
 			}
 
 			NOT = {
@@ -7001,7 +7666,10 @@ faction_claimant = {
 			culture_group = byzantine
 
 			FROMFROM = {
-				title = e_byzantium
+				OR = {
+					title = e_byzantium
+					title = event_target:alternate_byz
+				}
 			}
 
 			new_character = {
@@ -7015,7 +7683,10 @@ faction_claimant = {
 			culture_group = byzantine
 
 			FROMFROM = {
-				title = e_byzantium
+				OR = {
+					title = e_byzantium
+					title = event_target:alternate_byz
+				}
 			}
 
 			liege = {
@@ -7029,7 +7700,10 @@ faction_claimant = {
 			culture_group = byzantine
 
 			FROMFROM = {
-				title = e_byzantium
+				OR = {
+					title = e_byzantium
+					title = event_target:alternate_byz
+				}
 			}
 
 			new_character = {
@@ -7043,7 +7717,10 @@ faction_claimant = {
 			culture_group = byzantine
 
 			FROMFROM = {
-				title = e_byzantium
+				OR = {
+					title = e_byzantium
+					title = event_target:alternate_byz
+				}
 			}
 
 			liege = {
@@ -7388,12 +8065,7 @@ faction_antiking = {
 			}
 
 			is_nomadic = no
-
-			NOT = {
-				any_demesne_title = {
-					temporary = yes
-				}
-			}
+			in_revolt = no
 		}
 
 		trigger_if = {
@@ -8977,12 +9649,6 @@ faction_increase_council_power = {
 		liege = {
 			is_nomadic = no
 			in_revolt = no
-
-			NOT = {
-				any_demesne_title = {
-					temporary = yes
-				}
-			}
 		}
 	}
 
@@ -9464,6 +10130,7 @@ faction_increase_council_power = {
 
 		mult_modifier = {
 			factor = 0.01
+
 			trait = imbecile
 
 			NOT = {
@@ -9476,6 +10143,7 @@ faction_increase_council_power = {
 
 		mult_modifier = {
 			factor = 0.1
+
 			trait = inbred
 
 			NOT = {
@@ -9698,16 +10366,13 @@ faction_powerful_vassal_takeover = {
 		}
 
 		trigger_if = {
-			limit = { has_dlc = "Conclave" }
+			limit = { is_voter = yes }
 
-			OR = {
-				is_voter = no
-
-				liege = {
-					NAND = {
-						is_council_content = yes
-						has_law = war_voting_power_1
-					}
+			liege = {
+				OR = {
+					has_council = no
+					is_council_content = no
+					has_law = war_voting_power_0
 				}
 			}
 		}
@@ -9715,14 +10380,8 @@ faction_powerful_vassal_takeover = {
 		liege = {
 			is_feudal = yes
 			controls_religion = no
-
-			NOR = {
-				government = chinese_imperial_government
-
-				any_demesne_title = {
-					temporary = yes
-				}
-			}
+			in_revolt = no
+			NOT = { government = chinese_imperial_government }
 		}
 	}
 
